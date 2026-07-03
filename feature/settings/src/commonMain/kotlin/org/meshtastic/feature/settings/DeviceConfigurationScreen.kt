@@ -31,23 +31,29 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.device_configuration
+import org.meshtastic.core.resources.expert_mode
 import org.meshtastic.core.resources.remotely_administrating
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.feature.settings.component.expertModeCaptionColor
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 
 @Composable
-fun DeviceConfigurationScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onNavigate: (Route) -> Unit) {
+fun DeviceConfigurationScreen(
+    viewModel: RadioConfigViewModel,
+    expertModeEnabled: Boolean,
+    onBack: () -> Unit,
+    onNavigate: (Route) -> Unit,
+) {
     val state by viewModel.radioConfigState.collectAsStateWithLifecycle()
     val destNode by viewModel.destNode.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             MainAppBar(
-                title = stringResource(Res.string.device_configuration),
+                title = stringResource(ConfigRoute.deviceSectionTitle(expertModeEnabled)),
                 subtitle =
                 if (state.isLocal) {
                     destNode?.user?.long_name
@@ -68,10 +74,12 @@ fun DeviceConfigurationScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(paddingValues).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            ExpressiveSection(title = stringResource(Res.string.device_configuration)) {
-                ConfigRoute.deviceConfigRoutes(state.metadata).forEach {
+            ExpressiveSection(title = stringResource(ConfigRoute.deviceSectionTitle(expertModeEnabled))) {
+                ConfigRoute.deviceConfigRoutes(state.metadata, expertModeEnabled).forEach {
                     ListItem(
                         text = stringResource(it.title),
+                        supportingText = if (it.isExpertOnly) stringResource(Res.string.expert_mode) else null,
+                        supportingTextColor = expertModeCaptionColor(),
                         leadingIcon = it.icon?.let { res -> vectorResource(res) },
                         enabled = state.connected && !state.responseState.isWaiting(),
                     ) {

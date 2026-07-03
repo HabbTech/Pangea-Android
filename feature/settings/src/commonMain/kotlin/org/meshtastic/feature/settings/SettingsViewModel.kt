@@ -103,6 +103,10 @@ class SettingsViewModel(
     // Process-scoped shared state so other features (e.g. the nightly firmware channel) see the same unlock.
     val hiddenFeaturesUnlocked: StateFlow<Boolean> = hiddenFeaturesUnlock.unlocked
 
+    val expertModeEnabled: StateFlow<Boolean> = uiPrefs.expertModeEnabled
+
+    fun setExpertModeEnabled(enabled: Boolean) = uiPrefs.setExpertModeEnabled(enabled)
+
     val appVersionName
         get() = buildConfigProvider.versionName
 

@@ -86,6 +86,12 @@ class FakeUiPrefs : UiPrefs {
         appIntroCompleted.value = completed
     }
 
+    override val expertModeEnabled = MutableStateFlow(false)
+
+    override fun setExpertModeEnabled(enabled: Boolean) {
+        expertModeEnabled.value = enabled
+    }
+
     override val theme = MutableStateFlow(0)
 
     override fun setTheme(value: Int) {

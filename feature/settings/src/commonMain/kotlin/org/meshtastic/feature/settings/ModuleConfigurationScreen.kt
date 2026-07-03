@@ -32,11 +32,12 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.module_settings
+import org.meshtastic.core.resources.expert_mode
 import org.meshtastic.core.resources.remotely_administrating
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.feature.settings.component.expertModeCaptionColor
 import org.meshtastic.feature.settings.navigation.ModuleRoute
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 
@@ -44,6 +45,7 @@ import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 fun ModuleConfigurationScreen(
     viewModel: RadioConfigViewModel,
     hiddenFeaturesUnlocked: Boolean,
+    expertModeEnabled: Boolean,
     onBack: () -> Unit,
     onNavigate: (Route) -> Unit,
 ) {
@@ -52,18 +54,19 @@ fun ModuleConfigurationScreen(
 
     val deviceRole = state.radioConfig.device?.role
     val modules =
-        remember(state.metadata, deviceRole, hiddenFeaturesUnlocked) {
+        remember(state.metadata, deviceRole, hiddenFeaturesUnlocked, expertModeEnabled) {
             if (hiddenFeaturesUnlocked) {
-                ModuleRoute.entries
+                // The version-tap easter egg bypasses device exclusions, but Expert Mode gating still applies.
+                ModuleRoute.entries.filter { expertModeEnabled || !it.isExpertOnly }
             } else {
-                ModuleRoute.filterExcludedFrom(state.metadata, deviceRole)
+                ModuleRoute.filterExcludedFrom(state.metadata, deviceRole, expertModeEnabled)
             }
         }
 
     Scaffold(
         topBar = {
             MainAppBar(
-                title = stringResource(Res.string.module_settings),
+                title = stringResource(ModuleRoute.sectionTitle(expertModeEnabled)),
                 subtitle =
                 if (state.isLocal) {
                     destNode?.user?.long_name
@@ -84,10 +87,12 @@ fun ModuleConfigurationScreen(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(paddingValues).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            ExpressiveSection(title = stringResource(Res.string.module_settings)) {
+            ExpressiveSection(title = stringResource(ModuleRoute.sectionTitle(expertModeEnabled))) {
                 modules.forEach {
                     ListItem(
                         text = stringResource(it.title),
+                        supportingText = if (it.isExpertOnly) stringResource(Res.string.expert_mode) else null,
+                        supportingTextColor = expertModeCaptionColor(),
                         leadingIcon = it.icon?.let { res -> vectorResource(res) },
                         enabled = state.connected && !state.responseState.isWaiting(),
                     ) {

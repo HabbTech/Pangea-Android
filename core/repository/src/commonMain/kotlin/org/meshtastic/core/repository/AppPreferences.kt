@@ -80,6 +80,11 @@ interface UiPrefs {
 
     fun setAppIntroCompleted(completed: Boolean)
 
+    /** Whether Expert Mode reveals advanced radio, device, and module configuration. Never sent to the radio. */
+    val expertModeEnabled: StateFlow<Boolean>
+
+    fun setExpertModeEnabled(enabled: Boolean)
+
     val theme: StateFlow<Int>
 
     fun setTheme(value: Int)

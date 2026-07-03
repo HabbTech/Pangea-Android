@@ -53,6 +53,8 @@ import org.meshtastic.core.resources.app_functions_settings_summary
 import org.meshtastic.core.resources.app_settings
 import org.meshtastic.core.resources.bottom_nav_settings
 import org.meshtastic.core.resources.device_links
+import org.meshtastic.core.resources.expert_mode
+import org.meshtastic.core.resources.expert_mode_summary
 import org.meshtastic.core.resources.export_configuration
 import org.meshtastic.core.resources.filter_settings
 import org.meshtastic.core.resources.help_and_documentation
@@ -64,6 +66,7 @@ import org.meshtastic.core.resources.wifi_devices
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.icon.Device
 import org.meshtastic.core.ui.icon.FilterList
 import org.meshtastic.core.ui.icon.HelpOutline
@@ -98,6 +101,7 @@ fun SettingsScreen(
 ) {
     val appFunctionsAvailable: Boolean = koinInject(qualifier = named("googleServicesAvailable"))
     val hiddenFeaturesUnlocked by settingsViewModel.hiddenFeaturesUnlocked.collectAsStateWithLifecycle()
+    val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
     val localConfig by settingsViewModel.localConfig.collectAsStateWithLifecycle()
     val ourNode by settingsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
     val isConnected by settingsViewModel.isConnected.collectAsStateWithLifecycle(false)
@@ -213,6 +217,7 @@ fun SettingsScreen(
             RadioConfigItemList(
                 state = state,
                 isManaged = localConfig.security?.is_managed ?: false,
+                expertModeEnabled = expertModeEnabled,
                 isOtaCapable = isOtaCapable,
                 onRouteClick = { route ->
                     val navRoute =
@@ -239,6 +244,12 @@ fun SettingsScreen(
                     showEditDeviceProfileDialog = true
                 },
                 onNavigate = onNavigate,
+                expertModeToggle = {
+                    ExpertModeSection(
+                        expertModeEnabled = expertModeEnabled,
+                        onExpertModeChange = { settingsViewModel.setExpertModeEnabled(it) },
+                    )
+                },
             )
 
             // App-local settings are only relevant when configuring the local node
@@ -315,6 +326,19 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ExpertModeSection(expertModeEnabled: Boolean, onExpertModeChange: (Boolean) -> Unit) {
+    ExpressiveSection(title = stringResource(Res.string.expert_mode)) {
+        SwitchPreference(
+            title = stringResource(Res.string.expert_mode),
+            summary = stringResource(Res.string.expert_mode_summary),
+            checked = expertModeEnabled,
+            enabled = true,
+            onCheckedChange = onExpertModeChange,
+        )
     }
 }
 

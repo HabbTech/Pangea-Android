@@ -41,6 +41,8 @@ import org.meshtastic.core.resources.ic_terminal
 import org.meshtastic.core.resources.ic_usb
 import org.meshtastic.core.resources.ic_volume_up
 import org.meshtastic.core.resources.mesh_beacon
+import org.meshtastic.core.resources.module_settings
+import org.meshtastic.core.resources.modules
 import org.meshtastic.core.resources.mqtt
 import org.meshtastic.core.resources.neighbor_info
 import org.meshtastic.core.resources.paxcounter
@@ -166,6 +168,33 @@ enum class ModuleRoute(
     ),
     ;
 
+    /**
+     * Whether this module is hidden until Expert Mode is enabled. The exhaustive `when` forces every new module to be
+     * classified as casual or expert-only.
+     */
+    val isExpertOnly: Boolean
+        get() =
+            when (this) {
+                AMBIENT_LIGHTING -> false
+
+                MQTT,
+                SERIAL,
+                EXT_NOTIFICATION,
+                STORE_FORWARD,
+                RANGE_TEST,
+                TELEMETRY,
+                CANNED_MESSAGE,
+                AUDIO,
+                REMOTE_HARDWARE,
+                NEIGHBOR_INFO,
+                DETECTION_SENSOR,
+                PAXCOUNTER,
+                STATUS_MESSAGE,
+                TAK,
+                MESH_BEACON,
+                -> true
+            }
+
     val bitfield: Int
         get() =
             when (this) {
@@ -214,5 +243,14 @@ enum class ModuleRoute(
                 !isExcluded && it.isSupported(capabilities) && it.isApplicable(role)
             }
         }
+
+        fun filterExcludedFrom(
+            metadata: DeviceMetadata?,
+            role: Config.DeviceConfig.Role?,
+            expertModeEnabled: Boolean,
+        ): List<ModuleRoute> = filterExcludedFrom(metadata, role).filter { expertModeEnabled || !it.isExpertOnly }
+
+        fun sectionTitle(expertModeEnabled: Boolean): StringResource =
+            if (expertModeEnabled) Res.string.module_settings else Res.string.modules
     }
 }

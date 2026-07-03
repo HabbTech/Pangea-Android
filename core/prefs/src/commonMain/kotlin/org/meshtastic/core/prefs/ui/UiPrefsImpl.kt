@@ -56,6 +56,13 @@ class UiPrefsImpl(
         scope.launch { dataStore.edit { it[KEY_APP_INTRO_COMPLETED] = completed } }
     }
 
+    override val expertModeEnabled: StateFlow<Boolean> =
+        dataStore.data.map { it[KEY_EXPERT_MODE_ENABLED] ?: false }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    override fun setExpertModeEnabled(enabled: Boolean) {
+        scope.launch { dataStore.edit { it[KEY_EXPERT_MODE_ENABLED] = enabled } }
+    }
+
     override val theme: StateFlow<Int> =
         dataStore.data.map { it[KEY_THEME] ?: -1 }.stateIn(scope, SharingStarted.Lazily, -1)
 
@@ -302,6 +309,7 @@ class UiPrefsImpl(
         val KEY_EVENT_THEME_ENABLED = booleanPreferencesKey("event-theme-enabled")
 
         val KEY_APP_INTRO_COMPLETED = booleanPreferencesKey("app_intro_completed")
+        val KEY_EXPERT_MODE_ENABLED = booleanPreferencesKey("expert-mode-enabled")
         val KEY_THEME = intPreferencesKey("theme")
         val KEY_LOCALE = stringPreferencesKey("locale")
         val KEY_NODE_SORT = intPreferencesKey("node-sort-option")

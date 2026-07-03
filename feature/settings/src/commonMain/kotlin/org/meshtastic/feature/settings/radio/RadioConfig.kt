@@ -42,6 +42,7 @@ import org.meshtastic.core.resources.configuration
 import org.meshtastic.core.resources.debug_panel
 import org.meshtastic.core.resources.device_configuration
 import org.meshtastic.core.resources.discovery_local_mesh
+import org.meshtastic.core.resources.expert_mode
 import org.meshtastic.core.resources.export_configuration
 import org.meshtastic.core.resources.factory_reset
 import org.meshtastic.core.resources.firmware_update_title
@@ -71,16 +72,20 @@ import org.meshtastic.core.ui.icon.Settings
 import org.meshtastic.core.ui.icon.SystemUpdate
 import org.meshtastic.core.ui.icon.Upload
 import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.feature.settings.component.expertModeCaptionColor
 import org.meshtastic.feature.settings.navigation.ConfigRoute
+import org.meshtastic.feature.settings.navigation.ModuleRoute
 
 @Composable
 fun RadioConfigItemList(
     state: RadioConfigState,
     isManaged: Boolean,
+    expertModeEnabled: Boolean,
     isOtaCapable: Boolean = false,
     onRouteClick: (Enum<*>) -> Unit = {},
     onImport: () -> Unit = {},
     onExport: () -> Unit = {},
+    expertModeToggle: (@Composable () -> Unit)? = null,
     onNavigate: (Route) -> Unit,
 ) {
     val enabled = state.connected && !state.responseState.isWaiting() && !isManaged
@@ -90,24 +95,35 @@ fun RadioConfigItemList(
             if (isManaged) {
                 ManagedMessage()
             }
-            RadioConfigContent(enabled, onRouteClick)
+            RadioConfigContent(enabled, expertModeEnabled, onRouteClick)
+            // Device and Modules stay visible in casual mode — their own screens gate the
+            // individual expert-only items inside them. Administration is expert-only outright.
             DeviceConfigContent(enabled, onNavigate)
             ModuleSettingsContent(enabled, onNavigate)
-            AdministrationContent(enabled, onNavigate)
+            if (expertModeEnabled) {
+                AdministrationContent(enabled, onNavigate)
+            }
         }
 
         if (state.isLocal) {
             BackupRestoreSection(isManaged, enabled, onImport, onExport)
-            AdvancedSection(isManaged, isOtaCapable, enabled, onNavigate)
+            expertModeToggle?.invoke()
+            AdvancedSection(isManaged, isOtaCapable, enabled, expertModeEnabled, onNavigate)
         }
     }
 }
 
 @Composable
-private fun ColumnScope.RadioConfigContent(enabled: Boolean, onRouteClick: (Enum<*>) -> Unit) {
-    ConfigRoute.radioConfigRoutes.forEach {
+private fun ColumnScope.RadioConfigContent(
+    enabled: Boolean,
+    expertModeEnabled: Boolean,
+    onRouteClick: (Enum<*>) -> Unit,
+) {
+    ConfigRoute.radioConfigRoutes(expertModeEnabled).forEach {
         ListItem(
             text = stringResource(it.title),
+            supportingText = if (it.isExpertOnly) stringResource(Res.string.expert_mode) else null,
+            supportingTextColor = expertModeCaptionColor(),
             leadingIcon = it.icon?.let { res -> vectorResource(res) },
             enabled = enabled,
         ) {
@@ -166,6 +182,8 @@ private fun BackupRestoreSection(isManaged: Boolean, enabled: Boolean, onImport:
 private fun ColumnScope.AdministrationContent(enabled: Boolean, onNavigate: (Route) -> Unit) {
     ListItem(
         text = stringResource(Res.string.administration),
+        supportingText = stringResource(Res.string.expert_mode),
+        supportingTextColor = expertModeCaptionColor(),
         leadingIcon = MeshtasticIcons.AdminPanelSettings,
         trailingIcon = MeshtasticIcons.ChevronRight,
         leadingIconTint = MaterialTheme.colorScheme.error,
@@ -178,7 +196,13 @@ private fun ColumnScope.AdministrationContent(enabled: Boolean, onNavigate: (Rou
 }
 
 @Composable
-private fun AdvancedSection(isManaged: Boolean, isOtaCapable: Boolean, enabled: Boolean, onNavigate: (Route) -> Unit) {
+private fun AdvancedSection(
+    isManaged: Boolean,
+    isOtaCapable: Boolean,
+    enabled: Boolean,
+    expertModeEnabled: Boolean,
+    onNavigate: (Route) -> Unit,
+) {
     ExpressiveSection(title = stringResource(Res.string.advanced_title)) {
         if (isManaged) {
             ManagedMessage()
@@ -193,12 +217,16 @@ private fun AdvancedSection(isManaged: Boolean, isOtaCapable: Boolean, enabled: 
             )
         }
 
-        ListItem(
-            text = stringResource(Res.string.clean_node_database_title),
-            leadingIcon = MeshtasticIcons.CleaningServices,
-            enabled = enabled,
-            onClick = { onNavigate(SettingsRoute.CleanNodeDb) },
-        )
+        if (expertModeEnabled) {
+            ListItem(
+                text = stringResource(Res.string.clean_node_database_title),
+                supportingText = stringResource(Res.string.expert_mode),
+                supportingTextColor = expertModeCaptionColor(),
+                leadingIcon = MeshtasticIcons.CleaningServices,
+                enabled = enabled,
+                onClick = { onNavigate(SettingsRoute.CleanNodeDb) },
+            )
+        }
 
         ListItem(
             text = stringResource(Res.string.tak_server),
@@ -214,13 +242,17 @@ private fun AdvancedSection(isManaged: Boolean, isOtaCapable: Boolean, enabled: 
             onClick = { onNavigate(DiscoveryRoute.DiscoveryGraph) },
         )
 
-        // Always enabled: the Debug Panel reads app-local logs only — no radio connection,
-        // pending config response, or managed-mode restriction applies to it.
-        ListItem(
-            text = stringResource(Res.string.debug_panel),
-            leadingIcon = MeshtasticIcons.BugReport,
-            onClick = { onNavigate(SettingsRoute.DebugPanel) },
-        )
+        if (expertModeEnabled) {
+            // Always enabled: the Debug Panel reads app-local logs only — no radio connection,
+            // pending config response, or managed-mode restriction applies to it.
+            ListItem(
+                text = stringResource(Res.string.debug_panel),
+                supportingText = stringResource(Res.string.expert_mode),
+                supportingTextColor = expertModeCaptionColor(),
+                leadingIcon = MeshtasticIcons.BugReport,
+                onClick = { onNavigate(SettingsRoute.DebugPanel) },
+            )
+        }
     }
 }
 

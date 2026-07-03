@@ -51,6 +51,8 @@ import org.meshtastic.core.resources.device_db_cache_limit
 import org.meshtastic.core.resources.device_db_cache_limit_summary
 import org.meshtastic.core.resources.device_links
 import org.meshtastic.core.resources.discovery_local_mesh
+import org.meshtastic.core.resources.expert_mode
+import org.meshtastic.core.resources.expert_mode_summary
 import org.meshtastic.core.resources.help_and_documentation
 import org.meshtastic.core.resources.info
 import org.meshtastic.core.resources.modules_already_unlocked
@@ -64,6 +66,7 @@ import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.icon.ChevronRight
 import org.meshtastic.core.ui.icon.Device
 import org.meshtastic.core.ui.icon.FormatPaint
@@ -105,6 +108,7 @@ fun DesktopSettingsScreen(
     val localConfig by settingsViewModel.localConfig.collectAsStateWithLifecycle()
     val homoglyphEnabled by radioConfigViewModel.homoglyphEncodingEnabledFlow.collectAsStateWithLifecycle(false)
     val hiddenFeaturesUnlocked by settingsViewModel.hiddenFeaturesUnlocked.collectAsStateWithLifecycle()
+    val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
     val cacheLimit by settingsViewModel.dbCacheLimit.collectAsStateWithLifecycle()
     val isOtaCapable by settingsViewModel.isOtaCapable.collectAsStateWithLifecycle()
 
@@ -151,6 +155,7 @@ fun DesktopSettingsScreen(
             RadioConfigItemList(
                 state = state,
                 isManaged = localConfig.security?.is_managed ?: false,
+                expertModeEnabled = expertModeEnabled,
                 isOtaCapable = isOtaCapable,
                 onRouteClick = { route ->
                     val navRoute =
@@ -192,6 +197,14 @@ fun DesktopSettingsScreen(
                     HomoglyphSetting(
                         homoglyphEncodingEnabled = homoglyphEnabled,
                         onToggle = { radioConfigViewModel.toggleHomoglyphCharactersEncodingEnabled() },
+                    )
+
+                    SwitchPreference(
+                        title = stringResource(Res.string.expert_mode),
+                        summary = stringResource(Res.string.expert_mode_summary),
+                        checked = expertModeEnabled,
+                        enabled = true,
+                        onCheckedChange = { settingsViewModel.setExpertModeEnabled(it) },
                     )
 
                     val cacheItems = remember {

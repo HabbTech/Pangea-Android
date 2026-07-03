@@ -598,6 +598,8 @@
     <string name="exchange_position">Exchange position</string>
     <string name="expand_chart">Expand chart</string>
     <string name="expanded">Expanded</string>
+    <string name="expert_mode">Expert Mode</string>
+    <string name="expert_mode_summary">Reveal advanced radio, device, and module configuration. Only enable if you understand the underlying settings.</string>
     <string name="expires">Expires</string>
     <string name="export_configuration">Export configuration</string>
     <string name="export_data_csv">Export all packets</string>
@@ -1082,6 +1084,7 @@
     <string name="minimum_wake_time_seconds">Minimum wake time</string>
     <string name="modem_preset">Presets</string>
     <string name="module_settings">Module configuration</string>
+    <string name="modules">Modules</string>
     <string name="modules_already_unlocked">Modules already unlocked</string>
     <string name="modules_unlocked">Modules unlocked</string>
     <string name="more_reactions">More reactions</string>
@@ -1373,6 +1376,7 @@
     <string name="quick_chat_new">New quick chat</string>
     <string name="quick_chat_show">Show quick chat menu</string>
     <string name="radiation">Radiation</string>
+    <string name="radio">Radio</string>
     <string name="radio_configuration">Radio configuration</string>
     <string name="rainfall_1h">Rain (1h)</string>
     <string name="rainfall_24h">Rain (24h)</string>

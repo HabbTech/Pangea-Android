@@ -24,6 +24,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.bluetooth
 import org.meshtastic.core.resources.channels
 import org.meshtastic.core.resources.device
+import org.meshtastic.core.resources.device_configuration
 import org.meshtastic.core.resources.display
 import org.meshtastic.core.resources.ic_bluetooth
 import org.meshtastic.core.resources.ic_cell_tower
@@ -39,6 +40,8 @@ import org.meshtastic.core.resources.lora
 import org.meshtastic.core.resources.network
 import org.meshtastic.core.resources.position
 import org.meshtastic.core.resources.power
+import org.meshtastic.core.resources.radio
+import org.meshtastic.core.resources.radio_configuration
 import org.meshtastic.core.resources.security
 import org.meshtastic.core.resources.user
 import org.meshtastic.proto.AdminMessage
@@ -92,6 +95,28 @@ enum class ConfigRoute(
     ),
     ;
 
+    /**
+     * Whether this config surface is hidden until Expert Mode is enabled. The exhaustive `when` forces every new route
+     * to be classified as casual or expert-only.
+     */
+    val isExpertOnly: Boolean
+        get() =
+            when (this) {
+                USER,
+                CHANNELS,
+                DISPLAY,
+                -> false
+
+                DEVICE,
+                POSITION,
+                POWER,
+                NETWORK,
+                LORA,
+                BLUETOOTH,
+                SECURITY,
+                -> true
+            }
+
     companion object {
         private fun filterExcludedFrom(metadata: DeviceMetadata?): List<ConfigRoute> = entries.filter {
             when {
@@ -108,7 +133,16 @@ enum class ConfigRoute(
 
         val radioConfigRoutes = listOf(USER, LORA, CHANNELS, SECURITY)
 
-        fun deviceConfigRoutes(metadata: DeviceMetadata?): List<ConfigRoute> =
-            filterExcludedFrom(metadata) - radioConfigRoutes
+        fun radioConfigRoutes(expertModeEnabled: Boolean): List<ConfigRoute> =
+            radioConfigRoutes.filter { expertModeEnabled || !it.isExpertOnly }
+
+        fun deviceConfigRoutes(metadata: DeviceMetadata?, expertModeEnabled: Boolean): List<ConfigRoute> =
+            (filterExcludedFrom(metadata) - radioConfigRoutes).filter { expertModeEnabled || !it.isExpertOnly }
+
+        fun radioSectionTitle(expertModeEnabled: Boolean): StringResource =
+            if (expertModeEnabled) Res.string.radio_configuration else Res.string.radio
+
+        fun deviceSectionTitle(expertModeEnabled: Boolean): StringResource =
+            if (expertModeEnabled) Res.string.device_configuration else Res.string.device
     }
 }

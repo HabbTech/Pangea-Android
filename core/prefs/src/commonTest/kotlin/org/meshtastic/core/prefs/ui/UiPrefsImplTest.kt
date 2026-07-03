@@ -24,6 +24,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.FileSystem
 import okio.Path
@@ -33,7 +34,9 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 class UiPrefsImplTest {
@@ -112,6 +115,30 @@ class UiPrefsImplTest {
         }
 
         assertEquals(DeviceType.TCP, prefs.selectedConnectionTransport.value)
+    }
+
+    @Test fun `expert mode defaults to false`() = testScope.runTest { assertFalse(prefs.expertModeEnabled.value) }
+
+    @Test
+    fun `expert mode flow emits when toggled`() = testScope.runTest {
+        prefs.setExpertModeEnabled(true)
+        advanceUntilIdle()
+        assertTrue(prefs.expertModeEnabled.value)
+
+        prefs.setExpertModeEnabled(false)
+        advanceUntilIdle()
+        assertFalse(prefs.expertModeEnabled.value)
+    }
+
+    @Test
+    fun `expert mode persists across instances`() = testScope.runTest {
+        prefs.setExpertModeEnabled(true)
+        advanceUntilIdle()
+
+        val dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher)
+        val reloaded = UiPrefsImpl(dataStore, dispatchers)
+        advanceUntilIdle()
+        assertTrue(reloaded.expertModeEnabled.value)
     }
 
     @Test
