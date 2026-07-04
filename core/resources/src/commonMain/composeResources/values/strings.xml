@@ -838,6 +838,17 @@
     <string name="internal">Internal</string>
     <string name="interval_always_on">Always On</string>
     <string name="interval_unset">Unset</string>
+    <!-- INTRO -->
+    <string name="intro_expert_advanced_user">Advanced User</string>
+    <string name="intro_expert_advanced_user_desc">You configure LoRa parameters, MQTT, serial modules, and other device-level settings. You understand mesh networking concepts.</string>
+    <string name="intro_expert_change_anytime">Change Anytime</string>
+    <string name="intro_expert_change_anytime_desc">You can turn Expert Mode on or off anytime in Settings.</string>
+    <string name="intro_expert_continue">Continue</string>
+    <string name="intro_expert_hidden_options">Hidden Options</string>
+    <string name="intro_expert_hidden_options_desc">Some settings are hidden when Expert Mode is off. They are still available — just tucked away to keep the interface clean for everyday use.</string>
+    <string name="intro_expert_mode_title">Expert Mode</string>
+    <string name="intro_expert_standard_user">Standard User</string>
+    <string name="intro_expert_standard_user_desc">You use Pangea for messaging, sharing locations, and staying connected. You don\'t need to adjust radio or device settings.</string>
     <string name="intro_show">Show Introduction</string>
     <string name="intro_welcome">Welcome to</string>
     <string name="ip">IP</string>

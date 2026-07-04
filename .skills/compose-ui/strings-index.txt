@@ -811,6 +811,17 @@ installed_firmware_version
 internal
 interval_always_on
 interval_unset
+### INTRO ###
+intro_expert_advanced_user
+intro_expert_advanced_user_desc
+intro_expert_change_anytime
+intro_expert_change_anytime_desc
+intro_expert_continue
+intro_expert_hidden_options
+intro_expert_hidden_options_desc
+intro_expert_mode_title
+intro_expert_standard_user
+intro_expert_standard_user_desc
 intro_show
 intro_welcome
 ip

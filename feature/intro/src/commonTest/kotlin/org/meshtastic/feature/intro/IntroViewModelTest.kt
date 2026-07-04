@@ -60,14 +60,34 @@ class IntroViewModelTest {
     }
 
     @Test
-    fun testNotificationsWithoutPermissionNavigatesToNull() {
+    fun testNotificationsWithoutPermissionNavigatesToExpertMode() {
         val next = viewModel.getNextKey(Notifications, allPermissionsGranted = false)
-        assertNull(next, "Notifications should navigate to null when permissions not granted")
+        assertEquals(ExpertMode, next, "Skipping notifications must still route through the Expert Mode step")
     }
 
     @Test
-    fun testCriticalAlertsIsTerminal() {
+    fun testCriticalAlertsNavigatesToExpertMode() {
         val next = viewModel.getNextKey(CriticalAlerts, allPermissionsGranted = true)
-        assertNull(next, "CriticalAlerts should not navigate further")
+        assertEquals(ExpertMode, next, "Critical Alerts must route through the Expert Mode step")
+    }
+
+    @Test
+    fun testExpertModeIsTerminal() {
+        val next = viewModel.getNextKey(ExpertMode, allPermissionsGranted = true)
+        assertNull(next, "ExpertMode is the final step and should not navigate further")
+    }
+
+    @Test
+    fun testNoPathBypassesExpertMode() {
+        // Exhaustive: from every non-terminal step, walking the flow with either permission outcome ends at ExpertMode.
+        for (granted in listOf(true, false)) {
+            var key: androidx.navigation3.runtime.NavKey? = Welcome
+            var last: androidx.navigation3.runtime.NavKey = Welcome
+            while (key != null) {
+                last = key
+                key = viewModel.getNextKey(key, allPermissionsGranted = granted)
+            }
+            assertEquals(ExpertMode, last, "Flow with permissionsGranted=$granted must end on ExpertMode")
+        }
     }
 }

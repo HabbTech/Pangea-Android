@@ -26,14 +26,18 @@ class IntroViewModel : ViewModel() {
 
     /**
      * Determines the next navigation key based on the current key and the state of permissions. The flow hierarchy is:
-     * Core Connection -> Shared Location -> Notifications -> Done.
+     * Core Connection -> Shared Location -> Notifications -> Critical Alerts -> Expert Mode -> Done.
+     *
+     * Every path ends on [ExpertMode] (informational, no permission ask) so that no skip shortcut bypasses it; see
+     * porting/notes/onboarding-routing.md in the project folder for the rationale.
      */
     fun getNextKey(currentKey: NavKey, allPermissionsGranted: Boolean): NavKey? = when (currentKey) {
         is Welcome -> Bluetooth
         is Bluetooth -> Location
         is Location -> Notifications
-        is Notifications -> if (allPermissionsGranted) CriticalAlerts else null
-        is CriticalAlerts -> null
+        is Notifications -> if (allPermissionsGranted) CriticalAlerts else ExpertMode
+        is CriticalAlerts -> ExpertMode
+        is ExpertMode -> null
         else -> null
     }
 }

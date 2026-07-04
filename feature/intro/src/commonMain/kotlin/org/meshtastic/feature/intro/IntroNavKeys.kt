@@ -28,3 +28,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object Notifications : NavKey
 
 @Serializable data object CriticalAlerts : NavKey
+
+/** Informational screen describing Expert Mode; final step of the intro flow. */
+@Serializable data object ExpertMode : NavKey

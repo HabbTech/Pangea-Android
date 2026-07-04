@@ -81,7 +81,7 @@ internal fun EntryProviderScope<NavKey>.introGraph(
         val isGranted = notificationPermission?.isGranted ?: true
         NotificationsScreen(
             showNextButton = isGranted,
-            onSkip = onDone,
+            onSkip = { navigateToNext(Notifications, permissionsGranted = false) },
             onConfigure = {
                 if (notificationPermission != null && !isGranted) {
                     notificationPermission.launchRequest()
@@ -96,11 +96,13 @@ internal fun EntryProviderScope<NavKey>.introGraph(
     entry<CriticalAlerts> {
         val settingsNavigator = LocalIntroSettingsNavigator.current
         CriticalAlertsScreen(
-            onSkip = onDone,
+            onSkip = { navigateToNext(CriticalAlerts) },
             onConfigure = {
                 settingsNavigator.openCriticalAlertsSettings()
-                onDone()
+                navigateToNext(CriticalAlerts)
             },
         )
     }
+
+    entry<ExpertMode> { ExpertModeScreen(onContinue = { navigateToNext(ExpertMode) }) }
 }
