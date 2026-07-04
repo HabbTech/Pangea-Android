@@ -80,6 +80,7 @@ import org.meshtastic.core.ui.icon.PermScanWifi
 import org.meshtastic.core.ui.icon.Wifi
 import org.meshtastic.core.ui.util.rememberShowToastResource
 import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.feature.settings.component.PowerModeSection
 import org.meshtastic.feature.settings.component.HomoglyphSetting
 import org.meshtastic.feature.settings.component.NotificationSection
 import org.meshtastic.feature.settings.component.ThemePickerDialog
@@ -221,6 +222,8 @@ fun DesktopSettingsScreen(
                         summary = stringResource(Res.string.device_db_cache_limit_summary),
                     )
                 }
+
+                PowerModeSection()
 
                 ExpressiveSection(title = stringResource(Res.string.node_layout_section_title)) {
                     ListItem(

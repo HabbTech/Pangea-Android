@@ -78,6 +78,7 @@ import org.meshtastic.feature.settings.component.AppInfoSection
 import org.meshtastic.feature.settings.component.AppearanceSettingsContent
 import org.meshtastic.feature.settings.component.ExpressiveSection
 import org.meshtastic.feature.settings.component.PersistenceSettingsContent
+import org.meshtastic.feature.settings.component.PowerModeSection
 import org.meshtastic.feature.settings.component.PrivacySettingsContent
 import org.meshtastic.feature.settings.component.ThemePickerDialog
 import org.meshtastic.feature.settings.navigation.ConfigRoute
@@ -254,6 +255,10 @@ fun SettingsScreen(
 
             // App-local settings are only relevant when configuring the local node
             if (state.isLocal) {
+                // Power Mode renders its own ExpressiveSection, so it sits as a sibling above App
+                // Settings rather than nested inside it.
+                PowerModeSection()
+
                 ExpressiveSection(title = stringResource(Res.string.app_settings)) {
                     PrivacySettingsContent(
                         analyticsAvailable = appFunctionsAvailable,

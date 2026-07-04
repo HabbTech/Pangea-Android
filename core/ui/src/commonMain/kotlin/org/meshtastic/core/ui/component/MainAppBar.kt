@@ -20,13 +20,17 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,14 +51,24 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.model.Node
+import org.meshtastic.core.model.PowerMode
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.about_pangea
+import org.meshtastic.core.resources.event_info
 import org.meshtastic.core.resources.ic_meshtastic
 import org.meshtastic.core.resources.navigate_back
 import org.meshtastic.core.ui.icon.ArrowBack
+import org.meshtastic.core.ui.icon.CalendarMonth
+import org.meshtastic.core.ui.icon.Check
+import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.theme.LocalEventTheme
 import org.meshtastic.core.ui.util.EventBrandingIcon
 import org.meshtastic.core.ui.util.LocalEventBranding
+import org.meshtastic.core.ui.util.LocalPowerModeMenu
+import org.meshtastic.core.ui.util.PowerModeMenuState
+import org.meshtastic.core.ui.util.icon
+import org.meshtastic.core.ui.util.labelRes
 
 /** Alpha for the ambient event accent wash over the app bar — subtle enough to keep title text legible. */
 private const val EVENT_ACCENT_ALPHA = 0.12f
@@ -137,21 +151,101 @@ fun MainAppBar(
     }
 }
 
-/** Reads [LocalEventBranding] to show event branding (tap → [EventInfoSheet]), or the default Meshtastic logo. */
+/**
+ * Nav-bar branding slot. When [LocalPowerModeMenu] is provided, the logo opens the Power Mode menu (with an About
+ * entry, and an Event info entry while event branding is active). Without it, falls back to the original behavior:
+ * event editions are tappable for their info sheet, otherwise a plain logo.
+ */
 @Composable
 private fun EventAwareBranding() {
     val eventEdition = LocalEventBranding.current
-    if (eventEdition == null) {
+    val powerModeMenu = LocalPowerModeMenu.current
+    var showSheet by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+
+    if (powerModeMenu == null && eventEdition == null) {
         Icon(imageVector = vectorResource(Res.drawable.ic_meshtastic), contentDescription = null)
         return
     }
     // Every event edition is tappable for its info sheet. The icon prefers the hosted iconUrl, then a bundled
-    // drawable, then the Meshtastic logo — see EventBrandingIcon.
-    var showSheet by remember { mutableStateOf(false) }
-    val brandingModifier = Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button) { showSheet = true }
-    EventBrandingIcon(edition = eventEdition, modifier = brandingModifier)
-    if (showSheet) {
+    // drawable, then the Meshtastic logo — see EventBrandingIcon. When a Power Mode menu is provided, the logo
+    // opens that menu instead and the event sheet moves behind its About item.
+    val brandingModifier =
+        Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button) {
+            if (powerModeMenu != null) showMenu = true else showSheet = true
+        }
+    Box {
+        // With Power Mode the logo is shown even outside an event, so the edition can be null here —
+        // EventBrandingIcon requires one, so fall back to the plain mark.
+        if (eventEdition != null) {
+            EventBrandingIcon(edition = eventEdition, modifier = brandingModifier)
+        } else {
+            Icon(
+                imageVector = vectorResource(Res.drawable.ic_meshtastic),
+                contentDescription = null,
+                modifier = brandingModifier,
+            )
+        }
+        if (powerModeMenu != null) {
+            PowerModeMenu(
+                expanded = showMenu,
+                state = powerModeMenu,
+                onDismiss = { showMenu = false },
+                onShowEventInfo = if (eventEdition != null) fun() { showSheet = true } else null,
+            )
+        }
+    }
+    if (showSheet && eventEdition != null) {
         EventInfoSheet(edition = eventEdition, onDismiss = { showSheet = false })
+    }
+}
+
+/** Dropdown anchored to the nav-bar logo: Power Mode picker, About entry, and optional Event info entry. */
+@Composable
+private fun PowerModeMenu(
+    expanded: Boolean,
+    state: PowerModeMenuState,
+    onDismiss: () -> Unit,
+    onShowEventInfo: (() -> Unit)?,
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        PowerMode.entries.forEach { mode ->
+            DropdownMenuItem(
+                text = { Text(stringResource(mode.labelRes)) },
+                leadingIcon = { Icon(imageVector = mode.icon, contentDescription = null) },
+                trailingIcon =
+                if (mode == state.currentMode) {
+                    { Icon(imageVector = MeshtasticIcons.Check, contentDescription = null) }
+                } else {
+                    null
+                },
+                onClick = {
+                    state.onSelectMode(mode)
+                    onDismiss()
+                },
+            )
+        }
+        HorizontalDivider()
+        DropdownMenuItem(
+            text = { Text(stringResource(Res.string.about_pangea)) },
+            leadingIcon = { Icon(imageVector = MeshtasticIcons.Info, contentDescription = null) },
+            onClick = {
+                state.onAboutClick()
+                onDismiss()
+            },
+        )
+        // EVENT-INFO ENTRY — delete this block (and the onShowEventInfo parameter plumbing above) to remove the
+        // Event info menu item entirely; the event info sheet remains reachable nowhere else once removed.
+        if (onShowEventInfo != null) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.event_info)) },
+                leadingIcon = { Icon(imageVector = MeshtasticIcons.CalendarMonth, contentDescription = null) },
+                onClick = {
+                    onShowEventInfo()
+                    onDismiss()
+                },
+            )
+        }
     }
 }
 

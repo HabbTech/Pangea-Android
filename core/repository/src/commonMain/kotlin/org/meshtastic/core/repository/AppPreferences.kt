@@ -18,6 +18,7 @@ package org.meshtastic.core.repository
 
 import kotlinx.coroutines.flow.StateFlow
 import org.meshtastic.core.model.DeviceType
+import org.meshtastic.core.model.PowerMode
 
 /** Reactive interface for analytics-related preferences. */
 interface AnalyticsPrefs {
@@ -84,6 +85,11 @@ interface UiPrefs {
     val expertModeEnabled: StateFlow<Boolean>
 
     fun setExpertModeEnabled(enabled: Boolean)
+
+    /** The user-selected [PowerMode]; the effective mode may be more aggressive (see PowerModeManager). */
+    val powerMode: StateFlow<PowerMode>
+
+    fun setPowerMode(mode: PowerMode)
 
     val theme: StateFlow<Int>
 

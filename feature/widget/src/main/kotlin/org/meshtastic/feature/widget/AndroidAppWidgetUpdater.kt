@@ -29,12 +29,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
 import org.meshtastic.core.repository.AppWidgetUpdater
+import org.meshtastic.core.repository.PowerModeManager
 
 private const val WIDGET_UPDATE_DEBOUNCE_MS = 500L
 
 @Single
-class AndroidAppWidgetUpdater(private val context: Context, stateProvider: LocalStatsWidgetStateProvider) :
-    AppWidgetUpdater {
+class AndroidAppWidgetUpdater(
+    private val context: Context,
+    stateProvider: LocalStatsWidgetStateProvider,
+    private val powerModeManager: PowerModeManager,
+) : AppWidgetUpdater {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     init {
@@ -46,7 +50,13 @@ class AndroidAppWidgetUpdater(private val context: Context, stateProvider: Local
             stateProvider.state
                 .debounce(WIDGET_UPDATE_DEBOUNCE_MS)
                 .distinctUntilChanged { old, new -> old.copy(updateTimeMillis = 0) == new.copy(updateTimeMillis = 0) }
-                .collect { if (hasWidgetInstances()) updateAll() }
+                .collect {
+                    // Power Mode clamp: in Expedition the widget keeps its last data instead of re-rendering.
+                    // Explicit updateAll() callers (e.g. manual refresh) are not gated.
+                    if (powerModeManager.effectiveMode.value.allowsWidgetRefresh && hasWidgetInstances()) {
+                        updateAll()
+                    }
+                }
         }
     }
 

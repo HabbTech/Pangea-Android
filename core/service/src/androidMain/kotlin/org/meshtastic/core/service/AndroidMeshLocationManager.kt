@@ -29,15 +29,20 @@ import org.meshtastic.core.common.hasLocationPermission
 import org.meshtastic.core.model.Position
 import org.meshtastic.core.repository.LocationRepository
 import org.meshtastic.core.repository.MeshLocationManager
+import org.meshtastic.core.repository.PowerModeManager
 import kotlin.time.Duration.Companion.milliseconds
 import org.meshtastic.proto.Position as ProtoPosition
 
 @Single
-class AndroidMeshLocationManager(private val context: Application, private val locationRepository: LocationRepository) :
-    MeshLocationManager {
+class AndroidMeshLocationManager(
+    private val context: Application,
+    private val locationRepository: LocationRepository,
+    private val powerModeManager: PowerModeManager,
+) : MeshLocationManager {
     private lateinit var scope: CoroutineScope
     private var sendPositionFn: (suspend (ProtoPosition) -> Unit)? = null
     private var locationFlow: Job? = null
+    private var lastSentAtMs: Long = 0L
 
     @SuppressLint("MissingPermission")
     override fun start(scope: CoroutineScope, sendPositionFn: suspend (ProtoPosition) -> Unit) {
@@ -50,6 +55,13 @@ class AndroidMeshLocationManager(private val context: Application, private val l
                 locationRepository
                     .getLocations()
                     .onEach { location ->
+                        // Power Mode clamp: Expedition disables phone->mesh position sharing entirely; Trail
+                        // enforces a minimum interval between shares regardless of the location request rate.
+                        val floorSecs = powerModeManager.effectiveMode.value.locationIntervalFloorSecs
+                        if (floorSecs == Int.MAX_VALUE) return@onEach
+                        val nowMs = System.currentTimeMillis()
+                        if (floorSecs > 0 && nowMs - lastSentAtMs < floorSecs * MS_PER_SECOND) return@onEach
+                        lastSentAtMs = nowMs
                         sendPositionFn(
                             ProtoPosition(
                                 latitude_i = Position.degI(location.latitude),
@@ -91,3 +103,5 @@ class AndroidMeshLocationManager(private val context: Application, private val l
         }
     }
 }
+
+private const val MS_PER_SECOND = 1000L

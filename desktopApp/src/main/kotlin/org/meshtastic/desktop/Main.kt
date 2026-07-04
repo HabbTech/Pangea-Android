@@ -80,6 +80,7 @@ import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.navigation.TopLevelDestination
 import org.meshtastic.core.navigation.rememberMultiBackstack
 import org.meshtastic.core.repository.Notification
+import org.meshtastic.core.repository.PowerModeManager
 import org.meshtastic.core.repository.UiPrefs
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.desktop_tray_quit
@@ -91,6 +92,8 @@ import org.meshtastic.core.resources.desktop_update_download
 import org.meshtastic.core.service.MeshServiceOrchestrator
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.LocalEventBranding
+import org.meshtastic.core.ui.util.LocalPowerModeMenu
+import org.meshtastic.core.ui.util.PowerModeMenuState
 import org.meshtastic.core.ui.util.rememberOpenUrl
 import org.meshtastic.core.ui.viewmodel.UIViewModel
 import org.meshtastic.desktop.data.DesktopPreferencesDataSource
@@ -372,7 +375,21 @@ private fun ApplicationScope.MeshtasticWindow(
         val eventEdition by uiViewModel.eventEdition.collectAsState()
 
         CoilImageLoaderSetup()
-        CompositionLocalProvider(LocalEventBranding provides eventEdition) {
+        val powerModeManager = koinInject<PowerModeManager>()
+        val selectedPowerMode by powerModeManager.selectedMode.collectAsState()
+        val powerModeMenu =
+            PowerModeMenuState(
+                currentMode = selectedPowerMode,
+                onSelectMode = powerModeManager::setSelectedMode,
+                onAboutClick = {
+                    multiBackstack.navigateTopLevel(TopLevelDestination.Settings.route)
+                    multiBackstack.activeBackStack.add(SettingsRoute.About)
+                },
+            )
+        CompositionLocalProvider(
+            LocalEventBranding provides eventEdition,
+            LocalPowerModeMenu provides powerModeMenu,
+        ) {
             AppTheme(darkTheme = isDarkTheme) { DesktopMainScreen(uiViewModel, multiBackstack) }
         }
     }

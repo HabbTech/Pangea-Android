@@ -29,6 +29,7 @@
     <string name="a11y_node_role">role %1$s</string>
     <string name="a11y_node_signal">signal %1$s</string>
     <string name="a11y_nodes_at_hop">Hop %1$d: %2$d nodes</string>
+    <string name="about_pangea">About Pangea</string>
     <string name="accept">Accept</string>
     <string name="acknowledgements">Acknowledgements</string>
     <!-- ACTION -->
@@ -595,6 +596,7 @@
     <string name="ethernet_config">Ethernet Options</string>
     <string name="ethernet_enabled">Ethernet enabled</string>
     <string name="ethernet_ip">Ethernet IP:</string>
+    <string name="event_info">Event info</string>
     <string name="event_use_event_theme">Use event theme</string>
     <string name="exchange_position">Exchange position</string>
     <string name="expand_chart">Expand chart</string>
@@ -1347,6 +1349,14 @@
     <string name="power_metrics_module_enabled">Power metrics module enabled</string>
     <string name="power_metrics_on_screen_enabled">Power metrics on-screen enabled</string>
     <string name="power_metrics_update_interval_seconds">Power metrics update interval</string>
+    <string name="power_mode">Power Mode</string>
+    <string name="power_mode_expedition">Expedition</string>
+    <string name="power_mode_expedition_summary">Multi-day off-grid tuning. Continuous GPS off, live updates off, widget refresh paused, background auto-connect off. Trades convenience for battery.</string>
+    <string name="power_mode_standard">Standard</string>
+    <string name="power_mode_standard_summary">All features on. Best when your phone is charged or you\'re near power.</string>
+    <string name="power_mode_summary">Choose how aggressively the app saves battery. Battery Saver on your phone temporarily applies Expedition.</string>
+    <string name="power_mode_trail">Trail</string>
+    <string name="power_mode_trail_summary">Day-trip tuning. Position sharing slows down and background work is reduced, without noticeable feature loss.</string>
     <string name="powered">Powered</string>
     <string name="ppm">ppm</string>
     <string name="precise_location">Precise location</string>

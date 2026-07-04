@@ -11,6 +11,7 @@ a11y_node_online
 a11y_node_role
 a11y_node_signal
 a11y_nodes_at_hop
+about_pangea
 accept
 acknowledgements
 ### ACTION ###
@@ -568,6 +569,7 @@ establishing_session
 ethernet_config
 ethernet_enabled
 ethernet_ip
+event_info
 event_use_event_theme
 exchange_position
 expand_chart
@@ -1305,6 +1307,14 @@ power_metrics_log
 power_metrics_module_enabled
 power_metrics_on_screen_enabled
 power_metrics_update_interval_seconds
+power_mode
+power_mode_expedition
+power_mode_expedition_summary
+power_mode_standard
+power_mode_standard_summary
+power_mode_summary
+power_mode_trail
+power_mode_trail_summary
 powered
 ppm
 precise_location

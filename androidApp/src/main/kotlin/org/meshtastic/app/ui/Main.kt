@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.recalculateWindowInsets
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,15 +37,19 @@ import org.meshtastic.app.BuildConfig
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.service.LockdownState
 import org.meshtastic.core.navigation.NodesRoute
+import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.navigation.TopLevelDestination
 import org.meshtastic.core.navigation.rememberMultiBackstack
 import org.meshtastic.core.repository.PlatformAnalytics
+import org.meshtastic.core.repository.PowerModeManager
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.app_too_old
 import org.meshtastic.core.resources.must_update
 import org.meshtastic.core.ui.component.MeshtasticAppShell
 import org.meshtastic.core.ui.component.MeshtasticNavDisplay
 import org.meshtastic.core.ui.component.MeshtasticNavigationSuite
+import org.meshtastic.core.ui.util.LocalPowerModeMenu
+import org.meshtastic.core.ui.util.PowerModeMenuState
 import org.meshtastic.core.ui.viewmodel.UIViewModel
 import org.meshtastic.feature.connections.navigation.connectionsGraph
 import org.meshtastic.feature.discovery.navigation.discoveryGraph
@@ -86,6 +91,19 @@ fun MainScreen() {
         }
     }
 
+    val powerModeManager: PowerModeManager = koinInject()
+    val selectedPowerMode by powerModeManager.selectedMode.collectAsStateWithLifecycle()
+    val powerModeMenu =
+        PowerModeMenuState(
+            currentMode = selectedPowerMode,
+            onSelectMode = powerModeManager::setSelectedMode,
+            onAboutClick = {
+                multiBackstack.navigateTopLevel(TopLevelDestination.Settings.route)
+                multiBackstack.activeBackStack.add(SettingsRoute.About)
+            },
+        )
+
+    CompositionLocalProvider(LocalPowerModeMenu provides powerModeMenu) {
     MeshtasticAppShell(multiBackstack = multiBackstack, uiViewModel = viewModel, hostModifier = Modifier) {
         MeshtasticNavigationSuite(
             multiBackstack = multiBackstack,
@@ -118,6 +136,7 @@ fun MainScreen() {
                 analytics = koinInject<PlatformAnalytics>(),
             )
         }
+    }
     }
 }
 

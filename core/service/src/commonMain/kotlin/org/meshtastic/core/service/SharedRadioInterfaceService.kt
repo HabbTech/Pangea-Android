@@ -66,6 +66,7 @@ import org.meshtastic.core.model.util.anonymize
 import org.meshtastic.core.network.repository.NetworkRepository
 import org.meshtastic.core.network.repository.SerialDevicePresence
 import org.meshtastic.core.repository.PlatformAnalytics
+import org.meshtastic.core.repository.PowerModeManager
 import org.meshtastic.core.repository.RadioInterfaceService
 import org.meshtastic.core.repository.RadioPrefs
 import org.meshtastic.core.repository.RadioSessionContext
@@ -163,7 +164,15 @@ class SharedRadioInterfaceService(
     private val radioPrefs: RadioPrefs,
     private val transportFactory: RadioTransportFactory,
     private val analytics: PlatformAnalytics,
+    private val powerModeManager: PowerModeManager,
 ) : RadioInterfaceService {
+
+    /**
+     * Power Mode clamp: environmental recovery (BLE re-enabled, network back, USB replug) is automatic background
+     * reconnection, suppressed in Expedition. User-initiated connects are never gated here.
+     */
+    private fun allowsBackgroundAutoConnect(): Boolean =
+        powerModeManager.effectiveMode.value.allowsBackgroundAutoConnect
 
     override val supportedDeviceTypes: List<DeviceType>
         get() = transportFactory.supportedDeviceTypes
@@ -474,7 +483,7 @@ class SharedRadioInterfaceService(
                                 // explicitly disconnected from. stopTransportLocked() below still fires on
                                 // BLE-disabled to tear down a running BLE link, but we deliberately do NOT
                                 // clear connectionRequested here — that is disconnect()'s job.
-                                if (connectionRequested) {
+                                if (connectionRequested && allowsBackgroundAutoConnect()) {
                                     startTransportLocked()
                                 }
                             } else if (runningTransportId == InterfaceId.BLUETOOTH) {
@@ -490,7 +499,7 @@ class SharedRadioInterfaceService(
                         transportMutex.withLock {
                             if (state) {
                                 // Environmental recovery only — see the BLE listener above for rationale.
-                                if (connectionRequested) {
+                                if (connectionRequested && allowsBackgroundAutoConnect()) {
                                     startTransportLocked()
                                 }
                             } else if (runningTransportId == InterfaceId.TCP) {
@@ -530,6 +539,7 @@ class SharedRadioInterfaceService(
             .onEach {
                 transportMutex.withLock {
                     if (!connectionRequested) return@withLock
+                    if (!allowsBackgroundAutoConnect()) return@withLock
                     if (runningTransportId != InterfaceId.SERIAL) return@withLock
                     // Race-defense: the combine snapshot may be stale by the time we acquire
                     // transportMutex — another path (setDeviceAddress, BLE liveness restart) may
