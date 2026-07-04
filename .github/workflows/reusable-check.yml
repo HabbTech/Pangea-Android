@@ -30,8 +30,6 @@ on:
     secrets:
       GRADLE_ENCRYPTION_KEY:
         required: false
-      CODECOV_TOKEN:
-        required: false
       DATADOG_APPLICATION_ID:
         required: false
       DATADOG_CLIENT_TOKEN:
@@ -444,27 +442,6 @@ jobs:
             kover_tasks="${{ matrix.shard.kover }}"
           fi
           ./gradlew ${{ matrix.shard.tasks }} $kover_tasks -Pci=true --continue
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v7
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: meshtastic/Meshtastic-Android
-          flags: ${{ matrix.shard.name }}
-          fail_ci_if_error: false
-          report_type: test_results
-          files: "**/build/test-results/**/*.xml"
-
-      - name: Upload coverage to Codecov
-        if: ${{ !cancelled() && inputs.run_coverage }}
-        uses: codecov/codecov-action@v7
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: meshtastic/Meshtastic-Android
-          flags: ${{ matrix.shard.name }}
-          fail_ci_if_error: false
-          files: "**/build/reports/kover/report*.xml"
 
       - name: Upload shard reports
         if: ${{ always() && inputs.upload_artifacts }}

@@ -1,3 +1,7 @@
+> **Fork notice:** This repository is Pangea, a downstream fork of Meshtastic-Android maintained by HabbTech.
+> The contribution process below is inherited from upstream and largely still applies, but PRs here go to
+> `HabbTech/Pangea-Android`, not upstream. Upstream-relevant fixes are best contributed upstream directly.
+
 # Contributing to Meshtastic-Android
 
 Thank you for your interest in contributing to Meshtastic-Android! We welcome contributions from everyone. Please take a moment to review these guidelines to help us maintain a high-quality, collaborative project.
