@@ -159,7 +159,7 @@ class NodeRepositoryImpl(
             if (isLocal) {
                 ourNodeInfo.value?.user?.long_name?.takeIf { it.isNotBlank() } ?: "Local"
             } else {
-                "Meshtastic $fallbackId"
+                "Pangea $fallbackId"
             }
         val defaultShort =
             if (isLocal) {

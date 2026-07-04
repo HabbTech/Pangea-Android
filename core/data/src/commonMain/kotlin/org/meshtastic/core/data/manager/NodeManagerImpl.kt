@@ -1073,7 +1073,7 @@ class NodeManagerImpl(
             user =
             User(
                 id = userId,
-                long_name = "Meshtastic ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}",
+                long_name = "Pangea ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}",
                 short_name = userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH),
                 hw_model = HardwareModel.UNSET,
             ),

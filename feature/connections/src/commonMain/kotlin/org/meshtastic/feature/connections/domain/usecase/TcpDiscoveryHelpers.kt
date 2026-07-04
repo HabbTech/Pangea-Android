@@ -34,7 +34,7 @@ private const val SUFFIX_LENGTH = 4
 internal fun processTcpServices(
     tcpServices: List<DiscoveredService>,
     recentAddresses: List<RecentAddress>,
-    defaultShortName: String = "Meshtastic",
+    defaultShortName: String = "Pangea",
 ): List<DeviceListEntry.Tcp> {
     val recentMap = recentAddresses.associateBy({ it.address }) { it.name }
     return tcpServices

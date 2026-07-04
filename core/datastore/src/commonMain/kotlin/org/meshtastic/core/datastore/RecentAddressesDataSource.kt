@@ -82,7 +82,7 @@ open class RecentAddressesDataSource(@Named("CorePreferencesDataStore") private 
         is JsonPrimitive -> {
             val address = item.contentOrNull
             if (address != null) {
-                RecentAddress(address = address, name = "Meshtastic")
+                RecentAddress(address = address, name = "Pangea")
             } else {
                 Logger.w { "Skipping malformed recent address primitive: $item" }
                 null

@@ -40,6 +40,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.acknowledgements
 import org.meshtastic.core.resources.library_count
+import org.meshtastic.core.resources.copyright_notice
 import org.meshtastic.core.resources.open_source_description
 import org.meshtastic.core.resources.open_source_libraries
 import org.meshtastic.core.ui.component.MainAppBar
@@ -121,6 +122,12 @@ private fun AboutHeader() {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
+        )
+        Text(
+            text = stringResource(Res.string.copyright_notice),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
         )
     }
 }

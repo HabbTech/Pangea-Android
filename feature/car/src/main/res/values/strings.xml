@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="car_app_name">Meshtastic</string>
+    <string name="car_app_name">Pangea</string>
     <string name="car_dismiss">Dismiss</string>
     <string name="car_disconnected">Disconnected</string>
     <string name="car_emergency_from">⚠️ Emergency from %s</string>
@@ -10,7 +10,7 @@
     <string name="car_no_messages">No messages yet</string>
     <string name="car_no_nodes">No nodes heard</string>
     <string name="car_node_not_found">Node not found</string>
-    <string name="car_onboarding_text">Open Meshtastic on your phone to configure channels and connect to a radio.</string>
+    <string name="car_onboarding_text">Open Pangea on your phone to configure channels and connect to a radio.</string>
     <string name="car_onboarding_title">Setup Required</string>
     <string name="car_reconnected">Reconnected to radio</string>
     <string name="car_reconnecting">Radio connection lost. Will reconnect automatically.</string>

@@ -58,7 +58,7 @@ open class CommonGetDiscoveredDevicesUseCase(
                 recentList,
                 usbList,
             ->
-            val defaultName = safeCatchingAll { getStringSuspend(Res.string.meshtastic) }.getOrDefault("Meshtastic")
+            val defaultName = safeCatchingAll { getStringSuspend(Res.string.meshtastic) }.getOrDefault("Pangea")
             val processedTcp = processTcpServices(resolved, recentList, defaultName)
             val discoveredTcpAddresses = processedTcp.mapTo(mutableSetOf()) { it.fullAddress }
 
