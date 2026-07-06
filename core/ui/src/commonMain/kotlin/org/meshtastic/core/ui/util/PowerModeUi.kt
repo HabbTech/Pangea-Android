@@ -16,6 +16,7 @@
  */
 package org.meshtastic.core.ui.util
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.StringResource
 import org.meshtastic.core.model.PowerMode
@@ -51,6 +52,7 @@ val PowerMode.summaryRes: StringResource
 
 /** Icon for a [PowerMode] (nearest Material equivalents of the iOS bolt/hiking/mountain symbols). */
 val PowerMode.icon: ImageVector
+    @Composable
     get() =
         when (this) {
             PowerMode.STANDARD -> MeshtasticIcons.ElectricPower
