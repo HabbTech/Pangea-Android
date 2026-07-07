@@ -19,6 +19,7 @@ package org.meshtastic.feature.settings.component
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.meshtastic.core.model.PowerMode
@@ -37,11 +38,11 @@ import org.meshtastic.core.ui.util.summaryRes
  * [PowerModeManager]; the OS battery saver may clamp the effective mode above the selection.
  */
 @Composable
-fun PowerModeSection() {
+fun PowerModeSection(modifier: Modifier = Modifier) {
     val powerModeManager: PowerModeManager = koinInject()
     val selectedMode by powerModeManager.selectedMode.collectAsState()
 
-    ExpressiveSection(title = stringResource(Res.string.power_mode)) {
+    ExpressiveSection(title = stringResource(Res.string.power_mode), modifier = modifier) {
         PowerMode.entries.forEach { mode ->
             ListItem(
                 text = stringResource(mode.labelRes),
