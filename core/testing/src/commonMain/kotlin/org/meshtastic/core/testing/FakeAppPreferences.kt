@@ -19,6 +19,7 @@ package org.meshtastic.core.testing
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.meshtastic.core.model.DeviceType
+import org.meshtastic.core.model.PowerMode
 import org.meshtastic.core.repository.AnalyticsPrefs
 import org.meshtastic.core.repository.AppFunctionsPrefs
 import org.meshtastic.core.repository.AppPreferences
@@ -90,6 +91,12 @@ class FakeUiPrefs : UiPrefs {
 
     override fun setExpertModeEnabled(enabled: Boolean) {
         expertModeEnabled.value = enabled
+    }
+
+    override val powerMode = MutableStateFlow(PowerMode.STANDARD)
+
+    override fun setPowerMode(mode: PowerMode) {
+        powerMode.value = mode
     }
 
     override val theme = MutableStateFlow(0)
