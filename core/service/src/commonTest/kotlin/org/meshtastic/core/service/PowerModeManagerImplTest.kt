@@ -44,8 +44,7 @@ class PowerModeManagerImplTest {
             every { powerMode } returns powerModeFlow
             every { setPowerMode(any()) } calls { (mode: PowerMode) -> powerModeFlow.value = mode }
         }
-    private val powerSaveSource =
-        mock<SystemPowerSaveSource> { every { isPowerSaveMode } returns powerSaveFlow }
+    private val powerSaveSource = mock<SystemPowerSaveSource> { every { isPowerSaveMode } returns powerSaveFlow }
 
     private fun createManager() = PowerModeManagerImpl(uiPrefs, powerSaveSource, dispatchers)
 

@@ -39,8 +39,8 @@ import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryBadges
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.acknowledgements
-import org.meshtastic.core.resources.library_count
 import org.meshtastic.core.resources.copyright_notice
+import org.meshtastic.core.resources.library_count
 import org.meshtastic.core.resources.open_source_description
 import org.meshtastic.core.resources.open_source_libraries
 import org.meshtastic.core.ui.component.MainAppBar

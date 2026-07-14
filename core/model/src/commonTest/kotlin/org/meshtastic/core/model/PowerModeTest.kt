@@ -55,6 +55,7 @@ class PowerModeTest {
                     assertTrue(mode.allowsWidgetRefresh)
                     assertEquals(0, mode.locationIntervalFloorSecs)
                 }
+
                 PowerMode.TRAIL -> {
                     assertTrue(mode.allowsContinuousLocation)
                     assertTrue(mode.allowsWeather)
@@ -63,6 +64,7 @@ class PowerModeTest {
                     assertTrue(mode.allowsWidgetRefresh)
                     assertEquals(300, mode.locationIntervalFloorSecs)
                 }
+
                 PowerMode.EXPEDITION -> {
                     assertFalse(mode.allowsContinuousLocation)
                     assertFalse(mode.allowsWeather)

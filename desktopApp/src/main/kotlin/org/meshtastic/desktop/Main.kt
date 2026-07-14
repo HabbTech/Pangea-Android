@@ -386,10 +386,7 @@ private fun ApplicationScope.MeshtasticWindow(
                     multiBackstack.activeBackStack.add(SettingsRoute.About)
                 },
             )
-        CompositionLocalProvider(
-            LocalEventBranding provides eventEdition,
-            LocalPowerModeMenu provides powerModeMenu,
-        ) {
+        CompositionLocalProvider(LocalEventBranding provides eventEdition, LocalPowerModeMenu provides powerModeMenu) {
             AppTheme(darkTheme = isDarkTheme) { DesktopMainScreen(uiViewModel, multiBackstack) }
         }
     }

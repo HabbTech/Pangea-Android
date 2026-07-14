@@ -191,7 +191,14 @@ private fun EventAwareBranding() {
                 expanded = showMenu,
                 state = powerModeMenu,
                 onDismiss = { showMenu = false },
-                onShowEventInfo = if (eventEdition != null) fun() { showSheet = true } else null,
+                onShowEventInfo =
+                if (eventEdition != null) {
+                    fun() {
+                        showSheet = true
+                    }
+                } else {
+                    null
+                },
             )
         }
     }

@@ -20,8 +20,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import org.meshtastic.core.model.PowerMode
 
 /**
- * State and callbacks for the nav-bar logo's Power Mode menu. Provided at the app root (where DI and root
- * navigation are available); null hides the menu and the logo falls back to its pre-Power-Mode behavior.
+ * State and callbacks for the nav-bar logo's Power Mode menu. Provided at the app root (where DI and root navigation
+ * are available); null hides the menu and the logo falls back to its pre-Power-Mode behavior.
  */
 data class PowerModeMenuState(
     val currentMode: PowerMode,

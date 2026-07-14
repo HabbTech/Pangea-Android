@@ -17,8 +17,8 @@
 package org.meshtastic.core.model
 
 /**
- * Three-tier app-side power profile. Feature sites read the gate properties below instead of branching on the raw
- * enum, so the meaning of each tier stays defined in one place.
+ * Three-tier app-side power profile. Feature sites read the gate properties below instead of branching on the raw enum,
+ * so the meaning of each tier stays defined in one place.
  *
  * Ordinal order encodes aggressiveness: [STANDARD] < [TRAIL] < [EXPEDITION].
  */
@@ -31,6 +31,7 @@ enum class PowerMode {
 
     /** Multi-day off-grid tuning: trades convenience for battery. */
     EXPEDITION,
+
     ;
 
     /** Continuous phone-GPS sharing to the mesh is allowed. */

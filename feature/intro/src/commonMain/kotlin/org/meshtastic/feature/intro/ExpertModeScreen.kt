@@ -54,8 +54,8 @@ import org.meshtastic.core.ui.icon.VisibilityOff
 import org.meshtastic.core.ui.theme.AppTheme
 
 /**
- * Informational final step of the intro flow describing Expert Mode: who it is for, what it hides, and where to
- * toggle it later. Deliberately has no inline toggle - advanced users opt in from Settings.
+ * Informational final step of the intro flow describing Expert Mode: who it is for, what it hides, and where to toggle
+ * it later. Deliberately has no inline toggle - advanced users opt in from Settings.
  *
  * @param onContinue Callback invoked when the user finishes the intro flow from this screen.
  */
