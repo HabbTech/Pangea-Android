@@ -851,7 +851,7 @@
     <string name="intro_expert_hidden_options_desc">Some settings are hidden when Expert Mode is off. They are still available — just tucked away to keep the interface clean for everyday use.</string>
     <string name="intro_expert_mode_title">Expert Mode</string>
     <string name="intro_expert_standard_user">Standard User</string>
-    <string name="intro_expert_standard_user_desc">You use Pangea for messaging, sharing locations, and staying connected. You don\'t need to adjust radio or device settings.</string>
+    <string name="intro_expert_standard_user_desc">You use Pangea for messaging, sharing locations, and staying connected. You don't need to adjust radio or device settings.</string>
     <string name="intro_show">Show Introduction</string>
     <string name="intro_welcome">Welcome to</string>
     <string name="ip">IP</string>
@@ -1353,7 +1353,7 @@
     <string name="power_mode_expedition">Expedition</string>
     <string name="power_mode_expedition_summary">Multi-day off-grid tuning. Continuous GPS off, live updates off, widget refresh paused, background auto-connect off. Trades convenience for battery.</string>
     <string name="power_mode_standard">Standard</string>
-    <string name="power_mode_standard_summary">All features on. Best when your phone is charged or you\'re near power.</string>
+    <string name="power_mode_standard_summary">All features on. Best when your phone is charged or you're near power.</string>
     <string name="power_mode_summary">Choose how aggressively the app saves battery. Battery Saver on your phone temporarily applies Expedition.</string>
     <string name="power_mode_trail">Trail</string>
     <string name="power_mode_trail_summary">Day-trip tuning. Position sharing slows down and background work is reduced, without noticeable feature loss.</string>
