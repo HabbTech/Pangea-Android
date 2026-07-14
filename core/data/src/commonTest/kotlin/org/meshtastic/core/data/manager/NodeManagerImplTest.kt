@@ -188,7 +188,7 @@ class NodeManagerImplTest {
 
         assertNotNull(result)
         assertEquals(nodeNum, result.num)
-        assertTrue(result.user.long_name.startsWith("Meshtastic"))
+        assertTrue(result.user.long_name.startsWith("Pangea"))
         assertEquals(NodeAddress.numToDefaultId(nodeNum), result.user.id)
     }
 
