@@ -23,8 +23,8 @@ import kotlin.test.assertEquals
 /**
  * Canary for the Pangea brand palette - an INTENTIONAL divergence from upstream Meshtastic green.
  *
- * If this test fails after an upstream merge or an AI-agent session, the Pangea palette was clobbered:
- * restore the values below, do NOT update the expectations. Authority: design/PANGEA-BRAND.md.
+ * If this test fails after an upstream merge or an AI-agent session, the Pangea palette was clobbered: restore the
+ * values below, do NOT update the expectations. Authority: design/PANGEA-BRAND.md.
  */
 class PangeaPaletteTest {
 
