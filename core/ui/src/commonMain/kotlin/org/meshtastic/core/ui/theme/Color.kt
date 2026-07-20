@@ -19,12 +19,15 @@ package org.meshtastic.core.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ─── Meshtastic Design Standards v1.3 ───
-// Primary: Pangea Fossil (brand #F05511; text roles use darkened #C4430D / light #FF9F6B) | Secondary: Neutral 600 #555668
+// Primary: Pangea Fossil (brand #F05511; text roles use darkened #C4430D / light #FF9F6B)
+// Secondary: Neutral 600 #555668
 // Tertiary: Blue 700 #2855A8 | Neutral: #2C2D3C | Neutral Variant: #303245
 // See: standards/meshtastic_design_standards_v1_3.md §8
 
 // ─── Light Scheme (§8.2) ───
-val primaryLight = Color(0xFFC4430D) // PANGEA BRAND: darkened Fossil (#F05511 -> AA 4.68 on light) — intentional divergence from Meshtastic green; see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
+// PANGEA BRAND: darkened Fossil (#F05511 -> AA 4.68 on light) — intentional divergence from Meshtastic
+// green; see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
+val primaryLight = Color(0xFFC4430D)
 val onPrimaryLight = Color(0xFFFFFFFF) // 5.05 on primary
 val primaryContainerLight = Color(0xFFFFDBCB) // Fossil 90
 val onPrimaryContainerLight = Color(0xFF3B0900) // Fossil 10 (13.26 on container)
@@ -61,7 +64,8 @@ val surfaceContainerHighLight = Color(0xFFE0E1EB) // Interpolated 100↔200
 val surfaceContainerHighestLight = Color(0xFFD5D6E0) // Neutral 200
 
 // ─── Dark Scheme (§8.3) ───
-val primaryDark = Color(0xFFFF9F6B) // PANGEA BRAND: light Fossil (8.48 on dark surface) — see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
+// PANGEA BRAND: light Fossil (8.48 on dark surface) — see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
+val primaryDark = Color(0xFFFF9F6B)
 val onPrimaryDark = Color(0xFF4A1A00) // Fossil 15 (7.24 on primary)
 val primaryContainerDark = Color(0xFF7A2E04) // Fossil 30
 val onPrimaryContainerDark = Color(0xFFFFDBCB) // Fossil 90 (7.32 on container)
