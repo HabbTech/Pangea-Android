@@ -11,7 +11,7 @@ You are an expert Android/KMP engineer. Maintain architectural boundaries, use M
   - `.skills/project-overview/` - Codebase map, namespacing, **Bootstrap Steps**.
   - `.skills/kmp-architecture/` - Expect/actual, source-sets, conventions.
   - `.skills/compose-ui/` - Adaptive UI, **String Resources (consult strings-index.txt first)**.
-  - `.skills/design-standards/` - **Visual design standards** (brand colors, M3 tokens, MeshtasticIcons, accessibility); upstream `meshtastic/design` is source of truth.
+  - `.skills/design-standards/` - **Visual design standards** (M3 tokens, MeshtasticIcons, accessibility). Two-tier authority: **brand tokens are Pangea-owned** (`design/PANGEA-BRAND.md`, enforced by `PangeaPaletteTest`); upstream `meshtastic/design` governs everything else.
   - `.skills/navigation-and-di/` - Navigation 3 & Koin annotations.
   - `.skills/testing-ci/` - Validation commands, **CI Architecture**.
   - `.skills/ci-cost-control/` - **CI Budgeting & Monitoring**.

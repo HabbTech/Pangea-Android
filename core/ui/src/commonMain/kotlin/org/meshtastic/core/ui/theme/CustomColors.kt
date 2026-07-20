@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 // ─── Brand Colors (Design Standards v1.3) ───
 val MeshtasticGreen = Color(0xFF67EA94) // Green 500 — Brand Accent
 val MeshtasticAlt = Color(0xFF2C2D3C) // Neutral 800 — Brand Primary
+val PangeaFossil = Color(0xFFF05511) // PANGEA brand mark ("FOSSIL") — usage rules in design/PANGEA-BRAND.md: never white text on it, never as text on light surfaces
 
 // ─── Neutral Scale ───
 object NeutralPalette {

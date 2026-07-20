@@ -3,9 +3,11 @@
 ## Description
 Android-specific guidance for applying the Meshtastic design standards. All visual rules, color palettes, accessibility requirements, and cross-platform conventions live upstream.
 
-> **Source of truth:** [`meshtastic/design/standards/`](https://github.com/meshtastic/design/tree/master/standards)
-> Read `meshtastic_design_standards_latest.md` (a pointer to the current versioned spec — `meshtastic_design_standards_v1_4.md` at time of writing) for the full spec (colors, M3 mapping, accessibility, units/locale, agent checklist).
-> If this skill diverges from upstream, **upstream wins**.
+> **Source of truth — two-tier (Pangea fork):**
+>
+> **Brand tokens — Pangea wins.** The M3 `primary` family (`primary`, `onPrimary`, `primaryContainer`, `onPrimaryContainer`, `inversePrimary`, both modes), the `PangeaFossil` brand mark, and launcher/brand imagery are governed by [`design/PANGEA-BRAND.md`](../../design/PANGEA-BRAND.md) **in this repo**. These INTENTIONALLY diverge from Meshtastic green. Never "fix" them to match upstream — a failing `PangeaPaletteTest` (core/ui) means exactly that mistake happened.
+>
+> **Everything else — upstream wins.** Components, spacing, typography, motion, status colours, units/locale: [`meshtastic/design/standards/`](https://github.com/meshtastic/design/tree/main/standards) remains authoritative (`meshtastic_design_standards_latest.md` → `meshtastic_design_standards_v1_4.md` at time of writing). If this skill diverges from upstream on those matters, upstream wins.
 
 ## 1. How to Use the Standards
 
@@ -25,7 +27,7 @@ The upstream standards define M3 role mappings (Section 8). In this codebase:
 ### Brand Colors → Compose
 | Standard Name | Hex | Compose Usage |
 |---------------|-----|---------------|
-| Primary | `#2C2D3C` | `MaterialTheme.colorScheme.primary` |
+| Pangea Primary (light) | `#C4430D` | `MaterialTheme.colorScheme.primary` — darkened Fossil, AA-safe as text |
 | Accent | `#67EA94` | `MaterialTheme.colorScheme.tertiary` (never as text on light bg) |
 | Green 600 | `#3FB86D` | Use for success text on light backgrounds |
 | Error | `#E05252` | `MaterialTheme.colorScheme.error` |

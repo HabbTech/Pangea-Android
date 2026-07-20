@@ -19,15 +19,15 @@ package org.meshtastic.core.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ─── Meshtastic Design Standards v1.3 ───
-// Primary: Green 700 #2D8F52 | Secondary: Neutral 600 #555668
+// Primary: Pangea Fossil (brand #F05511; text roles use darkened #C4430D / light #FF9F6B) | Secondary: Neutral 600 #555668
 // Tertiary: Blue 700 #2855A8 | Neutral: #2C2D3C | Neutral Variant: #303245
 // See: standards/meshtastic_design_standards_v1_3.md §8
 
 // ─── Light Scheme (§8.2) ───
-val primaryLight = Color(0xFF007AFF) // iOS systemBlue (light) — Pangea accent, diverges from upstream Green 700
-val onPrimaryLight = Color(0xFFFFFFFF)
-val primaryContainerLight = Color(0xFFD3E7FF) // Blue 300 (iOS-derived)
-val onPrimaryContainerLight = Color(0xFF001D36) // Blue 950 (iOS-derived)
+val primaryLight = Color(0xFFC4430D) // PANGEA BRAND: darkened Fossil (#F05511 -> AA 4.68 on light) — intentional divergence from Meshtastic green; see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
+val onPrimaryLight = Color(0xFFFFFFFF) // 5.05 on primary
+val primaryContainerLight = Color(0xFFFFDBCB) // Fossil 90
+val onPrimaryContainerLight = Color(0xFF3B0900) // Fossil 10 (13.26 on container)
 val secondaryLight = Color(0xFF555668) // Neutral 600
 val onSecondaryLight = Color(0xFFFFFFFF)
 val secondaryContainerLight = Color(0xFFD5D6E0) // Neutral 200
@@ -51,7 +51,7 @@ val outlineVariantLight = Color(0xFFBDBFCF) // NV 300
 val scrimLight = Color(0xFF000000)
 val inverseSurfaceLight = Color(0xFF3D3E50) // Neutral 700
 val inverseOnSurfaceLight = Color(0xFFECEDF3) // Neutral 100
-val inversePrimaryLight = Color(0xFF9CCAFF) // Blue 500 (iOS-derived)
+val inversePrimaryLight = Color(0xFFFF9F6B) // Fossil 70 (6.53 on inverseSurface)
 val surfaceDimLight = Color(0xFFD5D6E0) // Neutral 200
 val surfaceBrightLight = Color(0xFFF5F6FA) // Neutral 50
 val surfaceContainerLowestLight = Color(0xFFFFFFFF)
@@ -61,10 +61,10 @@ val surfaceContainerHighLight = Color(0xFFE0E1EB) // Interpolated 100↔200
 val surfaceContainerHighestLight = Color(0xFFD5D6E0) // Neutral 200
 
 // ─── Dark Scheme (§8.3) ───
-val primaryDark = Color(0xFF0A84FF) // iOS systemBlue (dark) — Pangea accent, diverges from upstream Green 500
-val onPrimaryDark = Color(0xFF0F1017) // Neutral 950
-val primaryContainerDark = Color(0xFF00458F) // Blue 700 (iOS-derived)
-val onPrimaryContainerDark = Color(0xFFD3E7FF) // Blue 300 (iOS-derived)
+val primaryDark = Color(0xFFFF9F6B) // PANGEA BRAND: light Fossil (8.48 on dark surface) — see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
+val onPrimaryDark = Color(0xFF4A1A00) // Fossil 15 (7.24 on primary)
+val primaryContainerDark = Color(0xFF7A2E04) // Fossil 30
+val onPrimaryContainerDark = Color(0xFFFFDBCB) // Fossil 90 (7.32 on container)
 val secondaryDark = Color(0xFFB8BAC8) // Neutral 300
 val onSecondaryDark = Color(0xFF1A1B26) // Neutral 900
 val secondaryContainerDark = Color(0xFF3D3E50) // Neutral 700
@@ -88,7 +88,7 @@ val outlineVariantDark = Color(0xFF444660) // NV 700
 val scrimDark = Color(0xFF000000)
 val inverseSurfaceDark = Color(0xFFECEDF3) // Neutral 100
 val inverseOnSurfaceDark = Color(0xFF2C2D3C) // Neutral 800
-val inversePrimaryDark = Color(0xFF007AFF) // Blue 700 = iOS systemBlue (light)
+val inversePrimaryDark = Color(0xFFC4430D) // = light-mode primary
 val surfaceDimDark = Color(0xFF0F1017) // Neutral 950
 val surfaceBrightDark = Color(0xFF3D3E50) // Neutral 700
 val surfaceContainerLowestDark = Color(0xFF0F1017) // Neutral 950

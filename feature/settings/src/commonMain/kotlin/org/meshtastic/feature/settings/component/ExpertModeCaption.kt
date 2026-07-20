@@ -22,4 +22,5 @@ import androidx.compose.ui.graphics.Color
 
 /** Color of the "Expert Mode" caption shown beneath expert-gated settings items. */
 @Composable fun expertModeCaptionColor(): Color = MaterialTheme.colorScheme.tertiary
-// fun expertModeCaptionColor(): Color = Color(0xFFFF9500) // iOS parity: the literal orange the Apple app uses
+// Note: an iOS-parity literal orange (#FF9500) was evaluated and rejected (2.04:1 on light — fails AA).
+// With the Fossil palette, brand-orange lives in colorScheme.primary; captions stay tertiary blue for contrast + distinctness.
