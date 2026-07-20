@@ -1310,6 +1310,7 @@ power_metrics_update_interval_seconds
 power_mode
 power_mode_expedition
 power_mode_expedition_summary
+power_mode_quick_access
 power_mode_standard
 power_mode_standard_summary
 power_mode_summary

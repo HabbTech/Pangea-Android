@@ -1352,6 +1352,7 @@
     <string name="power_mode">Power Mode</string>
     <string name="power_mode_expedition">Expedition</string>
     <string name="power_mode_expedition_summary">Multi-day off-grid tuning. Continuous GPS off, live updates off, widget refresh paused, background auto-connect off. Trades convenience for battery.</string>
+    <string name="power_mode_quick_access">Power Mode: %1$s</string>
     <string name="power_mode_standard">Standard</string>
     <string name="power_mode_standard_summary">All features on. Best when your phone is charged or you're near power.</string>
     <string name="power_mode_summary">Choose how aggressively the app saves battery. Battery Saver on your phone temporarily applies Expedition.</string>

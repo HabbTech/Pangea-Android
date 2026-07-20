@@ -57,6 +57,7 @@ import org.meshtastic.core.resources.about_pangea
 import org.meshtastic.core.resources.event_info
 import org.meshtastic.core.resources.ic_meshtastic
 import org.meshtastic.core.resources.navigate_back
+import org.meshtastic.core.resources.power_mode_quick_access
 import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.CalendarMonth
 import org.meshtastic.core.ui.icon.Check
@@ -152,62 +153,66 @@ fun MainAppBar(
 }
 
 /**
- * Nav-bar branding slot. When [LocalPowerModeMenu] is provided, the logo opens the Power Mode menu (with an About
- * entry, and an Event info entry while event branding is active). Without it, falls back to the original behavior:
- * event editions are tappable for their info sheet, otherwise a plain logo.
+ * Nav-bar branding slot: the plain brand mark, or the event edition's icon while event branding is active — tappable
+ * for its info sheet. Power Mode access lives in the top-bar quick-access action ([PowerModeQuickAccess]), not here.
  */
 @Composable
 private fun EventAwareBranding() {
     val eventEdition = LocalEventBranding.current
-    val powerModeMenu = LocalPowerModeMenu.current
     var showSheet by remember { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
 
-    if (powerModeMenu == null && eventEdition == null) {
+    if (eventEdition == null) {
         Icon(imageVector = vectorResource(Res.drawable.ic_meshtastic), contentDescription = null)
         return
     }
     // Every event edition is tappable for its info sheet. The icon prefers the hosted iconUrl, then a bundled
-    // drawable, then the Meshtastic logo — see EventBrandingIcon. When a Power Mode menu is provided, the logo
-    // opens that menu instead and the event sheet moves behind its About item.
-    val brandingModifier =
-        Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button) {
-            if (powerModeMenu != null) showMenu = true else showSheet = true
-        }
+    // drawable, then the Meshtastic logo — see EventBrandingIcon.
+    val brandingModifier = Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button) { showSheet = true }
+    EventBrandingIcon(edition = eventEdition, modifier = brandingModifier)
+    if (showSheet) {
+        EventInfoSheet(edition = eventEdition, onDismiss = { showSheet = false })
+    }
+}
+
+/**
+ * Top-bar quick access for Power Mode (P8): shows the currently-selected mode's icon at a glance; tapping opens the
+ * Power Mode menu. Rendered only when [LocalPowerModeMenu] is provided, i.e. on top-level screens.
+ */
+@Composable
+private fun PowerModeQuickAccess() {
+    val state = LocalPowerModeMenu.current ?: return
+    val eventEdition = LocalEventBranding.current
+    var showMenu by remember { mutableStateOf(false) }
+    var showSheet by remember { mutableStateOf(false) }
+
     Box {
-        // With Power Mode the logo is shown even outside an event, so the edition can be null here —
-        // EventBrandingIcon requires one, so fall back to the plain mark.
-        if (eventEdition != null) {
-            EventBrandingIcon(edition = eventEdition, modifier = brandingModifier)
-        } else {
+        IconButton(onClick = { showMenu = true }) {
             Icon(
-                imageVector = vectorResource(Res.drawable.ic_meshtastic),
-                contentDescription = null,
-                modifier = brandingModifier,
+                imageVector = state.currentMode.icon,
+                contentDescription =
+                stringResource(Res.string.power_mode_quick_access, stringResource(state.currentMode.labelRes)),
             )
         }
-        if (powerModeMenu != null) {
-            PowerModeMenu(
-                expanded = showMenu,
-                state = powerModeMenu,
-                onDismiss = { showMenu = false },
-                onShowEventInfo =
-                if (eventEdition != null) {
-                    fun() {
-                        showSheet = true
-                    }
-                } else {
-                    null
-                },
-            )
-        }
+        PowerModeMenu(
+            expanded = showMenu,
+            state = state,
+            onDismiss = { showMenu = false },
+            onShowEventInfo =
+            if (eventEdition != null) {
+                fun() {
+                    showSheet = true
+                }
+            } else {
+                null
+            },
+        )
     }
     if (showSheet && eventEdition != null) {
         EventInfoSheet(edition = eventEdition, onDismiss = { showSheet = false })
     }
 }
 
-/** Dropdown anchored to the nav-bar logo: Power Mode picker, About entry, and optional Event info entry. */
+/** Dropdown anchored to the top-bar quick-access action: Power Mode picker, About entry, optional Event info entry. */
 @Composable
 private fun PowerModeMenu(
     expanded: Boolean,
@@ -268,6 +273,8 @@ private fun TopBarActions(
             NodeChip(modifier = Modifier.padding(horizontal = 16.dp), node = node, onClick = onClickChip)
         }
     }
+
+    PowerModeQuickAccess()
 
     actions()
 }
