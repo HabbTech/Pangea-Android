@@ -11,4 +11,6 @@ if ($null -eq $apk) { $apk = Get-ChildItem "androidApp\build\outputs\apk\fdroid\
 if ($null -eq $apk) { throw "No APK found under androidApp\build\outputs\apk\fdroid\release" }
 Write-Host ""
 Write-Host "APK ready: $($apk.FullName)"
+Write-Host "Package:   com.geeksville.mesh.pangea  (distinct from upstream Meshtastic's"
+Write-Host "           com.geeksville.mesh, so both apps can be installed side by side)"
 Write-Host "Sideload:  adb install -r `"$($apk.FullName)`""

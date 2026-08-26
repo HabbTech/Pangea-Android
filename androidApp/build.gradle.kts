@@ -203,6 +203,13 @@ androidComponents {
     }
 
     onVariants(selector().withBuildType("release")) { variant ->
+        // Pangea installs alongside upstream Meshtastic instead of replacing it: without this the
+        // sideloaded build claims com.geeksville.mesh, so Android treats it as an update to the
+        // official app and refuses it on signature mismatch. Google-flavor identity is left alone so
+        // a supplied google-services.json keeps matching. Final store identity is still open (§7).
+        if (variant.flavorName == "fdroid") {
+            variant.applicationId.set("com.geeksville.mesh.pangea")
+        }
         if (variant.flavorName == "google") {
             val variantNameCapped = variant.name.replaceFirstChar { it.uppercase() }
             val minifyTaskName = "minify${variantNameCapped}WithR8"
