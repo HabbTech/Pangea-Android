@@ -301,13 +301,19 @@ fun MapView(
     val locationPermission = rememberLocationPermissionState()
     var triggerLocationToggleAfterPermission by remember { mutableStateOf(false) }
 
+    // Adopt [source] as the active layer: track its zoom ceiling and whether the offline-download
+    // control applies to it (satellite layers declare FLAG_NO_BULK, so the button is hidden there).
+    fun adoptTileSource(source: ITileSource): ITileSource = source.also {
+        zoomLevelMax = it.maximumZoomLevel.toDouble()
+        showDownloadButton = if (it is OnlineTileSourceBase) it.tileSourcePolicy.acceptsBulkDownload() else false
+    }
+
+    fun tileSourceForStyle(id: Int): ITileSource = adoptTileSource(CustomTileSource.getTileSource(id))
+
     fun loadOnlineTileSourceBase(): ITileSource {
         val id = mapViewModel.mapStyleId
         Logger.d { "mapStyleId from prefs: $id" }
-        return CustomTileSource.getTileSource(id).also {
-            zoomLevelMax = it.maximumZoomLevel.toDouble()
-            showDownloadButton = if (it is OnlineTileSourceBase) it.tileSourcePolicy.acceptsBulkDownload() else false
-        }
+        return tileSourceForStyle(id)
     }
 
     val nodes by mapViewModel.nodes.collectAsStateWithLifecycle()
@@ -873,9 +879,15 @@ fun MapView(
         MapStyleDialog(
             selectedMapStyle = mapViewModel.mapStyleId,
             onDismiss = { showMapStyleDialog = false },
-            onSelectMapStyle = {
-                mapViewModel.mapStyleId = it
-                map.setTileSource(loadOnlineTileSourceBase())
+            onSelectMapStyle = { styleId ->
+                mapViewModel.mapStyleId = styleId
+                // Apply the id we were just handed rather than reading it back out of prefs.
+                // MapPrefsImpl.setMapStyle() writes to DataStore from a detached coroutine, so the
+                // backing StateFlow has not emitted yet and mapPrefs.mapStyle.value still holds the
+                // PREVIOUS id here — loadOnlineTileSourceBase() would re-apply the old layer and the
+                // map would appear not to change. The write did land by the next process start,
+                // which is why switching layers only seemed to work after restarting the app.
+                map.setTileSource(tileSourceForStyle(styleId))
             },
         )
     }

@@ -22,6 +22,7 @@ import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -157,6 +158,15 @@ class MeshServiceOrchestrator(
         // but a mid-session device switch via setDeviceAddress() races this DB switch against the
         // transport restart. Pre-existing behavior, not introduced by the lifecycle refactor.
         radioInterfaceService.currentDeviceAddressFlow
+            // Only a real selected device may move the active DB. buildDbName() collapses every
+            // no-device form (null, blank, "n", "null", ".n", "default") onto the shared, empty
+            // DEFAULT_DB, so an unfiltered emission — service restart, transport teardown, a
+            // dropped BLE link — used to swap the whole UI onto that empty database. To the user
+            // that reads as "all my conversations were cleared"; the messages are untouched in the
+            // per-device DB, nothing is pointing at it any more. Nothing should move the active DB
+            // away from a real device until a different real device is selected, so apply the same
+            // isValidDeviceAddress gate the cold-start path above already uses.
+            .filter(::isValidDeviceAddress)
             .onEach { addr ->
                 safeCatching { databaseManager.switchActiveDatabase(addr) }
                     .onFailure { err -> Logger.e(err) { "Failed to switch active database on address update" } }
