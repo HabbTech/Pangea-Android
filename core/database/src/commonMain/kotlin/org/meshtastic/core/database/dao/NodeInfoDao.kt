@@ -33,6 +33,16 @@ import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.mergePowerChannelLabel
 import org.meshtastic.proto.HardwareModel
 
+/**
+ * Matches a node name this app generated as a placeholder rather than one the node reported.
+ *
+ * Must stay in step with the generator in `NodeManagerImpl.createDefaultNode` — when the rebrand changed that to
+ * "Pangea NNNN" and this check still only matched "Meshtastic NNNN", an incoming placeholder stopped being recognised
+ * and overwrote a real stored identity. The legacy form is still accepted so rows written by pre-rebrand builds are
+ * still treated as placeholders.
+ */
+private val DEFAULT_NODE_NAME_REGEX = Regex("^(?:Pangea|Meshtastic) [0-9a-fA-F]{4}$")
+
 @Suppress("TooManyFunctions")
 @Dao
 interface NodeInfoDao {
@@ -201,7 +211,7 @@ interface NodeInfoDao {
 
         val isPlaceholder = incomingNode.user.hw_model == HardwareModel.UNSET
         val hasExistingUser = existingNode.user.hw_model != HardwareModel.UNSET
-        val isDefaultName = incomingNode.user.long_name.matches(Regex("^Meshtastic [0-9a-fA-F]{4}$"))
+        val isDefaultName = incomingNode.user.long_name.matches(DEFAULT_NODE_NAME_REGEX)
 
         if (hasExistingUser && isPlaceholder && isDefaultName) {
             return incomingNode.copy(

@@ -78,7 +78,18 @@ private const val KEY_FINGERPRINT_HEX_LENGTH = 8
 
 internal fun publicKeyLogFingerprint(key: ByteString): String = key.sha256().hex().take(KEY_FINGERPRINT_HEX_LENGTH)
 
-private val DEFAULT_NODE_NAME_REGEX = Regex("^Meshtastic [0-9a-fA-F]{4}$")
+/** Prefix [NodeManagerImpl.createDefaultNode] gives a generated placeholder node. */
+private const val GENERATED_NODE_NAME_PREFIX = "Pangea"
+
+/**
+ * Matches a generated placeholder name, i.e. one this app invented rather than one the node reported.
+ *
+ * Derived from [GENERATED_NODE_NAME_PREFIX] so the generator and the detector cannot drift apart — when they did, no
+ * generated node was recognised as a placeholder at all, which silently broke eviction ordering and let a telemetry
+ * placeholder lock out a renumbering peer. The legacy "Meshtastic NNNN" form is still accepted so placeholders
+ * persisted by pre-rebrand builds keep being recognised.
+ */
+private val DEFAULT_NODE_NAME_REGEX = Regex("^(?:$GENERATED_NODE_NAME_PREFIX|Meshtastic) [0-9a-fA-F]{4}$")
 
 /** Implementation of [NodeManager] that maintains an in-memory database of the mesh. */
 @Suppress("LongParameterList", "TooManyFunctions", "CyclomaticComplexMethod", "LargeClass")
@@ -1073,7 +1084,7 @@ class NodeManagerImpl(
             user =
             User(
                 id = userId,
-                long_name = "Pangea ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}",
+                long_name = "$GENERATED_NODE_NAME_PREFIX ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}",
                 short_name = userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH),
                 hw_model = HardwareModel.UNSET,
             ),
