@@ -74,7 +74,6 @@ import org.meshtastic.core.ui.icon.Upload
 import org.meshtastic.feature.settings.component.ExpressiveSection
 import org.meshtastic.feature.settings.component.expertModeCaptionColor
 import org.meshtastic.feature.settings.navigation.ConfigRoute
-import org.meshtastic.feature.settings.navigation.ModuleRoute
 
 @Composable
 fun RadioConfigItemList(
