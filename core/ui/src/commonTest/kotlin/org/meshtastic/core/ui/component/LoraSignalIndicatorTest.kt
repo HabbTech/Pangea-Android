@@ -23,25 +23,69 @@ import kotlin.test.assertEquals
 
 /**
  * Tests for preset-relative signal-quality rating (issue #5446). Quality is judged from SNR relative to the modem
- * preset's demodulation floor; RSSI is intentionally not part of the rating.
+ * preset's demodulation floor. RSSI only joins the rating when a noise floor is also known (design#15, #6826) — see the
+ * "noise-floor blend" tests below; with either missing, RSSI stays display-only.
  */
 class LoraSignalIndicatorTest {
 
+    // Firmware spreading factors (MeshRadio.h) paired with literal Semtech demodulation floors.
+    // Keep expected values independent of the production formula.
+    private val expectedFloors =
+        mapOf(
+            ModemPreset.SHORT_TURBO to (7 to -7.5f),
+            ModemPreset.SHORT_FAST to (7 to -7.5f),
+            ModemPreset.SHORT_SLOW to (8 to -10f),
+            ModemPreset.MEDIUM_FAST to (9 to -12.5f),
+            ModemPreset.MEDIUM_SLOW to (10 to -15f),
+            ModemPreset.MEDIUM_TURBO to (9 to -12.5f),
+            ModemPreset.LONG_TURBO to (11 to -17.5f),
+            ModemPreset.LONG_FAST to (11 to -17.5f),
+            ModemPreset.LONG_MODERATE to (11 to -17.5f),
+            ModemPreset.LONG_SLOW to (12 to -20f),
+            ModemPreset.VERY_LONG_SLOW to (12 to -20f),
+            ModemPreset.LITE_FAST to (9 to -12.5f),
+            ModemPreset.LITE_SLOW to (10 to -15f),
+            ModemPreset.NARROW_FAST to (7 to -7.5f),
+            ModemPreset.NARROW_SLOW to (8 to -10f),
+            ModemPreset.TINY_FAST to (7 to -7.5f),
+            ModemPreset.TINY_SLOW to (8 to -10f),
+        )
+
     @Test
-    fun `snrLimit follows spreading-factor demod floor per preset`() {
-        assertEquals(-7.5f, ModemPreset.SHORT_FAST.snrLimit) // SF7
-        assertEquals(-7.5f, ModemPreset.SHORT_TURBO.snrLimit) // SF7
-        assertEquals(-10f, ModemPreset.SHORT_SLOW.snrLimit) // SF8
-        assertEquals(-12.5f, ModemPreset.MEDIUM_FAST.snrLimit) // SF9
-        assertEquals(-15f, ModemPreset.MEDIUM_SLOW.snrLimit) // SF10
-        assertEquals(-17.5f, ModemPreset.LONG_FAST.snrLimit) // SF11
-        assertEquals(-17.5f, ModemPreset.LONG_MODERATE.snrLimit) // SF11
+    fun `every preset's snrLimit is its spreading factor's demod floor`() {
+        expectedFloors.forEach { (preset, expected) ->
+            val (sf, floor) = expected
+            assertEquals(floor, preset.snrLimit, "$preset (SF$sf)")
+        }
+    }
+
+    @Test
+    fun `presets sharing a spreading factor share a floor regardless of bandwidth`() {
+        // Bandwidth changes sensitivity in dBm, not the demodulation SNR floor.
+        assertEquals(ModemPreset.LONG_FAST.snrLimit, ModemPreset.LONG_TURBO.snrLimit)
+        assertEquals(ModemPreset.MEDIUM_FAST.snrLimit, ModemPreset.MEDIUM_TURBO.snrLimit)
+        assertEquals(ModemPreset.SHORT_FAST.snrLimit, ModemPreset.SHORT_TURBO.snrLimit)
+        assertEquals(ModemPreset.SHORT_FAST.snrLimit, ModemPreset.TINY_FAST.snrLimit)
+    }
+
+    @Test
+    fun `every ModemPreset is covered by the firmware spreading-factor table`() {
+        // A preset added to the proto without a row above would otherwise be rated against LongFast's floor silently.
+        val uncovered =
+            ModemPreset.entries
+                .filter { it.name != "UNSET" && it.name != "UNRECOGNIZED" }
+                .filter { it !in expectedFloors }
+        assertEquals(emptyList(), uncovered, "presets missing from expectedFloors")
+    }
+
+    @Test
+    fun `LongTurbo is rated at its SF11 floor rather than SF9`() {
+        assertEquals(-17.5f, ModemPreset.LONG_TURBO.snrLimit)
+        assertEquals(Quality.GOOD, determineSignalQuality(snr = -15f, modemPreset = ModemPreset.LONG_TURBO))
     }
 
     @Test
     fun `LONG_SLOW uses physically-correct SF12 floor`() {
-        // Meshtastic-Apple's snrLimit() returns -7.5 here (the SF7 value, an apparent bug). The correct SF12
-        // demodulation floor is -20 dB — see #5446.
         assertEquals(-20f, ModemPreset.LONG_SLOW.snrLimit)
         assertEquals(-20f, ModemPreset.VERY_LONG_SLOW.snrLimit)
     }
@@ -78,9 +122,64 @@ class LoraSignalIndicatorTest {
     }
 
     @Test
-    fun `RSSI does not influence the rating`() {
-        // Identical SNR + preset always yields the same verdict regardless of any RSSI (RSSI is display-only now).
-        val good = determineSignalQuality(snr = -5f, modemPreset = ModemPreset.LONG_FAST)
-        assertEquals(Quality.GOOD, good)
+    fun `a zero SNR reading is rated rather than treated as missing`() {
+        // 0 dB sits well above every preset's demod floor, so it is an excellent signal — not an absent one. If a
+        // presence check ever folds zero into "unknown", this is the reading that disappears.
+        assertEquals(Quality.GOOD, determineSignalQuality(snr = 0f, modemPreset = ModemPreset.LONG_FAST))
+        assertEquals(Quality.GOOD, determineSignalQuality(snr = 0f, modemPreset = ModemPreset.SHORT_FAST))
+    }
+
+    @Test
+    fun `absent SNR is not a quality band`() {
+        // Quality has no member for "no measurement": callers must pass a non-null SNR, and the composables render
+        // absence as Unknown rather than mapping it onto NONE (which asserts a measured, undemodulable signal).
+        assertEquals(4, Quality.entries.size)
+        assertEquals(listOf(Quality.NONE, Quality.BAD, Quality.FAIR, Quality.GOOD), Quality.entries.toList())
+    }
+
+    @Test
+    fun `RSSI alone does not influence the rating`() {
+        // Without a noise floor, identical SNR + preset always yields the same verdict regardless of any RSSI.
+        val withoutNoiseFloor = determineSignalQuality(snr = -5f, modemPreset = ModemPreset.LONG_FAST, rssi = -140)
+        assertEquals(Quality.GOOD, withoutNoiseFloor)
+    }
+
+    @Test
+    fun `noise floor alone does not influence the rating`() {
+        // Without an RSSI reading, a noise floor alone can't form a margin either.
+        val withoutRssi = determineSignalQuality(snr = -5f, modemPreset = ModemPreset.LONG_FAST, noiseFloor = -70)
+        assertEquals(Quality.GOOD, withoutRssi)
+    }
+
+    @Test
+    fun `noise-floor blend picks the worse tier when RSSI margin is worse than SNR margin`() {
+        val preset = ModemPreset.LONG_FAST // limit -17.5
+        // SNR -10 -> margin +7.5 -> GOOD alone. rssi(-90) - noiseFloor(-70) = -20; margin -2.5 -> FAIR, the worse tier.
+        val quality = determineSignalQuality(snr = -10f, modemPreset = preset, rssi = -90, noiseFloor = -70)
+        assertEquals(Quality.FAIR, quality)
+    }
+
+    @Test
+    fun `same SNR rates differently depending on the RSSI margin alone`() {
+        // Differential proof the blend is actually wired in, not just accepting-and-ignoring rssi/noiseFloor: hold
+        // SNR fixed at a FAIR-alone reading (-22, margin -4.5 on LongFast's -17.5 limit) and vary only rssi/noiseFloor.
+        val preset = ModemPreset.LONG_FAST
+        val snr = -22f
+
+        // rssi(-94) - noiseFloor(-70) = -24; margin -6.5 -> BAD, worse than SNR's own FAIR -> downgrades the result.
+        val withBadRssiMargin = determineSignalQuality(snr = snr, modemPreset = preset, rssi = -94, noiseFloor = -70)
+        assertEquals(Quality.BAD, withBadRssiMargin)
+
+        // rssi(-60) - noiseFloor(-70) = 10; margin +27.5 -> GOOD, better than SNR's FAIR -> SNR stays the worse tier.
+        val withGoodRssiMargin = determineSignalQuality(snr = snr, modemPreset = preset, rssi = -60, noiseFloor = -70)
+        assertEquals(Quality.FAIR, withGoodRssiMargin)
+    }
+
+    @Test
+    fun `noise-floor blend can downgrade a good SNR reading all the way to NONE`() {
+        val preset = ModemPreset.LONG_FAST
+        // SNR -10 -> margin +7.5 -> GOOD alone. rssi(-115) - noiseFloor(-70) = -45; margin -27.5 -> NONE.
+        val quality = determineSignalQuality(snr = -10f, modemPreset = preset, rssi = -115, noiseFloor = -70)
+        assertEquals(Quality.NONE, quality)
     }
 }

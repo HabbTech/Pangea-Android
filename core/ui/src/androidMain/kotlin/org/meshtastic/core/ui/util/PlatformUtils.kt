@@ -56,9 +56,32 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.meshtastic.core.common.gpsDisabled
+import org.meshtastic.core.common.hasBluetoothLe
 import org.meshtastic.core.common.util.CommonUri
 import org.meshtastic.core.common.util.ioDispatcher
 import java.net.URLEncoder
+
+@Composable
+actual fun rememberShareText(): (text: String, subject: String) -> Unit {
+    val context = LocalContext.current
+    return remember(context) {
+        { text, subject ->
+            try {
+                val send =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, text)
+                        putExtra(Intent.EXTRA_SUBJECT, subject)
+                    }
+                context.startActivity(
+                    Intent.createChooser(send, subject).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) },
+                )
+            } catch (ex: ActivityNotFoundException) {
+                Logger.d { "No app available to share to: $ex" }
+            }
+        }
+    }
+}
 
 @Composable
 actual fun rememberOpenNfcSettings(): () -> Unit {
@@ -144,6 +167,15 @@ actual fun rememberSaveFileLauncher(
             launcher.launch(intent)
         }
     }
+}
+
+@Composable
+actual fun rememberOpenDocumentTreeLauncher(onTreeUriSelect: (CommonUri?) -> Unit): () -> Unit {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            onTreeUriSelect(uri?.toKmpUri())
+        }
+    return remember(launcher) { { launcher.launch(null) } }
 }
 
 @Composable
@@ -255,6 +287,15 @@ actual fun rememberOpenWifiSettings(): () -> Unit {
             }
         }
     }
+}
+
+actual val bleScanRequiresLocationServices: Boolean =
+    android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S
+
+@Composable
+actual fun isBluetoothSupported(): Boolean {
+    val context = LocalContext.current
+    return remember(context) { context.hasBluetoothLe() }
 }
 
 @Composable

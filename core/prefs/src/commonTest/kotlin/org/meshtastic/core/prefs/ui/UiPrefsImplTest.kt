@@ -21,6 +21,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -30,6 +31,7 @@ import okio.FileSystem
 import okio.Path
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.DeviceType
+import org.meshtastic.core.prefs.di.asUiDataStore
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -58,7 +60,7 @@ class UiPrefsImplTest {
                 produceFile = { tmpDir / "test.preferences_pb" },
             )
         val dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher)
-        prefs = UiPrefsImpl(dataStore, dispatchers)
+        prefs = UiPrefsImpl(dataStore.asUiDataStore(), dispatchers)
     }
 
     @AfterTest
@@ -150,6 +152,19 @@ class UiPrefsImplTest {
         }
 
         assertEquals(DeviceType.USB, prefs.selectedConnectionTransport.value)
+    }
+
+    @Test
+    fun `full message timestamps default to false`() =
+        testScope.runTest { assertFalse(prefs.showFullMessageTimestamps.value) }
+
+    @Test
+    fun `full message timestamps persist when enabled`() = testScope.runTest {
+        prefs.setShowFullMessageTimestamps(true)
+
+        val stored = dataStore.data.first { it[UiPrefsImpl.KEY_SHOW_FULL_MESSAGE_TIMESTAMPS] == true }
+        assertTrue(prefs.showFullMessageTimestamps.value)
+        assertEquals(true, stored[UiPrefsImpl.KEY_SHOW_FULL_MESSAGE_TIMESTAMPS])
     }
 
     @Test

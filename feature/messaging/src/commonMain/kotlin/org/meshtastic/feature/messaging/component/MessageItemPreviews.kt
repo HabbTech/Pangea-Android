@@ -35,6 +35,7 @@ import org.meshtastic.core.resources.sample_message
 import org.meshtastic.core.ui.component.preview.NodePreviewParameterProvider
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.feature.messaging.isSameGroup
+import org.meshtastic.proto.MeshPacket
 import org.meshtastic.proto.Routing
 
 @Suppress("PreviewPublic")
@@ -73,6 +74,66 @@ fun MessageItemSignedPreview() {
                     node = msg.node,
                     selected = false,
                     ourNode = NodePreviewParameterProvider().mickeyMouse,
+                    onReply = {},
+                    sendReaction = {},
+                    onShowReactions = {},
+                    onClick = {},
+                    onLongClick = {},
+                    onDoubleClick = {},
+                    onClickChip = {},
+                    onNavigateToOriginalMessage = {},
+                )
+            }
+        }
+    }
+}
+
+@Suppress("PreviewPublic")
+@PreviewLightDark
+@Composable
+fun MessageItemAckProofPreview() {
+    val ourNode = NodePreviewParameterProvider().mickeyMouse
+    val proven =
+        Message(
+            text = "Proven delivery - the addressed node signed for it.",
+            time = "14:10",
+            fromLocal = true,
+            status = MessageStatus.RECEIVED,
+            snr = null,
+            rssi = null,
+            hopsAway = 0,
+            uuid = 30L,
+            receivedTime = nowMillis,
+            node = ourNode,
+            read = true,
+            routingError = 0,
+            packetId = 7001,
+            emojis = listOf(),
+            replyId = null,
+            viaMqtt = false,
+            ackProofStatus = MeshPacket.AckProofStatus.ACK_PROOF_VALID.value,
+        )
+    val forged =
+        proven.copy(
+            text = "Somebody acked this without the key.",
+            time = "14:11",
+            uuid = 31L,
+            packetId = 7002,
+            ackProofStatus = MeshPacket.AckProofStatus.ACK_PROOF_INVALID.value,
+        )
+    val unproven = proven.copy(text = "No proof carried.", time = "14:12", uuid = 32L, ackProofStatus = 0)
+    AppTheme {
+        Column(
+            modifier =
+            Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background).padding(vertical = 16.dp),
+        ) {
+            listOf(proven, forged, unproven).forEach { msg ->
+                MessageItem(
+                    message = msg,
+                    node = msg.node,
+                    selected = false,
+                    ourNode = ourNode,
+                    isDirectMessage = true,
                     onReply = {},
                     sendReaction = {},
                     onShowReactions = {},
@@ -177,7 +238,7 @@ fun MessageItemStatusStatesPreview() {
             ),
             StatusPreviewMessage(
                 outgoingStatusPreviewMessage(
-                    text = "No ACK received",
+                    text = "Failed to deliver to mesh",
                     time = "10:04",
                     status = MessageStatus.ERROR,
                     routingError = Routing.Error.MAX_RETRANSMIT.value,
@@ -186,7 +247,7 @@ fun MessageItemStatusStatesPreview() {
             ),
             StatusPreviewMessage(
                 outgoingStatusPreviewMessage(
-                    text = "No channel selected",
+                    text = "Channel/key mismatch",
                     time = "10:05",
                     status = MessageStatus.ERROR,
                     routingError = Routing.Error.NO_CHANNEL.value,
@@ -195,7 +256,7 @@ fun MessageItemStatusStatesPreview() {
             ),
             StatusPreviewMessage(
                 outgoingStatusPreviewMessage(
-                    text = "Encrypted send failed",
+                    text = "Could not send encrypted message",
                     time = "10:06",
                     status = MessageStatus.ERROR,
                     routingError = Routing.Error.PKI_FAILED.value,
@@ -222,10 +283,82 @@ fun MessageItemStatusStatesPreview() {
             ),
             StatusPreviewMessage(
                 outgoingStatusPreviewMessage(
-                    text = "Too large to send",
+                    text = "Message is too large to send",
                     time = "10:09",
                     status = MessageStatus.ERROR,
                     routingError = Routing.Error.TOO_LARGE.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "No radio interface",
+                    time = "10:10",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.NO_INTERFACE.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "Duty cycle limit",
+                    time = "10:11",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.DUTY_CYCLE_LIMIT.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "Rate limited",
+                    time = "10:12",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.RATE_LIMIT_EXCEEDED.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "No app response",
+                    time = "10:13",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.NO_RESPONSE.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "Invalid request",
+                    time = "10:14",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.BAD_REQUEST.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "Not authorized",
+                    time = "10:15",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.NOT_AUTHORIZED.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "Admin session expired",
+                    time = "10:16",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.ADMIN_BAD_SESSION_KEY.value,
+                    node = ourNode,
+                ),
+            ),
+            StatusPreviewMessage(
+                outgoingStatusPreviewMessage(
+                    text = "Admin key not authorized",
+                    time = "10:17",
+                    status = MessageStatus.ERROR,
+                    routingError = Routing.Error.ADMIN_PUBLIC_KEY_UNAUTHORIZED.value,
                     node = ourNode,
                 ),
             ),

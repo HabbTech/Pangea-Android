@@ -28,6 +28,11 @@ data class DeviceHardware(
     val hwModel: Int = 0,
     val hwModelSlug: String = "",
     val images: List<String>? = null,
+    /**
+     * The registry's maker relationship: independent hardware, as opposed to the project's own lifecycle flag
+     * [activelySupported]. Absent and `false` mean the same thing; how the two combine is [supportTier].
+     */
+    val isMaker: Boolean = false,
     val partitionScheme: String? = null,
     val platformioTarget: String = "",
     val requiresDfu: Boolean? = null,
@@ -38,10 +43,26 @@ data class DeviceHardware(
     val requiresBootloaderUpgradeForOta: Boolean? = null,
     /** Optional URL pointing to documentation for upgrading the bootloader. */
     val bootloaderInfoUrl: String? = null,
+    /**
+     * The SoftDevice this board's firmware is linked against, or `null` when it could not be resolved. A read-time
+     * overlay like [requiresBootloaderUpgradeForOta] — never persisted.
+     *
+     * `null` means "unknown", never "the common one": destructive flows must refuse rather than assume. See
+     * [SoftDeviceVariant].
+     */
+    val softDeviceVariant: SoftDeviceVariant? = null,
     val supportLevel: Int? = null,
     val tags: List<String>? = null,
 ) {
     /** Returns true if the device architecture is ESP32-based. */
     val isEsp32Arc: Boolean
         get() = architecture.startsWith("esp32", ignoreCase = true)
+
+    /** Returns true if the device architecture is nRF52-based. */
+    val isNrf52Arc: Boolean
+        get() = architecture.startsWith("nrf52", ignoreCase = true)
+
+    /** Returns true if the device architecture is RP2040-based. */
+    val isRp2040Arc: Boolean
+        get() = architecture.startsWith("rp2040", ignoreCase = true)
 }

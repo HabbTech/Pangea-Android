@@ -21,39 +21,33 @@ on:
       run_desktop_builds:
         type: boolean
         default: false
-      run_desktop_flatpak_src:
-        type: boolean
-        default: false
       upload_artifacts:
         type: boolean
         default: true
     secrets:
       GRADLE_ENCRYPTION_KEY:
         required: false
+      DEVELOCITY_ACCESS_KEY:
+        required: false
       DATADOG_APPLICATION_ID:
         required: false
       DATADOG_CLIENT_TOKEN:
         required: false
-      GOOGLE_MAPS_API_KEY:
+      # Debug-only Maps key -- deliberately not the release GOOGLE_MAPS_API_KEY that
+      # release.yml uses. See the "Load Maps API key" step in android-check for why
+      # the two must stay separate.
+      GOOGLE_MAPS_API_KEY_DEBUG:
         required: false
-      GRADLE_CACHE_URL:
-        required: false
-      GRADLE_CACHE_USERNAME:
-        required: false
-      GRADLE_CACHE_PASSWORD:
+      GSERVICES:
         required: false
 
 env:
-  DATADOG_APPLICATION_ID: ${{ secrets.DATADOG_APPLICATION_ID }}
-  DATADOG_CLIENT_TOKEN: ${{ secrets.DATADOG_CLIENT_TOKEN }}
-  MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
   GITHUB_TOKEN: ${{ github.token }}
-  GRADLE_CACHE_URL: ${{ secrets.GRADLE_CACHE_URL }}
-  GRADLE_CACHE_USERNAME: ${{ secrets.GRADLE_CACHE_USERNAME }}
-  GRADLE_CACHE_PASSWORD: ${{ secrets.GRADLE_CACHE_PASSWORD }}
-  # Merge-queue and main-branch runs write to the Gradle caches; every other
-  # context (PRs, release tags) is a read-only consumer.
-  GRADLE_CACHE_READ_ONLY: ${{ (github.ref == 'refs/heads/main' || github.event_name == 'merge_group') && 'false' || 'true' }}
+  # Only main writes the Gradle caches. merge_group scopes are throwaway branches
+  # (per gradle/actions docs) — writes there had no reader.
+  GRADLE_CACHE_READ_ONLY: ${{ github.ref == 'refs/heads/main' && 'false' || 'true' }}
+  # Job summary as a PR comment on failure; no-ops on fork PRs (read-only token).
+  GRADLE_PR_COMMENT: ${{ github.event_name == 'pull_request' && 'on-failure' || 'never' }}
 
 jobs:
   # There is deliberately no fan-in "setup" job here. Every heavy job used to
@@ -75,9 +69,10 @@ jobs:
 
   # ── Lint & Static Analysis ──────────────────────────────────────────
   lint-check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
+      pull-requests: write
     timeout-minutes: 30
     if: inputs.run_lint == true
     env:
@@ -85,7 +80,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Full history: spotless ratchetFrom("origin/main") diffs against main.
           fetch-depth: 0
@@ -96,17 +91,27 @@ jobs:
         uses: ./.github/actions/gradle-setup
         with:
           gradle_encryption_key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          develocity_access_key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+          job_summary_pr_comment: ${{ env.GRADLE_PR_COMMENT }}
           cache_read_only: ${{ env.GRADLE_CACHE_READ_ONLY }}
+          # Disabled on Gradle 9.7.1: restoring an entry written by another runner crashes
+          # fingerprint deserialization (IsInIdeaSyncValueSource CNFE, settings-plugin
+          # classloader scope) and the job dies in ~10s before any test. A cross-machine
+          # restore is the only thing that triggers it, so it is 100% red in CI and not
+          # reproducible from a local store/reuse pair. Re-enable when that is fixed
+          # upstream; VERSION_CODE is still pinned above so entries would reuse.
+          cache_configuration_cache: 'false'
           install_jetbrains_jdk: 'true'
 
       - name: Lint, Analysis & KMP Smoke Compile
-        run: ./gradlew spotlessCheck detekt androidApp:lintFdroidDebug androidApp:lintGoogleDebug core:barcode:lintFdroidDebug core:barcode:lintGoogleDebug kmpSmokeCompile -Pci=true --continue
+        run: ./gradlew spotlessCheck detekt androidApp:lintFdroidDebug androidApp:lintGoogleDebug core:barcode:lintFdroidDebug core:barcode:lintGoogleDebug -Pci=true --continue
 
   # ── Screenshot Test Validation ──────────────────────────────────────
   screenshot-check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
+      pull-requests: write
     timeout-minutes: 20
     if: inputs.run_lint == true && inputs.run_screenshot_tests == true
     env:
@@ -114,7 +119,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           submodules: true
@@ -123,14 +128,25 @@ jobs:
         uses: ./.github/actions/gradle-setup
         with:
           gradle_encryption_key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          develocity_access_key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+          job_summary_pr_comment: ${{ env.GRADLE_PR_COMMENT }}
           cache_read_only: ${{ env.GRADLE_CACHE_READ_ONLY }}
+          # Disabled on Gradle 9.7.1: restoring an entry written by another runner crashes
+          # fingerprint deserialization (IsInIdeaSyncValueSource CNFE, settings-plugin
+          # classloader scope) and the job dies in ~10s before any test. A cross-machine
+          # restore is the only thing that triggers it, so it is 100% red in CI and not
+          # reproducible from a local store/reuse pair. Re-enable when that is fixed
+          # upstream; VERSION_CODE is still pinned above so entries would reuse.
+          cache_configuration_cache: 'false'
 
       - name: Screenshot Test Validation
-        run: ./gradlew :screenshot-tests:validateDebugScreenshotTest -Pci=true
+        # -Dorg.gradle.isolated-projects=false: AGP's screenshot plugin iterates BuildServicesRegistry at
+        # execution time, which Isolated Projects forbids (fatal since Gradle 9.7).
+        run: ./gradlew :screenshot-tests:validateDebugScreenshotTest -Pci=true -Dorg.gradle.isolated-projects=false
 
       - name: Upload screenshot diff report
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: screenshot-diff-report
           path: screenshot-tests/build/reports/screenshotTest/
@@ -141,15 +157,16 @@ jobs:
   # Only runs in the merge queue (not PRs, to keep PR feedback fast; not main pushes,
   # which are the same merge commit the queue just verified).
   rb-check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
+      pull-requests: write
     timeout-minutes: 30
     if: inputs.run_lint == true && github.event_name == 'merge_group'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           submodules: true
@@ -158,163 +175,14 @@ jobs:
         uses: ./.github/actions/gradle-setup
         with:
           gradle_encryption_key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          develocity_access_key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+          job_summary_pr_comment: ${{ env.GRADLE_PR_COMMENT }}
           cache_read_only: 'true'
 
       - name: Verify Reproducible Build (fdroid)
         env:
           VERSION_CODE: ${{ github.run_number }}
-        run: |
-          # Comprehensive RB verification for F-Droid/IzzyOnDroid.
-          # Based on: https://izzyondroid.org/docs/reproducibleBuilds/DebugFailedRBs/
-          # Catches regressions that have historically broken reproducibility:
-          #   1. aboutlibraries.json non-determinism (network fetching)
-          #   2. Datadog buildId leaking into fdroid APK
-          #   3. Google/Firebase/GMS/MLKit classes in fdroid APK
-          #   4. DEPENDENCY_INFO_BLOCK in signing block
-          #   5. Native library stripping (NDK version mismatch)
-          #   6. aboutlibraries "generated" timestamp in res/M7.json
-          #   7. baseline.prof determinism (flaky builds)
-          # See: https://github.com/meshtastic/Meshtastic-Android/issues/3231
-
-          echo "── Step 1: Verify aboutlibraries.json determinism ──"
-          rm -f androidApp/src/main/resources/aboutlibraries.json
-          ./gradlew :androidApp:exportLibraryDefinitions -Pci=true --no-configuration-cache
-          cp androidApp/src/main/resources/aboutlibraries.json /tmp/aboutlibraries-run1.json
-
-          rm -f androidApp/src/main/resources/aboutlibraries.json
-          ./gradlew :androidApp:exportLibraryDefinitions -Pci=true --no-configuration-cache --rerun-tasks
-          cp androidApp/src/main/resources/aboutlibraries.json /tmp/aboutlibraries-run2.json
-
-          if ! diff -q /tmp/aboutlibraries-run1.json /tmp/aboutlibraries-run2.json; then
-            echo "::error::aboutlibraries.json is NOT deterministic across runs!"
-            diff /tmp/aboutlibraries-run1.json /tmp/aboutlibraries-run2.json | head -20
-            exit 1
-          fi
-          echo "✅ aboutlibraries.json is deterministic"
-
-          echo "── Step 2: Build fdroid release APK ──"
-          ./gradlew :androidApp:assembleFdroidRelease -Pci=true -Pmeshtastic.disableAbiSplits=true --no-configuration-cache
-
-          APK=$(find androidApp/build/outputs/apk/fdroid/release -name "*.apk" | head -1)
-          if [ -z "$APK" ]; then
-            echo "::error::No fdroid release APK found"
-            exit 1
-          fi
-          echo "Checking APK: $APK"
-
-          echo "── Step 3: Check for datadog.buildId ──"
-          if unzip -l "$APK" | grep -q "datadog.buildId"; then
-            echo "::error::fdroid APK contains assets/datadog.buildId — breaks RB!"
-            exit 1
-          fi
-          echo "✅ No datadog.buildId in fdroid APK"
-
-          echo "── Step 4: Check for proprietary libraries (dex scan) ──"
-          TMPDIR=$(mktemp -d)
-          unzip -q "$APK" -d "$TMPDIR"
-          OFFENDERS=""
-          for pattern in "com/google/firebase" "com/google/android/gms" "com/crashlytics" "com/google/mlkit" "com/google/android/datatransport" "androidx/privacysandbox/ads"; do
-            for dex in "$TMPDIR"/classes*.dex; do
-              if [ -f "$dex" ] && strings "$dex" | grep -q "L${pattern}/"; then
-                OFFENDERS="${OFFENDERS}\n  - $pattern"
-                break
-              fi
-            done
-          done
-
-          if [ -n "$OFFENDERS" ]; then
-            echo -e "::error::fdroid APK contains proprietary libraries:${OFFENDERS}"
-            rm -rf "$TMPDIR"
-            exit 1
-          fi
-          echo "✅ No proprietary libraries in fdroid APK"
-
-          echo "── Step 5: Check for DEPENDENCY_INFO_BLOCK (signing block blob) ──"
-          # Parse the APK Signing Block structure to find the dependency info pair.
-          # Naive byte scans produce false positives in large APKs.
-          if python3 << 'PYEOF'
-          import struct, sys
-
-          with open("$APK", "rb") as f:
-              data = f.read()
-
-          magic = b"APK Sig Block 42"
-          idx = data.rfind(magic)
-          if idx < 0:
-              sys.exit(0)
-
-          block_size = struct.unpack_from("<Q", data, idx - 8)[0]
-          block_start = idx + 16 - 8 - block_size
-          pos = int(block_start)
-          end = idx - 8
-
-          while pos + 12 <= end:
-              pair_size = struct.unpack_from("<Q", data, pos)[0]
-              pair_id = struct.unpack_from("<I", data, pos + 8)[0]
-              if pair_id == 0x504b4453:
-                  print(f"DEPENDENCY_INFO_BLOCK found (id=0x{pair_id:08x})")
-                  sys.exit(1)
-              pos += 8 + int(pair_size)
-
-          sys.exit(0)
-          PYEOF
-          then
-            echo "::error::fdroid APK contains DEPENDENCY_INFO_BLOCK — remove with dependenciesInfo { includeInApk = false }"
-            rm -rf "$TMPDIR"
-            exit 1
-          fi
-          echo "✅ No DEPENDENCY_INFO_BLOCK in signing block"
-
-          echo "── Step 6: Check native libraries have debug symbols (not stripped) ──"
-          STRIPPED_LIBS=""
-          for so in $(find "$TMPDIR" -name "*.so" 2>/dev/null); do
-            # If .symtab section is missing, the library was stripped
-            if ! readelf -S "$so" 2>/dev/null | grep -q "\.symtab"; then
-              # Libraries without symtab are stripped — this is only a problem
-              # if keepDebugSymbols is not working as expected
-              LIB_NAME=$(basename "$so")
-              STRIPPED_LIBS="${STRIPPED_LIBS} ${LIB_NAME}"
-            fi
-          done
-          # Note: Some third-party .so files arrive pre-stripped, which is OK.
-          # We only warn here; a hard failure would be too aggressive.
-          if [ -n "$STRIPPED_LIBS" ]; then
-            echo "::warning::Some native libraries appear stripped (may cause NDK-version-dependent RB failures):${STRIPPED_LIBS}"
-          else
-            echo "✅ Native libraries retain debug symbols"
-          fi
-
-          echo "── Step 7: Check aboutlibraries 'generated' timestamp not in APK ──"
-          # The M7.json (or aboutlibraries.json in Java resources) should NOT contain
-          # a "generated" field, which introduces a build-time timestamp.
-          ABOUT_JSON=""
-          if [ -f "$TMPDIR/aboutlibraries.json" ]; then
-            ABOUT_JSON="$TMPDIR/aboutlibraries.json"
-          else
-            # May be in res/ as M7.json or similar
-            ABOUT_JSON=$(find "$TMPDIR/res" -name "*.json" -exec grep -l "aboutLibraries" {} \; 2>/dev/null | head -1)
-          fi
-          if [ -n "$ABOUT_JSON" ] && grep -q '"generated"' "$ABOUT_JSON"; then
-            echo "::error::aboutlibraries contains 'generated' timestamp field — add excludeFields = listOf(\"generated\") to build config"
-            rm -rf "$TMPDIR"
-            exit 1
-          fi
-          echo "✅ No 'generated' timestamp in aboutlibraries data"
-
-          echo "── Step 8: Verify build from clean tree (version-control-info) ──"
-          if [ -f "$TMPDIR/META-INF/version-control-info.textproto" ]; then
-            if grep -q "modified: true" "$TMPDIR/META-INF/version-control-info.textproto"; then
-              echo "::warning::APK built from dirty tree (version-control-info shows modified:true). Release builds must use a clean tree."
-            else
-              echo "✅ Built from clean tree"
-            fi
-          else
-            echo "ℹ️ No version-control-info.textproto (AGP may not embed it for debug-signed builds)"
-          fi
-
-          rm -rf "$TMPDIR"
-          echo ""
-          echo "🎉 All RB checks passed"
+        run: ./scripts/verify-rb.sh
 
   # ── Sharded Unit Tests ──────────────────────────────────────────────
   # Tests are split into 3 shards that run in parallel. Module assignment is
@@ -327,15 +195,18 @@ jobs:
   # These lists are hand-maintained; pull-request.yml's check-changes job
   # guards them against drift (every module in settings.gradle.kts with test
   # sources must appear here or be explicitly exempted).
-  #   shard-core:    remaining core:* KMP module tests (allTests)
+  #   shard-core:    remaining core:* KMP module tests (allTests), plus kmpSmokeCompile,
+  #                  which is the only iOS compile :core:di, :core:nfc and :core:resources
+  #                  get. It lived in lint-check until a cold build there blew the 30m budget.
   #   shard-feature: feature:* KMP module tests + :core:service
   #   shard-app:     Pure-Android/JVM tests (androidApp, desktopApp,
-  #                  core:barcode, feature:car, feature:widget)
+  #                  core:barcode, feature:widget)
   #                  + :core:database + :core:network
   test-shards:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
+      pull-requests: write
     timeout-minutes: 45
     if: inputs.run_unit_tests == true
     env:
@@ -359,6 +230,7 @@ jobs:
               :core:takserver:allTests
               :core:testing:allTests
               :core:ui:allTests
+              kmpSmokeCompile
             kover: >-
               :core:ble:koverXmlReport
               :core:common:koverXmlReport
@@ -382,6 +254,8 @@ jobs:
               :feature:firmware:allTests
               :feature:intro:allTests
               :feature:map:allTests
+              :feature:map-maplibre:allTests
+              :feature:map-terrain:allTests
               :feature:messaging:allTests
               :feature:node:allTests
               :feature:settings:allTests
@@ -394,6 +268,8 @@ jobs:
               :feature:firmware:koverXmlReport
               :feature:intro:koverXmlReport
               :feature:map:koverXmlReport
+              :feature:map-maplibre:koverXmlReport
+              :feature:map-terrain:koverXmlReport
               :feature:messaging:koverXmlReport
               :feature:node:koverXmlReport
               :feature:settings:koverXmlReport
@@ -407,9 +283,8 @@ jobs:
               :core:barcode:testGoogleDebugUnitTest
               :core:database:allTests
               :core:network:allTests
-              :feature:car:testFdroidDebugUnitTest
-              :feature:car:testGoogleDebugUnitTest
               :feature:widget:testDebugUnitTest
+              :schema-strings:test
             kover: >-
               :androidApp:koverXmlReportFdroidDebug
               :androidApp:koverXmlReportGoogleDebug
@@ -418,13 +293,11 @@ jobs:
               :desktopApp:koverXmlReport
               :core:database:koverXmlReport
               :core:network:koverXmlReport
-              :feature:car:koverXmlReportFdroidDebug
-              :feature:car:koverXmlReportGoogleDebug
               :feature:widget:koverXmlReportDebug
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           submodules: true
@@ -433,7 +306,18 @@ jobs:
         uses: ./.github/actions/gradle-setup
         with:
           gradle_encryption_key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          develocity_access_key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+          job_summary_pr_comment: ${{ env.GRADLE_PR_COMMENT }}
           cache_read_only: ${{ env.GRADLE_CACHE_READ_ONLY }}
+          # Disabled on Gradle 9.7.1: restoring an entry written by another runner crashes
+          # fingerprint deserialization (IsInIdeaSyncValueSource CNFE, settings-plugin
+          # classloader scope) and the job dies in ~10s before any test. A cross-machine
+          # restore is the only thing that triggers it, so it is 100% red in CI and not
+          # reproducible from a local store/reuse pair. Re-enable when that is fixed
+          # upstream; VERSION_CODE is still pinned above so entries would reuse.
+          cache_configuration_cache: 'false'
+          # Shards run different task graphs; kover flips the graph again.
+          cache_key_suffix: ${{ matrix.shard.name }}${{ inputs.run_coverage && '-kover' || '' }}
 
       - name: Run Tests & Coverage (${{ matrix.shard.name }})
         run: |
@@ -441,11 +325,17 @@ jobs:
           if [[ "${{ inputs.run_coverage }}" == "true" ]]; then
             kover_tasks="${{ matrix.shard.kover }}"
           fi
-          ./gradlew ${{ matrix.shard.tasks }} $kover_tasks -Pci=true --continue
+          # CCUD tags every shard with the same `CI job=test-shards`, which is the largest
+          # single CI cost bucket and therefore the one worth splitting. Shard identity is
+          # otherwise only recoverable by parsing the requested task list.
+          ./gradlew ${{ matrix.shard.tasks }} $kover_tasks -Pci=true --continue \
+            "-Dscan.value.CI shard=${{ matrix.shard.name }}"
 
       - name: Upload shard reports
-        if: ${{ always() && inputs.upload_artifacts }}
-        uses: actions/upload-artifact@v7
+        # !cancelled(), not always(): a shard cancelled before Gradle ran has no
+        # reports, and the upload warns "No files were found" on the way out.
+        if: ${{ !cancelled() && inputs.upload_artifacts }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: reports-${{ matrix.shard.name }}
           path: |
@@ -454,16 +344,17 @@ jobs:
           retention-days: 7
 
   # ── Android Build ────────────────────────────────────────────────────
+  # Also generates the dependency graph — assembling both flavors resolves the widest set.
   android-check:
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
+    runs-on: ubuntu-26.04
+    # No permissions block on purpose: inherits the caller's. main grants contents: write
+    # (graph submit); PRs grant read (upload only).
     timeout-minutes: 60
     if: inputs.run_android_build == true
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           filter: 'blob:none'
@@ -473,7 +364,11 @@ jobs:
         uses: ./.github/actions/gradle-setup
         with:
           gradle_encryption_key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          develocity_access_key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+          job_summary_pr_comment: ${{ env.GRADLE_PR_COMMENT }}
           cache_read_only: ${{ env.GRADLE_CACHE_READ_ONLY }}
+          # main submits; PRs upload (no contents: write), dependency-graph-submit.yml finishes.
+          dependency_graph: ${{ github.event_name == 'pull_request' && 'generate-and-upload' || (github.ref == 'refs/heads/main' && 'generate-and-submit' || 'disabled') }}
 
       - name: Tag main-branch builds as -SNAPSHOT
         if: github.event_name == 'push'
@@ -481,12 +376,99 @@ jobs:
           BASE=$(grep '^VERSION_NAME_BASE=' config.properties | cut -d'=' -f2)
           echo "VERSION_NAME=${BASE}-SNAPSHOT" >> "$GITHUB_ENV"
 
+      # androidApp/src/google/AndroidManifest.xml resolves ${MAPS_API_KEY} from the secrets
+      # plugin. With nothing injected the build falls back to secrets.defaults.properties'
+      # placeholder DEFAULT_API_KEY, so every snapshot/PR google-flavor APK shipped a blank
+      # map (#6883) -- the very flavor docs/en/developer/test-builds.md tells testers to use.
+      #
+      # google.properties, not secrets.properties: the plugin injects the latter into EVERY
+      # variant, so the fdroid APK -- which has no Maps code at all -- embedded the real key
+      # too. The plugin reads <flavorName>.properties, so this reaches google variants only.
+      #
+      # A debug-only key, never the release one: config/debug.keystore is checked in
+      # (#6615), so the debug applicationId + SHA-1 pair every debug APK presents is
+      # forgeable by anyone who clones this repo. Pointing it at the production key
+      # would hand production Maps quota to the world; the debug key is restricted to
+      # those debug coordinates and quota-capped on its own.
+      #
+      # Unset -- fork PRs receive no secrets -- leaves today's placeholder behaviour.
+      - name: Load Maps API key for google-flavor debug builds
+        env:
+          GOOGLE_MAPS_API_KEY_DEBUG: ${{ secrets.GOOGLE_MAPS_API_KEY_DEBUG }}
+        run: |
+          if [ -n "$GOOGLE_MAPS_API_KEY_DEBUG" ]; then
+            echo "MAPS_API_KEY=$GOOGLE_MAPS_API_KEY_DEBUG" >> ./google.properties
+            echo "Injected debug Maps API key into google.properties."
+          else
+            echo "::warning::GOOGLE_MAPS_API_KEY_DEBUG is unset (fork PR, or the secret is not configured yet) -- the google-flavor map will be blank."
+          fi
+
+      # androidApp/google-services.json is a tracked *placeholder* (project_id "xxx"); the real
+      # config only ever landed via release.yml. AnalyticsConventionPlugin applies the
+      # google-services and crashlytics plugins for the google flavor on every build type, so
+      # snapshot and PR debug APKs initialised Firebase against a project that does not exist and
+      # reported nothing -- while docs/en/developer/test-builds.md recommends that flavor to
+      # testers precisely because "crashes and errors get reported back". Crash collection stays
+      # runtime-gated on the user's consent either way (see GooglePlatformAnalytics).
+      #
+      # Unset -- fork PRs receive no secrets -- leaves the placeholder in place.
+      - name: Load Firebase config for google-flavor debug builds
+        env:
+          GSERVICES: ${{ secrets.GSERVICES }}
+        run: |
+          if [ -n "$GSERVICES" ]; then
+            rm -f ./androidApp/google-services.json
+            echo "$GSERVICES" > ./androidApp/google-services.json
+            echo "Injected the real google-services.json."
+          else
+            echo "::warning::GSERVICES is unset (fork PR, or the secret is not configured) -- Firebase reporting will be inert in these builds."
+          fi
+
+      # Same gap as the Maps key (#6883) and the Firebase config: secrets.defaults.properties
+      # ships fake datadog tokens and only release.yml ever wrote real ones, so snapshot and
+      # PR debug APKs reported nothing to Datadog.
+      #
+      # google.properties for the same reason as the Maps key above: Datadog code lives only
+      # in androidApp/src/google, but a secrets.properties write reaches every variant and
+      # would embed these tokens in the fdroid APK as well.
+      #
+      # This traffic stays separable from production: GooglePlatformAnalytics initialises the
+      # SDK with env "Local" for debuggable builds (vs "Production") and variant "google", and
+      # main-branch builds additionally carry -SNAPSHOT in the RUM version via VERSION_NAME.
+      # Collection is still gated on the user's analytics consent at runtime.
+      #
+      # Unset -- fork PRs receive no secrets -- leaves the fake tokens in place.
+      - name: Load Datadog tokens for google-flavor debug builds
+        env:
+          DATADOG_APPLICATION_ID: ${{ secrets.DATADOG_APPLICATION_ID }}
+          DATADOG_CLIENT_TOKEN: ${{ secrets.DATADOG_CLIENT_TOKEN }}
+        run: |
+          if [ -n "$DATADOG_APPLICATION_ID" ] && [ -n "$DATADOG_CLIENT_TOKEN" ]; then
+            {
+              echo "datadogApplicationId=$DATADOG_APPLICATION_ID"
+              echo "datadogClientToken=$DATADOG_CLIENT_TOKEN"
+            } >> ./google.properties
+            echo "Injected Datadog tokens into google.properties."
+          else
+            echo "::warning::Datadog secrets are unset (fork PR, or not configured) -- Datadog reporting will be inert in these builds."
+          fi
+
       - name: Build Android APKs
-        run: ./gradlew androidApp:assembleFdroidDebug androidApp:assembleGoogleDebug -Pci=true --parallel --configuration-cache --continue
+        # -Dorg.gradle.isolated-projects=false: the dependency-graph plugin injected by setup-gradle force-resolves
+        # via allprojects{}, which Isolated Projects forbids (fatal since Gradle 9.7). The property form is
+        # used everywhere instead of --no-isolated-projects: that flag only exists on 9.7+, so the property
+        # survives a pin-back below 9.7 without editing this line.
+        run: ./gradlew androidApp:assembleFdroidDebug androidApp:assembleGoogleDebug -Pci=true --parallel --configuration-cache -Dorg.gradle.isolated-projects=false --continue
+
+      # A dependency published for only some of our ABIs builds and installs cleanly and then
+      # crashes with UnsatisfiedLinkError on the others (#7001). Compare the splits here, where
+      # they are already built for every PR.
+      - name: Verify native library ABI parity
+        run: ./scripts/verify-abi-parity.sh
 
       - name: Upload debug artifact
         if: ${{ inputs.upload_artifacts }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: app-debug-apks
           path: androidApp/build/outputs/apk/*/debug/*.apk
@@ -495,10 +477,12 @@ jobs:
       - name: Report App Size
         if: always()
         run: |
-          echo "### App Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "| Artifact | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | --- |" >> $GITHUB_STEP_SUMMARY
-          find androidApp/build/outputs/apk -name "*.apk" -exec du -h {} + | awk '{print "| " $2 " | " $1 " |"}' >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### App Size Report"
+            echo "| Artifact | Size |"
+            echo "| --- | --- |"
+            find androidApp/build/outputs/apk -name "*.apk" -exec du -h {} + | awk '{print "| " $2 " | " $1 " |"}'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ── Desktop Build ───────────────────────────────────────────────────
   build-desktop:
@@ -507,6 +491,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+      pull-requests: write
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -515,7 +500,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           filter: 'blob:none'
@@ -525,69 +510,61 @@ jobs:
         uses: ./.github/actions/gradle-setup
         with:
           gradle_encryption_key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          develocity_access_key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
+          job_summary_pr_comment: ${{ env.GRADLE_PR_COMMENT }}
           cache_read_only: ${{ env.GRADLE_CACHE_READ_ONLY }}
           install_jetbrains_jdk: 'true'
+
+      - name: Install dependencies for AppImage
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libfuse2t64
 
       - name: Build Desktop
         # proguardReleaseJars is included because it is otherwise only exercised by the
         # release workflow: jlink tolerates a jmods-less JDK (JEP 493) but ProGuard does
         # not, so a broken packaging JDK would surface at release time instead of here.
-        run: ./gradlew :desktopApp:createDistributable :desktopApp:proguardReleaseJars -Pci=true
+        # packageDistributionForCurrentOS (debug build type, no ProGuard) produces real
+        # installers (dmg/msi+exe/deb+rpm+AppImage-dir) so the snapshot release below can
+        # ship something testers can actually install, not just an unpacked app dir.
+        # Windows only: CMP's WiX packaging reads Project.layout on the root project from
+        # ':desktopApp', which Isolated Projects rejects. Stack, from a --dry-run on
+        # windows-latest against compose-multiplatform 1.12.0:
+        #     WixToolsetKt.configureWix(wixToolset.kt:43)
+        #     ConfigureJvmApplicationKt.configureJvmApplication(configureJvmApplication.kt:46)
+        #     ComposePlugin.apply$lambda$2(ComposePlugin.kt:58)
+        # configureWix only runs where MSI/EXE are target formats, which is why macOS,
+        # ubuntu-24.04 and ubuntu-24.04-arm all package fine with IP on — verified by
+        # running this exact task list unflagged on all four runners. Keep the escape
+        # pinned to the one OS that needs it, and drop it when CMP stops reaching for
+        # the root project.
+        # Both flags go together: IP implies the configuration cache, and Gradle refuses
+        # --no-configuration-cache while IP is still on. Flags, not -D properties —
+        # -Dorg.gradle.isolated-projects=false is inert on windows-latest. --no-isolated-projects
+        # needs Gradle 9.7+, so a pin-back below 9.7 has to revert this line with it.
+        run: >
+          ./gradlew :desktopApp:packageDistributionForCurrentOS :desktopApp:proguardReleaseJars -Pci=true
+          ${{ runner.os == 'Windows' && '--no-isolated-projects --no-configuration-cache' || '' }}
+
+      # CMP's TargetFormat.AppImage is jpackage's "app-image" — an unpacked directory, not
+      # a Linux .AppImage. Wrap it into a real AppImage, same as the release workflow.
+      - name: Build AppImage from jpackage app-image
+        if: runner.os == 'Linux'
+        env:
+          APP_VERSION_NAME: snapshot
+          BINARIES_DIR: desktopApp/build/compose/binaries/main
+        run: scripts/build-appimage.sh
 
       - name: Upload Desktop artifact
         if: ${{ inputs.upload_artifacts }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: desktop-app-${{ runner.os }}-${{ runner.arch }}
-          path: desktopApp/build/compose/binaries/main/app/
+          path: |
+            desktopApp/build/compose/binaries/main/*/*.dmg
+            desktopApp/build/compose/binaries/main/*/*.msi
+            desktopApp/build/compose/binaries/main/*/*.exe
+            desktopApp/build/compose/binaries/main/*/*.deb
+            desktopApp/build/compose/binaries/main/*/*.rpm
+            desktopApp/build/compose/binaries/main/*/*.AppImage
           retention-days: 7
-
-  # ── Flatpak Sources ───────────────────────────────────────────────────
-  build-flatpak-src:
-    name: Generate Flatpak Sources (${{ matrix.os }})
-    if: inputs.run_desktop_flatpak_src == true
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: read
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
-          filter: 'blob:none'
-          submodules: true
-
-      - name: Gradle Setup
-        uses: ./.github/actions/gradle-setup
-        with:
-          gradle_encryption_key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
-          cache_read_only: true
-          install_jetbrains_jdk: 'true'
-
-      # Isolated Gradle user home — see explanation in release.yml.
-      # packageUberJarForCurrentOS is what the in-flatpak build invokes; it resolves the FULL
-      # runtime classpath. :assemble alone would miss runtime-only deps (skiko, ktor-cio, …).
-      - name: Generate Flatpak Sources
-        run: >
-          ./gradlew --no-build-cache --no-configuration-cache
-          -Dgradle.user.home=${{ runner.temp }}/flatpak-gradle-home
-          :desktopApp:packageUberJarForCurrentOS :captureFlatpakSources
-
-      - name: Stage manifest
-        run: cp build/flatpak-sources.json flatpak-sources.json
-
-      - run: ls -lah flatpak-sources.json
-
-      - name: Upload Flatpak Sources
-        if: ${{ inputs.upload_artifacts }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: flatpak-sources-${{ runner.arch }}
-          path: flatpak-sources.json
-          retention-days: 7
+          if-no-files-found: error

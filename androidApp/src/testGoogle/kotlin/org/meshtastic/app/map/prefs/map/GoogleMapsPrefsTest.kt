@@ -30,6 +30,7 @@ import okio.Path
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.meshtastic.app.map.prefs.di.asGoogleMapsDataStore
 import org.meshtastic.core.di.CoroutineDispatchers
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -54,7 +55,7 @@ class GoogleMapsPrefsTest {
                 produceFile = { tmpDir / "test.preferences_pb" },
             )
         val dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher)
-        prefs = GoogleMapsPrefsImpl(dataStore, dispatchers)
+        prefs = GoogleMapsPrefsImpl(dataStore.asGoogleMapsDataStore(), dispatchers)
     }
 
     @After
@@ -75,5 +76,18 @@ class GoogleMapsPrefsTest {
         prefs.setCameraPosition(cameraPosition)
 
         assertEquals(cameraPosition, prefs.cameraPosition.first())
+    }
+
+    @Test
+    fun `selected custom tile URL is available from a load-aware snapshot`() = testScope.runTest {
+        prefs.setSelectedCustomTileUrl("https://tiles.example.org/{z}/{x}/{y}.png")
+
+        assertEquals(
+            GoogleMapSelectionPrefs(
+                mapType = "NORMAL",
+                customTileUrl = "https://tiles.example.org/{z}/{x}/{y}.png",
+            ),
+            prefs.awaitMapSelection(),
+        )
     }
 }

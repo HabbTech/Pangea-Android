@@ -38,9 +38,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,16 +55,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.Reaction
+import org.meshtastic.core.model.getMessageStatusDetailRes
 import org.meshtastic.core.model.getMessageStatusStringRes
+import org.meshtastic.core.model.isAckProofForged
 import org.meshtastic.core.model.isMessageStatusRetryable
 import org.meshtastic.core.model.util.getShortDateTime
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.react
+import org.meshtastic.core.resources.security_signed_verified
 import org.meshtastic.core.resources.you
 import org.meshtastic.core.ui.component.Rssi
 import org.meshtastic.core.ui.component.Snr
@@ -70,6 +74,9 @@ import org.meshtastic.core.ui.emoji.EmojiPickerDialog
 import org.meshtastic.core.ui.icon.AddReaction
 import org.meshtastic.core.ui.icon.HopCount
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.icon.ShieldCheck
+import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
+import org.meshtastic.core.ui.theme.StatusColors.StatusYellow
 import org.meshtastic.feature.messaging.DeliveryInfo
 
 @Composable
@@ -78,6 +85,7 @@ internal fun ReactionItem(
     emoji: String,
     emojiCount: Int = 1,
     status: MessageStatus = MessageStatus.UNKNOWN,
+    isWarning: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
 ) {
@@ -87,7 +95,10 @@ internal fun ReactionItem(
     Surface(
         modifier =
         modifier
+            // Clickable wraps the M3 touch-target expansion, so the hit area meets the 44dp
+            // minimum while the drawn pill stays compact.
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .minimumInteractiveComponentSize()
             .then(if (isSending) Modifier.graphicsLayer(alpha = 0.5f) else Modifier),
         color =
         when {
@@ -99,10 +110,10 @@ internal fun ReactionItem(
         BorderStroke(
             width = 1.dp,
             color =
-            if (isError) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+            when {
+                isError -> MaterialTheme.colorScheme.error
+                isWarning -> MaterialTheme.colorScheme.StatusYellow
+                else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
             },
         ),
     ) {
@@ -111,7 +122,7 @@ internal fun ReactionItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(text = emoji, fontSize = 14.sp)
+            Text(text = emoji, style = MaterialTheme.typography.labelMedium)
             if (emojiCount > 1) {
                 Text(
                     text = emojiCount.toString(),
@@ -130,6 +141,8 @@ internal fun ReactionRow(
     modifier: Modifier = Modifier,
     reactions: List<Reaction> = emptyList(),
     myId: String? = null,
+    /** False for an archived conversation: existing reactions still show, but nothing new can be added. */
+    canReact: Boolean = true,
     onSendReaction: (String) -> Unit = {},
     onShowReactions: () -> Unit = {},
 ) {
@@ -145,11 +158,14 @@ internal fun ReactionRow(
                     emoji = emoji,
                     emojiCount = reactions.size,
                     status = localReaction?.status ?: MessageStatus.RECEIVED,
-                    onClick = { onSendReaction(emoji) },
+                    isWarning = localReaction != null && isAckProofForged(localReaction.ackProofStatus),
+                    onClick = { if (canReact) onSendReaction(emoji) },
                     onLongClick = onShowReactions,
                 )
             }
-            item { AddReactionButton(onSendReaction = onSendReaction) }
+            if (canReact) {
+                item { AddReactionButton(onSendReaction = onSendReaction) }
+            }
         }
     }
 }
@@ -189,10 +205,16 @@ internal fun ReactionDialog(
     reactions: List<Reaction>,
     onDismiss: () -> Unit = {},
     myId: String? = null,
+    /** False for an archived conversation: a failed reaction cannot be retried there. */
+    canReact: Boolean = true,
     onResend: (Reaction) -> Unit = {},
 ) = ModalBottomSheet(
     onDismissRequest = onDismiss,
-    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    sheetState =
+    rememberBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+    ),
 ) {
     val groupedEmojis = reactions.groupBy { it.emoji }
     var selectedEmoji by remember { mutableStateOf<String?>(null) }
@@ -201,12 +223,20 @@ internal fun ReactionDialog(
     var showStatusDialog by remember { mutableStateOf<Reaction?>(null) }
     showStatusDialog?.let { reaction ->
         val isDirectMessage = NodeAddress.fromString(reaction.to) !is NodeAddress.Broadcast
-        val (title, text) = getMessageStatusStringRes(reaction.status, reaction.routingError, isDirectMessage)
+        val (title, text) =
+            getMessageStatusStringRes(
+                reaction.status,
+                reaction.routingError,
+                isDirectMessage,
+                reaction.ackProofStatus,
+            )
 
         DeliveryInfo(
             title = title,
             text = text,
-            resendOption = isMessageStatusRetryable(reaction.status, reaction.routingError, isDirectMessage),
+            detail = getMessageStatusDetailRes(reaction.status, reaction.routingError),
+            resendOption =
+            canReact && isMessageStatusRetryable(reaction.status, reaction.routingError, isDirectMessage),
             onConfirm = {
                 onResend(reaction)
                 showStatusDialog = null
@@ -259,12 +289,32 @@ internal fun ReactionDialog(
                         } else {
                             reaction.user.long_name
                         }
-                    Text(text = displayName, style = MaterialTheme.typography.titleMedium)
+                    Row(
+                        modifier = Modifier.weight(1f, fill = false),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = displayName,
+                            modifier = Modifier.weight(1f, fill = false),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        // Set only on verified broadcasts, so a DM reaction never shows it.
+                        if (!isLocal && reaction.xeddsaSigned) {
+                            Icon(
+                                imageVector = MeshtasticIcons.ShieldCheck,
+                                contentDescription = stringResource(Res.string.security_signed_verified),
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.StatusGreen,
+                            )
+                        }
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (isLocal) {
                             MessageStatusButton(
                                 status = reaction.status,
                                 fromLocal = true,
+                                isWarning = isAckProofForged(reaction.ackProofStatus),
                                 onStatusClick = { showStatusDialog = reaction },
                             )
                         }

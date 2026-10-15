@@ -146,7 +146,7 @@ class TcpTransport(
 
     @Volatile private var timeoutEvents: Int = 0
 
-    private val heartbeatNonce = atomic(0)
+    private val heartbeatNonce = atomic(HeartbeatSender.FIRST_NONCE)
 
     /** Whether the transport is currently connected. */
     val isConnected: Boolean
@@ -182,10 +182,18 @@ class TcpTransport(
         bytesSent += payload.size
     }
 
-    /** Send a heartbeat packet with a monotonically-increasing nonce to keep the connection alive. */
+    /**
+     * Send a heartbeat packet with a monotonically-increasing nonce to keep the connection alive. Starts at
+     * [HeartbeatSender.FIRST_NONCE], past the firmware's NodeInfo-ping trigger.
+     */
     suspend fun sendHeartbeat() {
         val nonce = heartbeatNonce.getAndIncrement()
-        val heartbeat = ToRadio(heartbeat = org.meshtastic.proto.Heartbeat(nonce = nonce))
+        val heartbeat =
+            ToRadio.Builder()
+                .also { wb ->
+                    wb.heartbeat = org.meshtastic.proto.Heartbeat.Builder().also { wb -> wb.nonce = nonce }.build()
+                }
+                .build()
         sendPacket(heartbeat.encode())
     }
 
@@ -254,9 +262,7 @@ class TcpTransport(
      */
     @Suppress("NestedBlockDepth")
     private suspend fun connectAndRead(address: String): Boolean = withContext(dispatchers.io) {
-        val parts = address.split(":", limit = 2)
-        val host = parts[0]
-        val port = parts.getOrNull(1)?.toIntOrNull() ?: StreamFrameCodec.DEFAULT_TCP_PORT
+        val (host, port) = parseHostAndPort(address)
 
         Logger.i { "$logTag: [$address] Connecting to $host:$port" }
         val attemptStart = nowMillis
@@ -296,6 +302,28 @@ class TcpTransport(
         } finally {
             disconnectSocket()
         }
+    }
+
+    /**
+     * Split a discovered/entered address into host and port. Handles a bracketed IPv6 literal (`[fe80::1]:4403`,
+     * matching [org.meshtastic.core.network.repository.NetworkRepository]'s `toAddressString()`) as well as the plain
+     * `host` / `host:port` forms used for IPv4 and hostnames — a bare `address.split(":", limit = 2)` would misparse an
+     * unbracketed IPv6 literal's multiple colons.
+     */
+    private fun parseHostAndPort(address: String): Pair<String, Int> {
+        if (address.startsWith("[")) {
+            val closeBracket = address.indexOf(']')
+            if (closeBracket != -1) {
+                val host = address.substring(1, closeBracket)
+                val port =
+                    address.substring(closeBracket + 1).removePrefix(":").toIntOrNull()
+                        ?: StreamFrameCodec.DEFAULT_TCP_PORT
+                return host to port
+            }
+        }
+        val parts = address.split(":", limit = 2)
+        val port = parts.getOrNull(1)?.toIntOrNull() ?: StreamFrameCodec.DEFAULT_TCP_PORT
+        return parts[0] to port
     }
 
     /**

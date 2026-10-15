@@ -16,7 +16,6 @@
  */
 package org.meshtastic.app.map.prefs.map
 
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -28,11 +27,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.app.map.prefs.di.GoogleMapsDataStore
 import org.meshtastic.core.di.CoroutineDispatchers
 
 /** Interface for prefs specific to Google Maps. For general map prefs, see MapPrefs. */
@@ -45,10 +45,14 @@ interface GoogleMapsPrefs {
 
     fun setSelectedCustomTileUrl(value: String?)
 
+    suspend fun awaitMapSelection(): GoogleMapSelectionPrefs
+
     val cameraPosition: Flow<GoogleCameraPosition?>
 
     fun setCameraPosition(value: GoogleCameraPosition)
 }
+
+data class GoogleMapSelectionPrefs(val mapType: String, val customTileUrl: String?)
 
 data class GoogleCameraPosition(
     val targetLat: Double,
@@ -59,10 +63,8 @@ data class GoogleCameraPosition(
 )
 
 @Single
-class GoogleMapsPrefsImpl(
-    @Named("GoogleMapsDataStore") private val dataStore: DataStore<Preferences>,
-    dispatchers: CoroutineDispatchers,
-) : GoogleMapsPrefs {
+class GoogleMapsPrefsImpl(private val dataStore: GoogleMapsDataStore, dispatchers: CoroutineDispatchers) :
+    GoogleMapsPrefs {
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
 
     override val selectedGoogleMapType: StateFlow<String?> =
@@ -95,6 +97,13 @@ class GoogleMapsPrefsImpl(
                 }
             }
         }
+    }
+
+    override suspend fun awaitMapSelection(): GoogleMapSelectionPrefs = dataStore.data.first().let { preferences ->
+        GoogleMapSelectionPrefs(
+            mapType = preferences[KEY_SELECTED_GOOGLE_MAP_TYPE_PREF] ?: MapType.NORMAL.name,
+            customTileUrl = preferences[KEY_SELECTED_CUSTOM_TILE_URL_PREF],
+        )
     }
 
     override val cameraPosition: Flow<GoogleCameraPosition?> =

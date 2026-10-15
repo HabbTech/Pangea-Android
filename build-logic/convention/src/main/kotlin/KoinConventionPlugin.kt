@@ -27,15 +27,12 @@ class KoinConventionPlugin : Plugin<Project> {
         with(target) {
             apply(plugin = libs.plugin("koin-compiler").get().pluginId)
 
-            // Configure Koin K2 Compiler Plugin (0.4.0+)
+            // Configure Koin K2 Compiler Plugin (1.1.0+)
             extensions.configure(KoinGradleExtension::class.java) {
-                // Meshtastic uses dependency inversion across KMP modules — interfaces in
-                // commonMain, implementations wired at the composition root. Koin's compileSafety
-                // flag enables A1 per-module checks that treat every module as self-contained,
-                // which breaks this pattern. There is no separate flag for A3 full-graph
-                // validation. Until Koin exposes granular safety levels we keep this disabled;
-                // runtime graph verification is handled by KoinVerificationTest instead.
-                compileSafety.set(false)
+                // Validation is whole-graph and happens at the @KoinApplication entry points, so
+                // it is only enabled there. A library module validates locally, cannot see the
+                // assembled graph, and reports KOIN-D003 on definitions its consumers supply.
+                compileSafety.set(path in KOIN_ENTRY_POINTS)
             }
 
             val koinAnnotations = libs.findLibrary("koin-annotations").get()
@@ -80,3 +77,6 @@ class KoinConventionPlugin : Plugin<Project> {
         }
     }
 }
+
+/** Modules declaring a `@KoinApplication`. A new app target must be added here or it is never validated. */
+private val KOIN_ENTRY_POINTS = setOf(":androidApp", ":desktopApp")

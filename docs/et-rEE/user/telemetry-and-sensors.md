@@ -1,35 +1,33 @@
----
-title: Telemeetria & Sensorid
+\| Lightning, strikes in the last hour and storm distance | count, km or mi | Card and listed with each reading on the Environment Metrics screen; not charted. From an AS3935 detector. Storm distance is always in km or mi, since the detector resolves whole kilometres |---
+title: Telemetry & Sensors
 parent: User Guide
 nav_order: 9
-last_updated: 2026-05-13
-description: Kärgvõrgu andurite andmed — toetatud keskkonna-, õhukvaliteedi- ja võimsusandurid ning konfiguratsiooni- ja vaatamisjuhendid.
+last_updated: 2026-09-18
+description: Sensor data on the mesh — supported environment, air quality, and power sensors, plus configuration and viewing guides.
 aliases:
-  - sensorid
-  - environment
-  - ilm
-  - power-metrics
+
+- sensorid
+- environment
+- ilm
+- power-metrics
+
 ---
 
-# Telemetria & sensorid
+# Telemeetria & Sensorid
 
-Meshtastic sõlmed saavad koguda ja jagada andurite andmeid kärgvõrgu kaudu.
-
-## Ülevaade
-
-Telemeetria võimaldab anduritega varustatud sõlmedel levitada keskkonna-, energiatarbimise ja seadme terviseteavet. This data is visible on the node detail screen and can be logged over time.
+Meshtastic sõlmed saavad koguda ja jagada andurite andmeid kärgvõrgu kaudu. Telemetry allows nodes equipped with sensors to broadcast environmental, power, and device health information, visible on the node detail screen and logged over time.
 
 ## Device Telemetry
 
 Kõik Meshtastic sõlmed edastavad seadme põhitelemeetriat:
 
-| Meetriline       | Kirjeldus                      | Tüüpiline ulatus                   |
-| ---------------- | ------------------------------ | ---------------------------------- |
-| Aku tase         | Charge percentage              | 0–100%                             |
-| Vool             | Aku pinge                      | 3,0–4,2V (LiPo) |
-| Kanali kasutus   | % of airtime used locally      | 0–100%                             |
-| Eetri kasutus TX | % of airtime used by this node | 0–100%                             |
-| Töötamise aeg    | Seconds since last boot        | Varies                             |
+| Meetriline     | Kirjeldus                                       | Tüüpiline ulatus                   |
+| -------------- | ----------------------------------------------- | ---------------------------------- |
+| Aku tase       | Charge percentage                               | 0–100%                             |
+| Vool           | Aku pinge                                       | 3,0–4,2V (LiPo) |
+| Kanali kasutus | % of local airtime in use                       | 0–100%                             |
+| Saate kasutus  | % of the last hour this node spent transmitting | 0–100%                             |
+| Töötamise aeg  | Seconds since last boot                         | Varies                             |
 
 ## Environment Sensors
 
@@ -47,56 +45,84 @@ Supported environmental sensors:
 
 ### Air Quality
 
-| Andur    | Meetriline                   | Sõnumid                    |
-| -------- | ---------------------------- | -------------------------- |
-| BME680   | Gas Resistance / IAQ         | Volatile organic compounds |
-| PMSA003I | PM1,0, PM2,5, PM10           | Particulate matter         |
-| SEN55    | PM, NOx, VOC, Temp, Humidity | Multi-sensor               |
+| Andur    | Meetriline              | Sõnumid                                                                                                                                                                                                                    |
+| -------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BME680   | Gas Resistance / IAQ    | Volatile organic compounds                                                                                                                                                                                                 |
+| PMSA003I | PM1,0, PM2,5, PM10      | See [Air Quality Metrics](#air-quality-metrics)                                                                                                                                                                            |
+| SEN55    | PM, Temp, Humidity      | Multi-sensor. Its NOx and VOC indices are recorded and included in a CSV export, but are not shown as cards or charts                                                                                      |
+| SEN6x    | PM, CO₂, Temp, Humidity | Its status register is always exported; when it reports a fault (fan, RH&T, gas, CO₂, HCHO or PM), the fault names appear as a Sensor Status card and on each Air Quality log entry |
+
+### Soil
+
+| Meetriline          | Ühik    | Sõnumid                                         |
+| ------------------- | ------- | ----------------------------------------------- |
+| Pinnase temperatuur | °C / °F | Reported alongside soil moisture by soil probes |
+| Pinnase niiskus     | %       | Volumetric water content                        |
+
+Both appear as info cards on the node detail screen, next to the other environment readings.
+
+Soil probe and water-quality sonde chemistry (pH, conductivity, salinity, NPK, dissolved oxygen, ORP, turbidity, nitrate, ammonium, oxygen demand, solar irradiance) appears as a **Soil & Water** row of info cards on the node detail screen once a node reports any of it, and is included in the node database export. There is no chart or log screen for it yet.
 
 ### Valgus & UV
 
-| Andur    | Meetriline                              |
-| -------- | --------------------------------------- |
-| OPT3001  | Ambient valgus (lux) |
-| VEML7700 | Ambient valgus (lux) |
-| LTR390   | UV indeks                               |
+| Andur    | Meetriline                                    |
+| -------- | --------------------------------------------- |
+| OPT3001  | Ambient valgus (lux)       |
+| VEML7700 | Ümbritseva valguse (luksi) |
+| LTR390   | UV indeks                                     |
+
+### Weather and Other Readings
+
+| Meetriline                                             | Ühik                 | Where it appears                                                                                                                                            |
+| ------------------------------------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Wind speed                                             | km/h or mph          | Card and chart. Sensors report meters per second; the app converts to match your unit setting, and the chart uses the same unit as the card |
+| Wind direction, gust, and lull                         | degrees, km/h or mph | Listed with each reading on the Environment Metrics screen; not charted                                                                                     |
+| Rainfall, last hour and last 24 hours                  | mm or in             | Listed with each reading on the Environment Metrics screen; not charted                                                                                     |
+| Lightning, strikes in the last hour and storm distance | count, km or mi      | Card and listed with each reading on the Environment Metrics screen; not charted. From an AS3935 detector                                   |
+| Radiatsioon                                            | µR/h                 | Card and chart                                                                                                                                              |
+| Kaal                                                   | kg or lb             | Card only — load cells, such as a beehive scale                                                                                                             |
+| Kaugus                                                 | mm or in             | Card only — water level, from a distance sensor                                                                                                             |
+| Dew point                                              | °C or °F             | Card only — computed from temperature and humidity                                                                                                          |
+| 1-Wire temperature                                     | °C or °F             | Card and chart, up to eight DS18B20-style probes                                                                                                            |
+| ADC voltage                                            | V                    | Card and chart, up to eight raw analog channels                                                                                                             |
 
 ## Võimsusnäitajad
 
 Nodes with INA-series power sensors can report:
 
-| Meetriline  | Kirjeldus                                 |
-| ----------- | ----------------------------------------- |
-| Bus Voltage | Supply rail voltage                       |
-| Pinge       | Power consumption (mA) |
-| Toide       | Calculated power (mW)  |
+| Meetriline | Kirjeldus                       |
+| ---------- | ------------------------------- |
+| Vool       | Per-channel voltage reading     |
+| Pinge      | Per-channel current draw, in mA |
+
+The node detail screen shows read-only cards for channels 1 to 3. Use the chart button on the **Power Metrics** row to open the chart screen, which lists a chip for every channel that reported data — up to eight — and charts the one you select. Rename a channel there, in the label field under the chips, to something like Solar or Battery. There is no separate wattage reading; the app charts voltage and current, and does not compute power from them.
 
 Kasulik päikesepaneelide laadimise või aku seisundi jälgimiseks kaugsõlmedes.
 
 ## Configuring Telemetry
 
-1. Mine menüüsse **Seaded → Mooduli konfiguratsioon → Telemeetria**.
-2. Set reporting intervals:
-   - **Seadme mõõdikute intervall** – kui tihti seadme mõõdikuid levitada
-   - **Keskkonnamõõdikute intervall** – kui tihti anduriandmeid levitada
-3. Enable specific sensor types as needed.
+1. Navigate to **Settings → Module configuration → Telemetry**.
+2. Each metric group has its own enable toggle and its own interval:
 
-### Recommended Intervals
+   - **Device Metrics** — battery, voltage, uptime, ChUtil, and AirUtil. Its enable toggle, **Send Device Telemetry**, appears only on firmware 2.7.12 and later; on older firmware you can change the interval but not turn the group off
+   - **Environment Metrics** — temperature, humidity, pressure and the other sensor readings
+   - **Air Quality Metrics** — particulate and CO₂ readings
+   - **Power Metrics** — the per-channel voltage and current readings
 
-| Use Case                                   | Device (s) | Environment (s) |
-| ------------------------------------------ | ----------------------------- | ---------------------------------- |
-| Urban mesh (many nodes) | 3600                          | 3600                               |
-| Rural mesh (few nodes)  | 900                           | 900                                |
-| Weather station                            | 900                           | 300                                |
-| Aku säilitus                               | 7200                          | 7200                               |
+   Environment and Power each have an extra toggle to show their readings on the radio's own
+   screen, and Environment has one more to show its temperatures there in Fahrenheit.
 
-> ⚠️ **Märkus:** Lühemad intervallid suurendavad saate kasutusaega ja aku tühjenemist.
+### Choosing an Interval
+
+These are nominal values, not hard schedules. On a congested mesh the firmware automatically
+backs off to longer intervals based on how many nodes are online, so you do not need to
+hand-tune them for mesh size. Lengthen them deliberately only to save battery.
 
 ## Air Quality Metrics
 
 Nodes with particulate matter or CO₂ sensors report air quality data:
 
-| Meetriline            | Unit  | Kirjeldus                         |
+| Meetriline            | Ühik  | Kirjeldus                         |
 | --------------------- | ----- | --------------------------------- |
 | PM1.0 | µg/m³ | Ultrafine particulate matter      |
 | PM2.5 | µg/m³ | Fine particulate matter           |
@@ -105,33 +131,26 @@ Nodes with particulate matter or CO₂ sensors report air quality data:
 
 CO₂ sensors such as the SCD4x also report their own temperature and humidity, which appear alongside the readings above. From PM2.5 history the app additionally derives an **EPA NowCast AQI** value.
 
-The CO₂ reading is color-coded by severity (Good → Stuffy → Poor → Unsafe → Evacuate). See [Node Metrics — Air Quality](node-metrics#air-quality-metrics) for the exact ppm bands, colors, and AQI detail.
+CO₂ näit on värvikoodiga märgitud vastavalt raskusastmele (Hea → Umbne → Halb → Ohtlik → Evakueeruda). Täpsete ppm-vahemike, värvide ja õhukvaliteedi indeksite üksikasjade saamiseks vaata [Sõlme mõõdikud — õhukvaliteet](node-metrics#air-quality-metrics).
 
 Õhukvaliteedi andmeid saab vaadata infokaartidena sõlme detailvaates, aja jooksul graafikule lisada ja CSV-vormingusse salvestada.
 
 ## Viewing Telemetry
 
 1. Mine **Seadmed** ja vali seade.
-2. Telemetry sections show on the detail screen:
-   - Device Metrics (always available)
-   - Environment Metrics (if sensors present)
-   - Power Metrics (if INA sensor present)
-   - Air Quality Metrics (if PM/CO₂ sensor present)
-3. Historical graphs show trends over time.
+2. The **Telemetry** section lists a row for every metric type — Device, Environment, Air Quality, Power, and the rest — whether or not this node has reported it. A row fills in with readings, and grows a chart button, once that node has actually sent that kind of telemetry. An empty row means nothing has arrived yet, not that the sensor is missing.
+3. Use the chart button on a row to open that metric's history, where you can pick a time frame and export the readings as CSV.
 
-![Telemetry actions](../../assets/screenshots/node-metrics_telemetric_actions.png)
+![Node detail screen with the telemetry chart action menu open](../../assets/screenshots/node-metrics_telemetric_actions.png)
 
-## Troubleshooting
+## Veaotsing
 
 - **Keskkonnaandmeid ei kuvata?** Kaugühenduse jaoks on vaja ühendada füüsiline andur (nt BME280 I2C-l). Seadme telemeetria (aku, tööaeg) on ​​alati saadaval, kuid keskkonnamõõdikute jaoks on vaja riistvara.
 - **Vananenud näidud?** Kontrolli aruandlusintervalli – väga pikad intervallid (7200+ sekundit) tähendavad harva andmete uuendamist. Samuti veendu, et kaugsõlm on endiselt võrgus.
 - **Sensor conflict on I2C bus?** Some sensors share I2C addresses. Kui samal siinil on mitu andurit, kontrolli raadio jadapordi arendajaväljundis aadresside kokkupõrkeid.
 
-## Related Topics
+## Seotud teemad
 
 - [Node Metrics](node-metrics) — view telemetry data on the node detail screen
 - [Seaded — Moodulid ja administreerimine](settings-module-admin) — telemeetriamooduli konfiguratsioon
 - [Ühikud ja lokaat](units-and-locale) — temperatuuri ja rõhu kuvamise ühikud
-
----
-

@@ -33,10 +33,13 @@ import org.meshtastic.core.database.entity.ContactSettings
 import org.meshtastic.core.database.entity.Packet
 import org.meshtastic.core.database.entity.PacketEntity
 import org.meshtastic.core.database.entity.ReactionEntity
+import org.meshtastic.core.model.ContactKey
 import org.meshtastic.core.model.DataPacket
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.NodeAddress
-import org.meshtastic.proto.ChannelSettings
+import org.meshtastic.core.model.util.ChannelKeyChange
+import org.meshtastic.core.model.util.ConversationSlot
+import org.meshtastic.proto.MeshPacket
 
 @Suppress("TooManyFunctions", "LargeClass")
 @Dao
@@ -164,6 +167,9 @@ interface PacketDao {
 
     @Upsert suspend fun insert(packet: Packet)
 
+    /** Inserts a new packet row and returns its auto-generated stable database UUID. */
+    @Insert suspend fun insertAndGetId(packet: Packet): Long
+
     @Transaction
     @Query(
         """
@@ -272,6 +278,109 @@ interface PacketDao {
     }
 
     @Transaction
+    suspend fun updateMessageStatusByPersistedId(myNodeNum: Int, uuid: Long, status: MessageStatus) {
+        getPacketByPersistedId(myNodeNum, uuid)?.let { update(it.copy(data = it.data.copy(status = status))) }
+    }
+
+    /**
+     * Atomically claims one stable packet row for sending. A returned QUEUED packet means this call performed the
+     * QUEUED -> ENROUTE transition and owns the send; any other returned status means another path already handled it.
+     *
+     * A packet whose conversation was archived while it sat in the queue is never claimed. Its stored channel index
+     * still points at the slot it was composed for, and something else occupies that slot now, so sending it would put
+     * the message on a channel the user never chose. This runs in the same transaction as the status transition, which
+     * is what makes the check hold against a reconciliation landing mid-send.
+     */
+    @Transaction
+    suspend fun claimQueuedPacket(myNodeNum: Int, uuid: Long): Packet? {
+        val packet =
+            getPacketByPersistedId(myNodeNum, uuid)?.takeUnless { ContactKey(it.contact_key).isRetired } ?: return null
+        if (packet.data.status == MessageStatus.QUEUED) {
+            update(packet.copy(data = packet.data.copy(status = MessageStatus.ENROUTE)))
+        }
+        return packet
+    }
+
+    /** Legacy claim used only by pre-upgrade WorkManager jobs whose mesh packet ID still resolves to one row. */
+    @Transaction
+    suspend fun claimQueuedPacketByPacketIdIfUnique(packetId: Int): Packet? {
+        val packet =
+            findPacketsWithId(packetId).singleOrNull()?.takeUnless { ContactKey(it.contact_key).isRetired }
+                ?: return null
+        if (packet.data.status == MessageStatus.QUEUED) {
+            update(packet.copy(data = packet.data.copy(status = MessageStatus.ENROUTE)))
+        }
+        return packet
+    }
+
+    /** Rolls back a failed send only while the exact claimed row is still ENROUTE, preserving any racing ACK update. */
+    @Transaction
+    suspend fun rollbackEnroutePacket(myNodeNum: Int, uuid: Long): Boolean {
+        val packet = getPacketByPersistedId(myNodeNum, uuid)
+        val canRollback = packet?.data?.status == MessageStatus.ENROUTE
+        if (canRollback) update(packet.copy(data = packet.data.copy(status = MessageStatus.QUEUED)))
+        return canRollback
+    }
+
+    /**
+     * Resolves only an unambiguous row matching the identity available on an outgoing protobuf packet. Mesh packet IDs
+     * are sender-scoped, so ID-only lookup can select an inbound packet or an unrelated command with the same ID.
+     */
+    @Transaction
+    suspend fun resolveOutgoingPacket(packet: MeshPacket): Packet? =
+        outgoingCandidates(packet, findPacketsWithId(packet.id)).singleOrNull()
+
+    /**
+     * Resolves and conditionally applies a queue-stage status without racing a terminal ACK/NAK update.
+     *
+     * @return the resolved row as read before the update, or null when no unambiguous outgoing row matches.
+     */
+    @Transaction
+    suspend fun applyOutgoingQueueStatus(packet: MeshPacket, status: MessageStatus): Packet? {
+        val match = resolveOutgoingPacket(packet) ?: return null
+        if (shouldApplyOutgoingQueueStatus(match.data.status, status)) {
+            update(match.copy(data = match.data.copy(status = status)))
+        }
+        return match
+    }
+
+    /**
+     * Reaction equivalent of [applyOutgoingQueueStatus], restricted to one unambiguous outgoing row.
+     *
+     * @return the resolved reaction as read before the update, or null when no unambiguous non-received row matches.
+     */
+    @Transaction
+    suspend fun applyOutgoingReactionQueueStatus(packetId: Int, status: MessageStatus): ReactionEntity? {
+        val match =
+            findReactionsWithId(packetId).filter { it.status != MessageStatus.RECEIVED }.singleOrNull() ?: return null
+        if (shouldApplyOutgoingQueueStatus(match.status, status)) update(match.copy(status = status))
+        return match
+    }
+
+    private fun outgoingCandidates(packet: MeshPacket, stored: List<Packet>): List<Packet> {
+        val portNum = packet.decoded?.portnum?.value
+        return stored.filter {
+            it.data.from.matchesNodeNum(packet.from, packet.from) &&
+                it.data.to.matchesNodeNum(packet.to, packet.from) &&
+                (portNum == null || it.data.dataType == portNum)
+        }
+    }
+
+    /** Updates the unique outgoing row, preferring the only candidate already at [status] when duplicates exist. */
+    @Transaction
+    suspend fun updateOutgoingMessageStatus(packet: MeshPacket, status: MessageStatus): Packet? {
+        val matches = outgoingCandidates(packet, findPacketsWithId(packet.id))
+        val alreadyAtStatus = matches.filter { it.data.status == status }
+        val match =
+            when {
+                alreadyAtStatus.size == 1 -> alreadyAtStatus.single()
+                alreadyAtStatus.isNotEmpty() -> null
+                else -> matches.singleOrNull()
+            }
+        return match?.also { if (it.data.status != status) update(it.copy(data = it.data.copy(status = status))) }
+    }
+
+    @Transaction
     suspend fun updateMessageId(data: DataPacket, id: Int) {
         val new = data.copy(id = id)
         // Match on key fields that identify the packet
@@ -315,11 +424,44 @@ interface PacketDao {
     @Query(
         """
         SELECT * FROM packet
+        WHERE packet_id = :packetId
+        AND contact_key = :contactKey
+        AND (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node))
+        """,
+    )
+    suspend fun getPacketsByPacketIdAndContact(packetId: Int, contactKey: String): List<PacketEntity>
+
+    @Query(
+        """
+        SELECT * FROM packet
+        WHERE uuid = :uuid
+        AND myNodeNum = :myNodeNum
+        AND (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node))
+        LIMIT 1
+        """,
+    )
+    suspend fun getPacketByPersistedId(myNodeNum: Int, uuid: Long): Packet?
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM packet
         WHERE packet_id IN (:packetIds)
         AND (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node))
         """,
     )
     suspend fun getPacketsByPacketIds(packetIds: List<Int>): List<PacketEntity>
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM packet
+        WHERE packet_id IN (:packetIds)
+        AND contact_key = :contactKey
+        AND (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node))
+        """,
+    )
+    suspend fun getPacketsByPacketIdsAndContact(packetIds: List<Int>, contactKey: String): List<PacketEntity>
 
     @Query(
         """
@@ -350,6 +492,15 @@ interface PacketDao {
     """,
     )
     suspend fun getAllDataPackets(): List<DataPacket>
+
+    @Query(
+        """
+        SELECT * FROM packet
+        WHERE (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node))
+        ORDER BY received_time ASC
+        """,
+    )
+    suspend fun getAllPersistedPackets(): List<Packet>
 
     @Query(
         """
@@ -387,6 +538,79 @@ interface PacketDao {
     @Query("UPDATE contact_settings SET muteUntil = :muteUntil WHERE contact_key IN (:contactKeys)")
     suspend fun updateMuteUntil(contactKeys: List<String>, muteUntil: Long)
 
+    @Query("UPDATE contact_settings SET draft = :draft WHERE contact_key = :contact")
+    suspend fun updateDraft(contact: String, draft: String)
+
+    /**
+     * Persists the unsent composer text for [contact], creating the settings row if absent. INSERT OR IGNORE plus a
+     * targeted UPDATE, like [updateLastReadMessage], so mute and filtering survive without a read-modify-write.
+     */
+    @Transaction
+    suspend fun setDraft(contact: String, draft: String) {
+        insertContactSettingsIgnore(listOf(ContactSettings(contact_key = contact)))
+        updateDraft(contact, draft)
+    }
+
+    @Query("SELECT draft FROM contact_settings WHERE contact_key = :contact LIMIT 1")
+    suspend fun getDraft(contact: String): String?
+
+    @Query("UPDATE contact_settings SET pinned = :pinned WHERE contact_key IN (:contactKeys)")
+    suspend fun updatePinned(contactKeys: List<String>, pinned: Boolean)
+
+    @Transaction
+    suspend fun setPinned(contactKeys: List<String>, pinned: Boolean) {
+        // Select-all can hand this every conversation, and SQLite rejects an IN clause past its bind-parameter limit.
+        for (chunk in contactKeys.chunked(SQLITE_MAX_BIND_PARAMETERS)) {
+            insertContactSettingsIgnore(chunk.map { ContactSettings(contact_key = it) })
+            updatePinned(chunk, pinned)
+        }
+    }
+
+    /**
+     * Unconditional watermark rewind, for marking a conversation unread again.
+     *
+     * [updateLastReadMessageIfNewer] refuses to move the watermark backwards, which is right for the read path but
+     * would strand a mark-unread: the packet's `read` flag would be 0 while the watermark still claimed everything was
+     * read, and the message screen's clear path — which no-ops unless the incoming timestamp is newer — could never
+     * clear the badge again.
+     */
+    @Query(
+        """
+        UPDATE contact_settings
+        SET last_read_message_uuid = :messageUuid,
+            last_read_message_timestamp = :lastReadTimestamp
+        WHERE contact_key = :contact
+        """,
+    )
+    suspend fun rewindLastReadMessage(contact: String, messageUuid: Long?, lastReadTimestamp: Long?)
+
+    @Query(
+        """
+    SELECT uuid FROM packet
+    WHERE (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node))
+        AND port_num = 1 AND contact_key = :contact AND filtered = 0
+    ORDER BY received_time DESC
+    LIMIT 1
+    """,
+    )
+    suspend fun getNewestMessageUuid(contact: String): Long?
+
+    @Query("UPDATE packet SET read = 0 WHERE uuid = :uuid")
+    suspend fun markPacketUnread(uuid: Long)
+
+    /**
+     * Marks [contact] unread by flipping its newest message back to unread and rewinding the read watermark past it.
+     * Both writes are needed: the badge counts `read = 0` packets, while the watermark is what the message screen
+     * compares against when it later clears the conversation.
+     */
+    @Transaction
+    suspend fun markContactUnread(contact: String) {
+        val newest = getNewestMessageUuid(contact) ?: return
+        markPacketUnread(newest)
+        insertContactSettingsIgnore(listOf(ContactSettings(contact_key = contact)))
+        rewindLastReadMessage(contact, messageUuid = null, lastReadTimestamp = null)
+    }
+
     @Transaction
     suspend fun setMuteUntil(contacts: List<String>, until: Long) {
         val absoluteMuteUntil =
@@ -423,6 +647,15 @@ interface PacketDao {
         """,
     )
     suspend fun getReactionByPacketId(packetId: Int): ReactionEntity?
+
+    @Query(
+        """
+        SELECT * FROM reactions
+        WHERE status = :status
+        AND (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node))
+        """,
+    )
+    suspend fun getReactionsByStatus(status: MessageStatus): List<ReactionEntity>
 
     @Transaction
     @Query(
@@ -512,54 +745,118 @@ interface PacketDao {
     // endregion
 
     /**
-     * One-time migration: Remap all message DataPacket.channel indices to new mapping using PSK after a channel
-     * reorder. For each Packet (with port_num = 1), finds the old PSK then sets the channel index to the matching
-     * newSettings index. Skips if PSKs do not match or are missing.
+     * Re-keys conversations after the radio's channel set changed, applying a plan from `planChannelReconciliation`.
+     *
+     * Conversations are keyed by channel *index*, so a slot that changes occupant would otherwise show the previous
+     * channel's history under the new channel. Each change moves one conversation: to another slot (the channel was
+     * reordered), to a retired key (the channel is gone), or back from a retired key (the channel came back).
+     *
+     * Direct messages move with their slot but are never retired — a DM is a conversation with a node, not with a
+     * channel, and losing that history because the channel set changed would be worse than the misfiling this repairs.
+     *
+     * All the rows that will move are read before any is written, so a slot swap cannot double-move a conversation.
      */
     @Transaction
-    suspend fun migrateChannelsByPSK(oldSettings: List<ChannelSettings>, newSettings: List<ChannelSettings>) {
-        // Pre-calculate mapping from old index to new index
-        val indexMap =
-            oldSettings
-                .mapIndexed { oldIndex, oldChannel ->
-                    val pskMatches =
-                        newSettings.mapIndexedNotNull { index, channel ->
-                            if (channel.psk == oldChannel.psk) index to channel else null
-                        }
+    suspend fun applyChannelReconciliation(changes: List<ChannelKeyChange>) {
+        if (changes.isEmpty()) return
+        val liveMoves = changes.filter { it.from is ConversationSlot.Live && it.to is ConversationSlot.Live }
+        val retirements = changes.filter { it.to is ConversationSlot.Retired }
+        val reclaims = changes.filter { it.from is ConversationSlot.Retired }
 
-                    val newIndex =
-                        when {
-                            pskMatches.isEmpty() -> null
+        // Retirements first. A retirement frees its slot with a wholesale key rewrite, so any move that targets
+        // that slot has to land afterwards -- otherwise the moved conversation is sitting on the key the retirement
+        // is about to sweep, and both end up in the same archive.
+        for (change in retirements) {
+            val fromIndex = (change.from as ConversationSlot.Live).index
+            val token = (change.to as ConversationSlot.Retired).token
+            moveContact(
+                from = ContactKey.broadcast(fromIndex).value,
+                to = ContactKey.retiredBroadcast(token).value,
+                displayName = change.displayName,
+            )
+        }
 
-                            pskMatches.size == 1 -> pskMatches.first().first
+        applyLiveMoves(liveMoves)
 
-                            else -> {
-                                // Multiple matches with same PSK. Disambiguate by Name.
-                                val nameMatches = pskMatches.filter { it.second.name == oldChannel.name }
-                                if (nameMatches.size == 1) {
-                                    nameMatches.first().first
-                                } else {
-                                    // Still ambiguous. Prefer keeping same index.
-                                    pskMatches.find { it.first == oldIndex }?.first ?: pskMatches.first().first
-                                }
-                            }
-                        }
-                    oldIndex to newIndex
-                }
-                .toMap()
-
-        val allPackets = getAllUserPacketsForMigration()
-        for (packet in allPackets) {
-            val oldIndex = packet.data.channel
-            val newIndex = indexMap[oldIndex]
-            if (newIndex != null && oldIndex != newIndex) {
-                // Rebuild contact_key with the new index, keeping the rest unchanged
-                val oldKeySuffix = packet.contact_key.dropWhile { it.isDigit() }
-                val newContactKey = "$newIndex$oldKeySuffix"
-                update(packet.copy(contact_key = newContactKey, data = packet.data.copy(channel = newIndex)))
-            }
+        for (change in reclaims) {
+            val token = (change.from as ConversationSlot.Retired).token
+            val toIndex = (change.to as ConversationSlot.Live).index
+            // After the moves above, never before: a reclaimed reaction stamped with its new index would otherwise be
+            // swept up by a move out of that same index. Scoped by the retired conversation's packets, which still
+            // carry the retired key at this point.
+            retargetReactionsForContact(ContactKey.retiredBroadcast(token).value, toIndex)
+            moveContact(
+                from = ContactKey.retiredBroadcast(token).value,
+                to = ContactKey.broadcast(toIndex).value,
+                displayName = "",
+                toChannel = toIndex,
+            )
         }
     }
+
+    /**
+     * Every retired conversation currently holding messages, by its channel-identity token.
+     *
+     * Messages, not settings: deleting an archived conversation removes its packets but leaves its settings row, and
+     * counting that row as parked would resurrect the deleted conversation's mute and pin onto the fresh channel if
+     * that channel were ever re-added.
+     */
+    suspend fun getRetiredContactTokens(): Set<String> =
+        getRetiredPacketContactKeys().mapNotNullTo(mutableSetOf()) { ContactKey(it).retiredToken }
+
+    @Query("SELECT DISTINCT contact_key FROM packet WHERE contact_key LIKE '~%'")
+    suspend fun getRetiredPacketContactKeys(): List<String>
+
+    /**
+     * Moves one whole conversation to [to], carrying its settings (mute, pin, draft, read marker) with it.
+     *
+     * [displayName] labels a retired conversation, whose slot no longer names it; it is cleared on the way back.
+     * [toChannel], when given, restores the packets' channel index — a retired conversation keeps the index it was
+     * retired from so a later reclaim knows which reactions belong to it.
+     */
+    @Transaction
+    suspend fun moveContact(from: String, to: String, displayName: String, toChannel: Int? = null) {
+        val existing = getContactSettings(from)
+        if (existing != null) {
+            deleteContactSettings(from)
+            deleteContactSettings(to)
+            insertContactSettingsIgnore(listOf(existing.copy(contact_key = to, displayName = displayName)))
+        } else if (displayName.isNotEmpty()) {
+            insertContactSettingsIgnore(listOf(ContactSettings(contact_key = to, displayName = displayName)))
+        }
+        if (toChannel != null) {
+            for (packet in getPacketsForContact(from)) {
+                update(packet.copy(contact_key = to, data = packet.data.copy(channel = toChannel)))
+            }
+        } else {
+            retargetContactKey(from = from, to = to)
+        }
+    }
+
+    @Query("UPDATE packet SET contact_key = :to WHERE contact_key = :from")
+    suspend fun retargetContactKey(from: String, to: String)
+
+    @Query("SELECT * FROM packet WHERE contact_key = :contact")
+    suspend fun getPacketsForContact(contact: String): List<Packet>
+
+    @Query("DELETE FROM contact_settings WHERE contact_key = :contact")
+    suspend fun deleteContactSettings(contact: String)
+
+    @Query("UPDATE reactions SET channel = :to WHERE channel = :from")
+    suspend fun retargetReactionChannel(from: Int, to: Int)
+
+    /**
+     * Re-stamps the reactions belonging to one conversation's messages.
+     *
+     * Scoped through the conversation's own packet ids rather than by channel, because a retired conversation keeps the
+     * index it was retired from and a live channel may since have taken that index over. A mesh packet id is only
+     * unique per sender, so the node scope keeps another device's rows out of it.
+     */
+    @Suppress("MaxLineLength")
+    @Query(
+        "UPDATE reactions SET channel = :to WHERE (myNodeNum = 0 OR myNodeNum = (SELECT myNodeNum FROM my_node)) AND reply_id IN (SELECT packet_id FROM packet WHERE contact_key = :contact)",
+    )
+    suspend fun retargetReactionsForContact(contact: String, to: Int)
 
     @Query("SELECT * FROM packet WHERE port_num = 1")
     suspend fun getAllUserPacketsForMigration(): List<Packet>
@@ -630,6 +927,65 @@ interface PacketDao {
                 update(updated)
             }
     }
+
+    /**
+     * Stamps [routingError] on a sent packet only while it is still [MessageStatus.ENROUTE]. The read and the write
+     * share one transaction so an ACK/NAK that resolves the packet concurrently is never overwritten by a send-ack
+     * timeout that sampled the row before it landed.
+     *
+     * @return true if a row was timed out.
+     */
+    @Transaction
+    suspend fun timeOutEnroutePacket(myNodeNum: Int, uuid: Long, routingError: Int): Boolean {
+        val existing = getPacketByPersistedId(myNodeNum, uuid)
+        val canTimeOut = existing?.data?.status == MessageStatus.ENROUTE
+        if (canTimeOut) {
+            update(existing.copy(data = existing.data.copy(status = MessageStatus.ERROR), routingError = routingError))
+        }
+        return canTimeOut
+    }
+
+    @Query(
+        """
+        UPDATE reactions
+        SET status = :failedStatus, routing_error = :routingError
+        WHERE myNodeNum = :myNodeNum
+        AND reply_id = :replyId
+        AND user_id = :userId
+        AND emoji = :emoji
+        AND status = :enrouteStatus
+        """,
+    )
+    suspend fun updateEnrouteReactionStatus(
+        myNodeNum: Int,
+        replyId: Int,
+        userId: String,
+        emoji: String,
+        routingError: Int,
+        enrouteStatus: MessageStatus,
+        failedStatus: MessageStatus,
+    ): Int
+
+    /**
+     * Atomically stamps [routingError] on a sent reaction only while it is still [MessageStatus.ENROUTE].
+     *
+     * @return true if a row was timed out.
+     */
+    suspend fun timeOutEnrouteReaction(
+        myNodeNum: Int,
+        replyId: Int,
+        userId: String,
+        emoji: String,
+        routingError: Int,
+    ): Boolean = updateEnrouteReactionStatus(
+        myNodeNum = myNodeNum,
+        replyId = replyId,
+        userId = userId,
+        emoji = emoji,
+        routingError = routingError,
+        enrouteStatus = MessageStatus.ENROUTE,
+        failedStatus = MessageStatus.ERROR,
+    ) == 1
 
     /**
      * Atomically finds reactions by [replacement]'s packetId + userId + emoji and updates every ownership-scoped copy,
@@ -788,4 +1144,90 @@ interface PacketDao {
     suspend fun rebuildFtsIndex()
 
     // endregion
+}
+
+private fun String?.matchesNodeNum(nodeNum: Int, localNodeNum: Int): Boolean =
+    when (val address = NodeAddress.fromString(this)) {
+        NodeAddress.Broadcast -> nodeNum == NodeAddress.NODENUM_BROADCAST
+        NodeAddress.Local -> nodeNum == localNodeNum
+        is NodeAddress.ByNum -> address.num == nodeNum
+        is NodeAddress.ById -> false
+    }
+
+/**
+ * Queue-stage status guard shared with callers that decide whether to arm follow-up work.
+ *
+ * Only [MessageStatus.ENROUTE] and [MessageStatus.ERROR] are owned by this transition. Terminal routing and SFPP
+ * statuses are applied by their dedicated state transitions.
+ */
+fun shouldApplyOutgoingQueueStatus(current: MessageStatus?, status: MessageStatus): Boolean = when (status) {
+    MessageStatus.ENROUTE -> current == null || current == MessageStatus.UNKNOWN || current == MessageStatus.QUEUED
+
+    MessageStatus.ERROR ->
+        current == null ||
+            current == MessageStatus.UNKNOWN ||
+            current == MessageStatus.QUEUED ||
+            current == MessageStatus.ENROUTE
+
+    else -> false
+}
+
+/**
+ * Parks a reaction's channel out of range while conversations swap slots. No live slot or PKI channel can hold a
+ * negative index, so a staged row cannot be picked up by the second phase of another move.
+ */
+private const val REACTION_CHANNEL_STAGING_OFFSET = 1000
+
+/**
+ * Re-keys the conversations that only changed slot.
+ *
+ * Every affected row is read before any is written, so a 0<->1 swap cannot be applied twice, and reaction channels are
+ * staged through a value no live slot can hold for the same reason. Only text messages are re-keyed: every other port
+ * is queried by port_num rather than by contact key, so a stale key on a waypoint row is invisible and rewriting one
+ * costs a blob write for nothing.
+ *
+ * Callers must have applied retirements already - a move into a slot a retirement is about to sweep would be swept with
+ * it.
+ */
+private suspend fun PacketDao.applyLiveMoves(liveMoves: List<ChannelKeyChange>) {
+    val sourceIndices = liveMoves.map { (it.from as ConversationSlot.Live).index }.toSet()
+    val movingPackets =
+        if (sourceIndices.isEmpty()) {
+            emptyList()
+        } else {
+            getAllUserPacketsForMigration().filter { ContactKey(it.contact_key).channelOrNull in sourceIndices }
+        }
+    val moveByIndex =
+        liveMoves.associate { change ->
+            (change.from as ConversationSlot.Live).index to (change.to as ConversationSlot.Live).index
+        }
+
+    // Settings are re-keyed the same way: read every affected row, then rewrite, so a swap cannot land a
+    // conversation's mute or pin on the channel it traded places with.
+    val movingSettings =
+        getAllContactSettingsSnapshot().mapNotNull { settings ->
+            val key = ContactKey(settings.contact_key)
+            val newIndex = moveByIndex[key.channelOrNull] ?: return@mapNotNull null
+            settings to "$newIndex${key.addressString}"
+        }
+
+    for (packet in movingPackets) {
+        val newIndex = moveByIndex[ContactKey(packet.contact_key).channelOrNull] ?: continue
+        val suffix = ContactKey(packet.contact_key).addressString
+        update(packet.copy(contact_key = "$newIndex$suffix", data = packet.data.copy(channel = newIndex)))
+    }
+    for ((settings, _) in movingSettings) {
+        deleteContactSettings(settings.contact_key)
+    }
+    for ((_, newKey) in movingSettings) {
+        deleteContactSettings(newKey)
+    }
+    insertContactSettingsIgnore(movingSettings.map { (settings, newKey) -> settings.copy(contact_key = newKey) })
+    // Two-phase, via a value no live slot can hold: a direct 0->1 then 1->0 would collapse both onto one channel.
+    for ((from, _) in moveByIndex) {
+        retargetReactionChannel(from = from, to = from - REACTION_CHANNEL_STAGING_OFFSET)
+    }
+    for ((from, to) in moveByIndex) {
+        retargetReactionChannel(from = from - REACTION_CHANNEL_STAGING_OFFSET, to = to)
+    }
 }

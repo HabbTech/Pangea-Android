@@ -14,8 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
-
 package org.meshtastic.feature.connections.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +35,6 @@ import org.meshtastic.core.resources.connected
 import org.meshtastic.core.resources.connected_sleeping
 import org.meshtastic.core.resources.connecting
 import org.meshtastic.core.resources.disconnect
-import org.meshtastic.core.resources.must_set_region
 import org.meshtastic.core.resources.node_restarting
 import org.meshtastic.core.resources.not_connected
 import org.meshtastic.core.resources.reconnecting
@@ -61,7 +57,6 @@ fun ConnectingDeviceInfo(
     val statusLabel =
         when (connectionStatus) {
             ConnectionStatus.CONNECTED -> stringResource(Res.string.connected)
-            ConnectionStatus.MUST_SET_REGION -> stringResource(Res.string.must_set_region)
             ConnectionStatus.CONNECTING -> connectionProgress ?: stringResource(Res.string.connecting)
             ConnectionStatus.RECONNECTING -> stringResource(Res.string.reconnecting)
             ConnectionStatus.RESTARTING -> stringResource(Res.string.node_restarting)
@@ -69,13 +64,12 @@ fun ConnectingDeviceInfo(
             ConnectionStatus.NOT_CONNECTED -> stringResource(Res.string.not_connected)
         }
 
-    // This card also renders when the transport is already CONNECTED but node info hasn't arrived yet
-    // (or the region needs setting), so only the not-yet-established states get "Stop Connecting".
+    // This card can also render while the transport is already CONNECTED but node info has not arrived yet, so only
+    // the not-yet-established lifecycle states get "Stop Connecting".
     val disconnectLabel =
         when (connectionStatus) {
             ConnectionStatus.CONNECTED,
             ConnectionStatus.CONNECTED_SLEEPING,
-            ConnectionStatus.MUST_SET_REGION,
             -> stringResource(Res.string.disconnect)
 
             ConnectionStatus.CONNECTING,

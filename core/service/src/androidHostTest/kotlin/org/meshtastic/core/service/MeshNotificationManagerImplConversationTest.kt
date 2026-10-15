@@ -35,6 +35,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.meshtastic.core.common.di.asServiceScope
+import org.meshtastic.core.common.state.RadioOperationLock
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.Message
@@ -43,6 +45,7 @@ import org.meshtastic.core.model.Node
 import org.meshtastic.core.repository.NodeRepository
 import org.meshtastic.core.repository.PacketRepository
 import org.meshtastic.core.repository.RadioConfigRepository
+import org.meshtastic.core.testing.runUntilSettled
 import org.meshtastic.core.testing.runWithRenderScope
 import org.meshtastic.proto.ChannelSet
 import org.meshtastic.proto.User
@@ -64,8 +67,30 @@ class MeshNotificationManagerImplConversationTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val systemNotificationManager = context.getSystemService(NotificationManager::class.java)!!
 
-    private val sender = Node(num = 7, user = User(id = "!00000007", long_name = "Hawk Ridge", short_name = "HAWK"))
-    private val me = Node(num = 42, user = User(id = "!0000002a", long_name = "Me Node", short_name = "ME"))
+    private val sender =
+        Node(
+            num = 7,
+            user =
+            User.Builder()
+                .also { wb ->
+                    wb.id = "!00000007"
+                    wb.long_name = "Hawk Ridge"
+                    wb.short_name = "HAWK"
+                }
+                .build(),
+        )
+    private val me =
+        Node(
+            num = 42,
+            user =
+            User.Builder()
+                .also { wb ->
+                    wb.id = "!0000002a"
+                    wb.long_name = "Me Node"
+                    wb.short_name = "ME"
+                }
+                .build(),
+        )
 
     private val packetRepository: PacketRepository = mock(MockMode.autofill)
     private val nodeRepository: NodeRepository = mock(MockMode.autofill)
@@ -90,7 +115,8 @@ class MeshNotificationManagerImplConversationTest {
             )
         },
         radioConfigRepository = lazy { radioConfigRepository },
-        scope = scope,
+        radioOperationLock = RadioOperationLock(),
+        scope = scope.asServiceScope(),
     )
 
     @Before
@@ -99,15 +125,17 @@ class MeshNotificationManagerImplConversationTest {
         systemNotificationManager.cancelAll()
         every { nodeRepository.ourNodeInfo } returns MutableStateFlow(me)
         every { nodeRepository.myNodeInfo } returns MutableStateFlow<MyNodeInfo?>(null)
-        every { nodeRepository.localStats } returns MutableStateFlow(org.meshtastic.proto.LocalStats())
+        every { nodeRepository.localStats } returns MutableStateFlow(org.meshtastic.proto.LocalStats.Builder().build())
         every { nodeRepository.nodeDBbyNum } returns MutableStateFlow(mapOf(7 to sender, 42 to me))
         everySuspend { nodeRepository.getNode(any()) } returns sender
         every { radioConfigRepository.channelSetFlow } returns
             flowOf(
-                ChannelSet(
-                    settings = listOf(MeshChannel.default.settings),
-                    lora_config = MeshChannel.default.loraConfig,
-                ),
+                ChannelSet.Builder()
+                    .also { wb ->
+                        wb.settings = listOf(MeshChannel.default.settings)
+                        wb.lora_config = MeshChannel.default.loraConfig
+                    }
+                    .build(),
             )
     }
 
@@ -142,7 +170,13 @@ class MeshNotificationManagerImplConversationTest {
      * `:androidApp` and is intentionally not on this module's test classpath.
      */
     private fun registerStubMainActivity() {
-        val componentName = android.content.ComponentName(context, "org.meshtastic.app.MainActivity")
+        registerStubActivity("org.meshtastic.app.MainActivity")
+        // The conversation notification also builds bubble metadata pointing at the bubble host.
+        registerStubActivity("org.meshtastic.app.BubbleActivity")
+    }
+
+    private fun registerStubActivity(className: String) {
+        val componentName = android.content.ComponentName(context, className)
         val activityInfo =
             android.content.pm.ActivityInfo().apply {
                 name = componentName.className
@@ -150,6 +184,70 @@ class MeshNotificationManagerImplConversationTest {
                 exported = true
             }
         org.robolectric.Shadows.shadowOf(context.packageManager).addOrUpdateActivity(activityInfo)
+    }
+
+    /**
+     * Bubble eligibility is a checklist the platform silently fails: it needs a long-lived conversation shortcut, a
+     * Person on the notification itself, and an activity target that is not launched with a NEW_TASK-style flag —
+     * `FLAG_ACTIVITY_NEW_DOCUMENT` included, which launches outside the bubble and collapses it.
+     */
+    @Test
+    fun `conversation notifications carry bubble metadata the platform will accept`() = runWithRenderScope { scope ->
+        val manager = createManager(scope).also { it.initChannels() }
+        mockHistory(message("hello", read = false, receivedTime = 1_000))
+
+        manager.updateMessageNotification("0^all", "Hawk Ridge", "hello", isBroadcast = true, channelName = "LongFast")
+        advanceUntilIdle()
+
+        val posted = activeByTag("message").single().notification
+        val bubble = posted.bubbleMetadata
+        assertNotNull(bubble, "conversation notifications must offer a bubble")
+        assertNotNull(bubble.icon, "a bubble without an icon is rejected")
+        assertEquals(
+            android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP,
+            bubble.icon?.type,
+            "Android 10 rejects a plain bitmap bubble icon",
+        )
+        assertEquals("0^all", posted.shortcutId, "the bubble needs its long-lived conversation shortcut")
+        assertTrue(
+            posted.extras.containsKey(Notification.EXTRA_PEOPLE_LIST),
+            "eligibility is judged on the notification's own person list, not MessagingStyle's",
+        )
+
+        val shadowIntent = org.robolectric.Shadows.shadowOf(bubble.intent)
+        val savedIntent = shadowIntent.savedIntent
+        assertEquals(
+            "org.meshtastic.app.BubbleActivity",
+            savedIntent.component?.className,
+            "bubbles must target the embeddable host, not the launcher activity",
+        )
+        assertEquals(
+            0,
+            savedIntent.flags and
+                (android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT),
+            "a NEW_TASK-style flag launches outside the bubble and collapses it",
+        )
+        // The other half of that rule: the platform can only add those flags itself if the PendingIntent is mutable.
+        assertTrue(
+            shadowIntent.flags and android.app.PendingIntent.FLAG_IMMUTABLE == 0,
+            "an immutable PendingIntent stops the platform applying the bubble's own launch flags",
+        )
+        assertTrue(
+            shadowIntent.flags and android.app.PendingIntent.FLAG_MUTABLE != 0,
+            "bubble PendingIntents are the documented exception to preferring FLAG_IMMUTABLE",
+        )
+    }
+
+    @Test
+    @Config(sdk = [29])
+    fun `conversation notifications post on Android 10`() = runWithRenderScope { scope ->
+        val manager = createManager(scope).also { it.initChannels() }
+        mockHistory(message("hello", read = false, receivedTime = 1_000))
+
+        manager.updateMessageNotification("0^all", "Hawk Ridge", "hello", isBroadcast = true, channelName = "LongFast")
+        advanceUntilIdle()
+
+        assertNotNull(activeByTag("message").single().notification.bubbleMetadata)
     }
 
     @Test
@@ -216,7 +314,10 @@ class MeshNotificationManagerImplConversationTest {
             // SERVICE_NOTIFY_ID is 101; a node whose num is also 101 used to overwrite the foreground notification.
             manager.updateServiceStateNotification(ConnectionState.Connected, telemetry = null)
             manager.showOrUpdateLowBatteryNotification(Node(num = 101), isRemote = false)
-            advanceUntilIdle()
+            runUntilSettled {
+                systemNotificationManager.activeNotifications.any { it.id == 101 && it.tag == null } &&
+                    activeByTag("low_battery").any { it.id == 101 }
+            }
 
             val service = systemNotificationManager.activeNotifications.filter { it.id == 101 && it.tag == null }
             val battery = activeByTag("low_battery").filter { it.id == 101 }

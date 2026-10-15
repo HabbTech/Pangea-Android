@@ -14,8 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
-
 package org.meshtastic.feature.node.detail
 
 import androidx.compose.animation.Crossfade
@@ -27,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +40,7 @@ import org.meshtastic.feature.node.component.AdministrationSection
 import org.meshtastic.feature.node.component.DeviceActions
 import org.meshtastic.feature.node.component.DeviceLinksSection
 import org.meshtastic.feature.node.component.NodeDetailsSection
+import org.meshtastic.feature.node.component.NodeMenuAction
 import org.meshtastic.feature.node.component.NotesSection
 import org.meshtastic.feature.node.model.NodeDetailAction
 
@@ -108,6 +106,10 @@ fun NodeDetailList(
                 node = node,
                 deviceHardware = uiState.metricsState.deviceHardware,
                 reportedTarget = uiState.metricsState.reportedTarget,
+                isLocal = uiState.metricsState.isLocal,
+                onRequestUserInfo = {
+                    onAction(NodeDetailAction.HandleNodeMenuAction(NodeMenuAction.RequestUserInfo(node)))
+                },
             )
         }
         if (uiState.metricsState.deviceLinks.isNotEmpty()) {
@@ -124,6 +126,7 @@ fun NodeDetailList(
                 displayUnits = uiState.metricsState.displayUnits,
                 isFahrenheit = uiState.metricsState.isFahrenheit,
                 isLocal = uiState.metricsState.isLocal,
+                hasConversation = uiState.hasConversation,
                 airQualityHistory = uiState.metricsState.airQualityMetrics,
             )
         }

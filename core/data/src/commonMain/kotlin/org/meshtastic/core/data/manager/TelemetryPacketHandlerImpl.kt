@@ -17,11 +17,10 @@
 package org.meshtastic.core.data.manager
 
 import co.touchlab.kermit.Logger
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.common.di.ServiceScope
 import org.meshtastic.core.common.util.clampTimestampToNow
 import org.meshtastic.core.model.DataPacket
 import org.meshtastic.core.model.Node
@@ -52,7 +51,7 @@ class TelemetryPacketHandlerImpl(
     private val connectionManager: Lazy<MeshConnectionManager>,
     private val notificationManager: NotificationManager,
     private val radioInterfaceService: RadioInterfaceService,
-    @Named("ServiceScope") private val scope: CoroutineScope,
+    private val scope: ServiceScope,
 ) : TelemetryPacketHandler {
 
     private val batteryMutex = Mutex()
@@ -68,7 +67,13 @@ class TelemetryPacketHandlerImpl(
         val payload = packet.decoded?.payload ?: return
         val telemetry =
             (Telemetry.ADAPTER.decodeOrNull(payload, Logger) ?: return).let {
-                if (it.time == 0) it.copy(time = (dataPacket.time.milliseconds.inWholeSeconds).toInt()) else it
+                if (it.time == 0) {
+                    it.newBuilder()
+                        .also { wb -> wb.time = (dataPacket.time.milliseconds.inWholeSeconds).toInt() }
+                        .build()
+                } else {
+                    it
+                }
             }
         Logger.d { "Telemetry from ${packet.from}: ${Telemetry.ADAPTER.toOneLiner(telemetry)}" }
         val fromNum = packet.from
@@ -81,6 +86,7 @@ class TelemetryPacketHandlerImpl(
             telemetry.environment_metrics?.let { nextNode = nextNode.copy(environmentMetrics = it) }
             telemetry.power_metrics?.let { nextNode = nextNode.copy(powerMetrics = it) }
             telemetry.air_quality_metrics?.let { nextNode = nextNode.copy(airQualityMetrics = it) }
+            telemetry.soil_water_metrics?.let { nextNode = nextNode.copy(soilWaterMetrics = it) }
             val telemetryTime = if (telemetry.time != 0) telemetry.time else nextNode.lastHeard
             val newLastHeard = clampTimestampToNow(maxOf(nextNode.lastHeard, telemetryTime))
             nextNode.copy(lastHeard = newLastHeard)

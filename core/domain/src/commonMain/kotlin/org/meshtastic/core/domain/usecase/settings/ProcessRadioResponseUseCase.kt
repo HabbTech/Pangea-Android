@@ -48,9 +48,16 @@ sealed class RadioResponseResult {
 
     data class ConnectionStatus(val status: DeviceConnectionStatus) : RadioResponseResult()
 
-    data class Error(val message: UiText) : RadioResponseResult()
+    data class Error(val message: UiText, val routingError: Routing.Error? = null) : RadioResponseResult()
 
     data object Success : RadioResponseResult()
+
+    /**
+     * A routing ACK for one of our requests arrived from [from], not the node the request was addressed to. For a
+     * request addressed to the connected node this means the radio renumbered itself between the request and its ACK —
+     * firmware 2.8 moves `my_node_num` to `crc32(public_key)` when it mints the key on the first region set.
+     */
+    data class UnexpectedAckSender(val from: Int) : RadioResponseResult()
 }
 
 /** Use case for processing incoming [MeshPacket]s that are responses to admin requests. */
@@ -80,13 +87,17 @@ open class ProcessRadioResponseUseCase {
 
     private fun processRoutingResponse(packet: MeshPacket, data: Data, destNum: Int): RadioResponseResult? {
         val parsed = Routing.ADAPTER.decode(data.payload)
+        val routingError = parsed.error_reason
         return when {
-            parsed.error_reason != Routing.Error.NONE ->
-                RadioResponseResult.Error(UiText.Resource(getStringResFrom(parsed.error_reason?.value ?: 0)))
+            routingError != null && routingError != Routing.Error.NONE ->
+                RadioResponseResult.Error(
+                    message = UiText.Resource(getStringResFrom(routingError.value)),
+                    routingError = routingError,
+                )
 
             packet.from == destNum -> RadioResponseResult.Success
 
-            else -> null
+            else -> RadioResponseResult.UnexpectedAckSender(from = packet.from)
         }
     }
 

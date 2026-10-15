@@ -31,26 +31,57 @@ class LoRaRegionPresetsTest {
 
     // group 0: standard US presets (unlicensed). group 1: a licensed-only region.
     private val map =
-        LoRaRegionPresetMap(
-            groups =
-            listOf(
-                LoRaPresetGroup(
-                    presets = listOf(ModemPreset.LONG_FAST, ModemPreset.LONG_SLOW, ModemPreset.SHORT_FAST),
-                    default_preset = ModemPreset.LONG_FAST,
-                    licensed_only = false,
-                ),
-                LoRaPresetGroup(
-                    presets = listOf(ModemPreset.TINY_FAST, ModemPreset.TINY_SLOW),
-                    default_preset = ModemPreset.TINY_FAST,
-                    licensed_only = true,
-                ),
-            ),
-            region_groups =
-            listOf(
-                LoRaRegionPresets(region = RegionCode.US, group_index = 0),
-                LoRaRegionPresets(region = RegionCode.UA_433, group_index = 1),
-            ),
-        )
+        LoRaRegionPresetMap.Builder()
+            .also { wb ->
+                wb.groups =
+                    listOf(
+                        LoRaPresetGroup.Builder()
+                            .also { wb ->
+                                wb.presets =
+                                    listOf(ModemPreset.LONG_FAST, ModemPreset.LONG_SLOW, ModemPreset.SHORT_FAST)
+                                wb.default_preset = ModemPreset.LONG_FAST
+                                wb.licensed_only = false
+                            }
+                            .build(),
+                        LoRaPresetGroup.Builder()
+                            .also { wb ->
+                                wb.presets = listOf(ModemPreset.TINY_FAST, ModemPreset.TINY_SLOW)
+                                wb.default_preset = ModemPreset.TINY_FAST
+                                wb.licensed_only = true
+                            }
+                            .build(),
+                        // group 2: models EU_N_868's superset advertising - LONG_FAST is legal but not the default.
+                        LoRaPresetGroup.Builder()
+                            .also { wb ->
+                                wb.presets = listOf(ModemPreset.LONG_FAST, ModemPreset.MEDIUM_FAST)
+                                wb.default_preset = ModemPreset.MEDIUM_FAST
+                                wb.licensed_only = false
+                            }
+                            .build(),
+                    )
+                wb.region_groups =
+                    listOf(
+                        LoRaRegionPresets.Builder()
+                            .also { wb ->
+                                wb.region = RegionCode.US
+                                wb.group_index = 0
+                            }
+                            .build(),
+                        LoRaRegionPresets.Builder()
+                            .also { wb ->
+                                wb.region = RegionCode.UA_433
+                                wb.group_index = 1
+                            }
+                            .build(),
+                        LoRaRegionPresets.Builder()
+                            .also { wb ->
+                                wb.region = RegionCode.EU_N_868
+                                wb.group_index = 2
+                            }
+                            .build(),
+                    )
+            }
+            .build()
 
     @Test
     fun `null map imposes no constraint`() {
@@ -69,10 +100,20 @@ class LoRaRegionPresetsTest {
     @Test
     fun `out of range group_index is treated as unconstrained`() {
         val broken =
-            LoRaRegionPresetMap(
-                groups = emptyList(),
-                region_groups = listOf(LoRaRegionPresets(region = RegionCode.US, group_index = 5)),
-            )
+            LoRaRegionPresetMap.Builder()
+                .also { wb ->
+                    wb.groups = emptyList()
+                    wb.region_groups =
+                        listOf(
+                            LoRaRegionPresets.Builder()
+                                .also { wb ->
+                                    wb.region = RegionCode.US
+                                    wb.group_index = 5
+                                }
+                                .build(),
+                        )
+                }
+                .build()
         assertNull(broken.constraintFor(RegionCode.US))
     }
 
@@ -80,10 +121,28 @@ class LoRaRegionPresetsTest {
     fun `a group with no presets is treated as unconstrained`() {
         // A degenerate/malformed group must degrade to the full preset list, not an empty picker.
         val empty =
-            LoRaRegionPresetMap(
-                groups = listOf(LoRaPresetGroup(presets = emptyList(), licensed_only = false)),
-                region_groups = listOf(LoRaRegionPresets(region = RegionCode.US, group_index = 0)),
-            )
+            LoRaRegionPresetMap.Builder()
+                .also { wb ->
+                    wb.groups =
+                        listOf(
+                            LoRaPresetGroup.Builder()
+                                .also { wb ->
+                                    wb.presets = emptyList()
+                                    wb.licensed_only = false
+                                }
+                                .build(),
+                        )
+                    wb.region_groups =
+                        listOf(
+                            LoRaRegionPresets.Builder()
+                                .also { wb ->
+                                    wb.region = RegionCode.US
+                                    wb.group_index = 0
+                                }
+                                .build(),
+                        )
+                }
+                .build()
         assertNull(empty.constraintFor(RegionCode.US))
         assertEquals(ModemPreset.LONG_FAST, empty.repairPresetFor(RegionCode.US, ModemPreset.LONG_FAST))
     }
@@ -122,20 +181,35 @@ class LoRaRegionPresetsTest {
         assertEquals(ModemPreset.LONG_FAST, map.repairPresetFor(RegionCode.US, ModemPreset.SHORT_TURBO))
     }
 
+    // A malformed map whose advertised default is not in its own legal set.
+    private val oddMap =
+        LoRaRegionPresetMap.Builder()
+            .also { wb ->
+                wb.groups =
+                    listOf(
+                        LoRaPresetGroup.Builder()
+                            .also { wb ->
+                                wb.presets = listOf(ModemPreset.MEDIUM_FAST, ModemPreset.MEDIUM_SLOW)
+                                wb.default_preset = ModemPreset.LONG_FAST
+                                // not in presets
+                                wb.licensed_only = false
+                            }
+                            .build(),
+                    )
+                wb.region_groups =
+                    listOf(
+                        LoRaRegionPresets.Builder()
+                            .also { wb ->
+                                wb.region = RegionCode.US
+                                wb.group_index = 0
+                            }
+                            .build(),
+                    )
+            }
+            .build()
+
     @Test
     fun `repair falls back to the first legal preset when the default is not in the group`() {
-        val oddMap =
-            LoRaRegionPresetMap(
-                groups =
-                listOf(
-                    LoRaPresetGroup(
-                        presets = listOf(ModemPreset.MEDIUM_FAST, ModemPreset.MEDIUM_SLOW),
-                        default_preset = ModemPreset.LONG_FAST, // not in presets
-                        licensed_only = false,
-                    ),
-                ),
-                region_groups = listOf(LoRaRegionPresets(region = RegionCode.US, group_index = 0)),
-            )
         assertEquals(ModemPreset.MEDIUM_FAST, oddMap.repairPresetFor(RegionCode.US, ModemPreset.SHORT_FAST))
     }
 
@@ -143,5 +217,189 @@ class LoRaRegionPresetsTest {
     fun `region default preset is LongTurbo for US and absent for other regions`() {
         assertEquals(ModemPreset.LONG_TURBO, defaultPresetFor(RegionCode.US))
         assertNull(defaultPresetFor(RegionCode.EU_868))
+    }
+
+    @Test
+    fun `region change keeps a legal preset when not fresh setup`() {
+        assertEquals(
+            ModemPreset.SHORT_FAST,
+            map.presetForRegionChange(RegionCode.EU_868, RegionCode.US, ModemPreset.SHORT_FAST),
+        )
+    }
+
+    @Test
+    fun `region change keeps a legal placeholder when not fresh setup`() {
+        // Default adoption is a fresh-setup rule only: an already-configured node moving regions keeps LONG_FAST.
+        assertEquals(
+            ModemPreset.LONG_FAST,
+            map.presetForRegionChange(RegionCode.US, RegionCode.EU_N_868, ModemPreset.LONG_FAST),
+        )
+    }
+
+    @Test
+    fun `fresh setup keeps a deliberately pinned legal preset`() {
+        // UNSET + a non-placeholder preset is a deliberate pin (e.g. USERPREFS_LORACONFIG_MODEM_PRESET, #6704).
+        assertEquals(
+            ModemPreset.SHORT_FAST,
+            map.presetForRegionChange(RegionCode.UNSET, RegionCode.US, ModemPreset.SHORT_FAST),
+        )
+    }
+
+    @Test
+    fun `fresh setup placeholder adopts the region's advertised default`() {
+        // LONG_FAST is legal in the EU_N_868 group, but the placeholder still adopts the advertised default.
+        assertEquals(
+            ModemPreset.MEDIUM_FAST,
+            map.presetForRegionChange(RegionCode.UNSET, RegionCode.EU_N_868, ModemPreset.LONG_FAST),
+        )
+    }
+
+    @Test
+    fun `fresh setup keeps LongFast when firmware advertises no map`() {
+        // Pre-2.8 firmware installs its own region-table default on its screen; the app must not diverge from it.
+        val nullMap: LoRaRegionPresetMap? = null
+        assertEquals(
+            ModemPreset.LONG_FAST,
+            nullMap.presetForRegionChange(RegionCode.UNSET, RegionCode.US, ModemPreset.LONG_FAST),
+        )
+    }
+
+    @Test
+    fun `no first-setup default is offered without a map`() {
+        val nullMap: LoRaRegionPresetMap? = null
+        assertNull(nullMap.firstSetupDefaultFor(RegionCode.US))
+    }
+
+    @Test
+    fun `no first-setup default when the map omits it from the region`() {
+        assertNull(map.firstSetupDefaultFor(RegionCode.US))
+    }
+
+    @Test
+    fun `fresh setup pin that is illegal in the region is still repaired`() {
+        assertEquals(
+            ModemPreset.LONG_FAST,
+            map.presetForRegionChange(RegionCode.UNSET, RegionCode.US, ModemPreset.SHORT_TURBO),
+        )
+    }
+
+    @Test
+    fun `fresh setup never adopts a malformed map's illegal advertised default`() {
+        assertEquals(
+            ModemPreset.MEDIUM_FAST,
+            oddMap.presetForRegionChange(RegionCode.UNSET, RegionCode.US, ModemPreset.LONG_FAST),
+        )
+    }
+
+    // A pinned build advertises its preset as UNSET's map entry (firmware #11507): the same fixture plus a
+    // single-preset UNSET group, here stating a deliberate LONG_FAST pin.
+    private val pinnedMap =
+        map.newBuilder()
+            .also { wb ->
+                wb.groups =
+                    map.groups +
+                    LoRaPresetGroup.Builder()
+                        .also { wb ->
+                            wb.presets = listOf(ModemPreset.LONG_FAST)
+                            wb.default_preset = ModemPreset.LONG_FAST
+                            wb.licensed_only = false
+                        }
+                        .build()
+                wb.region_groups =
+                    map.region_groups +
+                    LoRaRegionPresets.Builder()
+                        .also { wb ->
+                            wb.region = RegionCode.UNSET
+                            wb.group_index = 3
+                        }
+                        .build()
+            }
+            .build()
+
+    @Test
+    fun `an UNSET map entry marks even a LongFast pin as deliberate at fresh setup`() {
+        // Without the entry this placeholder would adopt EU_N_868's MEDIUM_FAST default (asserted above).
+        assertEquals(
+            ModemPreset.LONG_FAST,
+            pinnedMap.presetForRegionChange(RegionCode.UNSET, RegionCode.EU_N_868, ModemPreset.LONG_FAST),
+        )
+    }
+
+    @Test
+    fun `a pin stated via UNSET entry is still repaired when illegal in the region`() {
+        assertEquals(
+            ModemPreset.TINY_FAST,
+            pinnedMap.presetForRegionChange(RegionCode.UNSET, RegionCode.UA_433, ModemPreset.LONG_FAST),
+        )
+    }
+
+    // Mirrors what firmware 2.8 advertises for US: its whole legal preset list, defaulting to the region-table
+    // LongFast rather than the LongTurbo its own first-setup chooser installs.
+    private val firmware28Map =
+        LoRaRegionPresetMap.Builder()
+            .also { wb ->
+                wb.groups =
+                    listOf(
+                        LoRaPresetGroup.Builder()
+                            .also { g ->
+                                g.presets =
+                                    listOf(
+                                        ModemPreset.LONG_FAST,
+                                        ModemPreset.LONG_SLOW,
+                                        ModemPreset.MEDIUM_SLOW,
+                                        ModemPreset.MEDIUM_FAST,
+                                        ModemPreset.SHORT_SLOW,
+                                        ModemPreset.SHORT_FAST,
+                                        ModemPreset.LONG_MODERATE,
+                                        ModemPreset.SHORT_TURBO,
+                                        ModemPreset.LONG_TURBO,
+                                        ModemPreset.MEDIUM_TURBO,
+                                    )
+                                g.default_preset = ModemPreset.LONG_FAST
+                                g.licensed_only = false
+                            }
+                            .build(),
+                    )
+                wb.region_groups =
+                    listOf(
+                        LoRaRegionPresets.Builder()
+                            .also { r ->
+                                r.region = RegionCode.US
+                                r.group_index = 0
+                            }
+                            .build(),
+                    )
+            }
+            .build()
+
+    @Test
+    fun `first-setup default is offered when the map lists it as legal`() {
+        assertEquals(ModemPreset.LONG_TURBO, firmware28Map.firstSetupDefaultFor(RegionCode.US))
+    }
+
+    @Test
+    fun `fresh US setup adopts LongTurbo over the advertised LongFast default`() {
+        assertEquals(
+            ModemPreset.LONG_TURBO,
+            firmware28Map.presetForRegionChange(RegionCode.UNSET, RegionCode.US, ModemPreset.LONG_FAST),
+        )
+    }
+
+    @Test
+    fun `a later US change on the advertised map keeps the running preset`() {
+        // Default adoption stays a fresh-setup rule: an already-configured node is never moved off its preset.
+        assertEquals(
+            ModemPreset.LONG_FAST,
+            firmware28Map.presetForRegionChange(RegionCode.EU_868, RegionCode.US, ModemPreset.LONG_FAST),
+        )
+    }
+
+    @Test
+    fun `fresh setup falls back to the advertised default when the built-in is illegal there`() {
+        // The US group here omits LONG_TURBO, so the built-in cannot be adopted.
+        assertEquals(
+            ModemPreset.LONG_FAST,
+            map.presetForRegionChange(RegionCode.UNSET, RegionCode.US, ModemPreset.LONG_FAST),
+        )
     }
 }

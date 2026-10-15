@@ -105,7 +105,7 @@ interface NodeRepository {
      * @param filter A search string for filtering by name or ID.
      * @param includeUnknown Whether to include nodes with unset hardware models.
      * @param onlyOnline Whether to include only nodes currently considered online.
-     * @param onlyDirect Whether to include only nodes heard directly (0 hops away).
+     * @param onlyDirect Whether to include only nodes our radio heard directly: 0 hops away and not via MQTT.
      */
     fun getNodes(
         sort: NodeSortOption = NodeSortOption.LAST_HEARD,
@@ -159,6 +159,9 @@ interface NodeRepository {
      * @param notes The human-readable notes to persist.
      */
     suspend fun setNodeNotes(num: Int, notes: String)
+
+    /** Clears the unheard flag on every node. See NodeInfoDao.markAllHeardOnCurrentLora. */
+    suspend fun markAllHeardOnCurrentLora()
 
     /**
      * Sets one user-editable power-channel label (e.g. "Solar", "Battery"). The read-modify-write is atomic, so

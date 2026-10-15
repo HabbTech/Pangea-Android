@@ -34,6 +34,7 @@ import org.meshtastic.core.repository.ConnectionStateProvider
 import org.meshtastic.core.repository.PacketRepository
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.testing.FakeNodeRepository
+import org.meshtastic.core.ui.util.SnackbarManager
 import org.meshtastic.proto.ChannelSet
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -59,13 +60,14 @@ class ContactsViewModelTest {
 
         every { connectionStateProvider.connectionState } returns MutableStateFlow(ConnectionState.Disconnected)
         every { packetRepository.getUnreadCountTotal() } returns MutableStateFlow(0)
-        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet())
+        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet.Builder().build())
 
         viewModel =
             ContactsViewModel(
                 savedStateHandle = SavedStateHandle(),
                 nodeRepository = nodeRepository,
                 packetRepository = packetRepository,
+                snackbarManager = SnackbarManager(),
                 radioConfigRepository = radioConfigRepository,
                 connectionStateProvider = connectionStateProvider,
             )
@@ -92,6 +94,7 @@ class ContactsViewModelTest {
                 SavedStateHandle(),
                 nodeRepository,
                 packetRepository,
+                SnackbarManager(),
                 radioConfigRepository,
                 connectionStateProvider,
             )
@@ -126,6 +129,7 @@ class ContactsViewModelTest {
                 SavedStateHandle(mapOf("collapsed_contact_sections" to ContactSection.DIRECT_MESSAGES.key)),
                 nodeRepository,
                 packetRepository,
+                SnackbarManager(),
                 radioConfigRepository,
                 connectionStateProvider,
             )

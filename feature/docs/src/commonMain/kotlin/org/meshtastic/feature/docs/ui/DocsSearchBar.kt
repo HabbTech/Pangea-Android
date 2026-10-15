@@ -16,43 +16,44 @@
  */
 package org.meshtastic.feature.docs.ui
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SearchBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.doc_clear_search
 import org.meshtastic.core.resources.doc_search_placeholder
-import org.meshtastic.core.ui.icon.Close
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Search
+import org.meshtastic.core.ui.component.MeshtasticSearchBar
+import org.meshtastic.core.ui.component.SEARCH_BAR_EXPANDED_TAG_SUFFIX
+
+/**
+ * Tag for the collapsed field; distinct from [DOCS_SEARCH_BAR_EXPANDED_INPUT_FIELD_TAG] so tests can target it alone.
+ */
+const val DOCS_SEARCH_BAR_INPUT_FIELD_TAG = "DocsSearchBarInputField"
+
+/** Tag for the field instance the full-screen overlay shows once expanded. */
+const val DOCS_SEARCH_BAR_EXPANDED_INPUT_FIELD_TAG = DOCS_SEARCH_BAR_INPUT_FIELD_TAG + SEARCH_BAR_EXPANDED_TAG_SUFFIX
 
 /** Search bar for filtering documentation pages by keywords. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DocsSearchBar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
-    val searchPlaceholder = stringResource(Res.string.doc_search_placeholder)
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        placeholder = { Text(searchPlaceholder) },
-        leadingIcon = { Icon(imageVector = MeshtasticIcons.Search, contentDescription = null) },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(
-                        imageVector = MeshtasticIcons.Close,
-                        contentDescription = stringResource(Res.string.doc_clear_search),
-                    )
-                }
-            }
-        },
-        singleLine = true,
-        modifier = modifier.fillMaxWidth().semantics { contentDescription = searchPlaceholder },
+fun DocsSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    scrollBehavior: SearchBarScrollBehavior? = null,
+    expandedContent: @Composable ColumnScope.() -> Unit = {},
+) {
+    MeshtasticSearchBar(
+        query = query,
+        onQueryChange = onQueryChange,
+        placeholder = stringResource(Res.string.doc_search_placeholder),
+        modifier = modifier,
+        clearDescription = stringResource(Res.string.doc_clear_search),
+        inputFieldTag = DOCS_SEARCH_BAR_INPUT_FIELD_TAG,
+        scrollBehavior = scrollBehavior,
+        expandedContent = expandedContent,
     )
 }

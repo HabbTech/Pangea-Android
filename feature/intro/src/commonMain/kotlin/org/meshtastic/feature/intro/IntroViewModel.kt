@@ -30,10 +30,23 @@ class IntroViewModel : ViewModel() {
      *
      * Every path ends on [ExpertMode] (informational, no permission ask) so that no skip shortcut bypasses it; see
      * porting/notes/onboarding-routing.md in the project folder for the rationale.
+     *
+     * @param bluetoothRequiresLocation true on API < 31, where BLE scanning is gated by ACCESS_FINE_LOCATION rather
+     *   than the Android 12 "Nearby devices" permissions. There the Bluetooth screen has *already asked for the
+     *   location permission*, so following it with a Location screen asks the user for the same system permission twice
+     *   in a row — and a user who declines both has spent both of Android's allowed denials before ever seeing the app,
+     *   landing on USER_FIXED with no dialog available again. The Bluetooth screen covers both uses on those releases,
+     *   so the second ask is dropped rather than duplicated.
+     * @param bluetoothSupported false on hardware with no Bluetooth LE, where the Bluetooth screen is skipped.
      */
-    fun getNextKey(currentKey: NavKey, allPermissionsGranted: Boolean): NavKey? = when (currentKey) {
-        is Welcome -> Bluetooth
-        is Bluetooth -> Location
+    fun getNextKey(
+        currentKey: NavKey,
+        allPermissionsGranted: Boolean,
+        bluetoothRequiresLocation: Boolean = false,
+        bluetoothSupported: Boolean = true,
+    ): NavKey? = when (currentKey) {
+        is Welcome -> if (bluetoothSupported) Bluetooth else Location
+        is Bluetooth -> if (bluetoothRequiresLocation) Notifications else Location
         is Location -> Notifications
         is Notifications -> if (allPermissionsGranted) CriticalAlerts else ExpertMode
         is CriticalAlerts -> ExpertMode

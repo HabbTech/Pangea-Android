@@ -33,6 +33,7 @@ keystore.properties
 
 # Secrets
 /secrets.properties
+/google.properties
 /fastlane/play-store-credentials.json
 **/google-services.json
 
@@ -63,6 +64,14 @@ firebase-debug.log
 .agent_artifacts/
 # Firebase Studio / Antigravity auto-provisioned skills — not used by this project
 .agents/
+
+# JVM crash dumps (desktopApp test runs) — regenerable, and untracked paths leak into public Build Scans
+hs_err_pid*.log
+replay_pid*.log
+.attach_pid*
+
+# Local build output redirected to a file
+/build.log
 
 # Local library development clones
 /coil/

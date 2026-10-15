@@ -20,6 +20,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 
 // ─── Brand Colors (Design Standards v1.3) ───
 val MeshtasticGreen = Color(0xFF67EA94) // Green 500 — Brand Accent
@@ -156,6 +157,17 @@ object GraphColors {
     val SkyBlue = Color(0xFF03A9F4)
     val Chartreuse = Color(0xFF76FF03)
     val Coral = Color(0xFFFF6E40)
+
+    // Muted second tier. The vivid hues above are exhausted, so multi-channel series that need their own identity draw
+    // from here: a chart marker resolves its label by series color, so no two plotted series may share one.
+    val Brown = Color(0xFF8D6E63)
+    val BlueGrey = Color(0xFF78909C)
+    val Olive = Color(0xFF9E9D24)
+    val DeepPurple = Color(0xFF7E57C2)
+    val SeaGreen = Color(0xFF2E9E5B)
+    val Maroon = Color(0xFFA13D63)
+    val Mustard = Color(0xFFC9A227)
+    val Slate = Color(0xFF4A6572)
 }
 
 object StatusColors {
@@ -203,6 +215,16 @@ object StatusColors {
             } else {
                 Color(0xFF5C6BC0) // Info
             }
+
+    /**
+     * The maker hardware rung's hue from meshtastic/design#160, shared with the flasher; declared, never derived. The
+     * one status colour whose light and dark values differ, so it follows the active scheme's surface, not the system.
+     */
+    val ColorScheme.StatusSky: Color
+        @Composable get() = if (surface.luminance() < DARK_SURFACE_LUMINANCE) Color(0xFF7DD3FC) else Color(0xFF075985)
+
+    /** Midpoint luminance separating a light surface from a dark one; both static schemes sit near the extremes. */
+    private const val DARK_SURFACE_LUMINANCE = 0.5f
 }
 
 @Suppress("MagicNumber")

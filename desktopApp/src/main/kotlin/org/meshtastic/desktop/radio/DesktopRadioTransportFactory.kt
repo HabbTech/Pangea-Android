@@ -16,6 +16,8 @@
  */
 package org.meshtastic.desktop.radio
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.meshtastic.core.ble.BleConnectionFactory
 import org.meshtastic.core.ble.BleScanner
 import org.meshtastic.core.ble.BluetoothRepository
@@ -33,7 +35,7 @@ import org.meshtastic.core.repository.RadioTransportFactory
  * Desktop implementation of [RadioTransportFactory] delegating multiplatform transports (BLE, TCP) and providing
  * platform-specific transports (USB/Serial) via jSerialComm.
  *
- * Registered manually in [desktopPlatformStubsModule] — do NOT add @Single to avoid double-registration with
+ * Registered manually in [DesktopRuntimeModule] — do NOT add @Single to avoid double-registration with
  * the @ComponentScan("org.meshtastic.desktop") in DesktopDiModule.
  */
 class DesktopRadioTransportFactory(
@@ -45,7 +47,11 @@ class DesktopRadioTransportFactory(
 
     override val supportedDeviceTypes: List<DeviceType> = listOf(DeviceType.TCP, DeviceType.BLE, DeviceType.USB)
 
-    override fun isMockTransport(): Boolean = false
+    // Desktop has no unlock gesture and no demo entry in its picker; the virtual transports stay inadmissible.
+    override val mockTransportEnabled: StateFlow<Boolean> = MutableStateFlow(false)
+
+    /** Desktop bundles no capture asset, and [createPlatformTransport] does not wire a replay address. */
+    override val isReplayTransportAvailable: Boolean = false
 
     override fun createPlatformTransport(address: String, service: RadioInterfaceService): RadioTransport = when {
         address.startsWith(InterfaceId.TCP.id) -> {
@@ -58,7 +64,7 @@ class DesktopRadioTransportFactory(
         }
 
         address.startsWith(InterfaceId.SERIAL.id) -> {
-            SerialTransport.open(
+            SerialTransport.create(
                 portName = address.removePrefix(InterfaceId.SERIAL.id.toString()),
                 callback = service,
                 scope = service.serviceScope,

@@ -25,12 +25,17 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import org.meshtastic.core.common.util.MeasurementSystem
+import org.meshtastic.core.common.util.TemperatureUnit
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.NodeSortOption
 import org.meshtastic.core.repository.ConnectionStateProvider
+import org.meshtastic.core.repository.NodeFilterPrefs
+import org.meshtastic.core.repository.NodeManager
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.testing.FakeDeviceHardwareRepository
+import org.meshtastic.core.testing.FakeLocaleUnitsProvider
 import org.meshtastic.core.testing.FakeNodeRepository
 import org.meshtastic.core.testing.FakeRadioController
 import org.meshtastic.core.testing.FakeRadioInterfaceService
@@ -52,6 +57,8 @@ class NodeListViewModelTest {
     private val radioConfigRepository: RadioConfigRepository = mock(MockMode.autofill)
     private val connectionStateProvider: ConnectionStateProvider = mock(MockMode.autofill)
     private val nodeFilterPreferences: NodeFilterPreferences = mock(MockMode.autofill)
+    private val nodeManager: NodeManager = mock(MockMode.autofill)
+    private val localeUnitsProvider = FakeLocaleUnitsProvider()
     private val nodeManagementActions: NodeManagementActions = mock(MockMode.autofill)
     private val nodeRequestActions: NodeRequestActions = mock(MockMode.autofill)
     private val getFilteredNodesUseCase: GetFilteredNodesUseCase = mock(MockMode.autofill)
@@ -62,17 +69,16 @@ class NodeListViewModelTest {
         radioController = FakeRadioController()
         radioInterfaceService = FakeRadioInterfaceService()
 
-        every { radioConfigRepository.localConfigFlow } returns MutableStateFlow(org.meshtastic.proto.LocalConfig())
-        every { radioConfigRepository.deviceProfileFlow } returns MutableStateFlow(org.meshtastic.proto.DeviceProfile())
+        every { radioConfigRepository.localConfigFlow } returns
+            MutableStateFlow(org.meshtastic.proto.LocalConfig.Builder().build())
+        every { radioConfigRepository.deviceProfileFlow } returns
+            MutableStateFlow(org.meshtastic.proto.DeviceProfile.Builder().build())
         every { connectionStateProvider.connectionState } returns MutableStateFlow(ConnectionState.Disconnected)
 
         every { nodeFilterPreferences.nodeSortOption } returns MutableStateFlow(NodeSortOption.LAST_HEARD)
-        every { nodeFilterPreferences.includeUnknown } returns MutableStateFlow(true)
-        every { nodeFilterPreferences.excludeInfrastructure } returns MutableStateFlow(false)
-        every { nodeFilterPreferences.onlyOnline } returns MutableStateFlow(false)
-        every { nodeFilterPreferences.onlyDirect } returns MutableStateFlow(false)
-        every { nodeFilterPreferences.showIgnored } returns MutableStateFlow(false)
-        every { nodeFilterPreferences.excludeMqtt } returns MutableStateFlow(false)
+        every { nodeFilterPreferences.filters } returns MutableStateFlow(NodeFilterPrefs())
+        every { nodeManager.reportsHeardOnCurrentLora } returns MutableStateFlow(true)
+        every { nodeManager.isNodeDbReady } returns MutableStateFlow(true)
 
         every { getFilteredNodesUseCase(any(), any()) } returns MutableStateFlow(emptyList())
 
@@ -91,6 +97,8 @@ class NodeListViewModelTest {
         nodeRequestActions = nodeRequestActions,
         getFilteredNodesUseCase = getFilteredNodesUseCase,
         nodeFilterPreferences = nodeFilterPreferences,
+        nodeManager = nodeManager,
+        localeUnitsProvider = localeUnitsProvider,
     )
 
     @Test
@@ -115,6 +123,46 @@ class NodeListViewModelTest {
             assertEquals(3, awaitItem().size)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    /**
+     * The regression this guards: units used to be snapshotted at construction, so a user changing their regional
+     * preferences kept seeing the old ones until the screen was rebuilt.
+     */
+    @Test
+    fun `nodesUiState follows a mid-session units change`() = runTest {
+        val vm = createViewModel()
+        vm.nodesUiState.test {
+            val initial = awaitItem()
+            assertEquals(MeasurementSystem.METRIC, initial.distanceUnits)
+            assertEquals(false, initial.tempInFahrenheit)
+
+            // The provider exposes these as independent flows, so verify each transition without assuming atomicity.
+            localeUnitsProvider.set(system = MeasurementSystem.IMPERIAL)
+
+            val distanceUpdated = awaitItem()
+            assertEquals(MeasurementSystem.IMPERIAL, distanceUpdated.distanceUnits)
+            assertEquals(false, distanceUpdated.tempInFahrenheit)
+
+            localeUnitsProvider.set(temperature = TemperatureUnit.FAHRENHEIT)
+
+            val temperatureUpdated = awaitItem()
+            assertEquals(MeasurementSystem.IMPERIAL, temperatureUpdated.distanceUnits)
+            assertEquals(true, temperatureUpdated.tempInFahrenheit)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `isActive is false for the default filter`() {
+        assertEquals(false, NodeFilterState().isActive)
+    }
+
+    @Test
+    fun `isActive is true when unknown nodes are opted out`() {
+        // includeUnknown defaults to true, so a persisted false is a user-applied narrowing filter.
+        assertEquals(true, NodeFilterState(includeUnknown = false).isActive)
     }
 
     @Test

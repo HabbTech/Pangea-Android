@@ -16,7 +16,6 @@
  */
 package org.meshtastic.core.data.repository
 
-import androidx.datastore.core.DataStore
 import dev.mokkery.MockMode
 import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
@@ -28,14 +27,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.meshtastic.core.data.datasource.SwitchingChannelSetDataSource
-import org.meshtastic.core.database.DatabaseProvider
 import org.meshtastic.core.datastore.LocalConfigDataSource
 import org.meshtastic.core.datastore.ModuleConfigDataSource
+import org.meshtastic.core.datastore.di.CoreLocalConfigDataStore
+import org.meshtastic.core.datastore.di.CoreModuleConfigDataStore
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.repository.NodeRepository
+import org.meshtastic.core.testing.FakeDatabaseProvider
 import org.meshtastic.proto.FileInfo
-import org.meshtastic.proto.LocalConfig
-import org.meshtastic.proto.LocalModuleConfig
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -44,20 +44,26 @@ class RadioConfigRepositoryImplTest {
 
     private val nodeDB = mock<NodeRepository>(MockMode.autofill)
 
-    // These data sources are concrete wrappers -- construct them with mocked dependencies. Channels are now stored
-    // per-device via SwitchingChannelSetDataSource (DatabaseProvider), the others still wrap a DataStore<T>. None are
-    // touched by the addFileInfo/fileManifestFlow/clearFileManifest behavior under test here.
+    // These data sources are concrete wrappers -- construct them with test doubles. Channels are now stored per-device
+    // via SwitchingChannelSetDataSource (DatabaseProvider), the others still wrap a DataStore<T>. None are touched by
+    // the addFileInfo/fileManifestFlow/clearFileManifest behavior under test here. The channel source needs a real
+    // provider rather than an autofill mock: it composes its DAO flow at construction, and a mock returns null for the
+    // non-null Flow.
+    private val dbProvider = FakeDatabaseProvider()
+
+    @AfterTest fun tearDown() = dbProvider.close()
+
     private val channelSetDataSource =
         SwitchingChannelSetDataSource(
-            mock<DatabaseProvider>(MockMode.autofill),
+            dbProvider,
             CoroutineDispatchers(
                 main = Dispatchers.Unconfined,
                 io = Dispatchers.Unconfined,
                 default = Dispatchers.Unconfined,
             ),
         )
-    private val localConfigDataSource = LocalConfigDataSource(mock<DataStore<LocalConfig>>(MockMode.autofill))
-    private val moduleConfigDataSource = ModuleConfigDataSource(mock<DataStore<LocalModuleConfig>>(MockMode.autofill))
+    private val localConfigDataSource = LocalConfigDataSource(mock<CoreLocalConfigDataStore>(MockMode.autofill))
+    private val moduleConfigDataSource = ModuleConfigDataSource(mock<CoreModuleConfigDataStore>(MockMode.autofill))
 
     private fun createRepository() =
         RadioConfigRepositoryImpl(nodeDB, channelSetDataSource, localConfigDataSource, moduleConfigDataSource)
@@ -76,7 +82,16 @@ class RadioConfigRepositoryImplTest {
         // under test (that it caps at all, deterministically, is).
         val cap = 4096
 
-        repeat(cap + 500) { i -> repository.addFileInfo(FileInfo(file_name = "file$i.bin", size_bytes = i)) }
+        repeat(cap + 500) { i ->
+            repository.addFileInfo(
+                FileInfo.Builder()
+                    .also { wb ->
+                        wb.file_name = "file$i.bin"
+                        wb.size_bytes = i
+                    }
+                    .build(),
+            )
+        }
 
         val manifest = repository.fileManifestFlow.first()
         assertEquals(cap, manifest.size)
@@ -96,7 +111,18 @@ class RadioConfigRepositoryImplTest {
         withContext(Dispatchers.Default) {
             coroutineScope {
                 (0 until n)
-                    .map { i -> async { repository.addFileInfo(FileInfo(file_name = "f$i.bin", size_bytes = i)) } }
+                    .map { i ->
+                        async {
+                            repository.addFileInfo(
+                                FileInfo.Builder()
+                                    .also { wb ->
+                                        wb.file_name = "f$i.bin"
+                                        wb.size_bytes = i
+                                    }
+                                    .build(),
+                            )
+                        }
+                    }
                     .awaitAll()
             }
         }
@@ -107,14 +133,35 @@ class RadioConfigRepositoryImplTest {
     @Test
     fun `clearFileManifest empties the manifest so a new handshake can accumulate again`() = runTest {
         val repository = createRepository()
-        repository.addFileInfo(FileInfo(file_name = "a.bin", size_bytes = 1))
-        repository.addFileInfo(FileInfo(file_name = "b.bin", size_bytes = 2))
+        repository.addFileInfo(
+            FileInfo.Builder()
+                .also { wb ->
+                    wb.file_name = "a.bin"
+                    wb.size_bytes = 1
+                }
+                .build(),
+        )
+        repository.addFileInfo(
+            FileInfo.Builder()
+                .also { wb ->
+                    wb.file_name = "b.bin"
+                    wb.size_bytes = 2
+                }
+                .build(),
+        )
         assertEquals(2, repository.fileManifestFlow.first().size)
 
         repository.clearFileManifest()
         assertEquals(0, repository.fileManifestFlow.first().size)
 
-        repository.addFileInfo(FileInfo(file_name = "c.bin", size_bytes = 3))
+        repository.addFileInfo(
+            FileInfo.Builder()
+                .also { wb ->
+                    wb.file_name = "c.bin"
+                    wb.size_bytes = 3
+                }
+                .build(),
+        )
         assertEquals(1, repository.fileManifestFlow.first().size)
     }
 }

@@ -25,14 +25,18 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import okio.ByteString
+import org.meshtastic.core.common.di.asServiceScope
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.SessionStatus
 import org.meshtastic.core.repository.RadioController
@@ -41,6 +45,7 @@ import org.meshtastic.core.repository.SessionManager
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EnsureRemoteAdminSessionUseCaseTest {
@@ -73,7 +78,7 @@ class EnsureRemoteAdminSessionUseCaseTest {
                 sessionManager,
                 controller,
                 connectedRepo(ConnectionState.Disconnected),
-                this,
+                this.asServiceScope(),
             )
 
         val result = useCase(destNum)
@@ -86,7 +91,8 @@ class EnsureRemoteAdminSessionUseCaseTest {
         val active = SessionStatus.Active(Clock.System.now())
         val sessionManager = stubSessionManager(initialStatus = active)
         val controller = mock<RadioController>(MockMode.autofill)
-        val useCase = EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this)
+        val useCase =
+            EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this.asServiceScope())
 
         val result = useCase(destNum)
 
@@ -105,11 +111,34 @@ class EnsureRemoteAdminSessionUseCaseTest {
                 Unit
             }
 
-        val useCase = EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this)
+        val useCase =
+            EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this.asServiceScope())
 
         val result = useCase(destNum)
 
         assertEquals(EnsureSessionResult.Refreshed, result)
+        verifySuspend { controller.refreshMetadata(destNum) }
+    }
+
+    @Test
+    fun `accepts a valid refresh arriving after the former ten second deadline`() = runTest {
+        val refresh = MutableSharedFlow<Int>(extraBufferCapacity = 8)
+        val sessionManager = stubSessionManager(refreshFlow = refresh)
+        val controller = mock<RadioController>(MockMode.autofill)
+        everySuspend { controller.refreshMetadata(any()) } returns Unit
+        val useCase =
+            EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this.asServiceScope())
+
+        var observed: EnsureSessionResult? = null
+        val job = launch { observed = useCase(destNum) }
+        runCurrent()
+        // Keep the emission late while deriving the boundary from the production UX deadline.
+        advanceTimeBy(EnsureRemoteAdminSessionUseCase.UX_TIMEOUT.inWholeMilliseconds - 1.seconds.inWholeMilliseconds)
+        refresh.emit(destNum)
+        advanceUntilIdle()
+        job.join()
+
+        assertEquals(EnsureSessionResult.Refreshed, observed)
         verifySuspend { controller.refreshMetadata(destNum) }
     }
 
@@ -120,7 +149,8 @@ class EnsureRemoteAdminSessionUseCaseTest {
         val controller = mock<RadioController>(MockMode.autofill)
         everySuspend { controller.refreshMetadata(any()) } returns Unit
 
-        val useCase = EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this)
+        val useCase =
+            EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this.asServiceScope())
 
         var observed: EnsureSessionResult? = null
         val job = launch { observed = useCase(destNum) }
@@ -129,5 +159,95 @@ class EnsureRemoteAdminSessionUseCaseTest {
         job.join()
 
         assertEquals(EnsureSessionResult.Timeout, observed)
+    }
+
+    @Test
+    fun `canceling one caller keeps the shared ensure alive for another caller`() = runTest {
+        val refresh = MutableSharedFlow<Int>(extraBufferCapacity = 8)
+        val sessionManager = stubSessionManager(refreshFlow = refresh)
+        val controller = mock<RadioController>(MockMode.autofill)
+        var dispatches = 0
+        everySuspend { controller.refreshMetadata(any()) } calls
+            {
+                dispatches++
+                Unit
+            }
+        val useCase =
+            EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this.asServiceScope())
+
+        val firstCaller = launch { useCase(destNum) }
+        runCurrent()
+        val secondCaller = async { useCase(destNum) }
+        runCurrent()
+
+        firstCaller.cancelAndJoin()
+        assertEquals(1, dispatches)
+        refresh.emit(destNum)
+        runCurrent()
+
+        assertEquals(EnsureSessionResult.Refreshed, secondCaller.await())
+        assertEquals(1, dispatches)
+    }
+
+    @Test
+    fun `completed ensure is not reused by a later caller`() = runTest {
+        val refresh = MutableSharedFlow<Int>(extraBufferCapacity = 8)
+        val sessionManager = stubSessionManager(refreshFlow = refresh)
+        val controller = mock<RadioController>(MockMode.autofill)
+        var dispatches = 0
+        everySuspend { controller.refreshMetadata(any()) } calls
+            {
+                dispatches++
+                Unit
+            }
+        val useCase =
+            EnsureRemoteAdminSessionUseCase(sessionManager, controller, connectedRepo(), this.asServiceScope())
+
+        val first = async { useCase(destNum) }
+        runCurrent()
+        refresh.emit(destNum)
+        runCurrent()
+        assertEquals(EnsureSessionResult.Refreshed, first.await())
+
+        val second = async { useCase(destNum) }
+        runCurrent()
+        assertEquals(2, dispatches)
+        refresh.emit(destNum)
+        runCurrent()
+
+        assertEquals(EnsureSessionResult.Refreshed, second.await())
+    }
+
+    @Test
+    fun `departed ensure is not reused after reconnect`() = runTest {
+        val refresh = MutableSharedFlow<Int>(extraBufferCapacity = 8)
+        val sessionManager = stubSessionManager(refreshFlow = refresh)
+        val controller = mock<RadioController>(MockMode.autofill)
+        var dispatches = 0
+        everySuspend { controller.refreshMetadata(any()) } calls
+            {
+                dispatches++
+                Unit
+            }
+        val connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Connected)
+        val repository = mock<ServiceRepository>(MockMode.autofill)
+        every { repository.connectionState } returns connectionState
+        val useCase = EnsureRemoteAdminSessionUseCase(sessionManager, controller, repository, this.asServiceScope())
+
+        val departed = async { useCase(destNum) }
+        runCurrent()
+        assertEquals(1, dispatches)
+        connectionState.value = ConnectionState.Disconnected
+        runCurrent()
+        assertEquals(EnsureSessionResult.Disconnected, departed.await())
+
+        connectionState.value = ConnectionState.Connected
+        val reconnected = async { useCase(destNum) }
+        runCurrent()
+        assertEquals(2, dispatches, "Reconnect must dispatch a new metadata request")
+        refresh.emit(destNum)
+        runCurrent()
+
+        assertEquals(EnsureSessionResult.Refreshed, reconnected.await())
     }
 }

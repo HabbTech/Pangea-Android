@@ -29,6 +29,7 @@ import org.meshtastic.core.repository.HomoglyphPrefs
 import org.meshtastic.core.repository.MessageQueue
 import org.meshtastic.core.repository.NodeRepository
 import org.meshtastic.core.repository.PacketRepository
+import org.meshtastic.core.repository.PlatformAnalytics
 import org.meshtastic.core.repository.RadioController
 import org.meshtastic.proto.Config
 import kotlin.random.Random
@@ -60,6 +61,7 @@ class SendMessageUseCaseImpl(
     private val radioController: RadioController,
     private val homoglyphEncodingPrefs: HomoglyphPrefs,
     private val messageQueue: MessageQueue,
+    private val analytics: PlatformAnalytics,
 ) : SendMessageUseCase {
 
     /**
@@ -72,6 +74,12 @@ class SendMessageUseCaseImpl(
     @Suppress("NestedBlockDepth", "LongMethod", "CyclomaticComplexMethod")
     override suspend operator fun invoke(text: String, contactKey: String, replyId: Int?): Int {
         val parsedKey = ContactKey(contactKey)
+        // A retired conversation's channel is no longer on the radio, so there is no slot to send on. Without this
+        // the key's absent channel prefix would read as 0 and the message would go out on the primary channel.
+        if (parsedKey.isRetired) {
+            Logger.w { "Refusing to send to a retired conversation" }
+            return 0
+        }
         val channel = parsedKey.channelOrNull
         val dest = parsedKey.addressString
 
@@ -121,15 +129,22 @@ class SendMessageUseCaseImpl(
 
         try {
             // Write to the DB to immediately reflect the queued state on the UI
-            packetRepository.savePacket(
-                myNodeNum = ourNode?.num ?: 0,
-                contactKey = contactKey,
-                packet = packet,
-                receivedTime = nowMillis,
-            )
+            val persistedId =
+                packetRepository.savePacket(
+                    myNodeNum = ourNode?.num ?: 0,
+                    contactKey = contactKey,
+                    packet = packet,
+                    receivedTime = nowMillis,
+                )
 
             // Enqueue for durable transmission via the platform-specific queue
-            messageQueue.enqueue(packetId)
+            messageQueue.enqueue(persistedId)
+            // Reported here rather than at transmission: the queue worker can run long after the RUM
+            // session ended, and re-runs the send on retry.
+            analytics.trackAction(
+                "message_send",
+                mapOf("num_bytes" to finalMessageText.length, "is_reply" to (replyId != null)),
+            )
         } catch (ex: Exception) {
             Logger.e(ex) { "Failed to enqueue message packet" }
             throw ex

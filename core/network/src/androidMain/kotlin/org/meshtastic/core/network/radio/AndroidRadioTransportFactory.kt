@@ -17,14 +17,16 @@
 package org.meshtastic.core.network.radio
 
 import android.content.Context
-import android.hardware.usb.UsbManager
 import android.provider.Settings
 import co.touchlab.kermit.Logger
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import org.koin.core.annotation.Single
 import org.meshtastic.core.ble.BleConnectionFactory
 import org.meshtastic.core.ble.BleScanner
 import org.meshtastic.core.ble.BluetoothRepository
 import org.meshtastic.core.common.BuildConfigProvider
+import org.meshtastic.core.common.state.HiddenFeaturesUnlock
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.model.InterfaceId
@@ -43,7 +45,7 @@ class AndroidRadioTransportFactory(
     private val context: Context,
     private val buildConfigProvider: BuildConfigProvider,
     private val usbRepository: UsbRepository,
-    private val usbManager: UsbManager,
+    hiddenFeaturesUnlock: HiddenFeaturesUnlock,
     scanner: BleScanner,
     bluetoothRepository: BluetoothRepository,
     connectionFactory: BleConnectionFactory,
@@ -52,28 +54,40 @@ class AndroidRadioTransportFactory(
 
     override val supportedDeviceTypes: List<DeviceType> = listOf(DeviceType.BLE, DeviceType.TCP, DeviceType.USB)
 
-    override fun isMockTransport(): Boolean =
-        buildConfigProvider.isDebug || Settings.System.getString(context.contentResolver, "firebase.test.lab") == "true"
-
-    override fun isPlatformAddressValid(address: String): Boolean {
-        val interfaceId = address.firstOrNull()?.let { InterfaceId.forIdChar(it) } ?: return false
-        val rest = address.substring(1)
-        return when (interfaceId) {
-            InterfaceId.MOCK,
-            InterfaceId.NOP,
-            InterfaceId.REPLAY,
-            InterfaceId.TCP,
-            -> true
-
-            InterfaceId.SERIAL -> {
-                val deviceMap = usbRepository.serialDevices.value
-                val driver = deviceMap[rest] ?: deviceMap.values.firstOrNull()
-                driver != null && usbManager.hasPermission(driver.device)
-            }
-
-            InterfaceId.BLUETOOTH -> true // Handled by base class
+    /**
+     * Demo Mode gate.
+     *
+     * Debug builds and Firebase Test Lab get it unconditionally, as before. Release builds get it only after the user
+     * performs the hidden-features gesture (five taps on the Settings app-version row) — the same deliberate,
+     * process-scoped unlock that reveals the firmware-excluded module screens. That keeps a permanently visible fake
+     * radio out of the picker for ordinary users while making Demo Mode genuinely reachable in a shipped build, which
+     * is what a Play reviewer with no LoRa hardware needs.
+     *
+     * [HiddenFeaturesUnlock.unlocked] is a hot [StateFlow], so no scope is needed to observe it here.
+     */
+    override val mockTransportEnabled: StateFlow<Boolean> =
+        if (buildConfigProvider.isDebug || isFirebaseTestLab()) {
+            MutableStateFlow(true)
+        } else {
+            hiddenFeaturesUnlock.unlocked
         }
+
+    private fun isFirebaseTestLab(): Boolean =
+        Settings.System.getString(context.contentResolver, "firebase.test.lab") == "true"
+
+    /**
+     * Probed once: the asset is baked into the APK, so its presence cannot change while the process lives. Empty counts
+     * as absent to match [createReplayTransport]'s own guard.
+     */
+    override val isReplayTransportAvailable: Boolean by lazy {
+        runCatching { context.assets.open(REPLAY_ASSET_NAME).use { it.read() != -1 } }.getOrDefault(false)
     }
+
+    override val isSerialSupported: Boolean = usbRepository.isSupported
+
+    // Presence and USB permission are left to SerialRadioTransport, which reports a denied permission to the user.
+    override fun isPlatformAddressValid(address: String): Boolean =
+        address.firstOrNull()?.let { InterfaceId.forIdChar(it) } == InterfaceId.NOP
 
     override fun createPlatformTransport(address: String, service: RadioInterfaceService): RadioTransport {
         val interfaceId = address.firstOrNull()?.let { InterfaceId.forIdChar(it) }
@@ -96,7 +110,8 @@ class AndroidRadioTransportFactory(
                 SerialRadioTransport(
                     callback = service,
                     scope = service.serviceScope,
-                    usbRepository = usbRepository,
+                    serialDevices = usbRepository.serialDevices,
+                    createSerialConnection = usbRepository::createSerialConnection,
                     address = rest,
                 )
 

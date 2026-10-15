@@ -70,11 +70,17 @@ import org.jetbrains.compose.resources.decodeToSvgPainter
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
-import org.koin.core.context.startKoin
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.context.GlobalContext
+import org.koin.core.context.stopKoin
+import org.koin.plugin.module.dsl.startKoin
+import org.maplibre.compose.desktop.ProvideMapPresentationHost
+import org.maplibre.compose.desktop.rememberAwtComposeMapPresentationHost
 import org.meshtastic.core.common.BuildConfigProvider
 import org.meshtastic.core.common.log.InMemoryLogBuffer
 import org.meshtastic.core.common.util.CommonUri
 import org.meshtastic.core.database.desktopDataDir
+import org.meshtastic.core.model.DeviceAddress
 import org.meshtastic.core.navigation.MultiBackstack
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.navigation.TopLevelDestination
@@ -91,18 +97,33 @@ import org.meshtastic.core.resources.desktop_update_available_title
 import org.meshtastic.core.resources.desktop_update_download
 import org.meshtastic.core.service.MeshServiceOrchestrator
 import org.meshtastic.core.ui.theme.AppTheme
+import org.meshtastic.core.ui.util.LocalDiscoveryMapProvider
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
 import org.meshtastic.core.ui.util.PowerModeMenuState
+import org.meshtastic.core.ui.util.LocalInlineMapProvider
+import org.meshtastic.core.ui.util.LocalMapMainScreenProvider
+import org.meshtastic.core.ui.util.LocalMapViewProvider
+import org.meshtastic.core.ui.util.LocalNodeTrackMapProvider
+import org.meshtastic.core.ui.util.LocalSitePlannerAvailable
+import org.meshtastic.core.ui.util.LocalTracerouteMapProvider
 import org.meshtastic.core.ui.util.rememberOpenUrl
 import org.meshtastic.core.ui.viewmodel.UIViewModel
 import org.meshtastic.desktop.data.DesktopPreferencesDataSource
-import org.meshtastic.desktop.di.desktopModule
-import org.meshtastic.desktop.di.desktopPlatformModule
+import org.meshtastic.desktop.di.DesktopKoinApp
+import org.meshtastic.desktop.map.DesktopTracerouteMap
+import org.meshtastic.desktop.map.desktopMapViewProvider
 import org.meshtastic.desktop.notification.DesktopOS
+import org.meshtastic.desktop.notification.NativeNotificationSender
 import org.meshtastic.desktop.ui.DesktopMainScreen
+import org.meshtastic.feature.map.MapScreen
+import org.meshtastic.feature.map.SharedMapViewModel
+import org.meshtastic.feature.map.maplibre.MapLibreDiscoveryMap
+import org.meshtastic.feature.map.maplibre.MapLibreInlineMap
+import org.meshtastic.feature.map.maplibre.MapLibreNodeTrackMap
 import java.awt.Desktop
 import java.util.Locale
+import kotlin.system.exitProcess
 import coil3.util.Logger as CoilLogger
 
 /** Meshtastic Desktop — the first non-Android target for the shared KMP module graph. */
@@ -129,20 +150,42 @@ private fun svgPainterResource(path: String, density: Density): Painter = rememb
 }
 
 @OptIn(ExperimentalCoilApi::class)
-fun main(args: Array<String>) = application {
-    val koinApp = remember {
-        // Keep console output and also capture into the in-memory buffer the Debug screen views/exports.
-        Logger.setLogWriters(listOf(platformLogWriter(), InMemoryLogBuffer))
-        Logger.i { "Meshtastic Desktop — Starting" }
-        startKoin { modules(desktopPlatformModule(), desktopModule()) }
-    }
-    val systemLocale = remember { Locale.getDefault() }
-    val uiViewModel = remember { koinApp.koin.get<UIViewModel>() }
-    val httpClient = remember { koinApp.koin.get<HttpClient>() }
+fun main(args: Array<String>) {
+    installQuitHandler()
+    // exitProcessOnExit = false is what makes the shutdown block below reachable at all: with the default (true),
+    // application() calls System.exit(0) itself as soon as the Compose loop ends, and control never returns here.
+    // Do not "simplify" this back to a bare application {} — that silently disables every teardown that follows.
+    //
+    // No MapLibre.configure() call: the first map applies a default cache configuration process-wide.
+    application(exitProcessOnExit = false) {
+        val koinApp = remember {
+            // Keep console output and also capture into the in-memory buffer the Debug screen views/exports.
+            Logger.setLogWriters(listOf(platformLogWriter(), InMemoryLogBuffer))
+            Logger.i { "Meshtastic Desktop — Starting" }
+            startKoin<DesktopKoinApp> {}
+        }
+        LaunchedEffect(Unit) { publishExitApplication(::exitApplication) }
+        val systemLocale = remember { Locale.getDefault() }
+        val uiViewModel = remember { koinApp.koin.get<UIViewModel>() }
+        val httpClient = remember { koinApp.koin.get<HttpClient>() }
 
-    DeepLinkHandler(args, uiViewModel)
-    MeshServiceLifecycle()
-    ThemeAndLocaleProvider(uiViewModel)
+        DeepLinkHandler(args, uiViewModel)
+        MeshServiceLifecycle()
+        ThemeAndLocaleProvider(uiViewModel)
+    }
+
+    // Runs on the main thread with the UI already gone. The native sender must be closed before the container goes,
+    // because it owns libnotify's process-wide handle on Linux. Both guarded: a teardown failure must not turn a
+    // clean quit into a non-zero exit.
+    runCatching { (GlobalContext.get().get<NativeNotificationSender>() as? AutoCloseable)?.close() }
+        .onFailure { Logger.w(it) { "Closing the native notification sender failed during shutdown" } }
+    runCatching { stopKoin() }.onFailure { Logger.w(it) { "stopKoin() failed during shutdown" } }
+    Logger.i { "Meshtastic Desktop — Stopped" }
+
+    // Restores the exit application() no longer performs. Not optional: lingering non-daemon threads (coroutine
+    // dispatchers, ktor pools, AWT stragglers) would otherwise keep the JVM alive after the last window closes,
+    // turning "quit" into a hung background process.
+    exitProcess(0)
 }
 
 // ----- Deep link handling -----
@@ -197,7 +240,7 @@ private fun ApplicationScope.ThemeAndLocaleProvider(uiViewModel: UIViewModel) {
     val uiPrefs = koinInject<UiPrefs>()
     val themePref by uiPrefs.theme.collectAsState(initial = -1)
     val localePref by uiPrefs.locale.collectAsState(initial = "")
-    Locale.setDefault(localePref.takeIf { it.isNotEmpty() }?.let(Locale::forLanguageTag) ?: systemLocale)
+    Locale.setDefault(resolveLocale(localePref, systemLocale))
 
     val isDarkTheme =
         when (themePref) {
@@ -357,7 +400,7 @@ private fun ApplicationScope.MeshtasticWindow(
     val multiBackstack =
         rememberMultiBackstack(
             // Land on Connections for first-run / no-device-selected; otherwise on Nodes.
-            if (uiViewModel.currentDeviceAddressFlow.value.let { it.isNullOrBlank() || it == "n" }) {
+            if (DeviceAddress.parse(uiViewModel.currentDeviceAddressFlow.value) == null) {
                 TopLevelDestination.Connect.route
             } else {
                 TopLevelDestination.Nodes.route
@@ -386,8 +429,48 @@ private fun ApplicationScope.MeshtasticWindow(
                     multiBackstack.activeBackStack.add(SettingsRoute.About)
                 },
             )
-        CompositionLocalProvider(LocalEventBranding provides eventEdition, LocalPowerModeMenu provides powerModeMenu) {
-            AppTheme(darkTheme = isDarkTheme) { DesktopMainScreen(uiViewModel, multiBackstack) }
+        // Each window hands MapLibre its own GPU context; the map composites into Compose from there.
+        ProvideMapPresentationHost(host = rememberAwtComposeMapPresentationHost(window)) {
+            CompositionLocalProvider(
+                LocalEventBranding provides eventEdition,
+                LocalPowerModeMenu provides powerModeMenu,
+                LocalMapViewProvider provides desktopMapViewProvider(),
+                // The planner runs in the browser here rather than in the app; the button is still offered.
+                LocalSitePlannerAvailable provides true,
+                // mapGraph renders the Map tab through this seam, not through LocalMapViewProvider
+                // directly; without it the tab falls back to the "Map" placeholder.
+                LocalMapMainScreenProvider provides
+                    { onClickNodeChip, navigateToNodeDetails, waypointId, sitePlannerNodeNum ->
+                        MapScreen(
+                            viewModel = koinViewModel<SharedMapViewModel>(),
+                            onClickNodeChip = onClickNodeChip,
+                            navigateToNodeDetails = navigateToNodeDetails,
+                            waypointId = waypointId,
+                            sitePlannerNodeNum = sitePlannerNodeNum,
+                        )
+                    },
+                LocalInlineMapProvider provides { node, modifier -> MapLibreInlineMap(node, modifier) },
+                LocalNodeTrackMapProvider provides
+                    { destNum, positions, modifier, selectedPositionTime, onPositionSelect ->
+                        MapLibreNodeTrackMap(
+                            destNum = destNum,
+                            positions = positions,
+                            modifier = modifier,
+                            selectedPositionTime = selectedPositionTime,
+                            onPositionSelect = onPositionSelect,
+                        )
+                    },
+                LocalDiscoveryMapProvider provides
+                    { userLatitude, userLongitude, nodes, modifier ->
+                        MapLibreDiscoveryMap(userLatitude, userLongitude, nodes, modifier)
+                    },
+                LocalTracerouteMapProvider provides
+                    { overlay, nodePositions, onMappableCountChanged, modifier ->
+                        DesktopTracerouteMap(overlay, nodePositions, onMappableCountChanged, modifier)
+                    },
+            ) {
+                AppTheme(darkTheme = isDarkTheme) { DesktopMainScreen(uiViewModel, multiBackstack) }
+            }
         }
     }
 }

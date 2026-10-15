@@ -16,7 +16,10 @@
  */
 package org.meshtastic.core.data.manager
 
+import co.touchlab.kermit.LogWriter
+import co.touchlab.kermit.Logger
 import co.touchlab.kermit.Severity
+import co.touchlab.kermit.platformLogWriter
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -28,6 +31,7 @@ import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode.Companion.exactly
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -37,11 +41,14 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import org.meshtastic.core.common.di.asServiceScope
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.DataPacket
 import org.meshtastic.core.model.Node
+import org.meshtastic.core.model.TelemetryType
 import org.meshtastic.core.repository.AppWidgetUpdater
 import org.meshtastic.core.repository.CommandSender
+import org.meshtastic.core.repository.ConnectionStateHolder
 import org.meshtastic.core.repository.HistoryManager
 import org.meshtastic.core.repository.MeshLocationManager
 import org.meshtastic.core.repository.MeshNotificationManager
@@ -50,7 +57,10 @@ import org.meshtastic.core.repository.MqttManager
 import org.meshtastic.core.repository.NodeManager
 import org.meshtastic.core.repository.NodeRestartTracker
 import org.meshtastic.core.repository.PacketHandler
+import org.meshtastic.core.repository.PacketQueueRejectedException
 import org.meshtastic.core.repository.PacketRepository
+import org.meshtastic.core.repository.PersistedPacket
+import org.meshtastic.core.repository.PersistedPacketId
 import org.meshtastic.core.repository.PlatformAnalytics
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.RadioInterfaceService
@@ -62,6 +72,7 @@ import org.meshtastic.core.testing.FakeNodeRepository
 import org.meshtastic.proto.Config
 import org.meshtastic.proto.LocalConfig
 import org.meshtastic.proto.LocalModuleConfig
+import org.meshtastic.proto.LocalStats
 import org.meshtastic.proto.ModuleConfig
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -94,9 +105,9 @@ class MeshConnectionManagerImplTest {
     private val dataPacket = DataPacket(id = 456, time = 0L, to = "0", from = "0", bytes = null, dataType = 0)
 
     private val radioConnectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    private val connectionStateFlow = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    private val localConfigFlow = MutableStateFlow(LocalConfig())
-    private val moduleConfigFlow = MutableStateFlow(LocalModuleConfig())
+    private lateinit var connectionStateHolder: ConnectionStateHolder
+    private val localConfigFlow = MutableStateFlow(LocalConfig.Builder().build())
+    private val moduleConfigFlow = MutableStateFlow(LocalModuleConfig.Builder().build())
 
     private lateinit var testDispatcher: TestDispatcher
 
@@ -125,20 +136,22 @@ class MeshConnectionManagerImplTest {
 
         testDispatcher = UnconfinedTestDispatcher()
         radioConnectionState.value = ConnectionState.Disconnected
-        connectionStateFlow.value = ConnectionState.Disconnected
-        localConfigFlow.value = LocalConfig()
-        moduleConfigFlow.value = LocalModuleConfig()
+        connectionStateHolder = ConnectionStateHolder()
+        localConfigFlow.value = LocalConfig.Builder().build()
+        moduleConfigFlow.value = LocalModuleConfig.Builder().build()
 
         every { radioInterfaceService.connectionState } returns radioConnectionState
         every { radioConfigRepository.localConfigFlow } returns localConfigFlow
         every { radioConfigRepository.moduleConfigFlow } returns moduleConfigFlow
-        every { serviceRepository.connectionState } returns connectionStateFlow
+        every { serviceRepository.connectionState } returns connectionStateHolder.connectionState
+        every { serviceRepository.connectionLifecycle } returns connectionStateHolder.connectionLifecycle
         every { serviceRepository.setConnectionState(any()) } calls
             { call ->
-                connectionStateFlow.value = call.arg<ConnectionState>(0)
+                applyConnectionState(call.arg<ConnectionState>(0))
             }
         every { serviceNotifications.updateServiceStateNotification(any(), any()) } returns Unit
-        everySuspend { commandSender.sendAdmin(any(), any(), any(), any()) } returns Unit
+        everySuspend { commandSender.sendAdminForConnection(any(), any(), any(), any(), any()) } returns Unit
+        everySuspend { commandSender.requestTelemetryForConnection(any(), any(), any(), any()) } returns Unit
         every { packetHandler.stopPacketQueue() } returns Unit
         every { locationManager.stop() } returns Unit
         every { mqttManager.stop() } returns Unit
@@ -166,9 +179,13 @@ class MeshConnectionManagerImplTest {
         appWidgetUpdater,
         DataLayerHeartbeatSender(packetHandler),
         lockdownCoordinator,
-        scope,
+        scope.asServiceScope(),
         NodeRestartTracker(scope),
     )
+
+    private fun applyConnectionState(state: ConnectionState) {
+        connectionStateHolder.setConnectionState(state)
+    }
 
     private fun restartTransportCallCounter(): () -> Int {
         var restartCalls = 0
@@ -176,7 +193,23 @@ class MeshConnectionManagerImplTest {
         return { restartCalls }
     }
 
-    @AfterTest fun tearDown() = Unit
+    @AfterTest
+    fun tearDown() {
+        Logger.setLogWriters(platformLogWriter())
+    }
+
+    private class CapturingLogWriter : LogWriter() {
+        val entries = mutableListOf<Pair<Severity, String>>()
+
+        override fun log(severity: Severity, message: String, tag: String, throwable: Throwable?) {
+            entries += severity to message
+        }
+    }
+
+    private fun captureLogs(): CapturingLogWriter = CapturingLogWriter().also { Logger.setLogWriters(it) }
+
+    private fun CapturingLogWriter.messages(severity: Severity): List<String> =
+        entries.filter { it.first == severity }.map { it.second }
 
     @Test
     fun `Connected state triggers broadcast and config start`() = runTest(testDispatcher) {
@@ -268,13 +301,39 @@ class MeshConnectionManagerImplTest {
     }
 
     @Test
+    fun `Disconnected state clears the stale noise floor`() = runTest(testDispatcher) {
+        // localStats only overwrites on a fresh local_stats telemetry packet, so a stale reading from the previous
+        // radio would otherwise silently blend into the next radio's signal-quality rating until it reports its
+        // own.
+        every { nodeManager.nodeDBbyNodeNum } returns emptyMap()
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceUntilIdle()
+        nodeRepository.updateLocalStats(LocalStats.Builder().also { wb -> wb.noise_floor = -70 }.build())
+
+        radioConnectionState.value = ConnectionState.Disconnected
+        advanceUntilIdle()
+
+        assertEquals(
+            LocalStats.Builder().build(),
+            nodeRepository.localStats.value,
+            "Disconnect should reset to \"no reading yet\"",
+        )
+    }
+
+    @Test
     fun `DeviceSleep behavior when power saving is off maps to Disconnected`() = runTest(testDispatcher) {
         // Power saving disabled + Role CLIENT
         val config =
-            LocalConfig(
-                power = Config.PowerConfig(is_power_saving = false),
-                device = Config.DeviceConfig(role = Config.DeviceConfig.Role.CLIENT),
-            )
+            LocalConfig.Builder()
+                .also { wb ->
+                    wb.power = Config.PowerConfig.Builder().also { wb -> wb.is_power_saving = false }.build()
+                    wb.device =
+                        Config.DeviceConfig.Builder()
+                            .also { wb -> wb.role = Config.DeviceConfig.Role.CLIENT }
+                            .build()
+                }
+                .build()
         every { radioConfigRepository.localConfigFlow } returns flowOf(config)
         every { nodeManager.nodeDBbyNodeNum } returns emptyMap()
 
@@ -294,7 +353,12 @@ class MeshConnectionManagerImplTest {
     @Test
     fun `DeviceSleep behavior when power saving is on stays in DeviceSleep`() = runTest(testDispatcher) {
         // Power saving enabled
-        val config = LocalConfig(power = Config.PowerConfig(is_power_saving = true))
+        val config =
+            LocalConfig.Builder()
+                .also { wb ->
+                    wb.power = Config.PowerConfig.Builder().also { wb -> wb.is_power_saving = true }.build()
+                }
+                .build()
         every { radioConfigRepository.localConfigFlow } returns flowOf(config)
 
         manager = createManager(backgroundScope)
@@ -313,8 +377,8 @@ class MeshConnectionManagerImplTest {
     @Test
     fun `onRadioConfigLoaded enqueues queued packets and sets time`() = runTest(testDispatcher) {
         manager = createManager(backgroundScope)
-        val packetId = 456
-        everySuspend { packetRepository.getQueuedPackets() } returns listOf(dataPacket)
+        val packetId = PersistedPacketId(myNodeNum = 123, uuid = 456L)
+        everySuspend { packetRepository.getQueuedPackets() } returns listOf(PersistedPacket(packetId, dataPacket))
         every { workerManager.enqueueSendMessage(any()) } returns Unit
 
         manager.onRadioConfigLoaded()
@@ -326,23 +390,179 @@ class MeshConnectionManagerImplTest {
     @Test
     fun `onNodeDbReady starts MQTT and requests history`() = runTest(testDispatcher) {
         val moduleConfig =
-            LocalModuleConfig(
-                mqtt = ModuleConfig.MQTTConfig(enabled = true, proxy_to_client_enabled = true),
-                store_forward = ModuleConfig.StoreForwardConfig(enabled = true),
-            )
+            LocalModuleConfig.Builder()
+                .also { wb ->
+                    wb.mqtt =
+                        ModuleConfig.MQTTConfig.Builder()
+                            .also { wb ->
+                                wb.enabled = true
+                                wb.proxy_to_client_enabled = true
+                            }
+                            .build()
+                    wb.store_forward =
+                        ModuleConfig.StoreForwardConfig.Builder().also { wb -> wb.enabled = true }.build()
+                }
+                .build()
         moduleConfigFlow.value = moduleConfig
         everySuspend { commandSender.requestTelemetry(any(), any(), any()) } returns Unit
         every { nodeManager.myNodeNum } returns MutableStateFlow(123)
         every { mqttManager.startProxy(any(), any()) } returns Unit
-        everySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any()) } returns Unit
+        everySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any(), any()) } returns Unit
         every { nodeManager.getMyNodeInfo() } returns null
 
         manager = createManager(backgroundScope)
+        serviceRepository.setConnectionState(ConnectionState.Connected)
         manager.onNodeDbReady()
         advanceUntilIdle()
 
         verify { mqttManager.startProxy(true, true) }
-        verifySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any()) }
+        verifySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `onNodeDbReady skips history when its lifecycle departs while config loads`() = runTest(testDispatcher) {
+        val delayedModuleConfig = MutableSharedFlow<LocalModuleConfig>()
+        every { radioConfigRepository.moduleConfigFlow } returns delayedModuleConfig
+        every { nodeManager.myNodeNum } returns MutableStateFlow(123)
+        every { mqttManager.startProxy(any(), any()) } returns Unit
+        everySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any(), any()) } returns Unit
+
+        manager = createManager(backgroundScope)
+        serviceRepository.setConnectionState(ConnectionState.Connected)
+        manager.onNodeDbReady()
+        runCurrent()
+        assertTrue(
+            delayedModuleConfig.subscriptionCount.value >= 2,
+            "MQTT and history collectors must be active; additional collectors are allowed",
+        )
+        serviceRepository.setConnectionState(ConnectionState.Disconnected)
+        delayedModuleConfig.emit(
+            LocalModuleConfig.Builder()
+                .also { wb ->
+                    wb.store_forward =
+                        ModuleConfig.StoreForwardConfig.Builder().also { wb -> wb.enabled = true }.build()
+                }
+                .build(),
+        )
+        runCurrent()
+
+        verifySuspend(exactly(0)) { historyManager.requestHistoryReplay(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `onNodeDbReady retains owned requests until queue admission opens`() = runTest(testDispatcher) {
+        var seedAttempts = 0
+        var historyAttempts = 0
+        val telemetryAttempts = mutableMapOf<Int, Int>()
+        val admissionVersions = mutableListOf<Long>()
+        moduleConfigFlow.value =
+            LocalModuleConfig.Builder()
+                .also { wb ->
+                    wb.store_forward =
+                        ModuleConfig.StoreForwardConfig.Builder().also { wb -> wb.enabled = true }.build()
+                }
+                .build()
+        everySuspend { commandSender.sendAdminForConnection(any(), any(), any(), any(), any()) } calls
+            { call ->
+                admissionVersions += call.arg<Long>(1)
+                seedAttempts++
+                if (seedAttempts < 3) throw PacketQueueRejectedException("test passkey seed")
+                Unit
+            }
+        everySuspend { commandSender.requestTelemetryForConnection(any(), any(), any(), any()) } calls
+            { call ->
+                admissionVersions += call.arg<Long>(3)
+                val type = call.arg<Int>(2)
+                val attempts = telemetryAttempts.getOrElse(type) { 0 } + 1
+                telemetryAttempts[type] = attempts
+                if (attempts == 1) throw PacketQueueRejectedException("test telemetry request")
+                Unit
+            }
+        everySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any(), any()) } calls
+            { call ->
+                admissionVersions += call.arg<Long>(4)
+                historyAttempts++
+                if (historyAttempts == 1) throw PacketQueueRejectedException("test history replay")
+                Unit
+            }
+        every { nodeManager.myNodeNum } returns MutableStateFlow(123)
+        every { mqttManager.startProxy(any(), any()) } returns Unit
+        every { nodeManager.getMyNodeInfo() } returns null
+
+        manager = createManager(backgroundScope)
+        serviceRepository.setConnectionState(ConnectionState.Connected)
+        manager.onNodeDbReady()
+        runCurrent()
+        advanceTimeBy(
+            (
+                MeshConnectionManagerImpl.postHandshakeAdmissionRetryDelay(1) +
+                    MeshConnectionManagerImpl.postHandshakeAdmissionRetryDelay(2)
+                )
+                .inWholeMilliseconds,
+        )
+        runCurrent()
+
+        assertEquals(3, seedAttempts)
+        assertEquals(2, historyAttempts)
+        assertEquals(2, telemetryAttempts[TelemetryType.LOCAL_STATS.ordinal])
+        assertEquals(2, telemetryAttempts[TelemetryType.DEVICE.ordinal])
+        assertEquals(setOf(connectionStateHolder.connectionLifecycle.value.version), admissionVersions.toSet())
+    }
+
+    @Test
+    fun `post-handshake admission retries stop when the connected lifecycle changes`() = runTest(testDispatcher) {
+        var seedAttempts = 0
+        everySuspend { commandSender.sendAdminForConnection(any(), any(), any(), any(), any()) } calls
+            {
+                seedAttempts++
+                throw PacketQueueRejectedException("queue closed")
+            }
+        every { nodeManager.myNodeNum } returns MutableStateFlow(123)
+        every { mqttManager.startProxy(any(), any()) } returns Unit
+        every { nodeManager.getMyNodeInfo() } returns null
+
+        manager = createManager(backgroundScope)
+        serviceRepository.setConnectionState(ConnectionState.Connected)
+        manager.onNodeDbReady()
+        runCurrent()
+        assertEquals(1, seedAttempts)
+
+        serviceRepository.setConnectionState(ConnectionState.Disconnected)
+        advanceTimeBy(
+            (1 until MeshConnectionManagerImpl.MAX_POST_HANDSHAKE_ADMISSION_ATTEMPTS).sumOf { rejectionCount ->
+                MeshConnectionManagerImpl.postHandshakeAdmissionRetryDelay(rejectionCount).inWholeMilliseconds
+            },
+        )
+        runCurrent()
+
+        assertEquals(1, seedAttempts, "a stale connection generation must not keep retrying admission")
+    }
+
+    @Test
+    fun `post-handshake admission retries stop at the attempt cap`() = runTest(testDispatcher) {
+        var seedAttempts = 0
+        everySuspend { commandSender.sendAdminForConnection(any(), any(), any(), any(), any()) } calls
+            {
+                seedAttempts++
+                throw PacketQueueRejectedException("queue closed")
+            }
+        every { nodeManager.myNodeNum } returns MutableStateFlow(123)
+        every { mqttManager.startProxy(any(), any()) } returns Unit
+        every { nodeManager.getMyNodeInfo() } returns null
+
+        manager = createManager(backgroundScope)
+        serviceRepository.setConnectionState(ConnectionState.Connected)
+        manager.onNodeDbReady()
+        runCurrent()
+
+        val retryWindowMillis =
+            (1 until MeshConnectionManagerImpl.MAX_POST_HANDSHAKE_ADMISSION_ATTEMPTS).sumOf { rejectionCount ->
+                MeshConnectionManagerImpl.postHandshakeAdmissionRetryDelay(rejectionCount).inWholeMilliseconds
+            }
+        advanceTimeBy(retryWindowMillis)
+        runCurrent()
+
+        assertEquals(MeshConnectionManagerImpl.MAX_POST_HANDSHAKE_ADMISSION_ATTEMPTS, seedAttempts)
     }
 
     @Test
@@ -350,10 +570,21 @@ class MeshConnectionManagerImplTest {
         // Router with ls_secs=3600 — previously this created a 3630s timeout.
         // With the cap, it should be clamped to 300s.
         val config =
-            LocalConfig(
-                power = Config.PowerConfig(is_power_saving = true, ls_secs = 3600),
-                device = Config.DeviceConfig(role = Config.DeviceConfig.Role.ROUTER),
-            )
+            LocalConfig.Builder()
+                .also { wb ->
+                    wb.power =
+                        Config.PowerConfig.Builder()
+                            .also { wb ->
+                                wb.is_power_saving = true
+                                wb.ls_secs = 3600
+                            }
+                            .build()
+                    wb.device =
+                        Config.DeviceConfig.Builder()
+                            .also { wb -> wb.role = Config.DeviceConfig.Role.ROUTER }
+                            .build()
+                }
+                .build()
         every { radioConfigRepository.localConfigFlow } returns flowOf(config)
         every { nodeManager.nodeDBbyNodeNum } returns emptyMap()
 
@@ -385,7 +616,12 @@ class MeshConnectionManagerImplTest {
     @Test
     fun `rapid state transitions are serialized by connectionMutex`() = runTest(testDispatcher) {
         // Power saving enabled so DeviceSleep is preserved (not mapped to Disconnected)
-        val config = LocalConfig(power = Config.PowerConfig(is_power_saving = true))
+        val config =
+            LocalConfig.Builder()
+                .also { wb ->
+                    wb.power = Config.PowerConfig.Builder().also { wb -> wb.is_power_saving = true }.build()
+                }
+                .build()
         every { radioConfigRepository.localConfigFlow } returns flowOf(config)
         every { nodeManager.nodeDBbyNodeNum } returns emptyMap()
 
@@ -395,7 +631,7 @@ class MeshConnectionManagerImplTest {
             { call ->
                 val state = call.arg<ConnectionState>(0)
                 observed.add(state)
-                connectionStateFlow.value = state
+                applyConnectionState(state)
             }
 
         manager = createManager(backgroundScope)
@@ -431,7 +667,18 @@ class MeshConnectionManagerImplTest {
         runTest(standardDispatcher) {
             // Power saving enabled with ls_secs=0 so the sleep timeout boundary is just before the
             // Stage 1 handshake watchdog. That keeps this test isolated to sleep-timeout behavior.
-            val config = LocalConfig(power = Config.PowerConfig(is_power_saving = true, ls_secs = 0))
+            val config =
+                LocalConfig.Builder()
+                    .also { wb ->
+                        wb.power =
+                            Config.PowerConfig.Builder()
+                                .also { wb ->
+                                    wb.is_power_saving = true
+                                    wb.ls_secs = 0
+                                }
+                                .build()
+                    }
+                    .build()
             every { radioConfigRepository.localConfigFlow } returns flowOf(config)
             every { nodeManager.nodeDBbyNodeNum } returns emptyMap()
 
@@ -440,7 +687,7 @@ class MeshConnectionManagerImplTest {
                 { call ->
                     val state = call.arg<ConnectionState>(0)
                     observed.add(state)
-                    connectionStateFlow.value = state
+                    applyConnectionState(state)
                 }
 
             manager = createManager(backgroundScope)
@@ -624,7 +871,7 @@ class MeshConnectionManagerImplTest {
         everySuspend { commandSender.requestTelemetry(any(), any(), any()) } returns Unit
         every { nodeManager.myNodeNum } returns MutableStateFlow(123)
         every { mqttManager.startProxy(any(), any()) } returns Unit
-        everySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any()) } returns Unit
+        everySuspend { historyManager.requestHistoryReplay(any(), any(), any(), any(), any()) } returns Unit
         every { nodeManager.getMyNodeInfo() } returns null
 
         manager = createManager(backgroundScope)
@@ -745,6 +992,116 @@ class MeshConnectionManagerImplTest {
     }
 
     @Test
+    fun `TCP Stage 1 stall report names TCP`() = runTest(testDispatcher) {
+        every { radioInterfaceService.getDeviceAddress() } returns "t192.168.1.42"
+        val logs = captureLogs()
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        advanceTimeBy(13_000L)
+        advanceUntilIdle()
+
+        val stall = logs.messages(Severity.Error).single { it.startsWith("Handshake stall detected") }
+        assertTrue(
+            stall.startsWith(
+                "Handshake stall detected at Stage 1 on TCP after 12s without progress (progressSignals=0",
+            ),
+            "TCP stall report must name TCP, not a shared fast-transport label: $stall",
+        )
+    }
+
+    @Test
+    fun `USB Stage 1 stall report names USB`() = runTest(testDispatcher) {
+        every { radioInterfaceService.getDeviceAddress() } returns "s/dev/bus/usb/001/002"
+        val logs = captureLogs()
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        advanceTimeBy(13_000L)
+        advanceUntilIdle()
+
+        val stall = logs.messages(Severity.Error).single { it.startsWith("Handshake stall detected") }
+        assertTrue(
+            stall.startsWith(
+                "Handshake stall detected at Stage 1 on USB after 12s without progress (progressSignals=0",
+            ),
+            "USB stall report must name USB, not a shared fast-transport label: $stall",
+        )
+        verifySuspend(exactly(1)) { radioInterfaceService.restartTransport() }
+    }
+
+    @Test
+    fun `Demo Mode keeps the fast stall budget and names MOCK`() = runTest(testDispatcher) {
+        every { radioInterfaceService.getDeviceAddress() } returns "m"
+        val logs = captureLogs()
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        advanceTimeBy(13_000L)
+        advanceUntilIdle()
+
+        val stall = logs.messages(Severity.Error).single { it.startsWith("Handshake stall detected") }
+        assertTrue(
+            stall.startsWith(
+                "Handshake stall detected at Stage 1 on MOCK after 12s without progress (progressSignals=0",
+            ),
+            "Demo Mode stall report must name MOCK: $stall",
+        )
+        verifySuspend(exactly(1)) { radioInterfaceService.restartTransport() }
+    }
+
+    @Test
+    fun `BLE Stage 1 stall report names BLE`() = runTest(testDispatcher) {
+        every { radioInterfaceService.getDeviceAddress() } returns "xAA:BB:CC:DD:EE:FF"
+        val logs = captureLogs()
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        advanceTimeBy(31_000L)
+        advanceUntilIdle()
+
+        val stall = logs.messages(Severity.Error).single { it.startsWith("Handshake stall detected") }
+        assertTrue(
+            stall.startsWith("Handshake stall detected at Stage 1 on BLE after 30s without progress"),
+            "BLE stall report keeps its BLE label and budget: $stall",
+        )
+    }
+
+    @Test
+    fun `TCP fast watchdog report names TCP`() = runTest(testDispatcher) {
+        every { radioInterfaceService.getDeviceAddress() } returns "t192.168.1.42"
+        val logs = captureLogs()
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        advanceTimeBy(8_000L)
+        manager.onHandshakeProgress()
+        advanceUntilIdle()
+        advanceTimeBy(13_000L)
+        advanceUntilIdle()
+
+        val watchdog = logs.messages(Severity.Warn).single { it.startsWith("Fast-handshake watchdog expired") }
+        assertTrue(
+            watchdog.startsWith("Fast-handshake watchdog expired on TCP after progress stalled"),
+            "Fast watchdog report must name the transport: $watchdog",
+        )
+        assertTrue(
+            logs.messages(Severity.Error).none { it.startsWith("Handshake stall detected") },
+            "A watchdog trip after progress must not also be reported as a silent stall",
+        )
+    }
+
+    @Test
     fun `TCP Stage 2 stall fires restartTransport at 12s`() = runTest(testDispatcher) {
         every { radioInterfaceService.getDeviceAddress() } returns "t192.168.1.42"
         manager = createManager(backgroundScope)
@@ -813,7 +1170,7 @@ class MeshConnectionManagerImplTest {
             { call ->
                 val state = call.arg<ConnectionState>(0)
                 observed.add(state)
-                connectionStateFlow.value = state
+                applyConnectionState(state)
             }
         every { serviceRepository.setConnectionProgress(any()) } calls
             { call ->
@@ -831,13 +1188,13 @@ class MeshConnectionManagerImplTest {
                 // split-brain this recovery path exists to break.
                 assertEquals(
                     ConnectionState.Disconnected,
-                    connectionStateFlow.value,
+                    connectionStateHolder.connectionState.value,
                     "restartTransport must run AFTER app-level Disconnected transition",
                 )
                 assertEquals(
                     ServiceRepository.RECONNECTING_PROGRESS_TEXT,
                     progressBeforeRestart,
-                    "setConnectionProgress(ServiceRepository.RECONNECTING_PROGRESS_TEXT) must run before restartTransport",
+                    "Reconnect progress must be published before restartTransport",
                 )
             }
 
@@ -866,7 +1223,7 @@ class MeshConnectionManagerImplTest {
             { call ->
                 val state = call.arg<ConnectionState>(0)
                 observed.add(state)
-                connectionStateFlow.value = state
+                applyConnectionState(state)
             }
         every { serviceRepository.setConnectionProgress(any()) } calls
             { call ->
@@ -877,7 +1234,7 @@ class MeshConnectionManagerImplTest {
                 restartTransportCalls++
                 assertEquals(
                     ConnectionState.Disconnected,
-                    connectionStateFlow.value,
+                    connectionStateHolder.connectionState.value,
                     "post-handshake recovery must disconnect app state before restarting transport",
                 )
                 assertEquals(
@@ -900,35 +1257,96 @@ class MeshConnectionManagerImplTest {
     }
 
     @Test
-    fun `BLE transport unaffected by onHandshakeProgress regression`() = runTest(testDispatcher) {
-        // Explicit BLE address (starts with 'x') — must NOT engage the fast path.
+    fun `BLE Stage 1 progress re-arms the stall guard as an inactivity window`() = runTest(testDispatcher) {
+        // Explicit BLE address (starts with 'x'): must NOT engage the 12s fast path.
         every { radioInterfaceService.getDeviceAddress() } returns "xAA:BB:CC:DD:EE:FF"
         manager = createManager(backgroundScope)
         radioConnectionState.value = ConnectionState.Connected
         advanceTimeBy(200)
         advanceUntilIdle()
 
-        // Spam progress signals — BLE must ignore them, so the 30s Stage 1 budget is unchanged.
-        repeat(10) {
+        // Trickle progress every 20s. Total elapsed crosses the 30s Stage 1 budget several
+        // times over, but each progress signal re-arms the full budget, so no restart may
+        // fire while progress continues. The 20s gaps also prove BLE never armed the 12s
+        // fast watchdog (it would have fired inside each gap).
+        repeat(4) {
+            advanceTimeBy(20_000L)
+            advanceUntilIdle()
             manager.onHandshakeProgress()
             advanceUntilIdle()
         }
-
-        // Advance to 13s — would fire a fast watchdog if BLE were incorrectly included.
-        advanceTimeBy(13_000L)
-        advanceUntilIdle()
 
         verifySuspend(exactly(0)) { radioInterfaceService.restartTransport() }
         assertEquals(
             ConnectionState.Connecting,
             serviceRepository.connectionState.value,
-            "BLE must ignore onHandshakeProgress and stay Connecting through 13s",
+            "BLE must stay Connecting while progress keeps arriving past the fixed budget",
         )
 
-        // Now advance past the full BLE Stage 1 budget (30s). We already advanced 13s, so 33s
-        // more crosses the 30s Stage 1 stall threshold the recovery sibling fires at. (Extra
-        // slack is harmless — the BLE stage has no retry delay before recovery.)
-        advanceTimeBy(33_000L)
+        // Silence after the last progress: the guard fires once the full 30s budget elapses.
+        advanceTimeBy(31_000L)
+        advanceUntilIdle()
+
+        verifySuspend(exactly(1)) { radioInterfaceService.restartTransport() }
+    }
+
+    @Test
+    fun `BLE total cap fires the stall guard despite continuous trickle progress`() = runTest(testDispatcher) {
+        // Explicit BLE address (starts with 'x'): must NOT engage the 12s fast path.
+        every { radioInterfaceService.getDeviceAddress() } returns "xAA:BB:CC:DD:EE:FF"
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        // Trickle progress every 20s, which would extend the inactivity window forever. The
+        // 300s total cap (10x the 30s Stage 1 budget) stops re-arms, so the pending guard
+        // fires at most one budget later. 20 iterations = 400s, comfortably past cap + budget.
+        repeat(20) {
+            advanceTimeBy(20_000L)
+            advanceUntilIdle()
+            manager.onHandshakeProgress()
+            advanceUntilIdle()
+        }
+
+        verifySuspend(exactly(1)) { radioInterfaceService.restartTransport() }
+        assertEquals(
+            ConnectionState.Disconnected,
+            serviceRepository.connectionState.value,
+            "The total cap must end the handshake despite continuous trickle progress",
+        )
+    }
+
+    @Test
+    fun `BLE Stage 2 progress re-arms the 60s stall guard as an inactivity window`() = runTest(testDispatcher) {
+        // Default mock address is not a fast transport, so the BLE stage-guard path applies.
+        manager = createManager(backgroundScope)
+        radioConnectionState.value = ConnectionState.Connected
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        // Enter Stage 2 directly, as the config-flow manager does once Stage 1 completes.
+        manager.startNodeInfoOnly()
+        advanceUntilIdle()
+
+        // A big node database streaming for 90s (past the fixed 60s budget) must not be
+        // misread as a stall while NodeInfo progress keeps re-arming the window.
+        repeat(2) {
+            advanceTimeBy(45_000L)
+            advanceUntilIdle()
+            manager.onHandshakeProgress()
+            advanceUntilIdle()
+        }
+
+        verifySuspend(exactly(0)) { radioInterfaceService.restartTransport() }
+        assertEquals(
+            ConnectionState.Connecting,
+            serviceRepository.connectionState.value,
+            "BLE must stay Connecting while Stage 2 progress keeps arriving past the fixed budget",
+        )
+
+        // Silence after the last progress: the guard fires once the full 60s budget elapses.
+        advanceTimeBy(61_000L)
         advanceUntilIdle()
 
         verifySuspend(exactly(1)) { radioInterfaceService.restartTransport() }

@@ -24,6 +24,7 @@ import androidx.room3.PrimaryKey
 import androidx.room3.Relation
 import okio.ByteString
 import org.meshtastic.core.common.util.nowMillis
+import org.meshtastic.core.model.ContactKey
 import org.meshtastic.core.model.DataPacket
 import org.meshtastic.core.model.Message
 import org.meshtastic.core.model.MessageStatus
@@ -58,6 +59,7 @@ data class PacketEntity(
             emojis =
             reactions
                 .filter { it.myNodeNum == myNodeNum || it.myNodeNum == 0 }
+                .filter { it.belongsTo(packet) }
                 // myNodeNum is part of the reactions primary key, so the legacy 0 bucket can hold the same
                 // (user, emoji) as this node's. The UI keys reaction rows on that pair, so keep one — the
                 // current node's, which carries the live delivery status.
@@ -71,10 +73,40 @@ data class PacketEntity(
             filtered = filtered,
             transportMechanism = data.transportMechanism,
             xeddsaSigned = data.xeddsaSigned,
+            ackProofStatus = data.ackProofStatus,
             translatedText = translatedText,
             showTranslated = showTranslated,
         )
     }
+}
+
+/**
+ * A reaction references its parent by mesh packet ID, which is only unique per sender. The wire format does not carry
+ * the parent's sender, but it does carry enough addressing information to keep reactions scoped to the conversation in
+ * which they were sent. Legacy rows without addressing metadata retain the historical ID-only behavior.
+ */
+@Suppress("ReturnCount")
+private fun ReactionEntity.belongsTo(packet: Packet): Boolean {
+    if (to == null || userId.isEmpty()) return true
+
+    val sender = NodeAddress.fromString(userId)
+    val recipient = NodeAddress.fromString(to)
+    val packetContact = ContactKey(packet.contact_key)
+    val isLegacyInboundPkiChannel =
+        packetContact.channel == NodeAddress.PKC_CHANNEL_INDEX &&
+            channel == 0 &&
+            status == MessageStatus.RECEIVED &&
+            recipient !is NodeAddress.Broadcast
+    // A retired conversation has no live slot, so there is no index to compare against; it is frozen and receives no
+    // new packets, which leaves the addressing check below as sufficient scoping.
+    if (!packetContact.isRetired && packetContact.channel != channel && !isLegacyInboundPkiChannel) return false
+
+    val senderIsLocal =
+        status != MessageStatus.RECEIVED ||
+            sender is NodeAddress.Local ||
+            (myNodeNum != 0 && sender is NodeAddress.ByNum && sender.num == myNodeNum)
+    val reactionContact = if (recipient is NodeAddress.Broadcast || senderIsLocal) recipient else sender
+    return reactionContact == packetContact.address
 }
 
 @Suppress("ConstructorParameterNaming")
@@ -102,7 +134,8 @@ data class Packet(
     @ColumnInfo(name = "data") val data: DataPacket,
     @ColumnInfo(name = "packet_id", defaultValue = "0") val packetId: Int = 0,
     @ColumnInfo(name = "routing_error", defaultValue = "-1") var routingError: Int = -1,
-    @ColumnInfo(name = "snr", defaultValue = "0") val snr: Float = 0f,
+    /** Null when the packet carried no snr. Rows written before schema 52 store 0 for both absent and 0 dB. */
+    @ColumnInfo(name = "snr") val snr: Float? = null,
     /** Null when the radio reported no rssi. Rows written before schema 51 store 0 for both absent and 0 dBm. */
     @ColumnInfo(name = "rssi") val rssi: Int? = null,
     @ColumnInfo(name = "hopsAway", defaultValue = "-1") val hopsAway: Int = -1,
@@ -145,6 +178,16 @@ data class ContactSettings(
     @ColumnInfo(name = "last_read_message_uuid") val lastReadMessageUuid: Long? = null,
     @ColumnInfo(name = "last_read_message_timestamp") val lastReadMessageTimestamp: Long? = null,
     @ColumnInfo(name = "filtering_disabled", defaultValue = "0") val filteringDisabled: Boolean = false,
+    /** Unsent composer text for this conversation. Empty when there is nothing in progress. */
+    @ColumnInfo(name = "draft", defaultValue = "''") val draft: String = "",
+    /** Sorts this conversation above its unpinned siblings within its own list section. */
+    @ColumnInfo(name = "pinned", defaultValue = "0") val pinned: Boolean = false,
+    /**
+     * The conversation's own label, set only for a retired channel. A live channel is labelled from the radio's channel
+     * set by slot index, which stops working the moment the slot belongs to someone else — so the effective name is
+     * captured here when the conversation is retired. Empty for every live conversation.
+     */
+    @ColumnInfo(name = "display_name", defaultValue = "''") val displayName: String = "",
 ) {
     val isMuted
         get() = nowMillis <= muteUntil
@@ -162,7 +205,8 @@ data class ReactionEntity(
     @ColumnInfo(name = "user_id") val userId: String,
     val emoji: String,
     val timestamp: Long,
-    @ColumnInfo(name = "snr", defaultValue = "0") val snr: Float = 0f,
+    /** Null when the packet carried no snr. Rows written before schema 52 store 0 for both absent and 0 dB. */
+    @ColumnInfo(name = "snr") val snr: Float? = null,
     /** Null when the radio reported no rssi. Rows written before schema 51 store 0 for both absent and 0 dBm. */
     @ColumnInfo(name = "rssi") val rssi: Int? = null,
     @ColumnInfo(name = "hopsAway", defaultValue = "-1") val hopsAway: Int = -1,
@@ -174,10 +218,12 @@ data class ReactionEntity(
     @ColumnInfo(name = "to") val to: String? = null,
     @ColumnInfo(name = "channel", defaultValue = "0") val channel: Int = 0,
     @ColumnInfo(name = "sfpp_hash") val sfpp_hash: ByteString? = null,
+    @ColumnInfo(name = "xeddsa_signed", defaultValue = "0") val xeddsaSigned: Boolean = false,
+    @ColumnInfo(name = "ack_proof_status", defaultValue = "0") val ackProofStatus: Int = 0,
 )
 
 suspend fun ReactionEntity.toReaction(getNode: suspend (userId: String?) -> Node?): Reaction {
-    val user = getNode(userId)?.user ?: org.meshtastic.proto.User(id = userId)
+    val user = getNode(userId)?.user ?: org.meshtastic.proto.User.Builder().also { wb -> wb.id = userId }.build()
     return Reaction(
         replyId = replyId,
         user = user,
@@ -194,6 +240,8 @@ suspend fun ReactionEntity.toReaction(getNode: suspend (userId: String?) -> Node
         to = to,
         channel = channel,
         sfppHash = sfpp_hash,
+        xeddsaSigned = xeddsaSigned,
+        ackProofStatus = ackProofStatus,
     )
 }
 

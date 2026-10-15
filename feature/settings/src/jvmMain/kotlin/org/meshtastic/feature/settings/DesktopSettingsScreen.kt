@@ -37,18 +37,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import org.meshtastic.core.database.DatabaseConstants
+import org.koin.compose.viewmodel.koinViewModel
+import org.meshtastic.core.common.util.UnitsOverride
 import org.meshtastic.core.navigation.DiscoveryRoute
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.navigation.WifiProvisionRoute
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.acknowledgements
+import org.meshtastic.core.resources.about
 import org.meshtastic.core.resources.app_settings
 import org.meshtastic.core.resources.app_version
 import org.meshtastic.core.resources.bottom_nav_settings
-import org.meshtastic.core.resources.device_db_cache_limit
-import org.meshtastic.core.resources.device_db_cache_limit_summary
 import org.meshtastic.core.resources.device_links
 import org.meshtastic.core.resources.discovery_local_mesh
 import org.meshtastic.core.resources.expert_mode
@@ -61,14 +60,15 @@ import org.meshtastic.core.resources.node_layout_section_title
 import org.meshtastic.core.resources.preferences_language
 import org.meshtastic.core.resources.remotely_administrating
 import org.meshtastic.core.resources.theme
+import org.meshtastic.core.resources.units
 import org.meshtastic.core.resources.wifi_devices
-import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.icon.ChevronRight
 import org.meshtastic.core.ui.icon.Device
+import org.meshtastic.core.ui.icon.Distance
 import org.meshtastic.core.ui.icon.FormatPaint
 import org.meshtastic.core.ui.icon.HelpOutline
 import org.meshtastic.core.ui.icon.Info
@@ -79,15 +79,21 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PermScanWifi
 import org.meshtastic.core.ui.icon.Wifi
 import org.meshtastic.core.ui.util.rememberShowToastResource
+import org.meshtastic.feature.settings.component.CacheLimitPreference
 import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.feature.settings.component.FullMessageTimestampsSetting
 import org.meshtastic.feature.settings.component.HomoglyphSetting
 import org.meshtastic.feature.settings.component.NotificationSection
 import org.meshtastic.feature.settings.component.PowerModeSection
 import org.meshtastic.feature.settings.component.ThemePickerDialog
+import org.meshtastic.feature.settings.component.UnitsOption
+import org.meshtastic.feature.settings.component.UnitsPickerDialog
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
+import org.meshtastic.feature.settings.search.SettingsSearchBar
+import org.meshtastic.feature.settings.search.SettingsSearchViewModel
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -112,9 +118,19 @@ fun DesktopSettingsScreen(
     val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
     val cacheLimit by settingsViewModel.dbCacheLimit.collectAsStateWithLifecycle()
     val isOtaCapable by settingsViewModel.isOtaCapable.collectAsStateWithLifecycle()
+    val showFullMessageTimestamps by settingsViewModel.showFullMessageTimestamps.collectAsStateWithLifecycle()
 
     var showThemePickerDialog by remember { mutableStateOf(false) }
     var showLanguagePickerDialog by remember { mutableStateOf(false) }
+    var showUnitsPickerDialog by remember { mutableStateOf(false) }
+    val unitsOverride = UnitsOverride.fromValue(settingsViewModel.unitsOverride.collectAsStateWithLifecycle().value)
+    if (showUnitsPickerDialog) {
+        UnitsPickerDialog(
+            current = unitsOverride,
+            onClickUnits = { settingsViewModel.setUnitsOverride(it) },
+            onDismiss = { showUnitsPickerDialog = false },
+        )
+    }
     if (showThemePickerDialog) {
         ThemePickerDialog(
             onClickTheme = { settingsViewModel.setTheme(it) },
@@ -153,6 +169,13 @@ fun DesktopSettingsScreen(
             modifier = Modifier.padding(paddingValues).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            SettingsSearchBar(
+                viewModel = koinViewModel<SettingsSearchViewModel>(),
+                onNavigate = onNavigate,
+                // This phone's own settings are hidden below while administering another node; search hides them too.
+                includeAppLocal = state.isLocal,
+            )
+
             RadioConfigItemList(
                 state = state,
                 isManaged = localConfig.security?.is_managed ?: false,
@@ -195,6 +218,21 @@ fun DesktopSettingsScreen(
                         showLanguagePickerDialog = true
                     }
 
+                    ListItem(
+                        text = stringResource(Res.string.units),
+                        supportingText =
+                        stringResource(UnitsOption.entries.first { it.override == unitsOverride }.label),
+                        leadingIcon = MeshtasticIcons.Distance,
+                        trailingIcon = null,
+                    ) {
+                        showUnitsPickerDialog = true
+                    }
+
+                    FullMessageTimestampsSetting(
+                        checked = showFullMessageTimestamps,
+                        onCheckedChange = settingsViewModel::setShowFullMessageTimestamps,
+                    )
+
                     HomoglyphSetting(
                         homoglyphEncodingEnabled = homoglyphEnabled,
                         onToggle = { radioConfigViewModel.toggleHomoglyphCharactersEncodingEnabled() },
@@ -208,18 +246,10 @@ fun DesktopSettingsScreen(
                         onCheckedChange = { settingsViewModel.setExpertModeEnabled(it) },
                     )
 
-                    val cacheItems = remember {
-                        (DatabaseConstants.MIN_CACHE_LIMIT..DatabaseConstants.MAX_CACHE_LIMIT).map {
-                            it.toLong() to it.toString()
-                        }
-                    }
-                    DropDownPreference(
-                        title = stringResource(Res.string.device_db_cache_limit),
-                        enabled = true,
-                        items = cacheItems,
-                        selectedItem = cacheLimit.toLong(),
-                        onItemSelected = { selected -> settingsViewModel.setDbCacheLimit(selected.toInt()) },
-                        summary = stringResource(Res.string.device_db_cache_limit_summary),
+                    CacheLimitPreference(
+                        cacheLimit = cacheLimit,
+                        onCheckEvictionCount = { settingsViewModel.cachedDeviceCountExceeding(it) },
+                        onSetCacheLimit = { settingsViewModel.setDbCacheLimit(it) },
                     )
                 }
 
@@ -294,7 +324,7 @@ private fun DesktopAppInfoSection(
 ) {
     ExpressiveSection(title = stringResource(Res.string.info)) {
         ListItem(
-            text = stringResource(Res.string.acknowledgements),
+            text = stringResource(Res.string.about),
             leadingIcon = MeshtasticIcons.Info,
             trailingIcon = MeshtasticIcons.ChevronRight,
         ) {

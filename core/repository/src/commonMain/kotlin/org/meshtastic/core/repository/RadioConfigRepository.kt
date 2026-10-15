@@ -40,6 +40,23 @@ interface RadioConfigRepository {
     /** Replaces the [ChannelSettings] list with a new [settingsList]. */
     suspend fun replaceAllSettings(settingsList: List<ChannelSettings>)
 
+    /**
+     * Atomically updates the cached channel set. A null argument preserves that field's current value.
+     *
+     * This is used after a committed radio transaction when channel settings and LoRa configuration must become visible
+     * together.
+     */
+    suspend fun updateChannelSet(settingsList: List<ChannelSettings>?, loraConfig: Config.LoRaConfig?)
+
+    /**
+     * Re-keys stored conversations onto the current channel set.
+     *
+     * Conversations are keyed by channel index, so a slot that changed occupant shows the previous channel's history
+     * under the new channel until this runs. The app's own whole-set writes reconcile themselves; this exists for the
+     * handshake, which streams channels in one slot at a time and so must reconcile once at the end.
+     */
+    suspend fun reconcileConversations()
+
     /** Updates the [ChannelSettings] list with the provided channel. */
     suspend fun updateChannelSettings(channel: Channel)
 

@@ -1,35 +1,33 @@
----
-title: テレメトリとセンサー
+\| Lightning, strikes in the last hour and storm distance | count, km or mi | Card and listed with each reading on the Environment Metrics screen; not charted. From an AS3935 detector. Storm distance is always in km or mi, since the detector resolves whole kilometres |---
+title: Telemetry & Sensors
 parent: User Guide
 nav_order: 9
-last_updated: 2026-05-13
-description: メッシュ上のセンサーデータ。対応する環境・大気質・電力センサーと、設定・表示のガイドを説明します。
+last_updated: 2026-09-18
+description: Sensor data on the mesh — supported environment, air quality, and power sensors, plus configuration and viewing guides.
 aliases:
-  - sensors
-  - environment
-  - weather
-  - power-metrics
+
+- sensors
+- environment
+- weather
+- power-metrics
+
 ---
 
 # テレメトリとセンサー
 
-Meshtastic のノードは、メッシュネットワーク全体でセンサーデータを収集・共有できます。
-
-## 概要
-
-テレメトリを使うと、センサーを搭載したノードが、環境・電力・デバイスの状態の情報をブロードキャストできます。 このデータはノードの詳細画面で確認でき、時系列で記録することもできます。
+Meshtastic のノードは、メッシュネットワーク全体でセンサーデータを収集・共有できます。 Telemetry allows nodes equipped with sensors to broadcast environmental, power, and device health information, visible on the node detail screen and logged over time.
 
 ## デバイステレメトリ
 
 すべての Meshtastic ノードは、基本的なデバイステレメトリを報告します：
 
-| メトリクス       | 説明                  | 標準的な範囲                                                             |
-| ----------- | ------------------- | ------------------------------------------------------------------ |
-| バッテリー残量     | 充電の割合               | 0–100%                                                             |
-| 電圧          | バッテリー電圧             | 3.0–4.2V (LiPo) |
-| チャンネル全体の利用率 | ローカルで使用された電波利用時間の割合 | 0–100%                                                             |
-| 送信の電波利用率    | このノードが使用した電波利用時間の割合 | 0–100%                                                             |
-| 連続稼働時間      | 前回の起動からの経過秒数        | 可変                                                                 |
+| メトリクス   | 説明                                              | 標準的な範囲                                                             |
+| ------- | ----------------------------------------------- | ------------------------------------------------------------------ |
+| バッテリー残量 | 充電の割合                                           | 0–100%                                                             |
+| 電圧      | バッテリー電圧                                         | 3.0–4.2V (LiPo) |
+| ChUtil  | % of local airtime in use                       | 0–100%                                                             |
+| AirUtil | % of the last hour this node spent transmitting | 0–100%                                                             |
+| 連続稼働時間  | 前回の起動からの経過秒数                                    | 可変                                                                 |
 
 ## 環境センサー
 
@@ -47,11 +45,23 @@ Meshtastic のノードは、メッシュネットワーク全体でセンサー
 
 ### 大気質
 
-| センサー     | メトリクス                                              | 備考       |
-| -------- | -------------------------------------------------- | -------- |
-| BME680   | ガス抵抗／IAQ                                           | 揮発性有機化合物 |
-| PMSA003I | PM1.0, PM2.5, PM10 | 粒子状物質    |
-| SEN55    | PM、NOx、VOC、温度、湿度                                   | マルチセンサー  |
+| センサー     | メトリクス                                              | 備考                                                                                                                                                                                                                         |
+| -------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BME680   | ガス抵抗／IAQ                                           | 揮発性有機化合物                                                                                                                                                                                                                   |
+| PMSA003I | PM1.0, PM2.5, PM10 | See [Air Quality Metrics](#air-quality-metrics)                                                                                                                                                                            |
+| SEN55    | PM, Temp, Humidity                                 | Multi-sensor. Its NOx and VOC indices are recorded and included in a CSV export, but are not shown as cards or charts                                                                                      |
+| SEN6x    | PM, CO₂, Temp, Humidity                            | Its status register is always exported; when it reports a fault (fan, RH&T, gas, CO₂, HCHO or PM), the fault names appear as a Sensor Status card and on each Air Quality log entry |
+
+### Soil
+
+| メートル法 | 単位      | 備考                                              |
+| ----- | ------- | ----------------------------------------------- |
+| 土壌温度  | °C / °F | Reported alongside soil moisture by soil probes |
+| 土壌水分  | %       | Volumetric water content                        |
+
+Both appear as info cards on the node detail screen, next to the other environment readings.
+
+Soil probe and water-quality sonde chemistry (pH, conductivity, salinity, NPK, dissolved oxygen, ORP, turbidity, nitrate, ammonium, oxygen demand, solar irradiance) appears as a **Soil & Water** row of info cards on the node detail screen once a node reports any of it, and is included in the node database export. There is no chart or log screen for it yet.
 
 ### 光と UV
 
@@ -61,77 +71,86 @@ Meshtastic のノードは、メッシュネットワーク全体でセンサー
 | VEML7700 | 周囲の明るさ（ルクス） |
 | LTR390   | UV 指数       |
 
+### Weather and Other Readings
+
+| メトリクス                                                  | 単位                   | Where it appears                                                                                                                                            |
+| ------------------------------------------------------ | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Wind speed                                             | km/h or mph          | Card and chart. Sensors report meters per second; the app converts to match your unit setting, and the chart uses the same unit as the card |
+| Wind direction, gust, and lull                         | degrees, km/h or mph | Listed with each reading on the Environment Metrics screen; not charted                                                                                     |
+| Rainfall, last hour and last 24 hours                  | mm or in             | Listed with each reading on the Environment Metrics screen; not charted                                                                                     |
+| Lightning, strikes in the last hour and storm distance | count, km or mi      | Card and listed with each reading on the Environment Metrics screen; not charted. From an AS3935 detector                                   |
+| 放射線                                                    | µR/h                 | Card and chart                                                                                                                                              |
+| 重さ                                                     | kg or lb             | Card only — load cells, such as a beehive scale                                                                                                             |
+| 距離                                                     | mm or in             | Card only — water level, from a distance sensor                                                                                                             |
+| Dew point                                              | °C or °F             | Card only — computed from temperature and humidity                                                                                                          |
+| 1-Wire temperature                                     | °C or °F             | Card and chart, up to eight DS18B20-style probes                                                                                                            |
+| ADC voltage                                            | V                    | Card and chart, up to eight raw analog channels                                                                                                             |
+
 ## 電力メトリクス
 
 INA シリーズの電力センサーを搭載したノードは、次を報告できます：
 
-| メトリクス | 説明          |
-| ----- | ----------- |
-| バス電圧  | 供給レールの電圧    |
-| 電流    | 消費電流（mA）    |
-| 電力    | 計算された電力（mW） |
+| メートル法 | 説明                              |
+| ----- | ------------------------------- |
+| 電圧    | Per-channel voltage reading     |
+| 電流    | Per-channel current draw, in mA |
+
+The node detail screen shows read-only cards for channels 1 to 3. Use the chart button on the **Power Metrics** row to open the chart screen, which lists a chip for every channel that reported data — up to eight — and charts the one you select. Rename a channel there, in the label field under the chips, to something like Solar or Battery. There is no separate wattage reading; the app charts voltage and current, and does not compute power from them.
 
 リモートノードの太陽光充電やバッテリーの状態を監視するのに便利です。
 
 ## テレメトリを設定する
 
-1. 「**設定 → モジュール設定 → テレメトリ**」に移動します。
-2. 報告間隔を設定します：
-   - **デバイスメトリクスの間隔**：デバイスメトリクスをブロードキャストする頻度
-   - **環境メトリクスの間隔**：センサーデータをブロードキャストする頻度
-3. 必要に応じて、特定のセンサーの種類を有効にします。
+1. Navigate to **Settings → Module configuration → Telemetry**.
+2. Each metric group has its own enable toggle and its own interval:
 
-### 推奨の間隔
+   - **Device Metrics** — battery, voltage, uptime, ChUtil, and AirUtil. Its enable toggle, **Send Device Telemetry**, appears only on firmware 2.7.12 and later; on older firmware you can change the interval but not turn the group off
+   - **Environment Metrics** — temperature, humidity, pressure and the other sensor readings
+   - **Air Quality Metrics** — particulate and CO₂ readings
+   - **Power Metrics** — the per-channel voltage and current readings
 
-| 用途               | デバイス（秒） | 環境（秒） |
-| ---------------- | ------- | ----- |
-| 都市部のメッシュ（多数のノード） | 3600    | 3600  |
-| 地方のメッシュ（少数のノード）  | 900     | 900   |
-| 気象観測所            | 900     | 300   |
-| バッテリー節約          | 7200    | 7200  |
+   Environment and Power each have an extra toggle to show their readings on the radio's own
+   screen, and Environment has one more to show its temperatures there in Fahrenheit.
 
-> ⚠️ **注意：** 間隔を短くすると、メッシュ全体で電波利用時間の消費とバッテリーの消耗が増えます。
+### Choosing an Interval
+
+These are nominal values, not hard schedules. On a congested mesh the firmware automatically
+backs off to longer intervals based on how many nodes are online, so you do not need to
+hand-tune them for mesh size. Lengthen them deliberately only to save battery.
 
 ## 大気質メトリクス
 
 粒子状物質センサーまたは CO₂ センサーを搭載したノードは、大気質データを報告します：
 
-| メトリクス                 | 単位    | 説明       |
+| メートル法                 | 単位    | 説明       |
 | --------------------- | ----- | -------- |
 | PM1.0 | µg/m³ | 超微小粒子状物質 |
 | PM2.5 | µg/m³ | 微小粒子状物質  |
 | PM10                  | µg/m³ | 粗大粒子状物質  |
 | CO₂                   | ppm   | 二酸化炭素の濃度 |
 
-SCD4x などの CO₂ センサーは、自身の温度と湿度も報告し、上記の測定値とともに表示されます。 アプリは、PM2.5 の履歴から **EPA NowCast AQI** の値も算出します。
+SCD4x などの CO₂ センサーは、自身の温度と湿度も報告し、上記の測定値とともに表示されます。アプリは、PM2.5 の履歴から **EPA NowCast AQI** の値も算出します。
 
-CO₂ の測定値は、深刻度に応じて色分けされます（良好 → 空気がこもる → 悪い → 危険 → 退避）。 正確な ppm の区分、色、AQI の詳細については、[ノードメトリクス：大気質](node-metrics#air-quality-metrics) を参照してください。
+CO₂ の測定値は、深刻度に応じて色分けされます（良好 → 空気がこもる → 悪い → 危険 → 退避）。正確な ppm の区分、色、AQI の詳細については、[ノードメトリクス：大気質](node-metrics#air-quality-metrics) を参照してください。
 
 大気質データは、ノードの詳細画面で情報カードとして表示したり、時系列でグラフ化したり、CSV にエクスポートしたりできます。
 
 ## テレメトリを表示する
 
 1. 「**ノード**」に移動して、ノードを選択します。
-2. 詳細画面にテレメトリのセクションが表示されます：
-   - デバイスメトリクス（常に利用可能）
-   - 環境メトリクス（センサーがある場合）
-   - 電力メトリクス（INA センサーがある場合）
-   - 大気質メトリクス（PM／CO₂ センサーがある場合）
-3. 履歴グラフで、時系列の傾向を確認できます。
+2. The **Telemetry** section lists a row for every metric type — Device, Environment, Air Quality, Power, and the rest — whether or not this node has reported it. A row fills in with readings, and grows a chart button, once that node has actually sent that kind of telemetry. An empty row means nothing has arrived yet, not that the sensor is missing.
+3. Use the chart button on a row to open that metric's history, where you can pick a time frame and export the readings as CSV.
 
-![テレメトリの操作](../../assets/screenshots/node-metrics_telemetric_actions.png)
+![Node detail screen with the telemetry chart action menu open](../../assets/screenshots/node-metrics_telemetric_actions.png)
 
 ## トラブルシューティング
 
-- **環境データが表示されない？** リモートノードに物理センサーが接続されている必要があります（例：I2C の BME280）。 デバイステレメトリ（バッテリー、連続稼働時間）は常に利用できますが、環境メトリクスにはハードウェアが必要です。
-- **測定値が古い？** 報告間隔を確認してください。非常に長い間隔（7200 秒以上）では、データの更新頻度が低くなります。 リモートノードがまだオンラインであるかも確認してください。
-- **I2C バスでセンサーが競合している？** 一部のセンサーは I2C アドレスを共有しています。 同じバスに複数のセンサーがある場合は、無線機のシリアルデバッグ出力でアドレスの衝突がないか確認してください。
+- **環境データが表示されない？** リモートノードに物理センサーが接続されている必要があります（例：I2C の BME280）。デバイステレメトリ（バッテリー、連続稼働時間）は常に利用できますが、環境メトリクスにはハードウェアが必要です。
+- **測定値が古い？** 報告間隔を確認してください。非常に長い間隔（7200 秒以上）では、データの更新頻度が低くなります。リモートノードがまだオンラインであるかも確認してください。
+- **I2C バスでセンサーが競合している？** 一部のセンサーは I2C アドレスを共有しています。同じバスに複数のセンサーがある場合は、無線機のシリアルデバッグ出力でアドレスの衝突がないか確認してください。
 
 ## 関連トピック
 
 - [ノードメトリクス](node-metrics)：ノードの詳細画面でテレメトリデータを表示
 - [設定：モジュールと管理](settings-module-admin)：テレメトリモジュールの設定
 - [単位とロケール](units-and-locale)：温度と気圧の表示単位
-
----
-

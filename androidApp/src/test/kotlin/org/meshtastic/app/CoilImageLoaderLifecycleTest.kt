@@ -17,6 +17,9 @@
 package org.meshtastic.app
 
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Configuration
+import androidx.work.testing.SynchronousExecutor
+import androidx.work.testing.WorkManagerTestInitHelper
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.annotation.DelicateCoilApi
@@ -29,11 +32,14 @@ import kotlin.test.Test
 import kotlin.test.assertSame
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = MeshUtilApplication::class, sdk = [34])
+@Config(application = ImageLoaderOnlyApplication::class, sdk = [34])
 class CoilImageLoaderLifecycleTest {
     @After
     @OptIn(DelicateCoilApi::class)
-    fun tearDown() = SingletonImageLoader.reset()
+    fun tearDown() {
+        SingletonImageLoader.reset()
+        WorkManagerTestInitHelper.closeWorkDatabase()
+    }
 
     @Test
     fun productionApplicationProvidesConfiguredKoinImageLoader() {
@@ -42,4 +48,24 @@ class CoilImageLoaderLifecycleTest {
 
         assertSame(configuredImageLoader, SingletonImageLoader.get(application))
     }
+}
+
+/**
+ * Boots the production Application with no database open left in flight at teardown: [startBackgroundInit] is
+ * suppressed, and WorkManager is initialized synchronously first so Koin's eager `workManagerFactory()` skips its own
+ * `initialize`, whose `ForceStopRunnable` would otherwise open WorkDatabase on framework SQLite from a background
+ * thread.
+ *
+ * Must not be private: Robolectric instantiates the `@Config` application through `AppComponentFactory`, whose
+ * `Class.newInstance()` call cannot reach a package-private class.
+ */
+internal class ImageLoaderOnlyApplication : MeshUtilApplication() {
+    override fun onCreate() {
+        val configuration =
+            Configuration.Builder().setExecutor(SynchronousExecutor()).setTaskExecutor(SynchronousExecutor()).build()
+        WorkManagerTestInitHelper.initializeTestWorkManager(this, configuration)
+        super.onCreate()
+    }
+
+    override fun startBackgroundInit() = Unit
 }

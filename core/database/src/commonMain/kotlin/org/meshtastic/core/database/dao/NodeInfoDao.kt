@@ -83,6 +83,9 @@ interface NodeInfoDao {
         return if (existingNodeEntity == null) {
             handleNewNodeUpsertValidation(incomingNode)
         } else {
+            // Never trusted here, whatever the number says: this path carries mesh-received NodeInfo, so matching the
+            // local node number only proves the sender claimed it. The radio's own key is trusted in installConfig,
+            // where selfNum comes from the device over the local link.
             handleExistingNodeUpsertValidation(existingNodeEntity, incomingNode)
         }
     }
@@ -96,7 +99,7 @@ interface NodeInfoDao {
     private suspend fun handleNewNodeUpsertValidation(newNode: NodeEntity): NodeEntity {
         // Check if the new node's public key (if present and not empty)
         // is already claimed by another existing node.
-        if ((newNode.publicKey?.size ?: 0) > 0) {
+        if (newNode.publicKey.isUsableKey()) {
             val nodeWithSamePK = findNodeByPublicKey(newNode.publicKey)
             if (nodeWithSamePK != null && nodeWithSamePK.num != newNode.num) {
                 // This is a potential impersonation attempt.
@@ -149,41 +152,72 @@ interface NodeInfoDao {
      * This function implements safety checks to prevent public key conflicts (PKC) and ensure robust handling of key
      * updates.
      *
+     * First-wins: once a valid key is stored it is never replaced by a different inbound one. That would let any mesh
+     * or MQTT peer destroy a contact's trusted key by broadcasting a NodeInfo under their node number, breaking PKC
+     * direct messages until the node is deleted and re-added. Firmware refuses the same substitution
+     * (`NodeDB::updateUser` logs "Public Key mismatch, drop NodeInfo" and keeps its copy), so overwriting here threw
+     * away a key the radio itself still held.
+     *
      * @param existingNode The current state of the node in the database.
      * @param incomingNode The new node data being upserted.
-     * @return The resolved [ByteString] for the public key:
-     * - [NodeEntity.ERROR_BYTE_STRING]: If there is a mismatch between a valid existing key and a new incoming key.
-     * - `incomingNode.publicKey`: If the incoming key is new, matches the existing one, or if recovering from an error
-     *   state.
-     * - `existingNode.publicKey`: If the incoming update has no key, or if the user is licensed but already has a valid
-     *   key (prevents wiping).
-     * - [ByteString.EMPTY]: If the user is licensed and didn't previously have a key (or if key is explicitly cleared).
+     * @return the resolved key, and whether it matched:
+     * - the stored key with `keyMatch = false`: a *different* valid key arrived; the refusal is recorded, not applied.
+     * - `incomingNode.publicKey`: the incoming key is new or matches the stored one.
+     * - `existingNode.publicKey`: the incoming update has no key, or the user is licensed but already has a valid key
+     *   (prevents wiping).
+     * - [ByteString.EMPTY]: the user is licensed and had no key before (or the key is explicitly cleared).
      */
-    private fun resolvePublicKey(existingNode: NodeEntity, incomingNode: NodeEntity): ByteString? {
+    private fun resolvePublicKey(existingNode: NodeEntity, incomingNode: NodeEntity): ResolvedPublicKey {
         val existingKey = existingNode.publicKey ?: existingNode.user.public_key
         val incomingKey = incomingNode.publicKey
 
-        val incomingHasKey = (incomingKey?.size ?: 0) == KEY_SIZE
-        val existingHasKey = existingKey.size == KEY_SIZE && existingKey != NodeEntity.ERROR_BYTE_STRING
+        val incomingHasKey = incomingKey.isUsableKey()
+        val existingHasKey = existingKey.isUsableKey()
 
         return when {
-            incomingHasKey -> {
-                if (existingHasKey && incomingKey != existingKey) {
-                    // Actual mismatch between two non-empty keys
-                    NodeEntity.ERROR_BYTE_STRING
-                } else {
-                    // New key, same key, or recovery from Error state
-                    incomingKey
+            incomingHasKey ->
+                when {
+                    existingHasKey && incomingKey != existingKey ->
+                        // A different key for a node we already hold one for: keep ours, record the refusal.
+                        ResolvedPublicKey(existingKey, keyMatch = false, newPublicKey = incomingKey)
+
+                    existingHasKey ->
+                        // The key already on file. It settles nothing: a recorded refusal stands until the connected
+                        // radio speaks for itself, or the next legitimate beacon would hide the substitute.
+                        ResolvedPublicKey(
+                            incomingKey,
+                            keyMatch = existingNode.keyMatch && incomingNode.keyMatch,
+                            newPublicKey = incomingNode.newPublicKey ?: existingNode.newPublicKey,
+                        )
+
+                    // A first key, or recovery from a legacy sentinel row.
+                    else -> ResolvedPublicKey(incomingKey, keyMatch = true)
                 }
-            }
 
-            existingHasKey -> existingKey
+            existingHasKey -> ResolvedPublicKey(existingKey, existingNode.keyMatch, existingNode.newPublicKey)
 
-            incomingNode.user.is_licensed -> ByteString.EMPTY
+            incomingNode.user.is_licensed -> ResolvedPublicKey(ByteString.EMPTY, keyMatch = true)
 
-            else -> existingKey
+            else -> ResolvedPublicKey(existingKey, existingNode.keyMatch, existingNode.newPublicKey)
         }
     }
+
+    /**
+     * A resolved public key, whether the inbound one matched it, and the refused key when it did not — see
+     * [resolvePublicKey].
+     */
+    private data class ResolvedPublicKey(
+        val key: ByteString?,
+        val keyMatch: Boolean,
+        val newPublicKey: ByteString? = null,
+    )
+
+    /**
+     * A key the DAO will act on: present, full length, and not the legacy mismatch sentinel. The sentinel is 32 bytes
+     * too, so a size check alone would record it as a refused key or, on the local link, write it over the real one.
+     */
+    private fun ByteString?.isUsableKey(): Boolean =
+        this != null && size == KEY_SIZE && this != NodeEntity.ERROR_BYTE_STRING
 
     /**
      * Handles the validation logic when upserting an existing node.
@@ -195,10 +229,11 @@ interface NodeInfoDao {
      * 2. **Update**: If it's a normal update, we validate the public key using [resolvePublicKey] to prevent conflicts
      *    or accidental key wiping, and then update the node.
      *
-     * [trustIncomingKey] skips the mismatch check and accepts a valid incoming key as-is. Set only for the local node
-     * during a config install: the connected device is authoritative for its own key over the local link, and an
-     * erase-and-reflash legitimately re-keys it (a mismatch there would otherwise poison the local node with
-     * [NodeEntity.ERROR_BYTE_STRING] and break PKI traffic until app data is cleared).
+     * [trustIncomingKey] skips the mismatch check and accepts a valid incoming key as-is. Set only for the local node:
+     * the connected device is authoritative for its own key over the local link, and an erase-and-reflash, a factory
+     * reset or a 2.8 re-key legitimately changes it (a mismatch there would otherwise poison the local node with
+     * [NodeEntity.ERROR_BYTE_STRING] and break PKI traffic until app data is cleared). Every other node keeps
+     * first-wins.
      */
     @Suppress("CyclomaticComplexMethod", "MagicNumber")
     private fun handleExistingNodeUpsertValidation(
@@ -217,6 +252,8 @@ interface NodeInfoDao {
             return incomingNode.copy(
                 user = existingNode.user,
                 publicKey = existingNode.publicKey,
+                keyMatch = existingNode.keyMatch,
+                newPublicKey = existingNode.newPublicKey,
                 longName = existingNode.longName,
                 shortName = existingNode.shortName,
                 manuallyVerified = existingNode.manuallyVerified,
@@ -225,16 +262,20 @@ interface NodeInfoDao {
             )
         }
 
-        val resolvedKey =
-            if (trustIncomingKey && (incomingNode.publicKey?.size ?: 0) == KEY_SIZE) {
-                incomingNode.publicKey
+        val resolved =
+            if (trustIncomingKey && incomingNode.publicKey.isUsableKey()) {
+                // The connected radio is authoritative for its own key, so this also clears any recorded mismatch.
+                ResolvedPublicKey(incomingNode.publicKey, keyMatch = true)
             } else {
                 resolvePublicKey(existingNode, incomingNode)
             }
 
         return incomingNode.copy(
-            user = incomingNode.user.copy(public_key = resolvedKey ?: ByteString.EMPTY),
-            publicKey = resolvedKey,
+            user =
+            incomingNode.user.newBuilder().also { wb -> wb.public_key = resolved.key ?: ByteString.EMPTY }.build(),
+            publicKey = resolved.key,
+            keyMatch = resolved.keyMatch,
+            newPublicKey = resolved.newPublicKey,
             notes = resolvedNotes,
             powerChannelLabels = resolvedPowerChannelLabels,
         )
@@ -289,6 +330,11 @@ interface NodeInfoDao {
         NodeWithRelations,
         >
 
+    // Text search (name/id) is applied in Kotlin (NodeRepositoryImpl), not here: SQLite's LIKE/UPPER/LOWER only
+    // case-fold ASCII a-z/A-Z, so a WHERE-clause LIKE can't match e.g. "kolså" against "KOLSÅS" (#6750).
+    //
+    // Direct means hops_away = 0 AND NOT via_mqtt: an MQTT-bridged node carries the hop count the uplink gateway
+    // heard, not ours, so zero hops there is no claim about our radio. The row renderers read it the same way.
     @Query(
         """
     WITH OurNode AS (
@@ -298,13 +344,8 @@ interface NodeInfoDao {
     )
     SELECT * FROM nodes
     WHERE (:includeUnknown = 1 OR short_name IS NOT NULL)
-        AND (:filter = ''
-            OR (long_name LIKE '%' || :filter || '%'
-            OR short_name LIKE '%' || :filter || '%'
-            OR printf('!%08x', CASE WHEN num < 0 THEN num + 4294967296 ELSE num END) LIKE '%' || :filter || '%'
-            OR CAST(CASE WHEN num < 0 THEN num + 4294967296 ELSE num END AS TEXT) LIKE '%' || :filter || '%'))
         AND (:lastHeardMin = -1 OR last_heard >= :lastHeardMin)
-        AND (:hopsAwayMax = -1 OR (hops_away <= :hopsAwayMax AND hops_away >= 0) OR num = (SELECT myNodeNum FROM my_node LIMIT 1))
+        AND (:onlyDirect = 0 OR (hops_away = 0 AND via_mqtt = 0) OR num = (SELECT myNodeNum FROM my_node LIMIT 1))
     ORDER BY CASE
         WHEN num = (SELECT myNodeNum FROM my_node LIMIT 1) THEN 0
         ELSE 1
@@ -338,9 +379,8 @@ interface NodeInfoDao {
     @Transaction
     fun getNodes(
         sort: String,
-        filter: String,
         includeUnknown: Boolean,
-        hopsAwayMax: Int,
+        onlyDirect: Boolean,
         lastHeardMin: Int,
     ): Flow<List<NodeWithRelations>>
 
@@ -376,6 +416,28 @@ interface NodeInfoDao {
     @Query("DELETE FROM metadata WHERE num=:num")
     suspend fun deleteMetadata(num: Int)
 
+    @Query("DELETE FROM metadata WHERE num IN (:nodeNums)")
+    suspend fun deleteMetadataForNodes(nodeNums: List<Int>)
+
+    /** Atomically deletes one node and its separately stored device metadata. */
+    @Transaction
+    suspend fun deleteNodeAndMetadata(num: Int) {
+        deleteNode(num)
+        deleteMetadata(num)
+    }
+
+    /**
+     * Atomically deletes nodes and their metadata, chunking both `IN` queries below SQLite's bind-parameter limit.
+     * Every chunk participates in the same transaction, so cancellation or a query failure rolls back the whole batch.
+     */
+    @Transaction
+    suspend fun deleteNodesAndMetadata(nodeNums: List<Int>) {
+        for (chunk in nodeNums.chunked(MAX_BIND_PARAMS)) {
+            deleteNodes(chunk)
+            deleteMetadataForNodes(chunk)
+        }
+    }
+
     /** Snapshot used by DatabaseMerger to carry per-node DeviceMetadata across transports (newest timestamp wins). */
     @Query("SELECT * FROM metadata")
     suspend fun getAllMetadataSnapshot(): List<MetadataEntity>
@@ -402,6 +464,15 @@ interface NodeInfoDao {
     }
 
     @Upsert suspend fun putAll(nodes: List<NodeEntity>)
+
+    /**
+     * Clears the unheard flag on every node. Called when the connected firmware cannot report
+     * NodeInfo.heard_on_current_lora, so a value written by a radio that could does not outlive it and leave nodes
+     * shown as unreachable. Normalizing in the database rather than in memory keeps every reader correct, including the
+     * repository-backed flows the node list renders from.
+     */
+    @Query("UPDATE nodes SET heard_on_current_lora = 1 WHERE heard_on_current_lora = 0")
+    suspend fun markAllHeardOnCurrentLora()
 
     @Query("UPDATE nodes SET notes = :notes WHERE num = :num")
     suspend fun setNodeNotes(num: Int, notes: String)
@@ -470,7 +541,7 @@ interface NodeInfoDao {
         }
 
         // Batch validate new nodes' public keys (one query instead of N)
-        val publicKeysToCheck = newNodes.mapNotNull { node -> node.publicKey?.takeIf { it.size > 0 } }.distinct()
+        val publicKeysToCheck = newNodes.mapNotNull { node -> node.publicKey?.takeIf { it.isUsableKey() } }.distinct()
         val pkConflicts =
             if (publicKeysToCheck.isNotEmpty()) {
                 publicKeysToCheck
@@ -482,7 +553,7 @@ interface NodeInfoDao {
             }
 
         for (newNode in newNodes) {
-            if ((newNode.publicKey?.size ?: 0) > 0) {
+            if (newNode.publicKey.isUsableKey()) {
                 val conflicting = pkConflicts[newNode.publicKey]
                 if (conflicting != null && conflicting.num != newNode.num) {
                     // Same key under a different num. Migrate when this is the connected device itself

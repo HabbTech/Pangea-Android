@@ -35,6 +35,12 @@ fun Context.hasGps(): Boolean {
     return lm?.allProviders?.contains(LocationManager.GPS_PROVIDER) == true
 }
 
+/** Checks if the device has Bluetooth LE hardware at all, as distinct from Bluetooth being switched off. */
+fun Context.hasBluetoothLe(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
+
+/** Checks if the device can act as a USB host, which USB serial radios need (Android XR headsets cannot). */
+fun Context.hasUsbHost(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_USB_HOST)
+
 /** Checks if the device has a GPS receiver and it is currently disabled. */
 fun Context.gpsDisabled(): Boolean {
     val lm = getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
@@ -72,6 +78,18 @@ private fun Context.getBluetoothPermissions(): Array<String> {
 
 /** Checks if all necessary Bluetooth permissions have been granted. */
 fun Context.hasBluetoothPermission(): Boolean = getBluetoothPermissions().isEmpty()
+
+/** API level at which ACCESS_LOCAL_NETWORK became a real runtime permission (Android 17 / API 37). */
+private const val LOCAL_NETWORK_PERMISSION_API = 37
+
+/**
+ * @return true if opening a socket to a local-network address is currently permitted. Below API 37 local-network access
+ *   is implicit via INTERNET; from 37 it is gated by the ACCESS_LOCAL_NETWORK runtime permission, whose grant is keyed
+ *   on targetSdk rather than install history.
+ */
+fun Context.hasLocalNetworkPermission(): Boolean = Build.VERSION.SDK_INT < LOCAL_NETWORK_PERMISSION_API ||
+    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_LOCAL_NETWORK) ==
+    PackageManager.PERMISSION_GRANTED
 
 /** @return true if the user already has location permission (ACCESS_FINE_LOCATION). */
 fun Context.hasLocationPermission(): Boolean {

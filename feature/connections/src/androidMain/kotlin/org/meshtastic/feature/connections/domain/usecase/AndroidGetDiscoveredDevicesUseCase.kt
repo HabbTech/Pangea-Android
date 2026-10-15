@@ -32,8 +32,6 @@ import org.meshtastic.core.network.repository.UsbRepository
 import org.meshtastic.core.repository.NodeRepository
 import org.meshtastic.core.repository.RadioInterfaceService
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.demo_mode
-import org.meshtastic.core.resources.demo_mode_replay
 import org.meshtastic.core.resources.meshtastic
 import org.meshtastic.feature.connections.model.AndroidUsbDeviceData
 import org.meshtastic.feature.connections.model.DeviceListEntry
@@ -56,7 +54,11 @@ class AndroidGetDiscoveredDevicesUseCase(
     private val macSuffixLength = 8
 
     @Suppress("LongMethod", "CyclomaticComplexMethod")
-    override fun invoke(showMock: Boolean, resolvedList: Flow<List<DiscoveredService>>): Flow<DiscoveredDevices> {
+    override fun invoke(
+        showMock: Boolean,
+        showReplay: Boolean,
+        resolvedList: Flow<List<DiscoveredService>>,
+    ): Flow<DiscoveredDevices> {
         val nodeDb = nodeRepository.nodeDBbyNum
 
         // Filter out non-Meshtastic peripherals (headphones, cars, watches, etc.).
@@ -119,7 +121,8 @@ class AndroidGetDiscoveredDevicesUseCase(
             val recentList = args[5] as List<RecentAddress>
 
             val bleForUi = matchBleNodes(bondedBle, db)
-            val usbForUi = matchUsbNodes(usbDevices, showMock, db)
+            val usbForUi = matchNodesByName(usbDevices, db)
+            val virtualForUi = matchNodesByName(virtualDeviceEntries(showMock, showReplay), db)
 
             val discoveredTcpForUi = matchDiscoveredTcpNodes(processedTcp, db, resolved, databaseManager)
             val discoveredTcpAddresses = processedTcp.map { it.fullAddress }.toSet()
@@ -130,6 +133,7 @@ class AndroidGetDiscoveredDevicesUseCase(
                 usbDevices = usbForUi,
                 discoveredTcpDevices = discoveredTcpForUi,
                 recentTcpDevices = recentTcpForUi,
+                virtualDevices = virtualForUi,
             )
         }
     }
@@ -153,22 +157,8 @@ class AndroidGetDiscoveredDevicesUseCase(
             }
             .sortedBy { it.name }
 
-    private suspend fun matchUsbNodes(
-        usbDevices: List<DeviceListEntry.Usb>,
-        showMock: Boolean,
-        db: Map<Int, Node>,
-    ): List<DeviceListEntry> = (
-        usbDevices +
-            if (showMock) {
-                listOf(
-                    DeviceListEntry.Mock(getString(Res.string.demo_mode)),
-                    DeviceListEntry.Replay(getString(Res.string.demo_mode_replay)),
-                )
-            } else {
-                emptyList()
-            }
-        )
-        .map { entry ->
+    private suspend fun matchNodesByName(entries: List<DeviceListEntry>, db: Map<Int, Node>): List<DeviceListEntry> =
+        entries.map { entry ->
             entry.copy(node = findNodeByNameSuffix(entry.name, entry.fullAddress, db, databaseManager))
         }
 }

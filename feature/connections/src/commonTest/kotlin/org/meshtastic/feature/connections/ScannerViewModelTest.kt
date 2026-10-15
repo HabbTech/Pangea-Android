@@ -20,9 +20,12 @@ import app.cash.turbine.test
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.matcher.any
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.resetMain
@@ -31,9 +34,18 @@ import kotlinx.coroutines.test.setMain
 import org.meshtastic.core.ble.BleDevice
 import org.meshtastic.core.ble.BleScanStartException
 import org.meshtastic.core.ble.BleScanStartFailureReason
+import org.meshtastic.core.common.util.safeCatchingAll
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.network.repository.DiscoveredService
+import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.bluetooth_disabled
+import org.meshtastic.core.resources.bluetooth_scan_location_services_disabled
+import org.meshtastic.core.resources.bluetooth_scan_missing_permission
+import org.meshtastic.core.resources.bluetooth_scan_start_failed
+import org.meshtastic.core.resources.bluetooth_scan_too_frequent
+import org.meshtastic.core.resources.getPluralStringSuspend
+import org.meshtastic.core.resources.getStringSuspend
 import org.meshtastic.core.testing.FakeBleDevice
 import org.meshtastic.feature.connections.model.DeviceListEntry
 import org.meshtastic.feature.connections.model.DiscoveredDevices
@@ -42,6 +54,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -81,12 +94,74 @@ class ScannerViewModelTest {
 
     @AfterTest
     fun tearDown() {
+        // Order matters: the ViewModel's coroutines must be gone before Main is unset.
+        harness.clearViewModel(viewModel)
         Dispatchers.resetMain()
     }
 
     @Test
     fun testInitialization() {
         assertNotNull(viewModel)
+    }
+
+    /**
+     * Demo Mode's gate opens mid-session in a release build, when the user performs the hidden-features gesture in
+     * Settings. Sampling it once in `init` (as this used to) meant the Connections list never noticed.
+     */
+    @Test
+    fun `showMockTransport follows the transport gate after construction`() = runTest {
+        viewModel.showMockTransport.test {
+            assertEquals(false, awaitItem())
+
+            harness.mockTransportEnabled.value = true
+            assertEquals(true, awaitItem())
+
+            harness.mockTransportEnabled.value = false
+            assertEquals(false, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * The gate has to reach the device list, not merely be observable on the ViewModel.
+     *
+     * Asserting on `showMockTransport` alone would pass even if the ViewModel stopped feeding the gate into the
+     * device-list query, so this asserts on the requests the use case actually received: one per gate value, in order.
+     * A gate sampled once at construction — which is what this branch fixes — records only its initial value here.
+     */
+    @Test
+    fun `a mid-session unlock re-queries the device list`() = runTest {
+        viewModel.usbDevicesForUi.test {
+            awaitItem()
+            testScheduler.runCurrent()
+            assertEquals(
+                listOf(false to false),
+                harness.discoveryRequests,
+                "a locked gate must still have queried the device list once",
+            )
+
+            // Each transition is checkpointed before the next one is provoked. Writing `true` and `false` back to
+            // back would let the StateFlow conflate them, and the `true` request — the one this whole feature exists
+            // to produce — could then never be observed, leaving the test green but vacuous. Waiting here fixes the
+            // ordering through the test's own control flow rather than through dispatcher timing, which is not a
+            // contract worth asserting on.
+            harness.mockTransportEnabled.value = true
+            testScheduler.runCurrent()
+            assertEquals(
+                listOf(false to false, true to false),
+                harness.discoveryRequests,
+                "unlocking Demo Mode mid-session must re-query the device list",
+            )
+
+            harness.mockTransportEnabled.value = false
+            testScheduler.runCurrent()
+            assertEquals(
+                listOf(false to false, true to false, false to false),
+                harness.discoveryRequests,
+                "re-locking must re-query it again",
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
@@ -114,6 +189,7 @@ class ScannerViewModelTest {
 
     @Test
     fun `scan startup failure clears scanning state disables auto-scan and surfaces error`() = runTest {
+        warmScanFailureStrings()
         harness.uiPrefs.setBleAutoScan(true)
         every { bleScanner.scan(any(), any()) } returns failingScanFlow()
 
@@ -154,6 +230,7 @@ class ScannerViewModelTest {
 
     @Test
     fun `bluetooth-disabled failure allows an immediate retry once the user re-enables it`() = runTest {
+        warmScanFailureStrings()
         // No cooldown for preconditions the user clears with a system toggle — a dead scan button right after they
         // switched Bluetooth back on reads as a broken app.
         var scanAttempts = 0
@@ -169,7 +246,9 @@ class ScannerViewModelTest {
         viewModel.startBleScan()
         assertEquals(1, scanAttempts)
         assertEquals(false, viewModel.isBleScanning.value)
-        assertEquals("Bluetooth is off. Turn it on to scan for nearby devices.", serviceRepository.errorMessage.value)
+        // No modal: the Connections screen already carries a live "Bluetooth is off" card with the settings action, so
+        // a dialog here would interrupt the user to repeat what is on screen behind it.
+        assertNull(serviceRepository.errorMessage.value)
 
         // Immediately retryable — no waiting on the scheduler.
         viewModel.startBleScan()
@@ -178,6 +257,7 @@ class ScannerViewModelTest {
 
     @Test
     fun `location-services-disabled failure allows an immediate retry`() = runTest {
+        warmScanFailureStrings()
         var scanAttempts = 0
         every { bleScanner.scan(any(), any()) } returns
             flow {
@@ -190,17 +270,60 @@ class ScannerViewModelTest {
 
         viewModel.startBleScan()
         assertEquals(1, scanAttempts)
-        assertEquals(
-            "Location services are off. Turn them on to scan for nearby devices.",
-            serviceRepository.errorMessage.value,
-        )
+        // Same reasoning as the Bluetooth-off case: the screen owns a live card for this, so no modal is raised.
+        assertNull(serviceRepository.errorMessage.value)
 
         viewModel.startBleScan()
         assertEquals(2, scanAttempts)
     }
 
     @Test
+    fun `missing scan permission raises no modal but flags a refusal`() = runTest {
+        warmScanFailureStrings()
+        every { bleScanner.scan(any(), any()) } returns
+            flow {
+                throw BleScanStartException(
+                    reason = BleScanStartFailureReason.MissingScanPermission,
+                    cause = IllegalStateException("Bluetooth scan permission missing"),
+                )
+            }
+
+        viewModel.startBleScan()
+
+        // The permission card on the Connections screen is driven by live status and carries the recovery action, so
+        // the old modal only restated it. The refusal flag covers the case the card cannot see: the platform refusing
+        // a scan the app believes it is permitted to run.
+        assertNull(serviceRepository.errorMessage.value)
+        assertEquals(true, viewModel.blePermissionRefusal.value)
+
+        viewModel.clearBlePermissionRefusal()
+        assertEquals(false, viewModel.blePermissionRefusal.value)
+    }
+
+    @Test
+    fun `a scan that starts clears a stale permission refusal`() = runTest {
+        warmScanFailureStrings()
+        every { bleScanner.scan(any(), any()) } returns
+            flow {
+                throw BleScanStartException(
+                    reason = BleScanStartFailureReason.MissingScanPermission,
+                    cause = IllegalStateException("Bluetooth scan permission missing"),
+                )
+            }
+        viewModel.startBleScan()
+        assertEquals(true, viewModel.blePermissionRefusal.value)
+
+        // Immediately retryable, with no cooldown: the user answers a permission dialog, not a rate limit. A cooldown
+        // here would refuse the very scan the grant was for.
+        every { bleScanner.scan(any(), any()) } returns emptyFlow()
+        viewModel.startBleScan()
+
+        assertEquals(false, viewModel.blePermissionRefusal.value)
+    }
+
+    @Test
     fun `scan quota failure honors retry-after cooldown`() = runTest {
+        warmScanFailureStrings()
         var scanAttempts = 0
         every { bleScanner.scan(any(), any()) } returns
             flow {
@@ -300,6 +423,177 @@ class ScannerViewModelTest {
     }
 
     @Test
+    fun `active transport falls back to Network on hardware without Bluetooth`() {
+        harness.uiPrefs.setSelectedConnectionTransport(DeviceType.BLE)
+        val noBluetooth = harness.buildBase(bluetoothSupported = false)
+        try {
+            assertEquals(DeviceType.TCP, noBluetooth.activeTransport.value)
+
+            noBluetooth.selectTransport(DeviceType.BLE)
+            assertEquals(DeviceType.TCP, noBluetooth.activeTransport.value)
+        } finally {
+            harness.clearViewModel(noBluetooth)
+        }
+    }
+
+    @Test
+    fun `a restored BLE address does not select the BLE pane on hardware without Bluetooth`() {
+        harness.currentDeviceAddressFlow.value = "xAA:BB:CC:DD:EE:FF"
+        val noBluetooth = harness.buildBase(bluetoothSupported = false)
+        try {
+            assertEquals(DeviceType.TCP, noBluetooth.activeTransport.value)
+        } finally {
+            harness.clearViewModel(noBluetooth)
+        }
+    }
+
+    @Test
+    fun `a restored BLE address reads as no device on hardware without Bluetooth`() = runTest {
+        harness.currentDeviceAddressFlow.value = "xAA:BB:CC:DD:EE:FF"
+        val noBluetooth = harness.buildBase(bluetoothSupported = false)
+        try {
+            assertEquals(null, noBluetooth.selectedAddressFlow.value)
+            noBluetooth.selectedNotNullFlow.test { assertEquals(NO_DEVICE_SELECTED, awaitItem()) }
+
+            harness.currentDeviceAddressFlow.value = "t10.0.0.2"
+            assertEquals("t10.0.0.2", noBluetooth.selectedAddressFlow.value)
+        } finally {
+            harness.clearViewModel(noBluetooth)
+        }
+    }
+
+    @Test
+    fun `a BLE address stays selected when Bluetooth is present`() = runTest {
+        harness.currentDeviceAddressFlow.value = "xAA:BB:CC:DD:EE:FF"
+        val withBluetooth = harness.buildBase()
+        try {
+            withBluetooth.selectedNotNullFlow.test { assertEquals("xAA:BB:CC:DD:EE:FF", awaitItem()) }
+        } finally {
+            harness.clearViewModel(withBluetooth)
+        }
+    }
+
+    @Test
+    fun `active transport falls back to Network on hardware without USB host`() {
+        harness.uiPrefs.setSelectedConnectionTransport(DeviceType.USB)
+        val noUsb = harness.buildBase(usbSupported = false)
+        try {
+            assertEquals(DeviceType.TCP, noUsb.activeTransport.value)
+        } finally {
+            harness.clearViewModel(noUsb)
+        }
+    }
+
+    @Test
+    fun `a restored serial address does not select the USB pane on hardware without USB host`() {
+        harness.currentDeviceAddressFlow.value = "s/dev/bus/usb/001/002"
+        val noUsb = harness.buildBase(usbSupported = false)
+        try {
+            assertEquals(DeviceType.TCP, noUsb.activeTransport.value)
+        } finally {
+            harness.clearViewModel(noUsb)
+        }
+    }
+
+    @Test
+    fun `a restored serial address reads as no device and lets Network auto-scan run without USB host`() {
+        harness.currentDeviceAddressFlow.value = "s/dev/bus/usb/001/002"
+        val noUsb = harness.buildBase(usbSupported = false)
+        try {
+            assertEquals(null, noUsb.selectedAddressFlow.value)
+
+            noUsb.startNetworkAutoScan()
+            assertEquals(true, noUsb.isNetworkScanning.value)
+        } finally {
+            harness.clearViewModel(noUsb)
+        }
+    }
+
+    @Test
+    fun `the Demo Mode address stays selected without USB host`() {
+        harness.currentDeviceAddressFlow.value = "m"
+        val noUsb = harness.buildBase(usbSupported = false)
+        try {
+            assertEquals("m", noUsb.selectedAddressFlow.value)
+        } finally {
+            harness.clearViewModel(noUsb)
+        }
+    }
+
+    @Test
+    fun `selectTransport ignores USB on hardware without USB host`() {
+        val noUsb = harness.buildBase(usbSupported = false)
+        try {
+            noUsb.selectTransport(DeviceType.TCP)
+            noUsb.selectTransport(DeviceType.USB)
+
+            assertEquals(DeviceType.TCP, noUsb.activeTransport.value)
+            assertEquals(DeviceType.TCP, harness.uiPrefs.selectedConnectionTransport.value)
+        } finally {
+            harness.clearViewModel(noUsb)
+        }
+    }
+
+    @Test
+    fun `choosing Network over a USB fallback persists it`() {
+        harness.uiPrefs.setSelectedConnectionTransport(DeviceType.USB)
+        val noUsb = harness.buildBase(usbSupported = false)
+        try {
+            noUsb.selectTransport(DeviceType.TCP)
+
+            assertEquals(DeviceType.TCP, harness.uiPrefs.selectedConnectionTransport.value)
+        } finally {
+            harness.clearViewModel(noUsb)
+        }
+    }
+
+    @Test
+    fun `Demo Mode entries are listed apart from USB devices without USB host`() = runTest {
+        harness.mockTransportEnabled.value = true
+        baseDevicesFlow.value = DiscoveredDevices(virtualDevices = listOf(DeviceListEntry.Mock("Demo Mode")))
+        val noUsb = harness.buildBase(usbSupported = false)
+        try {
+            noUsb.virtualDevicesForUi.test {
+                assertEquals(listOf<DeviceListEntry>(DeviceListEntry.Mock("Demo Mode")), expectMostRecentItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            noUsb.usbDevicesForUi.test {
+                assertEquals(emptyList(), expectMostRecentItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        } finally {
+            harness.clearViewModel(noUsb)
+        }
+    }
+
+    @Test
+    fun `a selected Demo Mode address does not choose a transport pane`() {
+        harness.uiPrefs.setSelectedConnectionTransport(DeviceType.TCP)
+        val subject = harness.buildBase()
+        try {
+            subject.onSelected(DeviceListEntry.Mock("Demo Mode"))
+
+            assertEquals(DeviceType.TCP, subject.activeTransport.value)
+            assertEquals(DeviceType.TCP, harness.uiPrefs.selectedConnectionTransport.value)
+        } finally {
+            harness.clearViewModel(subject)
+        }
+    }
+
+    @Test
+    fun `startBleScan never scans on hardware without Bluetooth`() {
+        val noBluetooth = harness.buildBase(bluetoothSupported = false)
+        try {
+            noBluetooth.startBleScan()
+
+            assertEquals(false, noBluetooth.isBleScanning.value)
+            verify(mode = VerifyMode.not) { bleScanner.scan(any(), any()) }
+        } finally {
+            harness.clearViewModel(noBluetooth)
+        }
+    }
+
+    @Test
     fun `startNetworkScan updates isNetworkScanning`() = runTest {
         viewModel.isNetworkScanning.test {
             assertEquals(false, awaitItem())
@@ -336,6 +630,45 @@ class ScannerViewModelTest {
             viewModel.stopNetworkScan()
             assertEquals(emptyList(), awaitItem())
             cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /**
+     * The replay demo entry only makes sense in a build carrying the capture asset; without it the replay transport
+     * degrades to the plain mock. These two pin the ViewModel as the thing that forwards that capability, so the gate
+     * cannot regress into "always offer replay whenever Demo Mode is on".
+     */
+    @Test
+    fun `replay is requested only when the transport reports the capture asset`() = runTest {
+        assertEquals(listOf(true to true), requestedVisibility(mockTransport = true, replayAvailable = true))
+    }
+
+    @Test
+    fun `replay is not requested when the capture asset is absent`() = runTest {
+        assertEquals(listOf(true to false), requestedVisibility(mockTransport = true, replayAvailable = false))
+    }
+
+    /**
+     * Builds a ViewModel against the given transport capabilities and returns the distinct `(showMock, showReplay)`
+     * pairs it asked the use case for. A fresh ViewModel is required because the replay flag is latched in `init` — the
+     * Demo Mode gate itself is observed, so it is set on the backing flow rather than stubbed.
+     */
+    private suspend fun requestedVisibility(
+        mockTransport: Boolean,
+        replayAvailable: Boolean,
+    ): List<Pair<Boolean, Boolean>> {
+        harness.mockTransportEnabled.value = mockTransport
+        every { harness.radioInterfaceService.isReplayTransportAvailable } returns replayAvailable
+        harness.discoveryRequests.clear()
+        val subject = harness.buildBase()
+        try {
+            subject.usbDevicesForUi.test {
+                awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+            return harness.discoveryRequests.distinct()
+        } finally {
+            harness.clearViewModel(subject)
         }
     }
 
@@ -726,5 +1059,26 @@ class ScannerViewModelTest {
             reason = BleScanStartFailureReason.ApplicationRegistrationFailed,
             cause = IllegalStateException("Failed to start scan as app cannot be registered"),
         )
+    }
+}
+
+/**
+ * Loads the scan-failure strings into the compose-resources cache up front.
+ *
+ * The first read of a resource completes on an internal `Dispatchers.Default` scope, so an un-warmed lookup lands after
+ * the caller has moved on. Warming keeps the error message observable synchronously, which these tests need because
+ * they also assert on exact virtual-time retry cooldowns and so cannot wait in real time.
+ *
+ * Best-effort via [safeCatchingAll], mirroring the ViewModel: the androidHostTest stubs leave `Resources.getSystem()`
+ * unmocked and skiko's initializer can raise an `Error` here, so resources never resolve and the untranslated fallback
+ * — identical text, produced synchronously — is what the assertions match. Cancellation still propagates.
+ */
+private suspend fun warmScanFailureStrings() {
+    safeCatchingAll {
+        getStringSuspend(Res.string.bluetooth_scan_start_failed)
+        getStringSuspend(Res.string.bluetooth_scan_missing_permission)
+        getStringSuspend(Res.string.bluetooth_disabled)
+        getStringSuspend(Res.string.bluetooth_scan_location_services_disabled)
+        getPluralStringSuspend(Res.plurals.bluetooth_scan_too_frequent, 1, 1L)
     }
 }

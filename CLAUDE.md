@@ -8,12 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Claude-Specific Instructions
 
-- **Skills:** Load only the `.skills/` module relevant to the current task — don't read them all. Start with `.skills/project-overview/SKILL.md` (codebase map, bootstrap, troubleshooting).
+- **Skills:** Load only the `.skills/` module relevant to the current task — don't read them all. Start with `.skills/project-overview/SKILL.md` (codebase map, bootstrap, troubleshooting). Each module is symlinked into `.claude/skills/` so it can also be selected by name, since that is the only directory Claude Code discovers skills from.
 - **Plan Mode:** Use it for changes spanning multiple modules; write plans to `.agent_plans/` (git-ignored).
 - **Delegate to keep context lean** (this is a 20+ module KMP repo):
   - **Broad searches** ("where is X used", "find all implementers of Y") → dispatch the `Explore` subagent so file dumps stay out of the main context; you get back the conclusion.
   - **Gradle builds/tests/lint** → dispatch the `gradle-runner` subagent. A full `assembleDebug`/`allTests` log is thousands of lines; the subagent returns only pass/fail + failing tests. Don't run heavy `./gradlew` tasks inline.
-  - **Symbol navigation** ("where is this defined", "who calls this", "find implementers") → use the `LSP` tool (`goToDefinition` / `findReferences` / `goToImplementation`) instead of reading whole files. `kotlin-language-server` is configured via `.github/lsp.json`.
+  - **Symbol navigation** ("where is this defined", "who calls this", "find implementers") → use the `LSP` tool (`goToDefinition` / `findReferences` / `goToImplementation`) instead of reading whole files. `kotlin-language-server` is supplied by the `nixtastic` plugin; this repo configures nothing. If the `LSP` tool answers "No LSP server available for file type: .kt", the plugin is not loaded or the binary is not on PATH — there is nothing to fix in this repo.
 - **Big files are guarded, not free:** `.claude/settings.json` denies the Crowdin locale `strings.xml` files and prompts before reading the base `strings.xml`, `firmware_releases.json`, `emoji-data.json`, and `flatpak-sources.json`. For strings, consult `.skills/compose-ui/strings-index.txt` instead of the raw file.
 
 ## Quick Reference
@@ -21,8 +21,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 JDK 25 is required. **Bootstrap before any Gradle task** (don't wait to be told) — full details in `.skills/project-overview/SKILL.md`:
 ```bash
 [ -z "$ANDROID_HOME" ] && export ANDROID_HOME="$HOME/Library/Android/sdk"  # often unset in agent workspaces
-[ -f local.properties ] || cp secrets.defaults.properties local.properties # google flavor fails without it
 ```
+No secrets step is needed: `androidApp/build.gradle.kts` points the secrets plugin at
+`secrets.properties` and falls back to the tracked `secrets.defaults.properties`, so the
+`google` flavor builds with neither file present. Create `secrets.properties` only if you
+want real Google Maps tiles (`MAPS_API_KEY=…`). `local.properties` is not read for secrets.
 
 **Baseline verification — run before every push** (CI has failed on skipped local checks):
 ```bash

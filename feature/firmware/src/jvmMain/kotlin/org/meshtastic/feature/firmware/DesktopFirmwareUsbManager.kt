@@ -22,5 +22,24 @@ import org.koin.core.annotation.Single
 
 @Single
 class DesktopFirmwareUsbManager : FirmwareUsbManager {
+    /**
+     * Desktop offers no maintenance affordance at all: with no way to vet a bootloader volume and no CDC unblock, every
+     * maintenance operation below is a no-op, so the section is hidden rather than shown and then dead-ended.
+     * [ensureSerialPermission] is the exception — desktop serial access has no permission model, so preflighting it
+     * succeeds trivially.
+     */
+    override val supportsUf2Maintenance: Boolean = false
+
     override fun deviceDetachFlow(): Flow<Unit> = emptyFlow()
+
+    /**
+     * Desktop has no UF2 maintenance flow — there is no Storage Access Framework to vet a volume with, so
+     * `isRemovableDestination` refuses before anything reaches here.
+     */
+    override suspend fun serialPortKeys(): Set<String> = emptySet()
+
+    override suspend fun unblockCdcPort(excluding: Set<String>, waitMillis: Long, holdMillis: Long): Boolean = false
+
+    /** Desktop serial access has no permission model; there is nothing to preflight. */
+    override suspend fun ensureSerialPermission(waitMillis: Long): Boolean = true
 }

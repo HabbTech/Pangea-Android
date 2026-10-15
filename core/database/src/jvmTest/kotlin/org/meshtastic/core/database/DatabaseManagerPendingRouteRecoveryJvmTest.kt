@@ -37,6 +37,8 @@ import kotlinx.coroutines.test.runTest
 import okio.FileSystem
 import okio.Path
 import org.meshtastic.core.database.MeshtasticDatabase.Companion.configureCommon
+import org.meshtastic.core.database.di.DatabaseDataStore
+import org.meshtastic.core.database.di.asDatabaseDataStore
 import org.meshtastic.core.database.entity.MyNodeEntity
 import org.meshtastic.core.di.CoroutineDispatchers
 import kotlin.test.AfterTest
@@ -91,7 +93,7 @@ class DatabaseManagerPendingRouteRecoveryJvmTest {
 
     @Test
     fun newManagerRepairsCommittedPendingRouteBeforePublishing() = runTest(testDispatcher) {
-        val firstManager = JvmPersistentManager(armableDs, dispatchers, persistentDir)
+        val firstManager = JvmPersistentManager(armableDs.asDatabaseDataStore(), dispatchers, persistentDir)
         var firstClosed = false
         try {
             // First process: open persistent databases, seed durable data, and commit the merge whose final routing
@@ -130,7 +132,7 @@ class DatabaseManagerPendingRouteRecoveryJvmTest {
             runCurrent()
             firstClosed = true
 
-            val recreated = JvmPersistentManager(armableDs, dispatchers, persistentDir)
+            val recreated = JvmPersistentManager(armableDs.asDatabaseDataStore(), dispatchers, persistentDir)
             try {
                 val beforeSwitch = recreated.currentDb.value
                 val verificationStarted = CompletableDeferred<Unit>()
@@ -175,7 +177,7 @@ class DatabaseManagerPendingRouteRecoveryJvmTest {
 
     /** Minimal JVM [DatabaseManager] whose databases are always real persistent files under [persistentDir]. */
     private class JvmPersistentManager(
-        datastore: DataStore<Preferences>,
+        datastore: DatabaseDataStore,
         private val testDispatchers: CoroutineDispatchers,
         private val persistentDir: Path,
     ) : DatabaseManager(datastore, testDispatchers) {
@@ -187,8 +189,8 @@ class DatabaseManagerPendingRouteRecoveryJvmTest {
             .setDriver(BundledSQLiteDriver())
             .build()
 
-        override val limitedIo: kotlinx.coroutines.CoroutineDispatcher
-            get() = testDispatchers.default
+        /** `limitedParallelism` on a test dispatcher would swap virtual-time scheduling for a real worker view. */
+        override fun createPoolLane(): kotlinx.coroutines.CoroutineDispatcher = testDispatchers.io
 
         override fun deleteDatabaseFiles(dbName: String) {
             listOf("$dbName.db", "$dbName.db-wal", "$dbName.db-shm", "$dbName.db-journal").forEach { fileName ->

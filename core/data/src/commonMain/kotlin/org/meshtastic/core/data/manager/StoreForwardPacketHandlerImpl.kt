@@ -17,11 +17,10 @@
 package org.meshtastic.core.data.manager
 
 import co.touchlab.kermit.Logger
-import kotlinx.coroutines.CoroutineScope
 import okio.ByteString.Companion.toByteString
 import okio.IOException
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.common.di.ServiceScope
 import org.meshtastic.core.model.DataPacket
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.NodeAddress
@@ -47,7 +46,7 @@ class StoreForwardPacketHandlerImpl(
     private val historyManager: HistoryManager,
     private val dataHandler: Lazy<MeshDataHandler>,
     private val radioInterfaceService: RadioInterfaceService,
-    @Named("ServiceScope") private val scope: CoroutineScope,
+    private val scope: ServiceScope,
 ) : StoreForwardPacketHandler {
 
     override fun handleStoreAndForward(
@@ -203,7 +202,17 @@ class StoreForwardPacketHandlerImpl(
                 if (s.rr == StoreAndForward.RequestResponse.ROUTER_TEXT_BROADCAST) {
                     dataPacket.to = NodeAddress.ID_BROADCAST
                 }
-                val u = dataPacket.copy(bytes = s.text, dataType = PortNum.TEXT_MESSAGE_APP.value)
+                // Only a router-text replay travels under a fresh header id with the stored
+                // message's id in original_id; dedupe against that, and fall back when it is absent.
+                val isRouterText =
+                    s.rr == StoreAndForward.RequestResponse.ROUTER_TEXT_DIRECT ||
+                        s.rr == StoreAndForward.RequestResponse.ROUTER_TEXT_BROADCAST
+                val u =
+                    dataPacket.copy(
+                        bytes = s.text,
+                        dataType = PortNum.TEXT_MESSAGE_APP.value,
+                        id = s.original_id.takeIf { isRouterText && it != 0 } ?: dataPacket.id,
+                    )
                 dataHandler.value.rememberDataPacket(u, myNodeNum, session = session)
             }
 

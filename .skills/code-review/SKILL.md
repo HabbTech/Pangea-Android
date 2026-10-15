@@ -1,3 +1,8 @@
+---
+name: code-review
+description: Review a Meshtastic-Android change against KMP architecture, Compose Multiplatform and Modern Android Development conventions, starting from the four defect classes that keep recurring because neither the compiler, detekt nor spotless can see them. Use this for any PR review, for self-review before pushing, and whenever asked whether a change is safe to merge.
+---
+
 # Skill: Code Review
 
 ## Description
@@ -43,7 +48,7 @@ Seeding a fake's backing store and then asserting the value comes back passes ev
 ### D. Room schema bump without a migration test
 **Every schema-version increment ships a migration test that proves existing rows survive.**
 
-- [ ] A new `core/database/schemas/<n>.json` is accompanied by an `(n-1)→n` test in `core/database/src/androidHostTest/.../*MigrationTest.kt`.
+- [ ] A new `core/database/schemas/org.meshtastic.core.database.MeshtasticDatabase/<n>.json` is accompanied by an `(n-1)→n` case in `core/database/src/jvmTest/.../MeshtasticDatabaseMigrationTest.kt` — the androidHostTest `*MigrationTest.kt` files cover DAO behaviour, not schema versions.
 - [ ] The test inserts rows at the old version, migrates, and asserts **row count and column values** are preserved — not merely that the migration runs.
 - [ ] Columns going nullable assert that pre-existing values are retained and that the new `NULL` state is reachable (this is class A at the storage layer).
 
@@ -77,7 +82,7 @@ When reviewing code, meticulously verify the following categories. Flag any devi
 
 ### 4. Dependency Injection (Koin Annotations)
 - [ ] **Annotation Usage:** Ensure Koin is configured via annotations (`@Single`, `@Factory`, `@KoinViewModel`).
-- [ ] **Root Assembly:** Confirm that the root Koin DI graph is only assembled in host shells (`app` and `desktop`).
+- [ ] **Root Assembly:** Confirm that the root Koin DI graph is only assembled in host shells (`androidApp` and `desktopApp`).
 
 ### 5. Networking, DB & I/O
 - [ ] **Ktor Strictly:** Check that Ktor is used for all HTTP networking. Flag and reject any usage of OkHttp.
@@ -121,10 +126,24 @@ Kermit is the only logging API, and on the **google** flavor its writers fan eve
 - [ ] **Release Smoke-Test:** For dependency or ProGuard rule changes, verify `assembleRelease` and `./gradlew :desktopApp:runRelease` succeed.
 
 ## Review Output Guidelines
-1. **Be Specific & Constructive:** Provide exact file references and code snippets illustrating the required project pattern.
-2. **Reference the Docs:** Cite `AGENTS.md` and project architecture playbooks to justify change requests (e.g., "Per AGENTS.md, `java.io.*` cannot be used in `commonMain`; please migrate to Okio").
-3. **Enforce Build Health:** Remind authors to run `./gradlew test allTests` locally to verify changes, especially since KMP `test` tasks are ambiguous.
-4. **Praise Good Patterns:** Acknowledge correct usage of complex architecture requirements, like proper Navigation 3 scene transitions or elegant `commonMain` helper extractions.
+
+**Problems only.** Every comment identifies a concrete defect with evidence in the diff. No praise, no style preferences the linters already own, no speculative design feedback, no refactoring suggestions for code the PR did not touch. A review that finds nothing says so in one line.
+
+1. **Be Specific:** Cite the exact file, line, symbol, or condition. Provide a fix direction — a snippet illustrating the canonical project pattern when the fix is not obvious.
+2. **One problem per comment.** Do not bundle several findings into one thread.
+3. **Reference the Docs:** Cite `AGENTS.md` and the architecture playbooks to justify a change request (e.g., "Per AGENTS.md, `java.io.*` cannot be used in `commonMain`; please migrate to Okio").
+4. **Don't repeat what's already flagged.** Check existing review threads before adding a finding.
+5. **Enforce Build Health — only where a gap exists:** If a change lands in a KMP module and the PR's only test evidence is a bare `./gradlew test`, say so: that task is ambiguous in KMP modules and silently skips them, so the code was never exercised and `allTests` is required. Do not append a generic build reminder to a review that has no such gap.
+
+### Analyse impact before judging test coverage
+
+"There are tests" is not coverage. For each non-trivial production change, map: **changed behaviour** (the concrete code path) → **observable surfaces** (public API, protocol handling, persisted rows, DataStore, Compose state, notifications, service lifecycle, transport, MQTT, widgets, desktop, R8-shaped release behaviour) → **regression risks** (ordering, reconnect/retry, process death, schema compatibility with rows an older build wrote, cross-module call sites, flavor and platform differences) → **the test that should exist and does not**.
+
+A bug fix needs a test that fails *without* the fix. An updated screenshot golden, Room schema JSON, or regenerated baseline profile proves serialisation, not behaviour. Don't demand a test category for a surface the change cannot reach.
+
+### Review moved code as if it were new
+
+When a type moves files or is extracted, diff the old implementation against the new one: a removed `override`, a changed exception contract, a dropped `require`/`check`, a changed default parameter value, a nullability flip on a numeric field (class A), a lost `@Serializable`/`@Parcelize`/Koin annotation, a scope change altering instance lifetime, a changed dispatcher or `SharingStarted`. Then verify every call site of the removed declaration still holds. Pre-existing defects that came along with the move are in scope — label them *"pre-existing — good opportunity to fix during this refactor"* so the author can decide on scope.
 
 ## Git & PR Hygiene Rules
 - **Commit Hygiene:** Squash fixup/polish/review-feedback commits before opening a PR. Each commit should represent a logical, self-contained unit of work — not a back-and-forth conversation.

@@ -1,12 +1,12 @@
 ---
 title: Sõnumid ja kanalid
-parent: User Guide
+parent: Kasutusjuhend
 nav_order: 3
-last_updated: 2026-07-11
+last_updated: 2026-09-14
 description: Saada ja võta vastu sõnumeid, halda kanaleid, konfigureeri krüpteerimist ning kasuta kiirvestlust, reaktsioone ja sõnumitoiminguid.
 aliases:
   - kanalid
-  - direct-messages
+  - otsesõnumid
   - messaging
   - conversations
 ---
@@ -21,181 +21,252 @@ Kanalid on jagatud suhtlusgrupid. Kõik sama kanalivõtmega seadistatud sõlmed 
 
 ### Vaikekanal
 
-Igal Meshtastic seadmel on vaikimisi **PikkKauge** kanal. See on krüpteerimata kanal, mida kasutatakse üldiseks võrgusuhtluseks.
+Every Meshtastic radio comes with a default **LongFast** channel. It is encrypted with a well-known default key, so anyone running Meshtastic on the same preset can read it.
 
 ### Kanali turvalisus
 
-Kanalid toetavad mitut krüpteerimistaset:
+Each channel carries a lock icon that shows how well it is protected. Tap the icon to see the same explanation inside the app.
 
-| Ikoon | Security Level                       | Kirjeldus                                                                                                                                 |
-| ----- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 🔒    | PSK (256-bit AES) | Täielikult krüpteeritud eel-jagatud tugeva võtmega. Ainult sobiva võtmega sõlmed saavad sõnumeid lugeda.  |
-| 🔐    | PSK (128-bit AES) | Krüpteeritud lühema võtmega. Secure for most uses but 256-bit is preferred for sensitive data.            |
-| 🔓    | Default / Open                       | Kasutab teada-tuntud vaikevõtit. **Iga Meshtastic seade** saab sama eelseadistusega neid sõnumeid lugeda. |
-| ⚠️    | Insecure + Position                  | Ava kanal, mis levitab ka sinu GPS asukohta. Use with caution in public meshes.                           |
+| Ikoon                              | What it means                                                                                                                                         |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Green closed lock                  | The channel is securely encrypted, with either a 128-bit or a 256-bit AES key.                                                        |
+| Yellow open lock                   | The channel is not securely encrypted — it uses no key at all, or a well-known one-byte key — and it does not carry precise location. |
+| Red open lock                      | Not securely encrypted, and the channel carries precise location data.                                                                |
+| Red open lock with a warning badge | Not securely encrypted, carrying precise location data, and uplinking that data to the internet over MQTT.                            |
 
-> 🔒 **Turvanõuanne:** Privaatse suhtluse jaoks konfi alati unikaalne PSK. Vaikimisi kanal on tahtlikult avatud, et uued kasutajad saaksid kärgvõrku avastada – aga kõige tundliku jaoks peaksite looma eraldi krüptitud kanali.
+Key length alone does not change the icon: a 128-bit key and a 256-bit key both show the green lock.
+
+> 🔒 **Security:** Always configure a unique PSK for private communications. Vaikimisi kanal on tahtlikult avatud, et uued kasutajad saaksid kärgvõrku avastada – aga kõige tundliku jaoks peaksite looma eraldi krüptitud kanali.
 
 ### Lisa kanal
 
-1. Mine **Sätted → Kanalid**.
-2. Puuduta **Lisa kanal** või skanni QR-koodi.
-3. Konfigureeri kanali nime ja krüpteerimisvõtit.
-4. Jaga kanali URL-i/QR-koodi teistega, kes seda vajavad.
+1. Connect to your radio. The **Channels** row stays grayed out until the app has a connection — see [Connections](connections).
+2. Go to **Settings**, then tap **Channels** under **Configuration**.
+3. Tap the **+** button to add a channel. The editor opens on the new entry.
+4. Set the channel name and the **PSK**, and choose whether the channel uses MQTT uplink and downlink. Naming a new channel generates a fresh 256-bit key for you; the refresh icon beside **PSK** generates another one.
+5. Tap **Save** to close the editor. The change is still only on your phone.
+6. Tap **Send** at the bottom of the channel list to write the changes to the radio. **Cancel**, or leaving the screen without tapping **Send**, throws them away.
+7. Optional: share the channel URL or QR code with the people who need access.
 
-Kanali puudutamine kuvab selle üksikasjad ja jagamisvalikud.
+Tapping an existing channel opens the same editor, where you can change the name, the PSK, MQTT uplink and downlink, and position precision. Every edit on this screen — adding, editing, deleting, or dragging a channel into a new order — waits on **Send** the same way.
 
-## Direct Messages
+### Archived Channels
 
-Direct messages (DMs) are point-to-point encrypted communications between two specific nodes.
+A conversation belongs to the channel it was held on, not to the slot that channel occupied. When a channel leaves your radio — you scan a different channel QR, replace a channel's key, or switch the modem preset — its conversation is **archived** rather than deleted or merged into whatever takes the slot.
+
+An archived conversation:
+
+- stays in the **Channels** list under the name the channel had, below the channels currently on your radio, marked with a history icon;
+- keeps its full message history, searchable as usual;
+- is read-only — you cannot send, reply, or react, because the channel is no longer on the radio to send on, and it is not offered as a share target;
+- comes back automatically if you re-add that exact channel, taking its messages back to the live slot.
+
+Changing the modem preset archives the channel too: the preset is part of a default channel's identity, so **LongFast** and **MediumFast** are different channels even though neither the name nor the key changed. Changing only the region does not archive anything.
+
+To remove an archived conversation for good, long-press it in the conversation list and delete it.
+
+## Otsesõnumid
+
+Direct messages (DMs) go to one specific node. When both radios hold each other's public keys, your radio encrypts the message to that node's public key, so no one else on the mesh can read it — not even nodes that share your channel.
+
+Your radio must already hold the other node's public key before it can send a DM. Keys travel inside node info, which nodes broadcast periodically, so the key usually arrives on its own once you have heard from that node. Until it does, a radio that has its own key pair — the default — refuses the send rather than falling back to channel encryption, and the message shows **Recipient key unavailable**.
+
+A public-key conversation carries a key icon in its top bar. A green closed lock means the direct message is protected by public-key encryption; a red key-off icon means the node's public key changed and no longer matches the one your radio stored. Tap the icon for the details.
 
 ### Sending a Direct Message
 
-1. Open the **Messages** tab.
-2. Vali kontaktide loendist sõlm või puuduta sõlme loendis.
+1. Ava vahekaart **Sõnumid**.
+2. Select a conversation, or tap a node in the node list.
 3. Tippi oma sõnum ja puuduta nuppu **Saada**.
+
+### Managing the Conversation List
+
+The **Messages** tab lists your conversations. Each row shows what you need at a glance, and you
+can act on it directly:
+
+- **Unsent drafts survive.** Type into a conversation and leave without sending, and the text is
+  still there when you come back. The row shows it as `Draft: …` in place of the last message —
+  an unsent draft is the thing the row is waiting on _you_ for.
+- **Unread badge.** A count sits on the row until you open the conversation.
+- **Swipe right to mute** (swipe again to unmute) and **swipe left to delete**. Deleting asks
+  first; muting shows a snackbar with **Undo**.
+- **Touch & hold to select** one or more conversations, then use the action bar to **Pin**,
+  **Mark unread**, mute or delete them together. Pinned conversations carry a pin marker and rise
+  to the top of **their own section**.
+- **The list is split into Channels and Direct Messages**, each with a collapsible header and each
+  sorted independently — so a pinned direct message rises within its own section, not above the
+  Channels one.
+
+### Conversation Bubbles
+
+On Android 11 and later, a message notification can be opened as a floating **bubble** that
+stays on top of whatever else you are doing. Tap the bubble icon on the notification to promote
+a conversation; Android remembers the choice per conversation, and the system Bubbles settings
+control whether they are offered at all.
 
 ### Sõnumi olek
 
-A status label appears under **your own** outgoing messages only (incoming messages from others show no status label):
+Olekumärgis kuvatakse ainult **sinu enda** väljaminevate sõnumite all (teiste sissetulevate sõnumite puhul olekumärgist ei kuvata):
 
-| Olek                                | Tähendus                                                                                                                             |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Sending…                            | Queued or already handed to the radio, not yet resolved either way (queued and en-route both show this same text) |
-| Delivered to recipient              | The strongest confirmation for a direct message — an acknowledgment came back                                                        |
-| Kärgvõrku kohale jõudnud            | Kanali leviedastuse puhul jõuab sõnum kärgvõrku (leviedastustel puudub saajapõhine kinnitus)                      |
-| Relayed, not confirmed by recipient | For a direct message, shown in a warning color — the message was relayed but no acknowledgment has come back yet                     |
-| Marsruutimine SF++ ahela kaudu…     | Being routed/buffered by the Store & Forward Plus Plus chain                                                     |
-| Kinnitatud SF++ ahel                | Confirmed delivered via the SF++ chain                                                                                               |
-| Tõrge                               | Delivery failed — tap the status for the specific reason (see Delivery Errors below)                              |
+| Olek                              | Tähendus                                                                                                                                                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Saadan…                           | Queued or already handed to the radio, not yet resolved either way. Both stages share this text, but the icon and color change as it progresses — a yellow upload cloud while queued, a blue arrow once the radio has it |
+| Saajale kätte toimetatud          | Kõige tugevam kinnitus otsesõnumile – vastus tuli                                                                                                                                                                                        |
+| Kärgvõrku kohale jõudnud          | Kanali leviedastuse puhul jõuab sõnum kärgvõrku (leviedastustel puudub saajapõhine kinnitus)                                                                                                                          |
+| Vahendatud, saaja pole kinnitanud | Otsesõnumi puhul kuvatakse hoiatusvärviga – sõnum edastati, kuid kinnitust pole veel tulnud                                                                                                                                              |
+| Marsruutimine SF++ ahela kaudu…   | Being routed/buffered by the Store & Forward Plus Plus chain                                                                                                                                                         |
+| Kinnitatud SF++ ahel              | Kinnitatud kohaletoimetamine SF++ keti kaudu                                                                                                                                                                                             |
+| Tõrge                             | Delivery failed — tap the status for the specific reason (see [Delivery Errors](#delivery-errors))                                                                                                                    |
 
 ### Delivery Errors
 
-When a message fails to deliver, the error indicator shows what went wrong:
+Kui sõnumit ei õnnestu kohale toimetada, näitab veaindikaator, mis valesti läks:
 
-| Tõrge            | Meaning                                  | What to Do                                                                                                                                                                  |
-| ---------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No Route         | No path exists to the destination node   | The recipient may be offline or out of mesh range. Try later or move closer.                                                                |
-| Got NAK          | Järgmise-hüppe sõlm keeldus edastamast   | The relay node may be congested. Wait and retry.                                                                                            |
-| Aegunud          | No acknowledgment within retry window    | The recipient may be just out of range. Proovi hüppe limiiti suurendada või paremasse asukohta minna.                                       |
-| Liidest pole     | No radio interface available to send     | Kontrolli, kas raadio on ühendatud ja kanal on seadistatud.                                                                                                 |
-| Max Retransmit   | All retry attempts exhausted             | The mesh path is unreliable. Proovi teist kanalit või oota, kuni olukord paraneb.                                                           |
-| Kanalit pole     | Sihtkanalit pole olemas                  | Veendu, et mõlemal sõlmel oleks sama kanali seadistus.                                                                                                      |
-| Too Large        | Sõnum ületab maksimaalset sõnumi mahtu   | Lühenda oma sõnumit (maksimaalselt ~200 tähemärki).                                                                      |
-| Vastust pole     | Node received message but didn't respond | The recipient's radio may be busy or in low-power sleep mode.                                                                                               |
-| Duty Cycle Limit | Regional airtime limit reached           | Your radio has used its allowed transmit time. Wait for the duty cycle window to reset (typically 1 hour in EU regions). |
-| Vigane päring    | Malformed or invalid message             | This usually indicates a software bug. Proovi rakendust taaskäivitada.                                                                      |
+| Tõrge                                    | Tähendab                                                                                                                                                                      | Mida teha                                                                                                                             |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Marsruuti pole                           | Sihtkoha sõlmeni pole teed olemas                                                                                                                                             | Saaja võib olla võrguühenduseta või võrguühenduse levialast väljas. Try later or move closer.         |
+| No radio interface                       | No radio interface available to send                                                                                                                                          | Check that your radio is connected and available.                                                                     |
+| Failed to deliver to mesh                | Retries exhausted. The same label covers three underlying causes — a relay refusing (NAK), a plain timeout, and running out of retransmits | Move closer, improve signal, or wait for conditions to improve. Tap the error for the specific cause. |
+| Piiratud määr                            | The mesh is throttling you for sending too fast                                                                                                                               | Wait before sending again.                                                                                            |
+| Pole autoriseeritud                      | The destination refused the request                                                                                                                                           | Check you have the right channel and keys for that node.                                                              |
+| Saaja vajab sinu võtit                   | Direct-message encryption could not complete because the other node does not have your public key yet                                                                         | Exchange node info — the key travels with it. Common on a first DM to a new contact.                  |
+| Saaja võti pole saadaval                 | You do not have the recipient's public key                                                                                                                                    | Wait for their node info to arrive, or ask them to broadcast it.                                                      |
+| Krüptitud sõnumi saatmine ebaõnnestus    | Encryption failed for this direct message                                                                                                                                     | Verify both nodes have exchanged keys and are on compatible firmware.                                                 |
+| Admin sessioon aegunud                   | A remote-admin session timed out                                                                                                                                              | Reopen the remote node's settings to start a new session.                                                             |
+| Administraatori võti pole autoriseeritud | The target node does not accept your admin key                                                                                                                                | Veendu, et administraatori võti sobiks mõlemas sõlmele.                                                               |
+| Channel/key mismatch                     | Destination channel/key does not match                                                                                                                                        | Verify both nodes share the same channel and PSK.                                                                     |
+| Sõnum on saatmiseks liiga pikk           | Sõnum ületab maksimaalset sõnumi mahtu                                                                                                                                        | Lühenda sõnumit ja proovi uuesti.                                                                                     |
+| No app response                          | App or plugin did not respond to the request                                                                                                                                  | Proovi uuesti või kontrolli sihtrakenduse või -mooduli olekut.                                                        |
+| Töötsükli piirang                        | Regional airtime limit reached                                                                                                                                                | Oota, kuni töötsükli aken lähtestub.                                                                                  |
+| Invalid request                          | Malformed or invalid request                                                                                                                                                  | Retry after updating or restarting the app if this persists.                                                          |
 
-> 💡 **Vihje:** Enamik kohaletoimetamise vigu laheneb iseenesest. If a node is intermittently reachable, the mesh will retry. For persistent "No Route" errors, check that intermediate Router nodes are online.
+> 💡 **Vihje:** Enamik kohaletoimetamise vigu laheneb iseenesest. If a node is intermittently reachable, the mesh will retry. For persistent **No route** errors, check that intermediate Router nodes are online.
 
-## Message Features
+## Sõnumi omadused
 
-### Quick Chat
+### Kiirvestlus
 
-Eelsalvestatud sõnumid kiireks suhtluseks:
+Pre-configured messages for rapid communication, useful when typing is impractical (gloves, small screen, urgent):
 
-- Juurdepääs läbi sõnumi sisestamise alas oleva kiirvestluse nupu
-- Choose from built-in phrases or custom messages
-- Customize quick chat messages in **Settings → Quick Chat**
-- Kasulik, kui trükkimine on ebapraktiline (kindad, väike ekraan, kiireloomuline)
+- The quick chat row is hidden until you turn it on. Open a conversation, tap the overflow menu in the top bar, then tap **Show quick chat menu**. **Hide quick chat menu** puts the row away again.
+- The row carries one built-in entry, the 🔔 alert bell. It appends an alert message that includes a bell character, which clients that support it flag as an alert. Every other button on the row is one you created.
+- Add, edit, reorder, and delete your own entries from the same overflow menu — tap **Quick chat options**.
 
-![Quick chat option](../../assets/screenshots/messages_quick_chat.png)
+![Kiirvestluse võimalus](../../assets/screenshots/messages_quick_chat.png)
 
-Igal kiirvestluse kirjel on lühike **Nimi** (nupu silt), **Sõnum**, mille see lisab, ja **Saada kohe** lüliti – kui see on lubatud, saadetakse nupu puudutamisel sõnum kohe, selle asemel et see sisestada sisestusväljale redigeerimiseks:
+Each quick chat entry has a **Name** — the button label, capped at five characters, forced to uppercase, and filled in for you from the message text — and the **Message** it carries. A switch decides what tapping the button does. A new entry starts on **Instantly send**, so a tap sends the message straight away; turn the switch off and the label changes to **Append to message**, which puts the text in the input field for you to edit first.
 
-![New quick chat dialog with name, message, and instantly-send toggle](../../assets/screenshots/messages_edit_quick_chat.png)
+[Uus kiirvestluse dialoog nime, sõnumi ja kohese saatmise lülitiga](../../assets/screenshots/messages_edit_quick_chat.png)
 
-Kanalite loendis kuvatakse iga kanal koos selle viimase sõnumi eelvaatega.
+### Otsin sõnumeid
 
-### Searching Messages
-
-You can search the full history of any conversation directly from the chat screen:
+Saad otsida mis tahes vestluse kogu ajaloost otse vestlusekraanilt:
 
 1. Ava vestlus (kanal või otsesõnum).
 2. Puuduta ülemisel ribal **otsinguikooni**.
-3. Type into the **Search messages…** field. The search runs as you type, across all stored messages in that conversation.
+3. Tipi väljale **Otsi sõnumeid…**. Otsing toimub tippimise ajal kõigis selle vestluse salvestatud sõnumites.
 4. Use the **N / M** result counter and the **previous / next arrows** to jump between matches, which are highlighted in the conversation.
 
-![Message search bar with result counter and previous/next arrows](../../assets/screenshots/messages_search_bar.png)
+![Sõnumite otsinguriba tulemuste loenduri ja eelmise/järgmise noolega](../../assets/screenshots/messages_search_bar.png)
 
-> 💡 **Vihje:** Otsing toimub täisteksti põhjal ja jääb vestlusse, kust sa selle avasid – see ei otsi teistest kanalitest ega kontaktide hulgast. It matches against the messages already stored on your device, so it works fully offline.
+> 💡 **Vihje:** Otsing toimub täisteksti põhjal ja jääb vestlusse, kust sa selle avasid – see ei otsi teistest kanalitest ega kontaktide hulgast. See võrdleb seadmesse juba salvestatud sõnumeid, seega töötab see täielikult võrguühenduseta.
 
-### Message Bubbles
+### Sõnumimullid
 
-Messages appear as chat bubbles — sent messages on the right, received messages on the left. Each bubble shows the sender, timestamp, and delivery status. Messages with replies include a quoted preview of the original message above the response.
+Sõnumid kuvatakse vestlusmullidena – saadetud sõnumid paremal, vastuvõetud sõnumid vasakul. Iga mull näitab saatjat, ajatempli ja kohaletoimetamise olekut. Messages with replies include a quoted preview of the original message above the response.
 
 ### Teksti vormindamine
 
 Messages support lightweight inline **Markdown**. Received messages render the styling with the syntax characters removed:
 
-| Tüüp          | Syntax                         | Renders as           |
-| ------------- | ------------------------------ | -------------------- |
-| Bold          | `**bold**`                     | **bold**             |
-| Italic        | `*italic*`                     | _italic_             |
-| Strikethrough | `~~strike~~`                   | ~~strike~~           |
-| Inline code   | `` `code` ``                   | monospace `code`     |
-| Ühendus       | `[label](https://example.com)` | a tappable **label** |
+| Tüüp             | Syntax                        | Renders as           |
+| ---------------- | ----------------------------- | -------------------- |
+| Paks             | `**paks**`                    | **paks**             |
+| Italic           | `*italic*`                    | _italic_             |
+| Läbikriipsutatud | `~~läbikriips~~`              | ~~läbikriips~~       |
+| Inline code      | `` `kood` ``                  | monospace `code`     |
+| Ühendus          | `[silt](https://example.com)` | a tappable **label** |
 
-When composing, focus the message field and type at least three characters to reveal a **formatting toolbar** below the input. Vali tekst ja puuduta stiili, et see murda (puuduta uuesti, et see eemaldada); kui valikut pole, lisab stiil tühja paari, kusjuures kursor on markerite vahel. Linginupp avab URL-i sisestamiseks dialoogiboksi. As you type, the draft styles live in the field while the underlying text keeps its Markdown characters.
+When composing, focus the message field and type at least three characters to reveal a **formatting toolbar** below the input. Vali tekst ja puuduta stiili, et see murda (puuduta uuesti, et see eemaldada); kui valikut pole, lisab stiil tühja paari, kusjuures kursor on markerite vahel. Linginupp avab URL-i sisestamiseks dialoogiboksi. As you type, the field shows the styled text, but the message you send still contains the Markdown characters.
 
-> 💡 **Vihje:** Vormindus kantakse võrgusilma literaalmärkidena – samad baidid, mida iOS saadab. Kliendid, mis ei toeta Markdowni (vanemad rakendused, tavalised püsivara kliendid), kuvavad toored `**`/`~~` märgid. URL-id, e-posti aadressid ja telefoninumbrid lingitakse endiselt automaatselt olenemata sellest, kas kasutate Markdowni või mitte.
+> 💡 **Vihje:** Vormindus kantakse kärgvõrgu literaalmärkidena – samad baidid, mida iOS saadab. Kliendid, mis ei toeta Markdowni (vanemad rakendused, tavalised püsivara kliendid), kuvavad toored `**`/`~~` märgid. URL-id, e-posti aadressid ja telefoninumbrid lingitakse endiselt automaatselt olenemata sellest, kas kasutate Markdowni või mitte.
 
-### Mentions
+### Mainimine
 
-Type `@` while composing to mention a node — a picker suggests matching contacts as you type. In a received message, a mention appears as a highlighted chip showing the node's name; tap it to jump straight to that node's detail page.
+Type `@` while composing to mention a node — a picker suggests matching contacts as you type. Saadud sõnumis kuvatakse mainimine esiletõstetud kiibina, mis näitab sõlme nime; puuduta seda, et hüpata otse selle sõlme üksikasjade lehele.
 
-### Reactions
+### Reaktsioonid
 
 React to messages with emoji:
 
-- **Long-press** a message to open the actions menu
-- Emotikoni valimiseks puuduta **Lisa reaktsioon**
-- Reactions appear below the message bubble
-- Multiple users can react to the same message
-- React to your own messages or others' messages
+- **Touch & hold** a message — or double-tap it — to raise a quick reaction bar above the bubble. Opening the bar sends nothing.
+- Tap an emoji in the bar to send it; tap **More reactions** to open the full picker, or anywhere outside
+  the bar to dismiss it without sending. A reaction is a real mesh packet, so it only goes out
+  when you pick an emoji.
+- Reaktsioonid kuvatakse sõnumimulli all
+- Mitu kasutajat saavad samale sõnumile reageerida
+- Reageeri oma või teiste sõnumitele
 
-![Emoji reaction badges displayed beneath a message](../../assets/screenshots/messages_reaction.png)
+![Emotikonide reaktsioonimärgid kuvatakse sõnumi all](../../assets/screenshots/messages_reaction.png)
 
 > 💡 **Vihje:** Reaktsioonid on kerged – need kasutavad täistekstisõnumitega võrreldes minimaalselt võrgu ribalaiust.
 
+### Replying
+
+**Swipe a message to the right** to reply to it — the composer opens with that message quoted.
+Swiping past the reply threshold arms the action; releasing before it springs back with nothing sent.
+Reply is also in the actions sheet, reached by touching & holding and then tapping **More message actions**.
+
+### Day Separators
+
+Messages are grouped by day. The separator above the first message of each day reads **Today**
+or **Yesterday** for the two most recent days, and the date itself for older ones.
+
+### Jump to Latest
+
+Scrolling back through a conversation raises a jump-to-latest control. When messages arrive
+while you are scrolled up, it names the most recent sender and adds a count of the other unread
+messages. That count is messages, not people — five unread from one person reads as their name
+**+4**.
+
 ### Message Actions
 
-Juurdepääsuks vajuta pikalt mis tahes sõnumit:
+Touch & hold or double-tap a message to open the quick reaction bar, then tap **More message actions**
+(the overflow icon on that bar) to open the actions sheet. The emoji row runs across the top of the
+sheet — that is where reactions live — and beneath it, along with the message's timestamp and
+delivery status, are:
 
-- **Copy** — copy message text to clipboard
-- **Reply** — quote the message in your response
-- **React** — add an emoji reaction
-- **Tõlgi** – tõlgi vastuvõetud sõnum oma seadme keelde ja vaheta algse ja tõlgitud teksti vahel (ainult Google Play versioon; kasutab seadmesisest tõlget)
-- **Delete** — remove a message you sent (local deletion)
+- **Vasta** – tsiteeri oma vastuses sõnumit
+- **Copy** — copy the message text to the clipboard
+- **Translate** — translate a received message into your device language, and toggle between the original and translated text (Google Play build only; uses on-device translation). The first translation into a language asks to download a one-time language model and tells you its size, then translates once the download finishes. If the download fails, or the message is already in your language, the app says so instead of translating
+- **Select** — start multi-select, so you can act on several messages at once
+- **Delete** — remove the message from this phone. It works on any message in the conversation, yours or not, and does not remove it from anyone else's radio or phone
 
-### Message Priority
+### Sõnumi prioriteet
 
-Messages are queued and transmitted based on priority:
-
-1. Emergency/alert messages (highest)
-2. Direct messages
-3. Kanalite levitamine (madalaim)
+The app sends every message you compose at the same, default priority — there is no
+emergency or alert tier to choose, and nothing in the app raises a direct message above a
+channel broadcast. Any prioritising between them happens in firmware, not here. (The app
+does mark some of its own internal traffic, such as admin and traceroute packets, as
+reliable or background, but that is not something you control from the message composer.)
 
 ### Message Limits
 
 - **Maximum length:** 200 bytes (approximately 200 characters for ASCII text)
-- The 200-byte cap applies to the in-app composer — the mesh payload limit itself is ~233 bytes, so messages from other senders (e.g., App Functions or Android Auto) may arrive slightly longer
-- **Rate limiting:** The mesh enforces airtime fairness; heavy message volume may be throttled
-- **Delivery:** Messages are retried automatically if no acknowledgment is received
+- The 200-byte cap applies to the in-app composer — the mesh payload limit itself is 233 bytes, so messages from other senders (e.g., App Functions) may arrive slightly longer
+- **Kiiruse piiramine:** Võrk tagab eetriaja õigluse; suurte sõnumite mahtu võidakse piirata
+- **Kohaletoimetamine:** Kui kinnitust ei ole saabunud, proovitakse sõnumeid automaatselt uuesti saata
 
-## Best Practices
+## Parimad tavad
 
 - Kasuta kanaleid grupi koordineerimiseks
-- Use direct messages for private person-to-person communication
+- Kasutage privaatseks inimestevaheliseks suhtluseks otsesõnumeid
 - Hoidke sõnumid lühikesed – võrgu ribalaius on piiratud
 - Configure encryption for sensitive communications
 
-## Related Topics
+## Seotud teemad
 
 - [Sõlmed] (nodes) — otsesõnumi alustamiseks puuduta sõlme
 - [Seaded — Raadio ja kasutaja](settings-radio-user) — kanalite krüpteerimise ja eelseadete konfimine
 - [MQTT](mqtt) — silda kanali sõnumid internetti
 - [Kanali konf](https://meshtastic.org/docs/configuration/radio/channels) — üksikasjalikud kanali seaded leiate aadressilt meshtastic.org
-
----
-

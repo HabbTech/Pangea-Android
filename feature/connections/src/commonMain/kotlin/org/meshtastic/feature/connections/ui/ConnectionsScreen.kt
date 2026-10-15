@@ -61,11 +61,19 @@ import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.model.FirmwareUpdateDestination
 import org.meshtastic.core.model.FirmwareUpdateNotice
 import org.meshtastic.core.model.InterfaceId
+import org.meshtastic.core.model.service.LockdownState
 import org.meshtastic.core.navigation.FirmwareRoute
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.ble_scan_needs_location_services
 import org.meshtastic.core.resources.bluetooth_disabled
+import org.meshtastic.core.resources.bluetooth_permission_blocked_rationale
+import org.meshtastic.core.resources.bluetooth_permission_blocked_rationale_pre31
+import org.meshtastic.core.resources.bluetooth_permission_rationale
+import org.meshtastic.core.resources.bluetooth_permission_rationale_pre31
+import org.meshtastic.core.resources.bonding_failed_permissions
+import org.meshtastic.core.resources.close
 import org.meshtastic.core.resources.connections
 import org.meshtastic.core.resources.disconnect
 import org.meshtastic.core.resources.firmware_event_ended_banner
@@ -79,31 +87,47 @@ import org.meshtastic.core.resources.firmware_update_notification_flasher
 import org.meshtastic.core.resources.firmware_update_open
 import org.meshtastic.core.resources.firmware_update_open_flasher
 import org.meshtastic.core.resources.firmware_version
+import org.meshtastic.core.resources.local_network_permission
+import org.meshtastic.core.resources.local_network_permission_blocked_rationale
+import org.meshtastic.core.resources.local_network_permission_rationale
 import org.meshtastic.core.resources.no_device_selected
 import org.meshtastic.core.resources.open_bluetooth_settings
+import org.meshtastic.core.resources.open_location_settings
+import org.meshtastic.core.resources.open_settings
 import org.meshtastic.core.resources.open_wifi_settings
 import org.meshtastic.core.resources.rssi
 import org.meshtastic.core.resources.set_your_region
+import org.meshtastic.core.resources.transmit_disabled
+import org.meshtastic.core.resources.transmit_disabled_summary
 import org.meshtastic.core.resources.unknown
 import org.meshtastic.core.resources.unknown_device
 import org.meshtastic.core.resources.wifi_unavailable
 import org.meshtastic.core.ui.component.AdaptiveTwoPane
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
+import org.meshtastic.core.ui.component.PermissionRationaleDialog
+import org.meshtastic.core.ui.component.PermissionRecoveryCard
 import org.meshtastic.core.ui.component.RecoveryCard
+import org.meshtastic.core.ui.icon.AppSettingsAlt
 import org.meshtastic.core.ui.icon.Bluetooth
+import org.meshtastic.core.ui.icon.CellTower
 import org.meshtastic.core.ui.icon.Language
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.SystemUpdate
 import org.meshtastic.core.ui.util.LocalEventBranding
+import org.meshtastic.core.ui.util.PermissionGateAction
 import org.meshtastic.core.ui.util.PermissionStatus
+import org.meshtastic.core.ui.util.bleScanRequiresLocationServices
 import org.meshtastic.core.ui.util.hasEnded
 import org.meshtastic.core.ui.util.isBluetoothDisabled
+import org.meshtastic.core.ui.util.isGpsDisabled
 import org.meshtastic.core.ui.util.isWifiUnavailable
+import org.meshtastic.core.ui.util.permissionGateAction
 import org.meshtastic.core.ui.util.rememberBluetoothPermissionState
 import org.meshtastic.core.ui.util.rememberLocalNetworkPermissionState
 import org.meshtastic.core.ui.util.rememberOpenBluetoothSettings
+import org.meshtastic.core.ui.util.rememberOpenLocationSettings
 import org.meshtastic.core.ui.util.rememberOpenWifiSettings
 import org.meshtastic.core.ui.util.shouldShowWifiUnavailableBanner
 import org.meshtastic.core.ui.viewmodel.ConnectionStatus
@@ -115,11 +139,8 @@ import org.meshtastic.feature.connections.ui.components.ConnectingDeviceInfo
 import org.meshtastic.feature.connections.ui.components.CurrentlyConnectedInfo
 import org.meshtastic.feature.connections.ui.components.CurrentlyConnectedText
 import org.meshtastic.feature.connections.ui.components.DeviceList
+import org.meshtastic.feature.connections.ui.components.EventFirmwareCard
 import org.meshtastic.feature.connections.ui.components.TransportSelector
-import org.meshtastic.feature.settings.navigation.ConfigRoute
-import org.meshtastic.feature.settings.navigation.getNavRouteFrom
-import org.meshtastic.feature.settings.radio.RadioConfigViewModel
-import org.meshtastic.feature.settings.radio.component.PacketResponseStateDialog
 
 /**
  * Fixed minimum height for the "connected device" card at the top of the Connections screen. Shared across the three UI
@@ -128,6 +149,67 @@ import org.meshtastic.feature.settings.radio.component.PacketResponseStateDialog
  */
 private val CardMinHeight = 100.dp
 
+/** Whether the connected card's config warning cards (region, transmit) may render for this connection. */
+internal fun canShowConfigWarnings(
+    connectedWithNode: Boolean,
+    activeNodeInfoReady: Boolean,
+    lockdownState: LockdownState,
+    isManaged: Boolean,
+    isPhysicalDevice: Boolean,
+): Boolean =
+    connectedWithNode && activeNodeInfoReady && lockdownState.allowsConfigWrites && !isManaged && isPhysicalDevice
+
+/** Applies connection policy and renders the actionable configuration-health cards it admits. */
+@Composable
+internal fun ConfigurationWarningCards(
+    connectedWithNode: Boolean,
+    activeNodeInfoReady: Boolean,
+    lockdownState: LockdownState,
+    isManaged: Boolean,
+    isPhysicalDevice: Boolean,
+    regionUnset: Boolean,
+    txDisabled: Boolean,
+    onConfigNavigate: (Route) -> Unit,
+) {
+    val showWarnings =
+        canShowConfigWarnings(
+            connectedWithNode = connectedWithNode,
+            activeNodeInfoReady = activeNodeInfoReady,
+            lockdownState = lockdownState,
+            isManaged = isManaged,
+            isPhysicalDevice = isPhysicalDevice,
+        )
+
+    Column {
+        if (showWarnings && regionUnset) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                ListItem(
+                    leadingIcon = MeshtasticIcons.Language,
+                    text = stringResource(Res.string.set_your_region),
+                    // Navigate straight to the LoRa screen: it re-reads the route on entry and renders from the
+                    // connect-time snapshot meanwhile, so pre-fetching behind a progress dialog here bought nothing and
+                    // could strand the user on an empty dialog when the read completed before the dialog observed it.
+                    onClick = { onConfigNavigate(SettingsRoute.LoRa) },
+                )
+            }
+        }
+
+        // An unset region already disables transmit and has its own card, so do not blame one root cause twice.
+        if (showWarnings && txDisabled && !regionUnset) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                ListItem(
+                    leadingIcon = MeshtasticIcons.CellTower,
+                    text = stringResource(Res.string.transmit_disabled),
+                    supportingText = stringResource(Res.string.transmit_disabled_summary),
+                    onClick = { onConfigNavigate(SettingsRoute.LoRa) },
+                )
+            }
+        }
+    }
+}
+
 /** Composable screen for managing device connections (BLE, TCP, USB). It displays connection status. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("CyclomaticComplexMethod", "LongMethod", "MagicNumber", "ModifierMissing", "ComposableParamOrder")
@@ -135,19 +217,20 @@ private val CardMinHeight = 100.dp
 fun ConnectionsScreen(
     connectionsViewModel: ConnectionsViewModel = koinViewModel(),
     scanModel: ScannerViewModel = koinViewModel(),
-    radioConfigViewModel: RadioConfigViewModel = koinViewModel(),
     onClickNodeChip: (Int) -> Unit,
     onNavigateToNodeDetails: (Int) -> Unit,
     onConfigNavigate: (Route) -> Unit,
 ) {
-    val radioConfigState by radioConfigViewModel.radioConfigState.collectAsStateWithLifecycle()
     val connectionProgress by scanModel.connectionProgressText.collectAsStateWithLifecycle()
     val connectionStatus by connectionsViewModel.connectionStatus.collectAsStateWithLifecycle()
     val connectionState by connectionsViewModel.connectionState.collectAsStateWithLifecycle()
     val ourNode by connectionsViewModel.ourNodeForDisplay.collectAsStateWithLifecycle()
     val firmwareUpdateNotice by connectionsViewModel.firmwareUpdateNotice.collectAsStateWithLifecycle()
     val regionUnset by connectionsViewModel.regionUnset.collectAsStateWithLifecycle()
-    val sessionAuthorized by connectionsViewModel.sessionAuthorized.collectAsStateWithLifecycle()
+    val txDisabled by connectionsViewModel.txDisabled.collectAsStateWithLifecycle()
+    val activeNodeInfoReady by connectionsViewModel.activeNodeInfoReady.collectAsStateWithLifecycle()
+    val lockdownState by connectionsViewModel.lockdownState.collectAsStateWithLifecycle()
+    val localConfig by connectionsViewModel.localConfig.collectAsStateWithLifecycle()
 
     val selectedDevice by scanModel.selectedNotNullFlow.collectAsStateWithLifecycle()
     val persistedDeviceName by scanModel.persistedDeviceName.collectAsStateWithLifecycle()
@@ -160,6 +243,8 @@ fun ConnectionsScreen(
     val isBleScanning by scanModel.isBleScanning.collectAsStateWithLifecycle()
     val isNetworkScanning by scanModel.isNetworkScanning.collectAsStateWithLifecycle()
     val activeTransport by scanModel.activeTransport.collectAsStateWithLifecycle()
+    val virtualDevices by scanModel.virtualDevicesForUi.collectAsStateWithLifecycle()
+    val blePermissionRefusal by scanModel.blePermissionRefusal.collectAsStateWithLifecycle()
     val bleAutoScan by scanModel.bleAutoScan.collectAsStateWithLifecycle()
     val networkAutoScan by scanModel.networkAutoScan.collectAsStateWithLifecycle()
 
@@ -169,14 +254,106 @@ fun ConnectionsScreen(
     val localNetworkPermission = rememberLocalNetworkPermissionState()
     val bluetoothPermission = rememberBluetoothPermissionState()
 
+    // ACCESS_LOCAL_NETWORK gates the socket, not just discovery — a blocked local TCP connect times out rather than
+    // failing fast — but a TCP address says nothing about locality: public-IP/port-forward/VPN radios need no
+    // permission at all. Policy (see LocalNetworkGateAction): prompt when possible, warn when not, never block.
+    // A connect issued while the prompt is up is stashed with the status it saw; the LaunchedEffect below resolves it
+    // on the status transition the request produces — grant runs it, a denial warns and runs it anyway.
+    var pendingTcpConnect by remember { mutableStateOf<Pair<PermissionStatus, () -> Unit>?>(null) }
+    // A connect held back only while an educational dialog is up. Distinct from pendingTcpConnect, which waits on the
+    // system prompt: this one has not asked the OS anything yet, and must still run if the user dismisses the dialog.
+    var rationaleTcpConnect by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val gateTcpConnect: (connect: () -> Unit) -> Unit = { connect ->
+        when (localNetworkGateAction(localNetworkPermission.status)) {
+            LocalNetworkGateAction.PROCEED -> connect()
+
+            LocalNetworkGateAction.REQUEST_PERMISSION -> {
+                pendingTcpConnect = localNetworkPermission.status to connect
+                localNetworkPermission.request()
+            }
+
+            LocalNetworkGateAction.SHOW_RATIONALE -> rationaleTcpConnect = connect
+
+            // The pane already carries a permission card naming the fix, so no modal here. The connect runs regardless
+            // — a public-IP or VPN radio was never subject to this permission, and the OS enforces it at the socket.
+            LocalNetworkGateAction.PROCEED_WITH_WARNING -> connect()
+        }
+    }
+
+    rationaleTcpConnect?.let { connect ->
+        PermissionRationaleDialog(
+            titleRes = Res.string.local_network_permission,
+            rationaleRes = Res.string.local_network_permission_rationale,
+            icon = MeshtasticIcons.Language,
+            onConfirm = {
+                rationaleTcpConnect = null
+                pendingTcpConnect = localNetworkPermission.status to connect
+                localNetworkPermission.request()
+            },
+            // Declining the explanation is not declining the connection. Never-block means never-block.
+            onDismiss = {
+                rationaleTcpConnect = null
+                connect()
+            },
+        )
+    }
+    LaunchedEffect(localNetworkPermission.status) {
+        val pending = pendingTcpConnect ?: return@LaunchedEffect
+        when (resolvePendingTcpConnect(stashedStatus = pending.first, currentStatus = localNetworkPermission.status)) {
+            PendingTcpConnectResolution.CONNECT -> {
+                pendingTcpConnect = null
+                pending.second()
+            }
+
+            // Warning-free for the same reason as above: the denial that just landed also made the pane's permission
+            // card appear, and it says the same thing with a button attached.
+            PendingTcpConnectResolution.CONNECT_WITH_WARNING -> {
+                pendingTcpConnect = null
+                pending.second()
+            }
+
+            PendingTcpConnectResolution.KEEP_WAITING -> Unit
+        }
+    }
+
+    // A completed connection is proof the refusal is behind us, whatever the system reported at the time.
+    LaunchedEffect(connectionState) {
+        if (connectionState is ConnectionState.Connected) scanModel.clearBlePermissionRefusal()
+    }
+
     // Adapter-state, distinct from permission state: a permission can be granted while Bluetooth is off or the device
     // is off Wi-Fi. Detected separately so the UI can route to the adapter's settings rather than re-prompting.
     val bluetoothDisabled = isBluetoothDisabled()
     val wifiUnavailable = isWifiUnavailable()
     val openBluetoothSettings = rememberOpenBluetoothSettings()
     val openWifiSettings = rememberOpenWifiSettings()
+    val openLocationSettings = rememberOpenLocationSettings()
     val uriHandler = LocalUriHandler.current
 
+    // Android 11 and lower gate the BLE scan on system Location Services as well as the permission, and a scan with
+    // them off returns zero results with no error — the same picture as "no radios nearby". Detected separately from
+    // the permission so the hint points at the toggle that is actually blocking the scan.
+    val gpsDisabled = isGpsDisabled()
+    val bleBlockedByLocationServices = bleScanRequiresLocationServices && gpsDisabled
+
+    // Pre-Android-12 the BLE permission *is* ACCESS_FINE_LOCATION, so the copy has to name that instead of the
+    // "Nearby devices" permission the user will never be offered on those releases.
+    val bluetoothRationale =
+        stringResource(
+            if (bleScanRequiresLocationServices) {
+                Res.string.bluetooth_permission_rationale_pre31
+            } else {
+                Res.string.bluetooth_permission_rationale
+            },
+        )
+    val bluetoothBlockedRationale =
+        stringResource(
+            if (bleScanRequiresLocationServices) {
+                Res.string.bluetooth_permission_blocked_rationale_pre31
+            } else {
+                Res.string.bluetooth_permission_blocked_rationale
+            },
+        )
     // Auto-start BLE discovery when the screen is visible (lifecycle ≥ STARTED) and the user has previously opted in.
     // ScannerViewModel skips screen-entry discovery when a selected device can reconnect through the transport's
     // fresh-advertisement scan. LifecycleStartEffect stops scanning on ON_STOP (app backgrounded) and restarts on
@@ -184,15 +361,18 @@ fun ConnectionsScreen(
     // Keyed on the active pane so a persisted TCP/USB pane loaded after first composition disposes this effect and
     // stops an initially eligible BLE scan. The toggle handler starts/stops scans directly; this effect owns lifecycle
     // cleanup, while the LaunchedEffect below handles async preference loading without disposing the lifecycle owner.
-    LifecycleStartEffect(activeTransport) {
-        if (activeTransport == DeviceType.BLE && bleAutoScan && !isBleScanning) {
+    // Keyed on the grant as well as the pane, mirroring the network pair below: a tap on Scan that resolved to a
+    // permission request persists the intent, and this is what turns the resulting grant into the scan the user
+    // already asked for rather than a second trip to the button.
+    LifecycleStartEffect(activeTransport, bluetoothPermission.isGranted) {
+        if (activeTransport == DeviceType.BLE && bleAutoScan && bluetoothPermission.isGranted && !isBleScanning) {
             scanModel.startBleAutoScan()
         }
         onStopOrDispose { scanModel.stopBleScan() }
     }
 
-    LaunchedEffect(activeTransport, bleAutoScan) {
-        if (activeTransport == DeviceType.BLE && bleAutoScan && !isBleScanning) {
+    LaunchedEffect(activeTransport, bluetoothPermission.isGranted, bleAutoScan) {
+        if (activeTransport == DeviceType.BLE && bleAutoScan && bluetoothPermission.isGranted && !isBleScanning) {
             scanModel.startBleAutoScan()
         }
     }
@@ -221,27 +401,6 @@ fun ConnectionsScreen(
         ) {
             scanModel.startNetworkAutoScan()
         }
-    }
-
-    /* Animate waiting for the configurations */
-    var isWaiting by remember { mutableStateOf(false) }
-    if (isWaiting) {
-        PacketResponseStateDialog(
-            state = radioConfigState.responseState,
-            onDismiss = {
-                isWaiting = false
-                radioConfigViewModel.clearPacketResponse()
-            },
-            onComplete = {
-                getNavRouteFrom(radioConfigState.route)?.let { route ->
-                    isWaiting = false
-                    radioConfigViewModel.clearPacketResponse()
-                    if (route == SettingsRoute.LoRa) {
-                        onConfigNavigate(SettingsRoute.LoRa)
-                    }
-                }
-            },
-        )
     }
 
     // Work around CMP-6615 in Compose Multiplatform 1.11.1: Android stringResource enters a blocking resource state.
@@ -329,6 +488,7 @@ fun ConnectionsScreen(
                                                 discoveredTcpDevices = discoveredTcpDevices,
                                                 recentTcpDevices = recentTcpDevices,
                                                 usbDevices = usbDevices,
+                                                virtualDevices = virtualDevices,
                                                 connectionStatus = connectionStatus,
                                                 connectionProgress = connectionProgress,
                                                 onClickDisconnect = { scanModel.disconnect() },
@@ -339,6 +499,18 @@ fun ConnectionsScreen(
                                 }
                             }
                         }
+
+                        // Event firmware is reported here rather than by swapping the app-bar logo: the Meshtastic
+                        // identity stays put, and the edition reads as one more fact about the connected device.
+                        // LocalEventBranding is only populated while connected to event firmware, so the card comes
+                        // and goes with the device. Hidden once the event is over — the ended-event card below takes
+                        // over from here, and celebrating an event that has passed would undercut its nudge.
+                        LocalEventBranding.current
+                            ?.takeIf { !it.hasEnded() }
+                            ?.let { edition ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                EventFirmwareCard(edition = edition)
+                            }
 
                         firmwareUpdateNotice?.let { notice ->
                             FirmwareUpdateNoticeCard(
@@ -360,7 +532,7 @@ fun ConnectionsScreen(
                         // path (it uses the live connection when connected); cleared automatically once the device
                         // returns on its own.
                         pendingRecovery
-                            ?.takeIf { connectionState !is ConnectionState.Connected }
+                            ?.takeIf { connectionState !is ConnectionState.Connected && scanModel.bluetoothSupported }
                             ?.let { recovery ->
                                 Spacer(modifier = Modifier.height(8.dp))
                                 RecoveryCard(
@@ -393,48 +565,121 @@ fun ConnectionsScreen(
                                 )
                             }
 
-                        // Region warning sits outside the animated card so it does not affect the
+                        // Config warnings sit outside the animated card so they do not affect the
                         // CONNECTED ↔ CONNECTING ↔ NO_DEVICE size transition.
                         val isPhysicalDevice =
                             selectedDevice != InterfaceId.MOCK.id.toString() &&
                                 selectedDevice != InterfaceId.REPLAY.id.toString()
-                        if (
-                            uiState == ConnectionUiState.CONNECTED_WITH_NODE &&
-                            regionUnset &&
-                            sessionAuthorized &&
-                            isPhysicalDevice
-                        ) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Card(modifier = Modifier.fillMaxWidth()) {
-                                ListItem(
-                                    leadingIcon = MeshtasticIcons.Language,
-                                    text = stringResource(Res.string.set_your_region),
-                                    onClick = {
-                                        isWaiting = true
-                                        radioConfigViewModel.setResponseStateLoading(ConfigRoute.LORA)
-                                    },
-                                )
-                            }
-                        }
+                        val isManaged = localConfig.security?.is_managed == true
+                        // Gate on LockdownState rather than sessionAuthorized. Pre-2.8 firmware and newer builds that
+                        // do not include runtime lockdown support never enter that authentication flow, while an
+                        // explicit DISABLED state also leaves sessionAuthorized false. None, Disabled, and Unlocked do
+                        // not withhold config writes on lockdown grounds; AwaitingResponse stays non-actionable until
+                        // firmware reports the result. Managed mode is a separate client policy: match the existing
+                        // settings behavior and suppress warnings only when SecurityConfig explicitly marks the device
+                        // managed, so an incomplete first-run config stream does not hide the region warning.
+                        // Node readiness binds the warnings to the active transport session. Stage 1 clears cached
+                        // config before accepting the fresh stream, while a cached node can survive a database switch;
+                        // do not attribute post-handshake config state to a node the new session has not identified.
+                        ConfigurationWarningCards(
+                            connectedWithNode = uiState == ConnectionUiState.CONNECTED_WITH_NODE,
+                            activeNodeInfoReady = activeNodeInfoReady,
+                            lockdownState = lockdownState,
+                            isManaged = isManaged,
+                            isPhysicalDevice = isPhysicalDevice,
+                            regionUnset = regionUnset,
+                            txDisabled = txDisabled,
+                            onConfigNavigate = onConfigNavigate,
+                        )
 
                         // Transport selector sits between the connection card and device list; it controls only the
                         // visible discovery pane, not the globally selected/connected device shown above.
-                        TransportSelector(
-                            activeTransport = activeTransport,
-                            onSelectTransport = scanModel::selectTransport,
-                        )
+                        // With Network as the only pane left, a one-segment control would select nothing.
+                        if (scanModel.bluetoothSupported || scanModel.usbSupported) {
+                            TransportSelector(
+                                activeTransport = activeTransport,
+                                onSelectTransport = scanModel::selectTransport,
+                                showBluetooth = scanModel.bluetoothSupported,
+                                showUsb = scanModel.usbSupported,
+                            )
+                        }
 
                         // Adapter-off hints: shown only when the relevant permission is granted but the radio/network
                         // is unavailable, so they don't overlap the permission-recovery flow on the scan toggles.
                         // The WiFi-unavailable banner only renders while a network scan is actively running —
                         // discovery is the only moment the user needs to know WiFi is missing. The auto-scan case is
                         // covered because `isNetworkScanning` is true during auto-scan regardless of pane state.
+                        // Missing permission takes precedence over every other BLE hint: nothing else the user could
+                        // fix will produce a scan result while it is absent, and an empty list with a "check you're in
+                        // range" hint blames the radio for the app's own missing grant. The card's action follows the
+                        // status — request while the system will still prompt, app settings once it won't.
+                        if (activeTransport == DeviceType.BLE && !bluetoothPermission.isGranted) {
+                            PermissionRecoveryCard(
+                                state = bluetoothPermission,
+                                rationale =
+                                if (bluetoothPermission.status == PermissionStatus.PERMANENTLY_DENIED) {
+                                    bluetoothBlockedRationale
+                                } else {
+                                    bluetoothRationale
+                                },
+                            )
+                        }
+                        // The platform refused a bond or scan while the app holds the grant — a partial grant, or an
+                        // OEM quirk. Only shown when the two disagree: the card above already covers a plain missing
+                        // permission, and with a better action than "go look in settings".
+                        if (
+                            activeTransport == DeviceType.BLE && blePermissionRefusal && bluetoothPermission.isGranted
+                        ) {
+                            RecoveryCard(
+                                message = stringResource(Res.string.bonding_failed_permissions),
+                                actionLabel = stringResource(Res.string.open_settings),
+                                onAction = {
+                                    scanModel.clearBlePermissionRefusal()
+                                    bluetoothPermission.openAppSettings()
+                                },
+                                actionIcon = MeshtasticIcons.AppSettingsAlt,
+                                onDismiss = { scanModel.clearBlePermissionRefusal() },
+                                dismissContentDescription = stringResource(Res.string.close),
+                            )
+                        }
                         if (activeTransport == DeviceType.BLE && bluetoothPermission.isGranted && bluetoothDisabled) {
                             RecoveryCard(
                                 message = stringResource(Res.string.bluetooth_disabled),
                                 actionLabel = stringResource(Res.string.open_bluetooth_settings),
                                 onAction = openBluetoothSettings,
                                 actionIcon = MeshtasticIcons.Bluetooth,
+                            )
+                        }
+                        // Android 11 and lower only. Shown after the adapter check so a device with both problems is
+                        // told about the radio first — turning location on would not help while Bluetooth is off.
+                        if (
+                            activeTransport == DeviceType.BLE &&
+                            bluetoothPermission.isGranted &&
+                            !bluetoothDisabled &&
+                            bleBlockedByLocationServices
+                        ) {
+                            RecoveryCard(
+                                message = stringResource(Res.string.ble_scan_needs_location_services),
+                                actionLabel = stringResource(Res.string.open_location_settings),
+                                onAction = openLocationSettings,
+                            )
+                        }
+                        // The BLE pane's missing-permission card, for the transport Android 17 gates. Without it
+                        // the network pane repeats the BLE bug it was just fixed for: an empty list and a hint about
+                        // the network, when the app was never allowed to look. The gate is on the socket, not just
+                        // discovery, so manual entry is no workaround for a radio on this Wi-Fi — only one reached
+                        // over a public address or a VPN is unaffected, which is what the copy now says.
+                        if (activeTransport == DeviceType.TCP && !localNetworkPermission.isGranted) {
+                            PermissionRecoveryCard(
+                                state = localNetworkPermission,
+                                rationale =
+                                stringResource(
+                                    if (localNetworkPermission.status == PermissionStatus.PERMANENTLY_DENIED) {
+                                        Res.string.local_network_permission_blocked_rationale
+                                    } else {
+                                        Res.string.local_network_permission_rationale
+                                    },
+                                ),
                             )
                         }
                         if (
@@ -461,50 +706,92 @@ fun ConnectionsScreen(
                                 selectedDevice = selectedDevice,
                                 bleDevices = bleDevices,
                                 usbDevices = usbDevices,
+                                virtualDevices = virtualDevices,
                                 discoveredTcpDevices = discoveredTcpDevices,
                                 recentTcpDevices = recentTcpDevices,
                                 isBleScanning = isBleScanning,
                                 isNetworkScanning = isNetworkScanning,
                                 activeTransport = activeTransport,
-                                onSelectDevice = { scanModel.onSelected(it) },
+                                onSelectDevice = { entry ->
+                                    // Recent TCP addresses are persisted, so this list renders without a scan — and
+                                    // therefore without the scan toggle's permission request ever having run. BLE and
+                                    // USB are unaffected by ACCESS_LOCAL_NETWORK, so only gate Tcp.
+                                    if (entry is DeviceListEntry.Tcp) {
+                                        gateTcpConnect { scanModel.onSelected(entry) }
+                                    } else {
+                                        scanModel.onSelected(entry)
+                                    }
+                                },
                                 onToggleBleScan = {
-                                    when {
-                                        // Always allow stopping an in-progress scan.
-                                        isBleScanning -> scanModel.toggleBleScan()
+                                    // Always allow stopping an in-progress scan, whatever the permission says.
+                                    if (isBleScanning) {
+                                        scanModel.toggleBleScan()
+                                    } else {
+                                        when (permissionGateAction(bluetoothPermission.status)) {
+                                            // Granted. Route to whichever system toggle is actually blocking the scan
+                                            // before starting one that would silently return nothing.
+                                            PermissionGateAction.PROCEED ->
+                                                when {
+                                                    bluetoothDisabled -> openBluetoothSettings()
+                                                    bleBlockedByLocationServices -> openLocationSettings()
+                                                    else -> scanModel.toggleBleScan()
+                                                }
 
-                                        // Granted but the radio is off — scanning can't work, so open BT settings.
-                                        bluetoothPermission.isGranted && bluetoothDisabled -> openBluetoothSettings()
+                                            // Never asked: go straight to the system dialog. A rationale before the
+                                            // first prompt adds friction without adding information. Persist the
+                                            // intent so the grant starts the scan the user already asked for, instead
+                                            // of making them tap Scan a second time.
+                                            PermissionGateAction.REQUEST -> {
+                                                scanModel.persistBleAutoScanIntent(true)
+                                                bluetoothPermission.request()
+                                            }
 
-                                        bluetoothPermission.isGranted -> scanModel.toggleBleScan()
+                                            // Denied once. The educational UI the guidance asks for is already on
+                                            // screen — the permission card above this list carries the same rationale
+                                            // and its own Grant button, and can be ignored, which a modal cannot.
+                                            // Repeating it in a dialog is friction, not information.
+                                            PermissionGateAction.SHOW_RATIONALE -> {
+                                                scanModel.persistBleAutoScanIntent(true)
+                                                bluetoothPermission.request()
+                                            }
 
-                                        // Permanently denied: the system won't prompt again, so send to settings.
-                                        bluetoothPermission.status == PermissionStatus.PERMANENTLY_DENIED ->
-                                            bluetoothPermission.openAppSettings()
-
-                                        // Request in-context; once granted the user can start scanning.
-                                        else -> bluetoothPermission.request()
+                                            // The system won't prompt again, so requesting would do nothing visible.
+                                            PermissionGateAction.OPEN_SETTINGS -> bluetoothPermission.openAppSettings()
+                                        }
                                     }
                                 },
                                 onToggleNetworkScan = {
-                                    when {
-                                        isNetworkScanning || localNetworkPermission.isGranted ->
-                                            scanModel.toggleNetworkScan()
+                                    if (isNetworkScanning) {
+                                        scanModel.toggleNetworkScan()
+                                    } else {
+                                        when (permissionGateAction(localNetworkPermission.status)) {
+                                            PermissionGateAction.PROCEED -> scanModel.toggleNetworkScan()
 
-                                        localNetworkPermission.status == PermissionStatus.PERMANENTLY_DENIED ->
-                                            localNetworkPermission.openAppSettings()
-
-                                        else -> {
                                             // Prefer requesting the runtime grant over letting the platform fall back
                                             // to the system NSD picker. Persist the user's intent so that if they
                                             // grant after the prompt, the scan starts via the LifecycleStartEffect and
                                             // stays on for next session.
-                                            scanModel.persistNetworkAutoScanIntent(true)
-                                            localNetworkPermission.request()
+                                            PermissionGateAction.REQUEST -> {
+                                                scanModel.persistNetworkAutoScanIntent(true)
+                                                localNetworkPermission.request()
+                                            }
+
+                                            // As on the Bluetooth pane: the card above this list is the rationale,
+                                            // and it is already visible whenever this branch is reachable.
+                                            PermissionGateAction.SHOW_RATIONALE -> {
+                                                scanModel.persistNetworkAutoScanIntent(true)
+                                                localNetworkPermission.request()
+                                            }
+
+                                            PermissionGateAction.OPEN_SETTINGS ->
+                                                localNetworkPermission.openAppSettings()
                                         }
                                     }
                                 },
                                 onAddManualAddress = { _, fullAddress ->
-                                    scanModel.connectToManualAddress(fullAddress)
+                                    // Typing an address is always allowed — the target may be a public host or VPN
+                                    // peer. The gate runs at connect, where the permission can actually matter.
+                                    gateTcpConnect { scanModel.connectToManualAddress(fullAddress) }
                                 },
                                 onRemoveRecentAddress = { scanModel.removeRecentAddress(it.fullAddress) },
                             )
@@ -597,6 +884,7 @@ private fun ConnectingDeviceContent(
     discoveredTcpDevices: List<DeviceListEntry>,
     recentTcpDevices: List<DeviceListEntry>,
     usbDevices: List<DeviceListEntry>,
+    virtualDevices: List<DeviceListEntry>,
     connectionStatus: ConnectionStatus,
     connectionProgress: String?,
     onClickDisconnect: () -> Unit,
@@ -606,6 +894,7 @@ private fun ConnectingDeviceContent(
             ?: discoveredTcpDevices.find { it.fullAddress == selectedDevice }
             ?: recentTcpDevices.find { it.fullAddress == selectedDevice }
             ?: usbDevices.find { it.fullAddress == selectedDevice }
+            ?: virtualDevices.find { it.fullAddress == selectedDevice }
 
     // Use the entry name if found in scan lists, otherwise fall back to the persisted name
     // from the last successful selection, and only show "Unknown Device" as a last resort.

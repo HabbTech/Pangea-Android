@@ -79,34 +79,49 @@ fun Any.toPIIString() = if (!isDebug) {
 @Suppress("MagicNumber")
 fun ByteArray.toHexString() = joinToString("") { it.toUByte().toString(16).padStart(2, '0') }
 
-private const val MPS_TO_KMPH = 3.6f
-private const val KM_TO_MILES = 0.621371f
-
-fun Int.mpsToKmph(): Float {
-    // Convert meters per second to kilometers per hour
-    val kmph = this * MPS_TO_KMPH
-    return kmph
-}
-
-fun Int.mpsToMph(): Float {
-    // Convert meters per second to miles per hour
-    val mph = this * MPS_TO_KMPH * KM_TO_MILES
-    return mph
-}
-
 /** Returns true if this packet arrived via a LoRa transport mechanism. */
 fun MeshPacket.isLora(): Boolean = transport_mechanism == MeshPacket.TransportMechanism.TRANSPORT_LORA ||
     transport_mechanism == MeshPacket.TransportMechanism.TRANSPORT_LORA_ALT1 ||
     transport_mechanism == MeshPacket.TransportMechanism.TRANSPORT_LORA_ALT2 ||
     transport_mechanism == MeshPacket.TransportMechanism.TRANSPORT_LORA_ALT3
 
-/** Returns true if this packet is a direct LoRa signal (not MQTT, and hop count matches). */
-fun MeshPacket.isDirectSignal(): Boolean = rx_time > 0 && hop_start == hop_limit && via_mqtt != true && isLora()
+/**
+ * Arrival time in epoch seconds, or null when the radio had no clock at reception.
+ *
+ * Firmware that gained explicit presence omits the field; older firmware still sends 0 for the same state. Both mean
+ * unknown — a 1970 arrival time is never a genuine reading. Folding 0 is safe here for exactly that reason; see
+ * [snrOrNull] for the fields where it is not.
+ */
+fun MeshPacket.rxTimeOrNull(): Int? = rx_time?.takeIf { it != 0 }
 
-/** Returns true if this telemetry packet contains valid, plot-able environment metrics. */
+/**
+ * Signal-to-noise ratio in dB for this reception, or null when the packet carries no SNR measurement (it did not arrive
+ * over LoRa, or the radio reported none).
+ *
+ * Deliberately does NOT fold 0 the way [rxTimeOrNull] does: 0 dB is a genuine, common reading — a signal at the noise
+ * floor, comfortably demodulable on every preset — so treating it as "absent" would hide real measurements and, worse,
+ * discard the only zero that can ever reach us. Under proto3 implicit presence a field at its zero value is never put
+ * on the wire, so an SNR-less packet from firmware predating the optional conversion already decodes to null for free.
+ * A 0 that survives to this accessor was written explicitly and means 0 dB.
+ *
+ * Presence cannot be inferred from [isLora] instead: `transport_mechanism` defaults to `TRANSPORT_INTERNAL` (0), so
+ * firmware that never sets it would have every reading suppressed.
+ */
+fun MeshPacket.snrOrNull(): Float? = rx_snr
+
+/** Returns true if this packet is a direct LoRa signal (not MQTT, and hop count matches). */
+fun MeshPacket.isDirectSignal(): Boolean =
+    rxTimeOrNull() != null && hop_start == hop_limit && via_mqtt != true && isLora()
+
+/**
+ * Returns true if this telemetry packet carries environment metrics worth listing: a temperature and humidity pair, or
+ * a lightning reading. An AS3935 on its own reports only lightning, so it is admitted without the climate pair.
+ */
 fun Telemetry.hasValidEnvironmentMetrics(): Boolean {
     val metrics = this.environment_metrics ?: return false
-    return metrics.relative_humidity != null && metrics.temperature != null && !metrics.temperature!!.isNaN()
+    val hasClimate = metrics.relative_humidity != null && metrics.temperature != null && !metrics.temperature!!.isNaN()
+    val hasLightning = metrics.lightning_strike_count_1h != null || metrics.lightning_distance_km?.isNaN() == false
+    return hasClimate || hasLightning
 }
 
 /**

@@ -63,7 +63,17 @@ fun DeviceListItemPreview() {
 @PreviewLightDark
 @Composable
 private fun DeviceListItemWithLongNamePreview() {
-    val node = Node(num = 13444, user = User(short_name = "AB12", long_name = "James' Rooftop Solar Repeater"))
+    val node =
+        Node(
+            num = 13444,
+            user =
+            User.Builder()
+                .also { wb ->
+                    wb.short_name = "AB12"
+                    wb.long_name = "James' Rooftop Solar Repeater"
+                }
+                .build(),
+        )
     val device = DeviceListEntry.Tcp(name = "Meshtastic_ab12", fullAddress = "s192.168.1.101", node = node)
     AppTheme { DeviceListItem(connectionState = ConnectionState.Disconnected, device = device, onSelect = {}) }
 }
@@ -145,6 +155,30 @@ fun TransportSelectorPreview() {
         Surface {
             Box(modifier = Modifier.width(360.dp).padding(16.dp)) {
                 TransportSelector(activeTransport = DeviceType.BLE, onSelectTransport = {})
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+fun TransportSelectorNoBluetoothPreview() {
+    AppTheme {
+        Surface {
+            Box(modifier = Modifier.width(360.dp).padding(16.dp)) {
+                TransportSelector(activeTransport = DeviceType.TCP, onSelectTransport = {}, showBluetooth = false)
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+fun TransportSelectorNoUsbPreview() {
+    AppTheme {
+        Surface {
+            Box(modifier = Modifier.width(360.dp).padding(16.dp)) {
+                TransportSelector(activeTransport = DeviceType.BLE, onSelectTransport = {}, showUsb = false)
             }
         }
     }
@@ -247,6 +281,30 @@ private fun UsbPaneEmptyPreview() {
             onToggleNetworkScan = {},
             onAddManualAddress = { _, _ -> },
             onRemoveRecentAddress = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+fun DemoModeSectionPreview() {
+    AppTheme {
+        DeviceList(
+            connectionState = ConnectionState.Disconnected,
+            selectedDevice = "",
+            bleDevices = emptyList(),
+            usbDevices = emptyList(),
+            discoveredTcpDevices = emptyList(),
+            recentTcpDevices = emptyList(),
+            isBleScanning = false,
+            isNetworkScanning = false,
+            activeTransport = DeviceType.TCP,
+            onSelectDevice = {},
+            onToggleBleScan = {},
+            onToggleNetworkScan = {},
+            onAddManualAddress = { _, _ -> },
+            onRemoveRecentAddress = {},
+            virtualDevices = listOf(DeviceListEntry.Mock("Demo Mode"), DeviceListEntry.Replay("Demo Mode (Replay)")),
         )
     }
 }

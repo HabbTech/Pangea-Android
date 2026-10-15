@@ -19,6 +19,7 @@ package org.meshtastic.core.model
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.meshtastic.core.common.util.GPSFormat
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.common.util.MetricFormatter
 import org.meshtastic.core.common.util.bearing
 import org.meshtastic.core.common.util.latLongToMeter
@@ -34,6 +35,7 @@ import org.meshtastic.proto.MeshPacket
 import org.meshtastic.proto.Paxcount
 import org.meshtastic.proto.Position
 import org.meshtastic.proto.PowerMetrics
+import org.meshtastic.proto.SoilWaterMetrics
 import org.meshtastic.proto.User
 
 /**
@@ -45,22 +47,23 @@ import org.meshtastic.proto.User
 data class Node(
     val num: Int,
     val metadata: DeviceMetadata? = null,
-    val user: User = User(),
-    val position: Position = Position(),
+    val user: User = User.Builder().build(),
+    val position: Position = Position.Builder().build(),
     val snr: Float = Float.MAX_VALUE,
     val rssi: Int = Int.MAX_VALUE,
     val lastHeard: Int = 0, // the last time we've seen this node in secs since 1970
-    val deviceMetrics: DeviceMetrics = DeviceMetrics(),
+    val deviceMetrics: DeviceMetrics = DeviceMetrics.Builder().build(),
     val channel: Int = 0,
     val viaMqtt: Boolean = false,
     val hopsAway: Int = -1,
     val isFavorite: Boolean = false,
     val isIgnored: Boolean = false,
     val isMuted: Boolean = false,
-    val environmentMetrics: EnvironmentMetrics = EnvironmentMetrics(),
-    val powerMetrics: PowerMetrics = PowerMetrics(),
-    val airQualityMetrics: AirQualityMetrics = AirQualityMetrics(),
-    val paxcounter: Paxcount = Paxcount(),
+    val environmentMetrics: EnvironmentMetrics = EnvironmentMetrics.Builder().build(),
+    val powerMetrics: PowerMetrics = PowerMetrics.Builder().build(),
+    val airQualityMetrics: AirQualityMetrics = AirQualityMetrics.Builder().build(),
+    val soilWaterMetrics: SoilWaterMetrics = SoilWaterMetrics.Builder().build(),
+    val paxcounter: Paxcount = Paxcount.Builder().build(),
     val publicKey: ByteString? = null,
     val notes: String = "",
     /** User-editable labels per power-metrics channel (e.g. "Solar", "Battery"), indexed by channel - 1. */
@@ -68,11 +71,42 @@ data class Node(
     val manuallyVerified: Boolean = false,
     /** True when this node signs its broadcasts via XEdDSA (NodeInfo.has_xeddsa_signed). Automatic trust. */
     val signsPackets: Boolean = false,
+    /**
+     * False when the radio has not heard this node over RF on the LoRa configuration it is using now. The radio derives
+     * this rather than storing it, so returning to a configuration restores the previous answers. Ask
+     * [isUnheardOnCurrentLora] rather than this flag: false alone does not mean the node became unreachable.
+     */
+    val heardOnCurrentLora: Boolean = true,
     val nodeStatus: String? = null,
     /** The transport mechanism this node was last heard over (see [MeshPacket.TransportMechanism]). */
     val lastTransport: Int = 0,
+    /**
+     * False once a different public key arrived for a node one is already stored for. The stored key stands; this
+     * records the refusal. See [mismatchKey], which is what the UI asks.
+     */
+    val keyMatch: Boolean = true,
+    /** The key a mismatch refused, kept so the warning can name it. Null whenever [keyMatch] is true. */
+    val newPublicKey: ByteString? = null,
 ) {
     val capabilities: Capabilities by lazy { Capabilities(metadata?.firmware_version) }
+
+    /**
+     * True when the radio does not report having heard this node over RF on the LoRa configuration in force now, and it
+     * is not an [viaMqtt] node.
+     *
+     * This is not a claim that the node was ever heard over RF. `heard_on_current_lora` is a single bool, and the radio
+     * does not expose its "heard over RF at least once" bit separately, so a node heard under different settings and a
+     * node never heard at all (one added as a shared contact, say) are indistinguishable here. Both read true. Callers
+     * that must not act on the second case need another signal - the removal offer relies on favourites, which is what
+     * firmware marks a contact.
+     *
+     * [viaMqtt] nodes are excluded because they arrive over the internet rather than over our own radio, so the radio
+     * never marks them heard over RF and [heardOnCurrentLora] is false for them permanently - not because a setting
+     * changed. Presenting those as unreachable would badge every node on an MQTT-uplinked mesh and offer it for
+     * removal, and removing one is pointless because it returns on the next uplinked packet.
+     */
+    val isUnheardOnCurrentLora: Boolean
+        get() = !heardOnCurrentLora && !viaMqtt
 
     val isOnline: Boolean
         get() = isOnline(onlineTimeThreshold())
@@ -89,17 +123,42 @@ data class Node(
     val hasPKC
         get() = (publicKey ?: user.public_key).size > 0
 
+    /**
+     * True when a different public key has arrived for this node than the one on file.
+     *
+     * Two shapes, because the app used to record a mismatch by overwriting the stored key with [ERROR_BYTE_STRING]. It
+     * now keeps the key and clears [keyMatch] instead — firmware drops the NodeInfo outright rather than overwrite, so
+     * destroying the trusted key handed any mesh or MQTT peer a way to break PKC direct messages to a contact. Rows
+     * written before that change still carry the sentinel, so both still read as a mismatch.
+     */
     val mismatchKey
-        get() = (publicKey ?: user.public_key) == ERROR_BYTE_STRING
+        get() = !keyMatch || (publicKey ?: user.public_key) == ERROR_BYTE_STRING
+
+    /**
+     * Last measured SNR in dB, or null when this node has no reading yet ([snr] still holds [SNR_UNSET]).
+     *
+     * Every read of [snr] should go through this: 0 dB is a real, good reading, and the raw sentinel rates as an
+     * *excellent* signal if it reaches the preset-relative quality bands. Threshold comparisons such as `snr < 100f`
+     * are not equivalent — they also discard any genuine reading at or above the threshold.
+     */
+    val snrOrNull: Float?
+        get() = snr.takeIf { it != SNR_UNSET }
+
+    /** Last measured RSSI in dBm, or null when this node has no reading yet. 0 dBm is a real reading. */
+    val rssiOrNull: Int?
+        get() = rssi.takeIf { it != RSSI_UNSET }
 
     val hasEnvironmentMetrics: Boolean
-        get() = environmentMetrics != EnvironmentMetrics()
+        get() = environmentMetrics != EnvironmentMetrics.Builder().build()
 
     val hasPowerMetrics: Boolean
-        get() = powerMetrics != PowerMetrics()
+        get() = powerMetrics != PowerMetrics.Builder().build()
 
     val hasAirQualityMetrics: Boolean
-        get() = airQualityMetrics != AirQualityMetrics()
+        get() = airQualityMetrics != AirQualityMetrics.Builder().build()
+
+    val hasSoilWaterMetrics: Boolean
+        get() = soilWaterMetrics != SoilWaterMetrics.Builder().build()
 
     val batteryLevel
         get() = deviceMetrics.battery_level
@@ -131,8 +190,7 @@ data class Node(
     }
 
     // @return formatted distance string to another node, using the given display units
-    fun distanceStr(o: Node, displayUnits: Config.DisplayConfig.DisplayUnits): String? =
-        distance(o)?.toDistanceString(displayUnits)
+    fun distanceStr(o: Node, displayUnits: MeasurementSystem): String? = distance(o)?.toDistanceString(displayUnits)
 
     // @return bearing to the other position in degrees
     fun bearing(o: Node?): Int? = when {
@@ -178,6 +236,14 @@ data class Node(
         /** Size (in bytes) of a Curve25519 public key as used by meshtastic firmware. */
         const val PUBLIC_KEY_SIZE: Int = 32
 
+        /**
+         * Sentinels stored when a node has no radio-metric reading. They exist because [snr]/[rssi] are not nullable
+         * (the Room columns behind them are NOT NULL); resolve them with [snrOrNull]/[rssiOrNull] rather than comparing
+         * against them at call sites.
+         */
+        const val SNR_UNSET: Float = Float.MAX_VALUE
+        const val RSSI_UNSET: Int = Int.MAX_VALUE
+
         val ERROR_BYTE_STRING: ByteString = ByteArray(PUBLIC_KEY_SIZE) { 0 }.toByteString()
 
         fun getRelayNode(relayNodeId: Int, nodes: List<Node>, ourNodeNum: Int?): Node? {
@@ -206,7 +272,14 @@ data class Node(
             val safeUserId = userId.padStart(DEFAULT_ID_SUFFIX_LENGTH, '0').takeLast(DEFAULT_ID_SUFFIX_LENGTH)
             val longName = "$fallbackNamePrefix $safeUserId"
             val defaultUser =
-                User(id = userId, long_name = longName, short_name = safeUserId, hw_model = HardwareModel.UNSET)
+                User.Builder()
+                    .also { wb ->
+                        wb.id = userId
+                        wb.long_name = longName
+                        wb.short_name = safeUserId
+                        wb.hw_model = HardwareModel.UNSET
+                    }
+                    .build()
             return Node(num = nodeNum, user = defaultUser)
         }
     }
@@ -221,3 +294,22 @@ fun Config.DeviceConfig.Role?.isUnmessageableRole(): Boolean = this in
         Config.DeviceConfig.Role.TRACKER,
         Config.DeviceConfig.Role.TAK_TRACKER,
     )
+
+/** Offset converting a negative [Node.num] into its unsigned 32-bit decimal representation. */
+private const val UNSIGNED_INT_OFFSET = 4294967296L
+
+private val Node.unsignedNum: Long
+    get() = num.toLong().let { if (it < 0) it + UNSIGNED_INT_OFFSET else it }
+
+/**
+ * Matches node search text (long/short name, hex id, decimal id, status message) with Unicode-aware case folding.
+ *
+ * Must run in Kotlin, not SQL: SQLite's LIKE/UPPER/LOWER only case-fold ASCII a-z/A-Z, so a query like "kolså" can
+ * never match a stored name of "KOLSÅS" via a SQL WHERE clause (#6750).
+ */
+fun Node.matchesSearch(filter: String): Boolean = filter.isBlank() ||
+    user.long_name.contains(filter, ignoreCase = true) ||
+    user.short_name.contains(filter, ignoreCase = true) ||
+    user.id.contains(filter, ignoreCase = true) ||
+    nodeStatus?.contains(filter, ignoreCase = true) == true ||
+    unsignedNum.toString().contains(filter, ignoreCase = true)

@@ -16,6 +16,7 @@
  */
 package org.meshtastic.buildlogic
 
+import com.gradle.develocity.agent.gradle.test.DevelocityTestConfiguration
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
@@ -29,7 +30,6 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.withType
 import org.gradle.plugin.use.PluginDependency
-import org.gradle.testretry.TestRetryTaskExtension
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -100,6 +100,12 @@ internal fun Project.configureTestOptions() {
         systemProperty("java.awt.headless", "true")
         jvmArgs("-Dapple.awt.UIElement=true")
 
+        // Numbers and units format in the OS locale, so the forked test JVMs are pinned to one: otherwise a
+        // contributor whose machine defaults to de-DE gets "0,0°C" and fails every test that pins "0.0°C".
+        // Locale-specific behaviour is asserted by tests that set the locale themselves.
+        systemProperty("user.language", "en")
+        systemProperty("user.country", "US")
+
         // JUnit Jupiter parallel execution within each Gradle fork.
         // Classes run sequentially ("same_thread") because 19+ ViewModel test classes use
         // Dispatchers.setMain() — a JVM-global singleton that races when classes execute
@@ -122,14 +128,14 @@ internal fun Project.configureTestOptions() {
     // tests are commented out). Disable to avoid breaking builds for modules with WIP tests.
     tasks.withType<AbstractTestTask>().configureEach { failOnNoDiscoveredTests.set(false) }
 
-    // Configure test retry if the plugin is applied
-    pluginManager.withPlugin("org.gradle.test-retry") {
-        tasks.withType<Test>().configureEach {
-            extensions.configure<TestRetryTaskExtension> {
-                maxRetries.set(MAX_TEST_RETRIES)
-                maxFailures.set(MAX_TEST_FAILURES)
-                failOnPassedAfterRetry.set(false)
-            }
+    // Develocity-native test retry; findByType no-ops if the settings plugin isn't applied.
+    tasks.withType<Test>().configureEach {
+        extensions.findByType(DevelocityTestConfiguration::class.java)?.testRetry {
+            maxRetries.set(MAX_TEST_RETRIES)
+            maxFailures.set(MAX_TEST_FAILURES)
+            // Retry still isolates an ordering flake to one worker, but the build must not report success:
+            // a green tick over a recorded <failure> hid a real cross-test coroutine leak for weeks.
+            failOnPassedAfterRetry.set(true)
         }
     }
 }

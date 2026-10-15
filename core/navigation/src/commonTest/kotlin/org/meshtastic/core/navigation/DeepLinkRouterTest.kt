@@ -40,6 +40,34 @@ class DeepLinkRouterTest {
         assertNull(route("/unknown-page"))
     }
 
+    @Test
+    fun `channel set and shared contact import links return null for the import fallback`() {
+        assertNull(route("/e/#CgMSAQE"))
+        assertNull(route("/E/#CgMSAQE"))
+        assertNull(route("/v/#CNar9vwDEi0KCSEzZjgyOTVkNhIP"))
+        assertNull(CommonUri.parse("https://meshtastic.org/v/#CNar9vwDEi0KCSEzZjgyOTVkNhIP").let(DeepLinkRouter::route))
+    }
+
+    // endregion
+
+    // region scheme and host
+
+    @Test
+    fun `app link hosts route the same as the custom scheme`() {
+        val expected = listOf(NodesRoute.Nodes, NodesRoute.NodeDetail(destNum = 1234))
+        assertEquals(expected, route("/nodes/1234"))
+        assertEquals(expected, DeepLinkRouter.route(CommonUri.parse("https://meshtastic.org/nodes/1234")))
+        assertEquals(expected, DeepLinkRouter.route(CommonUri.parse("http://meshtastic.org/nodes/1234")))
+    }
+
+    @Test
+    fun `app link query parameters survive the host rewrite`() {
+        assertEquals(
+            listOf(ContactsRoute.Contacts, ContactsRoute.Share("camp & ridge #4")),
+            DeepLinkRouter.route(CommonUri.parse("https://meshtastic.org/share?message=camp%20%26%20ridge%20%234")),
+        )
+    }
+
     // endregion
 
     // region contacts / messages
@@ -294,6 +322,27 @@ class DeepLinkRouterTest {
     }
 
     @Test
+    fun `settings about resolves to the About screen`() {
+        assertEquals(listOf(SettingsRoute.Settings(destNum = null), SettingsRoute.About), route("/settings/about"))
+    }
+
+    @Test
+    fun `settings acknowledgements resolves to the Acknowledgements screen`() {
+        assertEquals(
+            listOf(SettingsRoute.Settings(destNum = null), SettingsRoute.Acknowledgements),
+            route("/settings/acknowledgements"),
+        )
+    }
+
+    @Test
+    fun `settings attributions is an alias for Acknowledgements`() {
+        assertEquals(
+            listOf(SettingsRoute.Settings(destNum = null), SettingsRoute.Acknowledgements),
+            route("/settings/attributions"),
+        )
+    }
+
+    @Test
     fun `settings with sub-route without destNum`() {
         assertEquals(listOf(SettingsRoute.Settings(destNum = null), SettingsRoute.LoRa), route("/settings/lora"))
     }
@@ -333,11 +382,13 @@ class DeepLinkRouterTest {
                 "ambient-lighting" to SettingsRoute.AmbientLighting,
                 "detection-sensor" to SettingsRoute.DetectionSensor,
                 "paxcounter" to SettingsRoute.Paxcounter,
-                "status-message" to SettingsRoute.StatusMessage,
+                "status-message" to SettingsRoute.User,
                 "tak" to SettingsRoute.TAK,
                 "clean-node-db" to SettingsRoute.CleanNodeDb,
                 "debug-panel" to SettingsRoute.DebugPanel,
                 "about" to SettingsRoute.About,
+                "acknowledgements" to SettingsRoute.Acknowledgements,
+                "attributions" to SettingsRoute.Acknowledgements,
                 "filter-settings" to SettingsRoute.FilterSettings,
             )
 

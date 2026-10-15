@@ -17,11 +17,13 @@
 package org.meshtastic.feature.node.list
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,20 +31,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,7 +65,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.ConnectionState
+import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.NodeListDensity
+import org.meshtastic.core.model.excludes
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.channel_invalid
 import org.meshtastic.core.resources.hop_histogram_title
@@ -69,6 +77,10 @@ import org.meshtastic.core.resources.nodes_empty_disconnected_hint
 import org.meshtastic.core.resources.nodes_empty_disconnected_title
 import org.meshtastic.core.resources.nodes_empty_searching_hint
 import org.meshtastic.core.resources.nodes_empty_searching_title
+import org.meshtastic.core.resources.nodes_unheard_banner
+import org.meshtastic.core.resources.nodes_unheard_banner_one
+import org.meshtastic.core.resources.nodes_unheard_keep
+import org.meshtastic.core.resources.nodes_unheard_remove
 import org.meshtastic.core.resources.set_up_connection
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticImportFAB
@@ -82,15 +94,30 @@ import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.Nodes
+import org.meshtastic.core.ui.icon.SignalOff
+import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
+import org.meshtastic.feature.node.component.LocalNodeContextMenu
 import org.meshtastic.feature.node.component.NodeContextMenu
 import org.meshtastic.feature.node.component.NodeCountSummary
-import org.meshtastic.feature.node.component.NodeFilterTextField
+import org.meshtastic.feature.node.component.NodeFilterSearchBar
+import org.meshtastic.feature.node.component.NodeFilterToggles
 import org.meshtastic.feature.node.component.NodeHopHistogramSheet
 import org.meshtastic.feature.node.component.NodeListHelp
+import org.meshtastic.proto.ExcludedModules
+
+/**
+ * design#115: status message editing is offered on the connected local node only, and only where the firmware has the
+ * module — absent, never disabled, everywhere else.
+ */
+internal fun canEditStatusMessage(node: Node, ourNode: Node?, connectionState: ConnectionState): Boolean =
+    node.num == ourNode?.num &&
+        connectionState == ConnectionState.Connected &&
+        node.capabilities.supportsStatusMessage &&
+        !node.metadata.excludes(ExcludedModules.STATUSMESSAGE_CONFIG)
 
 @Suppress("LongMethod", "CyclomaticComplexMethod")
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NodeListScreen(
     navigateToNodeDetails: (Int) -> Unit,
@@ -101,6 +128,7 @@ fun NodeListScreen(
     activeNodeId: Int? = null,
     onHandleDeepLink: (org.meshtastic.core.common.util.CommonUri, onInvalid: () -> Unit) -> Unit = { _, _ -> },
     onNavigateToConnections: () -> Unit = {},
+    onEditStatusMessage: () -> Unit = {},
 ) {
     val showToast = org.meshtastic.core.ui.util.rememberShowToastResource()
     val scope = rememberCoroutineScope()
@@ -116,9 +144,16 @@ fun NodeListScreen(
     val onlineNodeCount by viewModel.onlineNodeCount.collectAsStateWithLifecycle(0)
     val totalNodeCount by viewModel.totalNodeCount.collectAsStateWithLifecycle(0)
     val unfilteredNodes by viewModel.unfilteredNodeList.collectAsStateWithLifecycle()
+    // Favorites and our own node are never offered for removal: a favorite is an explicit keep, and the connected
+    // radio is not something the node list may delete. ourNode and unfilteredNodes come from independent flows, so
+    // the list can already contain the local node while ourNode is still null. Offer nothing until it is known,
+    // rather than risk removing the user's own node from the radio.
+    val unheardNodes = remember(unfilteredNodes, ourNode) { selectRemovableUnheardNodes(unfilteredNodes, ourNode?.num) }
     val deviceImageUrls by viewModel.deviceImageUrls.collectAsStateWithLifecycle()
     val ignoredNodeCount = unfilteredNodes.count { it.isIgnored }
 
+    // No cache window here: this pane renders inside ThreePaneScaffold's LookaheadScope, where a
+    // prefetched item can reach the main placement pass before the lookahead pass has measured it.
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -160,7 +195,89 @@ fun NodeListScreen(
 
     var showShareContact by remember { mutableStateOf(false) }
     if (showShareContact) {
-        SharedContactDialog(contact = ourNode, onDismiss = { showShareContact = false })
+        SharedContactDialog(contact = ourNode, onDismiss = { showShareContact = false }, isOwnContact = true)
+    }
+
+    // One row renderer, used by the list itself and by the search bar's expanded results, so the two can never drift.
+    // It stays a LazyItemScope lambda rather than a composable of its own because animateItem() needs that receiver.
+    val nodeRow: @Composable LazyItemScope.(Node) -> Unit = { node ->
+        var expanded by remember { mutableStateOf(false) }
+
+        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+            val isThisNode = node.num == ourNode?.num
+            val canEditStatus = canEditStatusMessage(node, ourNode, connectionState)
+            // Our own node only earns a long press while it has something to offer, or it opens an empty menu.
+            val longClick =
+                if (!isThisNode || canEditStatus) {
+                    { expanded = true }
+                } else {
+                    null
+                }
+
+            val isActive = remember(activeNodeId, node.num) { activeNodeId == node.num }
+
+            when (density) {
+                NodeListDensity.COMPLETE ->
+                    NodeItem(
+                        modifier = Modifier.animateItem(),
+                        thisNode = ourNode,
+                        thatNode = node,
+                        distanceUnits = state.distanceUnits,
+                        tempInFahrenheit = state.tempInFahrenheit,
+                        onClick = { navigateToNodeDetails(node.num) },
+                        onLongClick = longClick,
+                        connectionState = connectionState,
+                        deviceType = deviceType,
+                        isActive = isActive,
+                        showTelemetry = showTelemetry,
+                        deviceImageUrl = deviceImageUrls[node.user.hw_model.value],
+                    )
+
+                NodeListDensity.COMPACT ->
+                    NodeItemCompact(
+                        modifier = Modifier.animateItem(),
+                        thisNode = ourNode,
+                        thatNode = node,
+                        distanceUnits = state.distanceUnits,
+                        onClick = { navigateToNodeDetails(node.num) },
+                        onLongClick = longClick,
+                        isActive = isActive,
+                        showPower = showPower,
+                        showLastHeard = showLastHeard,
+                        lastHeardIsRelative = lastHeardIsRelative,
+                        showLocation = showLocation,
+                        showHops = showHops,
+                        showSignal = showSignal,
+                        showChannel = showChannel,
+                        showRole = showRole,
+                        showTelemetry = showTelemetry,
+                        tempInFahrenheit = state.tempInFahrenheit,
+                        deviceImageUrl = deviceImageUrls[node.user.hw_model.value],
+                    )
+            }
+            if (canEditStatus) {
+                LocalNodeContextMenu(
+                    expanded = expanded,
+                    onUpdateStatus = onEditStatusMessage,
+                    onDismiss = { expanded = false },
+                )
+            } else if (!isThisNode) {
+                NodeContextMenu(
+                    expanded = expanded,
+                    node = node,
+                    onFavorite = { viewModel.favoriteNode(node) },
+                    onMute = { viewModel.muteNode(node) },
+                    onMessage = {
+                        val route = viewModel.getDirectMessageRoute(node)
+                        navigateToMessages(route)
+                    },
+                    onTraceRoute = { viewModel.traceRoute(node) },
+                    onIgnore = { viewModel.ignoreNode(node) },
+                    onRemove = { viewModel.removeNode(node) },
+                    onDismiss = { expanded = false },
+                )
+            }
+        }
     }
 
     Scaffold(
@@ -228,102 +345,60 @@ fun NodeListScreen(
                             totalCount = totalNodeCount,
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                         )
-                        NodeFilterTextField(
-                            modifier = Modifier.fillMaxWidth(),
+                        UnheardNodesBanner(
+                            unheardNodes = unheardNodes,
+                            onRemoveAll = { unheardNodes.forEach(viewModel::removeNode) },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        )
+                        val filterPrefs = viewModel.nodeFilterPreferences
+                        NodeFilterSearchBar(
                             filterText = state.filter.filterText,
                             onTextChange = { viewModel.nodeFilterText = it },
                             currentSortOption = state.sort,
                             onSortSelect = viewModel::setSortOption,
-                            includeUnknown = state.filter.includeUnknown,
-                            onToggleIncludeUnknown = { viewModel.nodeFilterPreferences.toggleIncludeUnknown() },
-                            excludeInfrastructure = state.filter.excludeInfrastructure,
-                            onToggleExcludeInfrastructure = {
-                                viewModel.nodeFilterPreferences.toggleExcludeInfrastructure()
+                            modifier = Modifier.fillMaxWidth(),
+                            searchResults = {
+                                // The full-screen expanded bar hides the sticky header's counts.
+                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                    item {
+                                        NodeCountSummary(
+                                            onlineCount = onlineNodeCount,
+                                            shownCount = nodes.size,
+                                            totalCount = totalNodeCount,
+                                            modifier =
+                                            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                                        )
+                                    }
+                                    items(nodes, key = { it.num }, itemContent = nodeRow)
+                                }
                             },
-                            onlyOnline = state.filter.onlyOnline,
-                            onToggleOnlyOnline = { viewModel.nodeFilterPreferences.toggleOnlyOnline() },
-                            onlyDirect = state.filter.onlyDirect,
-                            onToggleOnlyDirect = { viewModel.nodeFilterPreferences.toggleOnlyDirect() },
-                            showIgnored = state.filter.showIgnored,
-                            onToggleShowIgnored = { viewModel.nodeFilterPreferences.toggleShowIgnored() },
-                            ignoredNodeCount = ignoredNodeCount,
-                            excludeMqtt = state.filter.excludeMqtt,
-                            onToggleExcludeMqtt = { viewModel.nodeFilterPreferences.toggleExcludeMqtt() },
+                            toggles =
+                            NodeFilterToggles(
+                                includeUnknown = state.filter.includeUnknown,
+                                onToggleIncludeUnknown = filterPrefs::toggleIncludeUnknown,
+                                excludeInfrastructure = state.filter.excludeInfrastructure,
+                                onToggleExcludeInfrastructure = filterPrefs::toggleExcludeInfrastructure,
+                                onlyOnline = state.filter.onlyOnline,
+                                onToggleOnlyOnline = filterPrefs::toggleOnlyOnline,
+                                onlyDirect = state.filter.onlyDirect,
+                                onToggleOnlyDirect = filterPrefs::toggleOnlyDirect,
+                                showIgnored = state.filter.showIgnored,
+                                onToggleShowIgnored = filterPrefs::toggleShowIgnored,
+                                ignoredNodeCount = ignoredNodeCount,
+                                excludeUnheard = state.filter.excludeUnheard,
+                                onToggleExcludeUnheard = filterPrefs::toggleExcludeUnheard,
+                                excludeMqtt = state.filter.excludeMqtt,
+                                onToggleExcludeMqtt = filterPrefs::toggleExcludeMqtt,
+                                onlySigned = state.filter.onlySigned,
+                                onToggleOnlySigned = filterPrefs::toggleOnlySigned,
+                                onlyEncrypted = state.filter.onlyEncrypted,
+                                onToggleOnlyEncrypted = filterPrefs::toggleOnlyEncrypted,
+                            ),
                         )
                     }
                 }
 
-                items(nodes, key = { it.num }) { node ->
-                    var expanded by remember { mutableStateOf(false) }
-
-                    Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-                        val longClick =
-                            if (node.num != ourNode?.num) {
-                                { expanded = true }
-                            } else {
-                                null
-                            }
-
-                        val isActive = remember(activeNodeId, node.num) { activeNodeId == node.num }
-
-                        when (density) {
-                            NodeListDensity.COMPLETE ->
-                                NodeItem(
-                                    modifier = Modifier.animateItem(),
-                                    thisNode = ourNode,
-                                    thatNode = node,
-                                    distanceUnits = state.distanceUnits,
-                                    tempInFahrenheit = state.tempInFahrenheit,
-                                    onClick = { navigateToNodeDetails(node.num) },
-                                    onLongClick = longClick,
-                                    connectionState = connectionState,
-                                    deviceType = deviceType,
-                                    isActive = isActive,
-                                    showTelemetry = showTelemetry,
-                                    deviceImageUrl = deviceImageUrls[node.user.hw_model.value],
-                                )
-
-                            NodeListDensity.COMPACT ->
-                                NodeItemCompact(
-                                    modifier = Modifier.animateItem(),
-                                    thisNode = ourNode,
-                                    thatNode = node,
-                                    distanceUnits = state.distanceUnits,
-                                    onClick = { navigateToNodeDetails(node.num) },
-                                    onLongClick = longClick,
-                                    isActive = isActive,
-                                    showPower = showPower,
-                                    showLastHeard = showLastHeard,
-                                    lastHeardIsRelative = lastHeardIsRelative,
-                                    showLocation = showLocation,
-                                    showHops = showHops,
-                                    showSignal = showSignal,
-                                    showChannel = showChannel,
-                                    showRole = showRole,
-                                    showTelemetry = showTelemetry,
-                                    tempInFahrenheit = state.tempInFahrenheit,
-                                    deviceImageUrl = deviceImageUrls[node.user.hw_model.value],
-                                )
-                        }
-                        val isThisNode = remember(node) { ourNode?.num == node.num }
-                        if (!isThisNode) {
-                            NodeContextMenu(
-                                expanded = expanded,
-                                node = node,
-                                onFavorite = { viewModel.favoriteNode(node) },
-                                onMute = { viewModel.muteNode(node) },
-                                onMessage = {
-                                    val route = viewModel.getDirectMessageRoute(node)
-                                    navigateToMessages(route)
-                                },
-                                onTraceRoute = { viewModel.traceRoute(node) },
-                                onIgnore = { viewModel.ignoreNode(node) },
-                                onRemove = { viewModel.removeNode(node) },
-                                onDismiss = { expanded = false },
-                            )
-                        }
-                    }
-                }
+                items(nodes, key = { it.num }, itemContent = nodeRow)
                 if (nodes.isEmpty() && !state.filter.isActive) {
                     item {
                         NodeListEmptyState(
@@ -393,6 +468,67 @@ private fun NodeListEmptyState(
         if (!isConnected) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onNavigateToConnections) { Text(stringResource(Res.string.set_up_connection)) }
+        }
+    }
+}
+
+/**
+ * Offers to remove the nodes the radio has not heard since its LoRa settings changed.
+ *
+ * Shown as an offer, never an automatic removal: the app's node DB is deliberately a superset of the radio's, and a
+ * node may simply be out of range rather than on another channel — it comes back on its own when next heard.
+ *
+ * Dismissal is per-composition rather than saved, and re-arms whenever the count rises, so a later config change offers
+ * again instead of staying silent.
+ */
+@Composable
+private fun UnheardNodesBanner(unheardNodes: List<Node>, onRemoveAll: () -> Unit, modifier: Modifier = Modifier) {
+    var dismissed by remember { mutableStateOf(false) }
+    var previousCount by remember { mutableIntStateOf(0) }
+    val count = unheardNodes.size
+
+    // Re-arm on any rise, not only above a historical maximum: dismissing at 3, dropping to 1 and rising to 2 is
+    // still a new config change worth offering for.
+    LaunchedEffect(count) {
+        if (count > previousCount) dismissed = false
+        previousCount = count
+    }
+
+    if (count == 0 || dismissed) return
+
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    imageVector = MeshtasticIcons.SignalOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.StatusOrange,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text =
+                    if (count == 1) {
+                        stringResource(Res.string.nodes_unheard_banner_one)
+                    } else {
+                        stringResource(Res.string.nodes_unheard_banner, count)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
+                TextButton(onClick = { dismissed = true }) { Text(stringResource(Res.string.nodes_unheard_keep)) }
+                TextButton(
+                    onClick = {
+                        onRemoveAll()
+                        dismissed = true
+                    },
+                ) {
+                    Text(stringResource(Res.string.nodes_unheard_remove))
+                }
+            }
         }
     }
 }

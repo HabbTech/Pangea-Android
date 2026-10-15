@@ -26,9 +26,12 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.range_test
 import org.meshtastic.core.resources.range_test_config
-import org.meshtastic.core.resources.range_test_enabled
-import org.meshtastic.core.resources.save_csv_in_storage_esp32_only
-import org.meshtastic.core.resources.sender_message_interval_seconds
+import org.meshtastic.core.resources.schema_rangetest_enabled
+import org.meshtastic.core.resources.schema_rangetest_enabled_description
+import org.meshtastic.core.resources.schema_rangetest_save
+import org.meshtastic.core.resources.schema_rangetest_save_description
+import org.meshtastic.core.resources.schema_rangetest_sender
+import org.meshtastic.core.resources.schema_rangetest_sender_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
@@ -41,7 +44,7 @@ import org.meshtastic.proto.ModuleConfig
 @Composable
 fun RangeTestConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     val state by viewModel.radioConfigState.collectAsStateWithLifecycle()
-    val rangeTestConfig = state.moduleConfig.range_test ?: ModuleConfig.RangeTestConfig()
+    val rangeTestConfig = state.moduleConfig.range_test ?: ModuleConfig.RangeTestConfig.Builder().build()
     val formState = rememberConfigState(initialValue = rangeTestConfig)
 
     val isPublicPrimaryChannel = (state.channelList.firstOrNull()?.psk?.size ?: 0) < 2
@@ -56,35 +59,45 @@ fun RangeTestConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
         responseState = state.responseState,
         onDismissPacketResponse = viewModel::clearPacketResponse,
         onSave = {
-            val safeConfig = if (isPublicPrimaryChannel) it.copy(enabled = false) else it
-            val config = ModuleConfig(range_test = safeConfig)
+            val safeConfig =
+                if (isPublicPrimaryChannel) it.newBuilder().also { wb -> wb.enabled = false }.build() else it
+            val config = ModuleConfig.Builder().also { wb -> wb.range_test = safeConfig }.build()
             viewModel.setModuleConfig(config)
         },
     ) {
         item {
             TitledCard(title = stringResource(Res.string.range_test_config)) {
                 SwitchPreference(
-                    title = stringResource(Res.string.range_test_enabled),
+                    title = stringResource(Res.string.schema_rangetest_enabled),
+                    summary = stringResource(Res.string.schema_rangetest_enabled_description),
                     checked = formState.value.enabled,
                     enabled = canConfigure || formState.value.enabled,
-                    onCheckedChange = { formState.value = formState.value.copy(enabled = it) },
+                    onCheckedChange = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                    },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
                 HorizontalDivider()
                 val rangeItems = remember { IntervalConfiguration.RANGE_TEST_SENDER.allowedIntervals }
                 DropDownPreference(
-                    title = stringResource(Res.string.sender_message_interval_seconds),
+                    title = stringResource(Res.string.schema_rangetest_sender),
+                    summary = stringResource(Res.string.schema_rangetest_sender_description),
                     selectedItem = (formState.value.sender).toLong(),
                     enabled = canConfigure,
                     items = rangeItems.map { it.value to it.toDisplayString() },
-                    onItemSelected = { formState.value = formState.value.copy(sender = it.toInt()) },
+                    onItemSelected = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.sender = it.toInt() }.build()
+                    },
                 )
                 HorizontalDivider()
                 SwitchPreference(
-                    title = stringResource(Res.string.save_csv_in_storage_esp32_only),
+                    title = stringResource(Res.string.schema_rangetest_save),
+                    summary = stringResource(Res.string.schema_rangetest_save_description),
                     checked = formState.value.save,
                     enabled = canConfigure,
-                    onCheckedChange = { formState.value = formState.value.copy(save = it) },
+                    onCheckedChange = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.save = it }.build()
+                    },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
             }

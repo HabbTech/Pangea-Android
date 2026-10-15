@@ -19,6 +19,7 @@ package org.meshtastic.core.data.manager
 import co.touchlab.kermit.Logger
 import kotlinx.atomicfu.atomic
 import org.koin.core.annotation.Single
+import org.meshtastic.core.network.transport.HeartbeatSender
 import org.meshtastic.core.repository.PacketHandler
 import org.meshtastic.proto.Heartbeat
 import org.meshtastic.proto.ToRadio
@@ -27,14 +28,15 @@ import org.meshtastic.proto.ToRadio
  * Centralized heartbeat sender for the data layer.
  *
  * Consolidates heartbeat nonce management into a single monotonically increasing counter, preventing the firmware's
- * per-connection duplicate-write filter (byte-level memcmp) from silently dropping consecutive heartbeats.
+ * per-connection duplicate-write filter (byte-level memcmp) from silently dropping consecutive heartbeats. Starts at
+ * [HeartbeatSender.FIRST_NONCE], past the firmware's NodeInfo-ping trigger.
  *
  * This is distinct from [org.meshtastic.core.network.transport.HeartbeatSender], which operates at the transport layer
  * with raw byte encoding. This class works at the protobuf/data layer through [PacketHandler].
  */
 @Single
 class DataLayerHeartbeatSender(private val packetHandler: PacketHandler) {
-    private val nonce = atomic(0)
+    private val nonce = atomic(HeartbeatSender.FIRST_NONCE)
 
     /**
      * Enqueues a heartbeat with a unique nonce.
@@ -44,8 +46,12 @@ class DataLayerHeartbeatSender(private val packetHandler: PacketHandler) {
     @Suppress("TooGenericExceptionCaught")
     fun sendHeartbeat(tag: String = "handshake") {
         try {
-            val n = nonce.incrementAndGet()
-            packetHandler.sendToRadio(ToRadio(heartbeat = Heartbeat(nonce = n)))
+            val n = nonce.getAndIncrement()
+            packetHandler.sendToRadio(
+                ToRadio.Builder()
+                    .also { wb -> wb.heartbeat = Heartbeat.Builder().also { wb -> wb.nonce = n }.build() }
+                    .build(),
+            )
             Logger.d { "[$tag] Heartbeat enqueued (nonce=$n)" }
         } catch (e: Exception) {
             Logger.w(e) { "[$tag] Failed to enqueue heartbeat; proceeding" }

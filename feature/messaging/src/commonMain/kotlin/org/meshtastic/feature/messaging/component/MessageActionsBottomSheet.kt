@@ -18,13 +18,16 @@ package org.meshtastic.feature.messaging.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -41,9 +44,11 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.MessageStatus
+import org.meshtastic.core.model.getAckProofStatusRes
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.action_copy_message
 import org.meshtastic.core.resources.action_delete_message
+import org.meshtastic.core.resources.action_more_message_actions
 import org.meshtastic.core.resources.action_react_with_emoji
 import org.meshtastic.core.resources.action_select_message
 import org.meshtastic.core.resources.action_send_reply
@@ -65,13 +70,17 @@ import org.meshtastic.core.resources.timestamp
 import org.meshtastic.core.resources.translate
 import org.meshtastic.core.ui.icon.AddReaction
 import org.meshtastic.core.ui.icon.Copy
+import org.meshtastic.core.ui.icon.Dangerous
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.History
+import org.meshtastic.core.ui.icon.KeyOff
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.icon.More
 import org.meshtastic.core.ui.icon.Reply
 import org.meshtastic.core.ui.icon.SelectAll
 import org.meshtastic.core.ui.icon.ShieldCheck
 import org.meshtastic.core.ui.icon.Translate
+import org.meshtastic.proto.MeshPacket
 
 @Suppress("LongMethod")
 @Composable
@@ -84,18 +93,25 @@ fun MessageActionsContent(
     onSelect: () -> Unit,
     onDelete: () -> Unit,
     onStatus: () -> Unit,
+    /** False for an archived conversation: there is no channel left to reply into. */
+    canReply: Boolean = true,
     statusString: Pair<StringResource, StringResource>? = null,
     status: MessageStatus? = null,
     timestamp: String? = null,
     xeddsaSigned: Boolean = false,
+    ackProofStatus: Int = 0,
     translationRowState: TranslationRowState? = null,
     onTranslate: () -> Unit = {},
     onToggleTranslation: () -> Unit = {},
 ) {
     Column {
-        QuickEmojiRow(quickEmojis = quickEmojis, onReact = onReact, onMoreReactions = onMoreReactions)
+        // An archived conversation shows no reaction affordances: the send path refuses them, so offering the row
+        // would be a control that silently does nothing.
+        if (quickEmojis.isNotEmpty()) {
+            QuickEmojiRow(quickEmojis = quickEmojis, onReact = onReact, onMoreReactions = onMoreReactions)
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        }
 
         if (xeddsaSigned) {
             ListItem(
@@ -111,7 +127,9 @@ fun MessageActionsContent(
             )
         }
 
-        // Bubbles only show a short header time per run, so the sheet is where the full date-time lives.
+        AckProofListItem(ackProofStatus)
+
+        // The caller supplies the same compact or full timestamp shown in the conversation header.
         if (timestamp != null) {
             ListItem(
                 headlineContent = {
@@ -146,16 +164,7 @@ fun MessageActionsContent(
             )
         }
 
-        ListItem(
-            headlineContent = { Text(stringResource(Res.string.reply)) },
-            leadingContent = { Icon(MeshtasticIcons.Reply, contentDescription = stringResource(Res.string.reply)) },
-            modifier =
-            Modifier.clickable(
-                onClickLabel = stringResource(Res.string.action_send_reply),
-                role = Role.Button,
-                onClick = onReply,
-            ),
-        )
+        ReplyAction(canReply = canReply, onReply = onReply)
 
         ListItem(
             headlineContent = { Text(stringResource(Res.string.copy)) },
@@ -223,19 +232,59 @@ fun MessageActionsContent(
     }
 }
 
-private const val MAX_EMOJI_ROW_SIZE = 6
-
+/**
+ * The radio's verdict on the ack that closed out this message. Silent when no proof was carried, which is every ack
+ * from firmware predating [MeshPacket.AckProofStatus] and every ack that simply did not carry one.
+ */
 @Composable
-private fun QuickEmojiRow(quickEmojis: List<String>, onReact: (String) -> Unit, onMoreReactions: () -> Unit) {
+private fun AckProofListItem(ackProofStatus: Int) {
+    val (headline, supporting) = getAckProofStatusRes(ackProofStatus) ?: return
+    val proofStatus = MeshPacket.AckProofStatus.fromValue(ackProofStatus)
+    val icon =
+        when (proofStatus) {
+            MeshPacket.AckProofStatus.ACK_PROOF_INVALID -> MeshtasticIcons.Dangerous
+            MeshPacket.AckProofStatus.ACK_PROOF_NO_KEY -> MeshtasticIcons.KeyOff
+            else -> MeshtasticIcons.ShieldCheck
+        }
+    val tint =
+        when (proofStatus) {
+            MeshPacket.AckProofStatus.ACK_PROOF_INVALID -> MaterialTheme.colorScheme.error
+            MeshPacket.AckProofStatus.ACK_PROOF_NO_KEY -> MaterialTheme.colorScheme.onSurfaceVariant
+            else -> MaterialTheme.colorScheme.primary
+        }
+    ListItem(
+        headlineContent = { Text(stringResource(headline)) },
+        supportingContent = { Text(stringResource(supporting)) },
+        leadingContent = { Icon(icon, contentDescription = null, tint = tint) },
+    )
+}
+
+internal const val MAX_EMOJI_ROW_SIZE = 6
+
+/**
+ * Six one-tap reactions plus the full picker. [onMoreActions], when supplied, appends an overflow button — the inline
+ * bar uses it to reach the actions sheet, which is where the row itself lives when opened the other way round.
+ */
+@Composable
+internal fun QuickEmojiRow(
+    quickEmojis: List<String>,
+    onReact: (String) -> Unit,
+    onMoreReactions: () -> Unit,
+    onMoreActions: (() -> Unit)? = null,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        // Scrollable so seven 44dp touch targets never clip on narrow (320dp) sheets.
+        modifier =
+        Modifier.fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         quickEmojis.take(MAX_EMOJI_ROW_SIZE).forEach { emoji ->
             Box(
                 modifier =
-                Modifier.size(40.dp)
+                Modifier.defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(
@@ -252,7 +301,7 @@ private fun QuickEmojiRow(quickEmojis: List<String>, onReact: (String) -> Unit, 
 
         IconButton(
             onClick = onMoreReactions,
-            modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+            modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
         ) {
             Icon(
                 MeshtasticIcons.AddReaction,
@@ -261,5 +310,35 @@ private fun QuickEmojiRow(quickEmojis: List<String>, onReact: (String) -> Unit, 
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+
+        if (onMoreActions != null) {
+            IconButton(
+                onClick = onMoreActions,
+                modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+            ) {
+                Icon(
+                    MeshtasticIcons.More,
+                    contentDescription = stringResource(Res.string.action_more_message_actions),
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
+}
+
+/** The sheet's Reply row, absent on an archived conversation because there is nothing to reply into. */
+@Composable
+private fun ReplyAction(canReply: Boolean, onReply: () -> Unit) {
+    if (!canReply) return
+    ListItem(
+        headlineContent = { Text(stringResource(Res.string.reply)) },
+        leadingContent = { Icon(MeshtasticIcons.Reply, contentDescription = stringResource(Res.string.reply)) },
+        modifier =
+        Modifier.clickable(
+            onClickLabel = stringResource(Res.string.action_send_reply),
+            role = Role.Button,
+            onClick = onReply,
+        ),
+    )
 }

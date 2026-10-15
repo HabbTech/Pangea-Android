@@ -20,15 +20,42 @@ import org.jetbrains.compose.resources.StringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.error
 import org.meshtastic.core.resources.message_delivery_status
+import org.meshtastic.core.resources.message_routing_error_admin_bad_session_key
+import org.meshtastic.core.resources.message_routing_error_admin_bad_session_key_detail
+import org.meshtastic.core.resources.message_routing_error_admin_public_key_unauthorized
+import org.meshtastic.core.resources.message_routing_error_admin_public_key_unauthorized_detail
+import org.meshtastic.core.resources.message_routing_error_bad_request
+import org.meshtastic.core.resources.message_routing_error_bad_request_detail
+import org.meshtastic.core.resources.message_routing_error_duty_cycle_limit
+import org.meshtastic.core.resources.message_routing_error_duty_cycle_limit_detail
+import org.meshtastic.core.resources.message_routing_error_got_nak_detail
 import org.meshtastic.core.resources.message_routing_error_max_retransmit
+import org.meshtastic.core.resources.message_routing_error_max_retransmit_detail
 import org.meshtastic.core.resources.message_routing_error_no_channel
+import org.meshtastic.core.resources.message_routing_error_no_channel_detail
+import org.meshtastic.core.resources.message_routing_error_no_interface
+import org.meshtastic.core.resources.message_routing_error_no_interface_detail
+import org.meshtastic.core.resources.message_routing_error_no_response
+import org.meshtastic.core.resources.message_routing_error_no_response_detail
+import org.meshtastic.core.resources.message_routing_error_no_route_detail
+import org.meshtastic.core.resources.message_routing_error_not_authorized
+import org.meshtastic.core.resources.message_routing_error_not_authorized_detail
 import org.meshtastic.core.resources.message_routing_error_pki_failed
+import org.meshtastic.core.resources.message_routing_error_pki_failed_detail
 import org.meshtastic.core.resources.message_routing_error_pki_send_fail_public_key
+import org.meshtastic.core.resources.message_routing_error_pki_send_fail_public_key_detail
 import org.meshtastic.core.resources.message_routing_error_pki_unknown_pubkey
+import org.meshtastic.core.resources.message_routing_error_pki_unknown_pubkey_detail
+import org.meshtastic.core.resources.message_routing_error_rate_limit_exceeded
+import org.meshtastic.core.resources.message_routing_error_rate_limit_exceeded_detail
+import org.meshtastic.core.resources.message_routing_error_timeout_detail
 import org.meshtastic.core.resources.message_routing_error_too_large
+import org.meshtastic.core.resources.message_routing_error_too_large_detail
+import org.meshtastic.core.resources.message_status_ack_proof_invalid
 import org.meshtastic.core.resources.message_status_delivered
 import org.meshtastic.core.resources.message_status_enroute
 import org.meshtastic.core.resources.message_status_recipient_delivered
+import org.meshtastic.core.resources.message_status_recipient_delivered_proven
 import org.meshtastic.core.resources.message_status_relayed_not_confirmed
 import org.meshtastic.core.resources.message_status_sfpp_confirmed
 import org.meshtastic.core.resources.message_status_sfpp_routing
@@ -51,6 +78,12 @@ import org.meshtastic.core.resources.routing_error_pki_unknown_pubkey
 import org.meshtastic.core.resources.routing_error_rate_limit_exceeded
 import org.meshtastic.core.resources.routing_error_timeout
 import org.meshtastic.core.resources.routing_error_too_large
+import org.meshtastic.core.resources.security_ack_proof_failed
+import org.meshtastic.core.resources.security_ack_proof_failed_info
+import org.meshtastic.core.resources.security_ack_proof_no_key
+import org.meshtastic.core.resources.security_ack_proof_no_key_info
+import org.meshtastic.core.resources.security_ack_proof_verified
+import org.meshtastic.core.resources.security_ack_proof_verified_info
 import org.meshtastic.core.resources.unrecognized
 import org.meshtastic.proto.MeshPacket
 import org.meshtastic.proto.Routing
@@ -78,16 +111,28 @@ fun getStringResFrom(routingError: Int): StringResource = when (routingError) {
     else -> Res.string.unrecognized
 }
 
+@Suppress("CyclomaticComplexMethod")
 fun getMessageRoutingErrorStringResFrom(routingError: Int): StringResource = when (routingError) {
     Routing.Error.GOT_NAK.value,
     Routing.Error.TIMEOUT.value,
     Routing.Error.MAX_RETRANSMIT.value,
-    Routing.Error.NO_RESPONSE.value,
     -> Res.string.message_routing_error_max_retransmit
 
     Routing.Error.NO_CHANNEL.value -> Res.string.message_routing_error_no_channel
 
+    Routing.Error.NO_INTERFACE.value -> Res.string.message_routing_error_no_interface
+
+    Routing.Error.DUTY_CYCLE_LIMIT.value -> Res.string.message_routing_error_duty_cycle_limit
+
+    Routing.Error.RATE_LIMIT_EXCEEDED.value -> Res.string.message_routing_error_rate_limit_exceeded
+
     Routing.Error.TOO_LARGE.value -> Res.string.message_routing_error_too_large
+
+    Routing.Error.NO_RESPONSE.value -> Res.string.message_routing_error_no_response
+
+    Routing.Error.BAD_REQUEST.value -> Res.string.message_routing_error_bad_request
+
+    Routing.Error.NOT_AUTHORIZED.value -> Res.string.message_routing_error_not_authorized
 
     Routing.Error.PKI_FAILED.value -> Res.string.message_routing_error_pki_failed
 
@@ -95,41 +140,132 @@ fun getMessageRoutingErrorStringResFrom(routingError: Int): StringResource = whe
 
     Routing.Error.PKI_SEND_FAIL_PUBLIC_KEY.value -> Res.string.message_routing_error_pki_send_fail_public_key
 
+    Routing.Error.ADMIN_BAD_SESSION_KEY.value -> Res.string.message_routing_error_admin_bad_session_key
+
+    Routing.Error.ADMIN_PUBLIC_KEY_UNAUTHORIZED.value ->
+        Res.string.message_routing_error_admin_public_key_unauthorized
+
     else -> getStringResFrom(routingError)
 }
+
+@Suppress("CyclomaticComplexMethod")
+fun getMessageRoutingErrorDetailResFrom(routingError: Int): StringResource? = when (routingError) {
+    Routing.Error.NO_ROUTE.value -> Res.string.message_routing_error_no_route_detail
+
+    Routing.Error.GOT_NAK.value -> Res.string.message_routing_error_got_nak_detail
+
+    Routing.Error.TIMEOUT.value -> Res.string.message_routing_error_timeout_detail
+
+    Routing.Error.MAX_RETRANSMIT.value -> Res.string.message_routing_error_max_retransmit_detail
+
+    Routing.Error.NO_CHANNEL.value -> Res.string.message_routing_error_no_channel_detail
+
+    Routing.Error.NO_INTERFACE.value -> Res.string.message_routing_error_no_interface_detail
+
+    Routing.Error.DUTY_CYCLE_LIMIT.value -> Res.string.message_routing_error_duty_cycle_limit_detail
+
+    Routing.Error.RATE_LIMIT_EXCEEDED.value -> Res.string.message_routing_error_rate_limit_exceeded_detail
+
+    Routing.Error.TOO_LARGE.value -> Res.string.message_routing_error_too_large_detail
+
+    Routing.Error.NO_RESPONSE.value -> Res.string.message_routing_error_no_response_detail
+
+    Routing.Error.BAD_REQUEST.value -> Res.string.message_routing_error_bad_request_detail
+
+    Routing.Error.NOT_AUTHORIZED.value -> Res.string.message_routing_error_not_authorized_detail
+
+    Routing.Error.PKI_FAILED.value -> Res.string.message_routing_error_pki_failed_detail
+
+    Routing.Error.PKI_UNKNOWN_PUBKEY.value -> Res.string.message_routing_error_pki_unknown_pubkey_detail
+
+    Routing.Error.PKI_SEND_FAIL_PUBLIC_KEY.value -> Res.string.message_routing_error_pki_send_fail_public_key_detail
+
+    Routing.Error.ADMIN_BAD_SESSION_KEY.value -> Res.string.message_routing_error_admin_bad_session_key_detail
+
+    Routing.Error.ADMIN_PUBLIC_KEY_UNAUTHORIZED.value ->
+        Res.string.message_routing_error_admin_public_key_unauthorized_detail
+
+    else -> null
+}
+
+fun getMessageStatusDetailRes(status: MessageStatus?, routingError: Int): StringResource? =
+    if (status == MessageStatus.ERROR) getMessageRoutingErrorDetailResFrom(routingError) else null
+
+/**
+ * The ack proof rows the message detail sheet shows, or null when no proof was carried - the ordinary case, and every
+ * ack from firmware that predates [MeshPacket.AckProofStatus].
+ */
+fun getAckProofStatusRes(ackProofStatus: Int): Pair<StringResource, StringResource>? =
+    when (MeshPacket.AckProofStatus.fromValue(ackProofStatus)) {
+        MeshPacket.AckProofStatus.ACK_PROOF_VALID ->
+            Res.string.security_ack_proof_verified to Res.string.security_ack_proof_verified_info
+
+        MeshPacket.AckProofStatus.ACK_PROOF_INVALID ->
+            Res.string.security_ack_proof_failed to Res.string.security_ack_proof_failed_info
+
+        MeshPacket.AckProofStatus.ACK_PROOF_NO_KEY ->
+            Res.string.security_ack_proof_no_key to Res.string.security_ack_proof_no_key_info
+
+        MeshPacket.AckProofStatus.ACK_PROOF_ABSENT,
+        null,
+        -> null
+    }
+
+/**
+ * True when an ack carried a proof and it did not verify, which is an attempted forgery rather than a quiet absence.
+ */
+fun isAckProofForged(ackProofStatus: Int): Boolean =
+    MeshPacket.AckProofStatus.fromValue(ackProofStatus) == MeshPacket.AckProofStatus.ACK_PROOF_INVALID
 
 fun getMessageStatusStringRes(
     status: MessageStatus?,
     routingError: Int,
     isDirectMessage: Boolean = false,
+    ackProofStatus: Int = 0,
 ): Pair<StringResource, StringResource> {
     val title = if (routingError > 0) Res.string.error else Res.string.message_delivery_status
+    val proven = MeshPacket.AckProofStatus.fromValue(ackProofStatus) == MeshPacket.AckProofStatus.ACK_PROOF_VALID
     val text =
-        when (status) {
-            MessageStatus.RECEIVED -> Res.string.message_status_recipient_delivered
-
-            MessageStatus.QUEUED -> Res.string.message_status_enroute
-
-            MessageStatus.ENROUTE -> Res.string.message_status_enroute
-
-            MessageStatus.SFPP_ROUTING -> Res.string.message_status_sfpp_routing
-
-            MessageStatus.SFPP_CONFIRMED -> Res.string.message_status_sfpp_confirmed
-
-            MessageStatus.DELIVERED ->
-                if (isDirectMessage) {
-                    Res.string.message_status_relayed_not_confirmed
-                } else {
-                    Res.string.message_status_delivered
-                }
-
-            MessageStatus.ERROR -> getMessageRoutingErrorStringResFrom(routingError)
-
-            MessageStatus.UNKNOWN,
-            null,
-            -> Res.string.message_status_unknown
+        when {
+            isAckProofForged(ackProofStatus) -> Res.string.message_status_ack_proof_invalid
+            else -> messageStatusText(status, routingError, isDirectMessage, proven)
         }
     return title to text
+}
+
+private fun messageStatusText(
+    status: MessageStatus?,
+    routingError: Int,
+    isDirectMessage: Boolean,
+    proven: Boolean,
+): StringResource = when (status) {
+    MessageStatus.RECEIVED ->
+        if (proven) {
+            Res.string.message_status_recipient_delivered_proven
+        } else {
+            Res.string.message_status_recipient_delivered
+        }
+
+    MessageStatus.QUEUED -> Res.string.message_status_enroute
+
+    MessageStatus.ENROUTE -> Res.string.message_status_enroute
+
+    MessageStatus.SFPP_ROUTING -> Res.string.message_status_sfpp_routing
+
+    MessageStatus.SFPP_CONFIRMED -> Res.string.message_status_sfpp_confirmed
+
+    MessageStatus.DELIVERED ->
+        if (isDirectMessage) {
+            Res.string.message_status_relayed_not_confirmed
+        } else {
+            Res.string.message_status_delivered
+        }
+
+    MessageStatus.ERROR -> getMessageRoutingErrorStringResFrom(routingError)
+
+    MessageStatus.UNKNOWN,
+    null,
+    -> Res.string.message_status_unknown
 }
 
 fun isMessageStatusRetryable(status: MessageStatus?, routingError: Int, isDirectMessage: Boolean = false): Boolean =
@@ -151,7 +287,8 @@ data class Message(
     val time: String,
     /**
      * Mesh time in epoch millis (the packet's `rx_time`) — the instant [time] renders. 0 when the radio never stamped
-     * one; read [displayTime] instead of this field so that case falls back to [receivedTime].
+     * one (the packet carried no arrival time, or an old-firmware 0); read [displayTime] instead of this field so that
+     * case falls back to [receivedTime].
      */
     val meshTime: Long = 0L,
     val read: Boolean,
@@ -159,7 +296,8 @@ data class Message(
     val routingError: Int,
     val packetId: Int,
     val emojis: List<Reaction>,
-    val snr: Float,
+    /** Signal-to-noise ratio in dB, or null when the packet carried no measurement. 0 dB is a valid reading. */
+    val snr: Float?,
     /** Received signal strength, or null when the radio did not report one. 0 dBm is a valid reading. */
     val rssi: Int?,
     val hopsAway: Int,
@@ -173,6 +311,8 @@ data class Message(
     val transportMechanism: Int = 0,
     /** True when the radio verified this broadcast's XEdDSA signature ([MeshPacket.xeddsa_signed]). */
     val xeddsaSigned: Boolean = false,
+    /** The radio's verdict on the ack that delivered this message (see [MeshPacket.AckProofStatus]). */
+    val ackProofStatus: Int = 0,
     /** On-device translation of [text], persisted so the user can toggle back to it without re-translating. */
     val translatedText: String? = null,
     /** Whether the bubble currently displays [translatedText] instead of [text]. */
@@ -194,7 +334,9 @@ data class Message(
         if (showTranslated && translatedText != null && !searching) translatedText else text
 
     fun getStatusStringRes(isDirectMessage: Boolean = false): Pair<StringResource, StringResource> =
-        getMessageStatusStringRes(status, routingError, isDirectMessage)
+        getMessageStatusStringRes(status, routingError, isDirectMessage, ackProofStatus)
+
+    fun getStatusDetailRes(): StringResource? = getMessageStatusDetailRes(status, routingError)
 
     fun isStatusRetryable(isDirectMessage: Boolean = false): Boolean =
         isMessageStatusRetryable(status, routingError, isDirectMessage)

@@ -27,6 +27,12 @@ data class Contact(
     val isMuted: Boolean,
     val isUnmessageable: Boolean,
     val nodeColors: Pair<Int, Int>? = null,
+    /** Unsent composer text for this conversation; empty when there is nothing in progress. */
+    val draft: String = "",
+    /** Sorts above unpinned conversations within the same list section. */
+    val isPinned: Boolean = false,
+    /** True when this channel is no longer configured on the radio: history is kept, but nothing can be sent. */
+    val isRetired: Boolean = false,
 )
 
 data class ContactSettings(
@@ -36,4 +42,8 @@ data class ContactSettings(
     val lastReadMessageTimestamp: Long? = null,
     val filteringDisabled: Boolean = false,
     val isMuted: Boolean = false,
+    val draft: String = "",
+    val pinned: Boolean = false,
+    /** The conversation's own label, set only for a retired channel whose slot no longer names it. */
+    val displayName: String = "",
 )

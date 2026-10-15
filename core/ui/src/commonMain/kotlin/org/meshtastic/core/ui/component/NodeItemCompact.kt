@@ -53,6 +53,7 @@ import coil3.compose.AsyncImage
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.common.util.MetricFormatter
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.isUnmessageableRole
@@ -60,6 +61,7 @@ import org.meshtastic.core.model.util.toDistanceString
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.distance
 import org.meshtastic.core.resources.ic_memory
+import org.meshtastic.core.resources.node_incomplete
 import org.meshtastic.core.resources.node_list_click_label
 import org.meshtastic.core.resources.node_list_long_click_label
 import org.meshtastic.core.resources.unknown_username
@@ -81,13 +83,13 @@ import org.meshtastic.core.ui.icon.Humidity
 import org.meshtastic.core.ui.icon.MapCompass
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.MqttConnected
+import org.meshtastic.core.ui.icon.PersonQuestion
 import org.meshtastic.core.ui.icon.Pressure
 import org.meshtastic.core.ui.icon.Temperature
 import org.meshtastic.core.ui.icon.Unmessageable
 import org.meshtastic.core.ui.icon.role
 import org.meshtastic.core.ui.theme.StatusColors.StatusYellow
 import org.meshtastic.core.ui.util.LocalModemPreset
-import org.meshtastic.proto.Config
 
 private const val COMPACT_ICON_SIZE_DP = 16
 
@@ -96,7 +98,7 @@ private const val COMPACT_ICON_SIZE_DP = 16
 fun NodeItemCompact(
     thisNode: Node?,
     thatNode: Node,
-    distanceUnits: Int,
+    distanceUnits: MeasurementSystem,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
@@ -116,11 +118,8 @@ fun NodeItemCompact(
     val longName = thatNode.user.long_name.ifEmpty { stringResource(Res.string.unknown_username) }
     val isFavorite = thatNode.isFavorite
     val isIgnored = thatNode.isIgnored
-    val isThisNode = remember(thatNode) { thisNode?.num == thatNode.num }
-    val system =
-        remember(distanceUnits) {
-            Config.DisplayConfig.DisplayUnits.fromValue(distanceUnits) ?: Config.DisplayConfig.DisplayUnits.METRIC
-        }
+    val isThisNode = remember(thisNode, thatNode) { thisNode?.num == thatNode.num }
+    val system = distanceUnits
     val distance =
         remember(thisNode, thatNode, system) {
             thisNode?.distance(thatNode)?.takeIf { it > 0 }?.toDistanceString(system)
@@ -142,6 +141,9 @@ fun NodeItemCompact(
 
     val style = if (thatNode.isUnknownUser) FontStyle.Italic else FontStyle.Normal
 
+    // Resolved out here, not inside the remember: stringResource is composable, and the description is built in a
+    // plain lambda.
+    val roleLabel = stringResource(thatNode.user.role.label)
     val a11yStrings = rememberNodeDescriptionStrings()
     val modemPreset = LocalModemPreset.current
     val nodeDescription =
@@ -151,16 +153,16 @@ fun NodeItemCompact(
                 isOnline = thatNode.isOnline,
                 isFavorite = isFavorite,
                 lastHeard = thatNode.lastHeard,
-                role = thatNode.user.role.name,
+                role = roleLabel,
                 hopsAway = thatNode.hopsAway,
                 batteryLevel = thatNode.batteryLevel,
                 distance = distance,
-                snr = thatNode.snr,
-                rssi = thatNode.rssi,
+                snr = thatNode.snrOrNull,
                 viaMqtt = thatNode.viaMqtt,
                 strings = a11yStrings,
                 lastHeardIsRelative = lastHeardIsRelative,
                 modemPreset = modemPreset,
+                isUnknownUser = thatNode.isUnknownUser,
             )
         }
 
@@ -209,6 +211,7 @@ fun NodeItemCompact(
                 // Row 1: Identity — name + PKC + favorite
                 CompactNameRow(
                     thatNode = thatNode,
+                    isThisNode = isThisNode,
                     longName = longName,
                     style = style,
                     isIgnored = isIgnored,
@@ -255,6 +258,7 @@ fun NodeItemCompact(
 @Composable
 private fun CompactNameRow(
     thatNode: Node,
+    isThisNode: Boolean,
     longName: String,
     style: FontStyle,
     isIgnored: Boolean,
@@ -266,7 +270,7 @@ private fun CompactNameRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        NodeSecurityIcons(thatNode, iconSize = 18.dp)
+        NodeSecurityIcons(thatNode, iconSize = 18.dp, isThisNode = isThisNode)
         Text(
             text = longName,
             style = MaterialTheme.typography.titleMediumEmphasized.copy(fontStyle = style),
@@ -275,6 +279,14 @@ private fun CompactNameRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
+        if (thatNode.isUnknownUser) {
+            Icon(
+                imageVector = MeshtasticIcons.PersonQuestion,
+                contentDescription = stringResource(Res.string.node_incomplete),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.outline,
+            )
+        }
         if (unmessageable) {
             Icon(
                 imageVector = MeshtasticIcons.Unmessageable,
@@ -317,6 +329,7 @@ private fun CompactHealthRow(
                         online = thatNode.isOnline,
                         contentColor = contentColor,
                         relative = lastHeardIsRelative,
+                        heardOnCurrentLora = isThisNode || !thatNode.isUnheardOnCurrentLora,
                     )
                 },
             )
@@ -350,10 +363,10 @@ private fun CompactHealthRow(
             )
         }
 
-        // Signal quality
-        val hasDirectSignal = thatNode.hopsAway == 0 && thatNode.snr < 100f && !thatNode.viaMqtt && thatNode.rssi < 0
-        if (showSignal && hasDirectSignal) {
-            val quality = determineSignalQuality(thatNode.snr, LocalModemPreset.current)
+        // Signal quality, rated from SNR alone — RSSI is not part of the rating (#5446), so it must not gate it.
+        val directSnr = thatNode.snrOrNull?.takeIf { thatNode.hopsAway == 0 && !thatNode.viaMqtt }
+        if (showSignal && directSnr != null) {
+            val quality = determineSignalQuality(directSnr, LocalModemPreset.current)
             add(
                 @Composable {
                     IconInfo(
@@ -402,7 +415,7 @@ private fun CompactFooterRow(
                 add {
                     Icon(
                         imageVector = MeshtasticIcons.role(thatNode.user.role),
-                        contentDescription = thatNode.user.role.name,
+                        contentDescription = stringResource(thatNode.user.role.label),
                         modifier = Modifier.size(COMPACT_ICON_SIZE_DP.dp),
                         tint = tertiaryColor,
                     )

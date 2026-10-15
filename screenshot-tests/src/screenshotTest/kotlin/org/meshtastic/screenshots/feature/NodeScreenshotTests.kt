@@ -20,25 +20,35 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.android.tools.screenshot.PreviewTest
 import org.meshtastic.feature.node.component.AirQualityInfoCardsPreview
+import org.meshtastic.feature.node.component.AirQualityInfoCardsStatusPreview
 import org.meshtastic.feature.node.component.DeviceActionsLocalPreview
 import org.meshtastic.feature.node.component.DeviceActionsRemotePreview
+import org.meshtastic.feature.node.component.EnvironmentMetricsLightningPreview
 import org.meshtastic.feature.node.component.EnvironmentMetricsPreview
 import org.meshtastic.feature.node.component.HopHistogramContentPreview
 import org.meshtastic.feature.node.component.HopHistogramEmptyPreview
 import org.meshtastic.feature.node.component.NodeDetailsSectionPreview
 import org.meshtastic.feature.node.component.NodeDetailsSectionSignedPreview
+import org.meshtastic.feature.node.component.NodeDetailsSectionWithMakerDeviceHeroPreview
+import org.meshtastic.feature.node.component.NodeFilterSearchBarEmptyPreview
+import org.meshtastic.feature.node.component.NodeFilterSearchBarWithQueryPreview
 import org.meshtastic.feature.node.component.NodeItemCompactActivePreview
 import org.meshtastic.feature.node.component.NodeItemCompactAllFieldsPreview
 import org.meshtastic.feature.node.component.NodeItemCompactMinimalPreview
 import org.meshtastic.feature.node.component.NodeItemCompactOnlineRemotePreview
+import org.meshtastic.feature.node.component.NodeItemCompactUnheardPreview
+import org.meshtastic.feature.node.component.NodeItemCompactUnknownPreview
 import org.meshtastic.feature.node.component.NodeItemCompleteActivePreview
 import org.meshtastic.feature.node.component.NodeItemCompleteOnlineRemotePreview
 import org.meshtastic.feature.node.component.NodeItemCompletePreview
 import org.meshtastic.feature.node.component.NodeItemSignedPreview
+import org.meshtastic.feature.node.component.NodeItemUnheardPreview
+import org.meshtastic.feature.node.component.NodeItemUnknownPreview
 import org.meshtastic.feature.node.component.PositionInlineContentPreview
 import org.meshtastic.feature.node.component.PowerMetricsNoCurrentPreview
 import org.meshtastic.feature.node.component.PowerMetricsPartialPreview
 import org.meshtastic.feature.node.component.PowerMetricsPreview
+import org.meshtastic.feature.node.component.SoilWaterMetricsPreview
 import org.meshtastic.feature.node.component.TelemetricActionsSectionEmptyPreview
 import org.meshtastic.feature.node.component.TelemetricActionsSectionLocalPreview
 import org.meshtastic.feature.node.component.TelemetricActionsSectionPreview
@@ -49,7 +59,9 @@ import org.meshtastic.feature.node.detail.NodeDetailContentRemotePreview
 import org.meshtastic.feature.node.metrics.DeviceMetricsCardPreview
 import org.meshtastic.feature.node.metrics.LegendPreview
 import org.meshtastic.feature.node.metrics.PreviewAirQualityCards
+import org.meshtastic.feature.node.metrics.PreviewAirQualityCardsStatus
 import org.meshtastic.feature.node.metrics.PreviewEnvironmentMetricsContent
+import org.meshtastic.feature.node.metrics.PreviewEnvironmentMetricsContentLightning
 
 @PreviewTest
 @PreviewLightDark
@@ -145,6 +157,13 @@ fun ScreenshotNodeDetailsSectionSigned() {
 @PreviewTest
 @PreviewLightDark
 @Composable
+fun ScreenshotNodeDetailsSectionMakerHero() {
+    NodeDetailsSectionWithMakerDeviceHeroPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
 fun ScreenshotNodeDetailContentRemote() {
     NodeDetailContentRemotePreview()
 }
@@ -212,6 +231,20 @@ fun ScreenshotNodeItemSigned() {
 @PreviewTest
 @PreviewLightDark
 @Composable
+fun ScreenshotNodeItemUnknown() {
+    NodeItemUnknownPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotNodeItemCompactUnknown() {
+    NodeItemCompactUnknownPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
 fun ScreenshotNodeItemCompleteActive() {
     NodeItemCompleteActivePreview()
 }
@@ -274,4 +307,71 @@ fun ScreenshotHopHistogramContent() {
 @Composable
 fun ScreenshotHopHistogramEmpty() {
     HopHistogramEmptyPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotNodeItemUnheard() {
+    NodeItemUnheardPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotNodeItemCompactUnheard() {
+    NodeItemCompactUnheardPreview()
+}
+
+// ---------------------------------------------------------------------------
+// Soil & water chemistry, lightning and PM sensor status (PR #7237)
+// ---------------------------------------------------------------------------
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotSoilWaterMetrics() {
+    SoilWaterMetricsPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotEnvironmentMetricsLightning() {
+    EnvironmentMetricsLightningPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotAirQualityInfoCardsStatus() {
+    AirQualityInfoCardsStatusPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotEnvironmentMetricsContentLightning() {
+    PreviewEnvironmentMetricsContentLightning()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotAirQualityCardsStatus() {
+    PreviewAirQualityCardsStatus()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotNodeFilterSearchBarEmpty() {
+    NodeFilterSearchBarEmptyPreview()
+}
+
+@PreviewTest
+@PreviewLightDark
+@Composable
+fun ScreenshotNodeFilterSearchBarWithQuery() {
+    NodeFilterSearchBarWithQueryPreview()
 }

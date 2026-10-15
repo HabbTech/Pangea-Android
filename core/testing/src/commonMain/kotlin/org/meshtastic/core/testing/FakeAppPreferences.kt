@@ -18,6 +18,7 @@ package org.meshtastic.core.testing
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.model.PowerMode
 import org.meshtastic.core.repository.AnalyticsPrefs
@@ -28,9 +29,11 @@ import org.meshtastic.core.repository.FilterPrefs
 import org.meshtastic.core.repository.HomoglyphPrefs
 import org.meshtastic.core.repository.MapCameraPosition
 import org.meshtastic.core.repository.MapConsentPrefs
+import org.meshtastic.core.repository.MapFilterPrefs
 import org.meshtastic.core.repository.MapPrefs
 import org.meshtastic.core.repository.MapTileProviderPrefs
 import org.meshtastic.core.repository.MeshPrefs
+import org.meshtastic.core.repository.NodeFilterPrefs
 import org.meshtastic.core.repository.RadioPrefs
 import org.meshtastic.core.repository.UiPrefs
 
@@ -105,6 +108,12 @@ class FakeUiPrefs : UiPrefs {
         theme.value = value
     }
 
+    override val unitsOverride = MutableStateFlow(0)
+
+    override fun setUnitsOverride(value: Int) {
+        unitsOverride.value = value
+    }
+
     override val locale = MutableStateFlow("en")
 
     override fun setLocale(languageTag: String) {
@@ -117,40 +126,12 @@ class FakeUiPrefs : UiPrefs {
         nodeSort.value = value
     }
 
-    override val includeUnknown = MutableStateFlow(true)
+    override val nodeFilters = MutableStateFlow(NodeFilterPrefs())
 
-    override fun setIncludeUnknown(value: Boolean) {
-        includeUnknown.value = value
-    }
-
-    override val excludeInfrastructure = MutableStateFlow(false)
-
-    override fun setExcludeInfrastructure(value: Boolean) {
-        excludeInfrastructure.value = value
-    }
-
-    override val onlyOnline = MutableStateFlow(false)
-
-    override fun setOnlyOnline(value: Boolean) {
-        onlyOnline.value = value
-    }
-
-    override val onlyDirect = MutableStateFlow(false)
-
-    override fun setOnlyDirect(value: Boolean) {
-        onlyDirect.value = value
-    }
-
-    override val showIgnored = MutableStateFlow(false)
-
-    override fun setShowIgnored(value: Boolean) {
-        showIgnored.value = value
-    }
-
-    override val excludeMqtt = MutableStateFlow(false)
-
-    override fun setExcludeMqtt(value: Boolean) {
-        excludeMqtt.value = value
+    override fun updateNodeFilters(transform: (NodeFilterPrefs) -> NodeFilterPrefs) {
+        // update, not read-then-assign: the real one is transactional, and a fake that loses a concurrent write
+        // would pass tests the production path fails.
+        nodeFilters.update(transform)
     }
 
     override val hasShownNotPairedWarning = MutableStateFlow(false)
@@ -163,6 +144,12 @@ class FakeUiPrefs : UiPrefs {
 
     override fun setShowQuickChat(show: Boolean) {
         showQuickChat.value = show
+    }
+
+    override val showFullMessageTimestamps = MutableStateFlow(false)
+
+    override fun setShowFullMessageTimestamps(show: Boolean) {
+        showFullMessageTimestamps.value = show
     }
 
     override val eventThemeEnabled = MutableStateFlow(true)
@@ -275,34 +262,12 @@ class FakeMapPrefs : MapPrefs {
         mapStyle.value = style
     }
 
-    override val showOnlyFavorites = MutableStateFlow(false)
+    override suspend fun awaitMapStyle(): Int = mapStyle.value
 
-    override fun setShowOnlyFavorites(show: Boolean) {
-        showOnlyFavorites.value = show
-    }
+    override val mapFilters = MutableStateFlow(MapFilterPrefs())
 
-    override val showWaypointsOnMap = MutableStateFlow(true)
-
-    override fun setShowWaypointsOnMap(show: Boolean) {
-        showWaypointsOnMap.value = show
-    }
-
-    override val showPrecisionCircleOnMap = MutableStateFlow(true)
-
-    override fun setShowPrecisionCircleOnMap(show: Boolean) {
-        showPrecisionCircleOnMap.value = show
-    }
-
-    override val lastHeardFilter = MutableStateFlow(0L)
-
-    override fun setLastHeardFilter(seconds: Long) {
-        lastHeardFilter.value = seconds
-    }
-
-    override val lastHeardTrackFilter = MutableStateFlow(0L)
-
-    override fun setLastHeardTrackFilter(seconds: Long) {
-        lastHeardTrackFilter.value = seconds
+    override fun updateMapFilters(transform: (MapFilterPrefs) -> MapFilterPrefs) {
+        mapFilters.update(transform)
     }
 
     override val hiddenLayerUrls = MutableStateFlow<Set<String>>(emptySet())
@@ -312,6 +277,12 @@ class FakeMapPrefs : MapPrefs {
     }
 
     override suspend fun awaitHiddenLayerUrls(): Set<String> = hiddenLayerUrls.value
+
+    override val layerOpacity = MutableStateFlow<Set<String>>(emptySet())
+
+    override fun updateLayerOpacity(transform: (Set<String>) -> Set<String>) {
+        layerOpacity.value = transform(layerOpacity.value)
+    }
 
     override val networkMapLayers = MutableStateFlow<Set<String>>(emptySet())
 
@@ -341,9 +312,18 @@ class FakeMapConsentPrefs : MapConsentPrefs {
 
 class FakeMapTileProviderPrefs : MapTileProviderPrefs {
     override val customTileProviders = MutableStateFlow<String?>(null)
+    override val selectedCustomTileProviderId = MutableStateFlow<String?>(null)
 
-    override fun setCustomTileProviders(providers: String?) {
+    override suspend fun awaitCustomTileProviders(): String? = customTileProviders.value
+
+    override suspend fun awaitSelectedCustomTileProviderId(): String? = selectedCustomTileProviderId.value
+
+    override suspend fun setCustomTileProviders(providers: String?) {
         customTileProviders.value = providers
+    }
+
+    override suspend fun setSelectedCustomTileProviderId(providerId: String?) {
+        selectedCustomTileProviderId.value = providerId
     }
 }
 
@@ -366,6 +346,8 @@ class FakeMeshPrefs : MeshPrefs {
     override fun setDeviceAddress(address: String?) {
         deviceAddress.value = address
     }
+
+    override suspend fun awaitDeviceAddress(): String? = deviceAddress.value
 
     private val lastRequest = mutableMapOf<String?, MutableStateFlow<Int>>()
 
@@ -487,5 +469,17 @@ class FakeTakPrefs : org.meshtastic.core.repository.TakPrefs {
 
     override fun setTakServerEnabled(enabled: Boolean) {
         isTakServerEnabled.value = enabled
+    }
+
+    override val isMeshToCotEnabled = MutableStateFlow(false)
+
+    override fun setMeshToCotEnabled(enabled: Boolean) {
+        isMeshToCotEnabled.value = enabled
+    }
+
+    override val takServerChannel = MutableStateFlow(0)
+
+    override fun setTakServerChannel(index: Int) {
+        takServerChannel.value = index
     }
 }

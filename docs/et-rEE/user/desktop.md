@@ -1,8 +1,8 @@
 ---
 title: Desktop App
-parent: User Guide
+parent: Kasutusjuhend
 nav_order: 14
-last_updated: 2026-07-07
+last_updated: 2026-09-11
 description: Meshtastic arvuti rakendus pakub samu võrgusuhtluse funktsioone Linuxis, macOS-is ja Windowsis.
 aliases:
   - töölaud
@@ -14,34 +14,33 @@ aliases:
 
 # Desktop App
 
-Meshtastic arvuti rakendus jagab oma põhikoodibaasi Androidiga Kotlin Multiplatformi kaudu. Most features work identically on Linux, macOS, and Windows.
+This page covers installing the Meshtastic desktop app, connecting a radio, and how it differs from Android. The desktop app shares its core codebase with Android via Kotlin Multiplatform, so most features work identically across Linux, macOS, and Windows.
 
 ## Paigaldus
 
 ### Linux
 
-- Lae väljalaske lehelt pakett `.deb` või `.AppImage`
+- Download the `.deb`, `.rpm`, or `.AppImage` package from the [releases page](https://github.com/meshtastic/Meshtastic-Android/releases)
+- Or install from Flathub: `flatpak install flathub org.meshtastic.MeshtasticDesktop`
 - Or build from source using `./gradlew :desktopApp:run`
 
 ### macOS
 
-- Lae väljalaske lehelt `.dmg` pakett
+- Download the `.dmg` package from the [releases page](https://github.com/meshtastic/Meshtastic-Android/releases)
 - Or build from source
 
 ### Windows
 
-- Lae väljalaske lehelt `.msi` paigaldus fail
+- Download the `.msi` or `.exe` installer from the [releases page](https://github.com/meshtastic/Meshtastic-Android/releases)
 - Or build from source
 
 ## Connecting Your Radio
 
 ### USB port (esmane)
 
-The most reliable connection method on Desktop:
+The most reliable connection method on desktop:
 
-1. Ühenda oma Meshtastic raadio USB kaabliga.
-2. Rakendus peaks jadapordi automaatselt tuvastama.
-3. Kui seda ei tuvastata, vali menüüst Ühenda õige jadapordiga.
+Connect your radio via USB. The app detects the serial port automatically; if it doesn't, select the port from the Connect menu.
 
 ### TCP/IP
 
@@ -52,99 +51,105 @@ For network-connected radios:
 
 ### Sinihammas (BLE)
 
-Sinihamba madal voolutarve on lauaarvutites toetatud [Kable](https://github.com/JuulLabs/kable) teegi kaudu:
+Bluetooth Low Energy is supported on desktop via the [Kable](https://github.com/JuulLabs/kable) library:
 
-1. Veendu, et süsteemil on sinihamba adapter.
-2. Rakendus otsib automaatselt lähedalasuvaid Meshtastic raadioid.
-3. Select your device from the Connect screen.
+1. Veendu, et süsteemil on sinihamba adapter. Rakendus otsib automaatselt lähedalasuvaid Meshtastic raadioid.
+2. Select your radio from the Connect screen.
 
 ## Feature Parity
 
-| Feature                                      | Android | Desktop | Sõnumid                                                                                                     |
-| -------------------------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------- |
-| Messaging                                    | ✓       | ✓       | Full parity                                                                                                 |
-| Node List                                    | ✓       | ✓       | Full parity                                                                                                 |
-| Kaart                                        | ✓       | ◐       | Map tab exists on desktop, but the interactive map view is Android-only                                     |
-| Sätted                                       | ✓       | ✓       | Full parity                                                                                                 |
-| Sinihammas (BLE)          | ✓       | ✓       | Via Kable on desktop                                                                                        |
-| Püsivara uuendus                             | ✓       | ✓       | Rakendusesisese USB, BLE ja Wi-Fi (ESP32) värskendused toimivad samamoodi nagu Androidis |
-| Märguanded                                   | ✓       | ✓       | Emakeelsed op.süsteemi märguanded                                                           |
-| Widgets                                      | ✓       | ✗       | Android-only                                                                                                |
-| Android auto                                 | ✓       | ✗       | Android-only — not available on Desktop or iOS                                                              |
-| AI Assistant (Chirpy)     | ✓\*     | ✗       | Google flavor Android only                                                                                  |
-| App Functions (system AI) | ✓†      | ✗       | Google flavor Android only                                                                                  |
+| Feature                                                | Android | Desktop | Sõnumid                                                                                                                                                                                                                                         |
+| ------------------------------------------------------ | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Messaging                                              | ✓       | ✓       | Full parity                                                                                                                                                                                                                                     |
+| Sõlmede loend                                          | ✓       | ✓       | Full parity                                                                                                                                                                                                                                     |
+| Kaart                                                  | ✓       | ✓       | Interactive MapLibre map, with base map and overlay pickers and custom tile sources. Offline terrain (hillshade and contours) can be downloaded; offline base-map packs and local `.mbtiles` archives cannot |
+| Map layers (`.kml`/`.kmz`/GeoJSON)  | ✓       | ✓       | Same layer store and sheet as Android; imported files draw on the desktop map                                                                                                                                                                   |
+| Saidi planeerija                                       | ✓       | ✓\*     | \*Opens in your browser on desktop; the estimate is not drawn on the desktop map                                                                                                                                                                |
+| Sätted                                                 | ✓       | ✓       | Full parity                                                                                                                                                                                                                                     |
+| Sinihammas (BLE)                    | ✓       | ✓       | Kable'i kaudu töölauale                                                                                                                                                                                                                         |
+| Püsivara uuendus                                       | ✓       | ✓       | In-app USB, BLE, and Wi-Fi (ESP32) update work the same as Android. The USB maintenance flow — nRF52/RP2040 factory erase and bootloader upgrade — is Android-only                                           |
+| Märguanded                                             | ✓       | ✓       | Emakeelsed op.süsteemi märguanded                                                                                                                                                                                               |
+| Widgets                                                | ✓       | ✗       | Android-only                                                                                                                                                                                                                                    |
+| TI assistent (Chirpy)               | ✓\*     | ✗       | Google flavor Android only                                                                                                                                                                                                                      |
+| Rakenduse funktsioonid (süstemi TI) | ✓†      | ✗       | Google flavor Android only                                                                                                                                                                                                                      |
 
-\*Chirpy AI requires Android 14+ on Google flavor builds with supported hardware.
+\*Chirpy tehisintellekti jaoks on vaja Google'i eriversioonidel Android 14+ ja toetatud riistvaraga.
 
-†App Functions exposes app actions to the Android system AI on Google flavor builds. See [App Functions](app-functions).
+†Rakendusfunktsioonid paljastavad rakenduse toimingud Androidi süsteemi tehisintellektile Google'i eri versioonides. Vaata [Rakenduse funktsioonid](app-functions).
 
 ## UI Differences
 
-The Desktop app uses the same Compose Multiplatform UI with adaptations for larger screens and desktop interaction.
+The desktop app uses the same Compose Multiplatform UI with adaptations for larger screens and desktop interaction.
 
 ### Kiirklahvid
 
 Otseteed kasutavad macOS-is **⌘** (Command) ja Windowsis ning Linuxis **Ctrl**. (Super/Windowsi võti pole seotud.)
 
-| Otsetee      | Action                 |
-| ------------ | ---------------------- |
-| **⌘/Ctrl+Q** | Quit the application   |
-| **⌘/Ctrl+,** | Ava sätted             |
-| **⌘/Ctrl+1** | Switch to Messages tab |
-| **⌘/Ctrl+2** | Switch to Nodes tab    |
-| **⌘/Ctrl+3** | Switch to Map tab      |
-| **⌘/Ctrl+4** | Switch to Connect tab  |
-| **⌘/Ctrl+/** | Open About             |
+| Otsetee      | Action                     |
+| ------------ | -------------------------- |
+| **⌘/Ctrl+Q** | Quit the app               |
+| **⌘/Ctrl+,** | Ava sätted                 |
+| **⌘/Ctrl+1** | Switch to Messages tab     |
+| **⌘/Ctrl+2** | Switch to Nodes tab        |
+| **⌘/Ctrl+3** | Lülitu kaardi vahekaardile |
+| **⌘/Ctrl+4** | Switch to Connect tab      |
+| **⌘/Ctrl+/** | Open About                 |
 
 ### Window & System Tray
 
 - **Window resizing** — responsive layout adapts to window dimensions
-- **System tray** — minimize to system tray for background mesh operation
+- **System tray** — closing the window minimizes to the system tray for background mesh operation. On a desktop environment with no tray, there is nowhere to minimize to, so closing quits the app instead
 - **Salvemenüü** – paremklõpsa salveikoonil akna kuvamiseks või sulgemiseks
 - **Hiire interaktsioon** — hõljumisseisundid ja standardne töölaua navigeerimine
 
 ### Notification Preferences
 
-Töölauarakendus pakub rakendusesiseste kuvatavate märguannete juhtimist – sõnumite, uute sõlmede ja aku tühjenemise märguanded. Nendele pääsed ligi rakenduses menüüst **Seaded → Märguanded**.
+The desktop app provides in-app toggles for controlling which notifications are shown. Find them in the **App Notifications** section of the Settings screen: **Direct message notifications**, **New node notifications**, and **Low battery notifications**.
 
-## Built-in Documentation Browser
+## Sisseehitatud dokumentatsioonibrauser
 
-Töölauarakendusel on sisseehitatud dokumentatsioonibrauser, mis võimaldab kiiret juurdepääsu abisisule ilma rakendusest lahkumata.
+The desktop app includes a built-in documentation browser for quick access to help content without leaving the app.
 
-![Docs browser with table of contents](../../assets/screenshots/docs-browser_toc.png)
+![Dokumentide brauser sisukorraga](../../assets/screenshots/docs-browser_toc.png)
 
-The browser supports full-text search across all documentation:
+Brauser toetab täistekstiotsingut kogu dokumentatsioonis:
 
-![Searching the docs browser](../../assets/screenshots/docs-browser_search.png)
+![Dokumentide brauserist otsimine](../../assets/screenshots/docs-browser_search.png)
 
 Individual doc pages render with full formatting:
 
-![A documentation page](../../assets/screenshots/docs-browser_page.png)
+![Dokumentatsioonileht](../../assets/screenshots/docs-browser_page.png)
 
 ## Building from Source
 
-```bash
+```shell
 git clone https://github.com/meshtastic/Meshtastic-Android.git
 cd Meshtastic-Android
 ./gradlew :desktopApp:run
 ```
 
-Requirements:
+Nõuded:
 
-- JDK 21
+- JDK 25 (Gradle can provision the toolchain itself via foojay)
 - No Android SDK required for desktop-only builds
 
 ## Known Limitations
 
-- The interactive map view is Android-only — the Map tab is present but does not render a map on desktop
+- Offline base-map downloads and local `.mbtiles` archives are not available on desktop. Offline terrain is — see [Map & Waypoints](map-and-waypoints).
+- `.kml`/`.kmz`/GeoJSON layer import works — see
+  [Map & Waypoints](map-and-waypoints#map-layers). Site Planner opens in your browser
+  rather than in the app; to bring its coverage estimate onto the map, click the transmitter pin
+  in the browser and use the planner's GeoJSON export, then add the file as a layer — not the KML
+  export, which is a ground-overlay image this map cannot draw. Custom network tile sources work
+  too — see [Map & Waypoints](map-and-waypoints#adding-your-own-tile-source)
+- The USB maintenance flow — nRF52/RP2040 factory erase and bootloader upgrade — is Android-only, and the
+  desktop app does not offer it. Use the [Web Flasher](https://flasher.meshtastic.org) instead
 - Mõned Androidile omased funktsioonid (vidinad, kindlad teavituskanalid) pole saadaval
 - Performance may vary on low-spec hardware running Compose Desktop
 - Lauaarvutid ei toeta veel BLE liitmist (sidumine toimib ilma ühendamiseta)
 
-## Related Topics
+## Seotud teemad
 
-- [Connections](connections) — connection methods overview
-- [Püsivara uuendus](firmware) — USB, BLE ja Wi-Fi värskendused toimivad samamoodi nagu Androidis
-
----
-
+- [Ühendused] (connections) — ühendusmeetodite ülevaade
+- [Firmware Updates](firmware) — in-app USB, BLE, and Wi-Fi update all work the same as on Android
+- [Map & Waypoints](map-and-waypoints) — base maps, layers, custom tile sources, and what the desktop map does not do

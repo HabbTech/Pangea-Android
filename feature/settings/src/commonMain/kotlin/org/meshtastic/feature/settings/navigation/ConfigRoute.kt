@@ -52,9 +52,12 @@ enum class ConfigRoute(
     val route: Route,
     val icon: DrawableResource? = null,
     val type: Int = 0,
+    // Keep in sync with routes that issue multiple get requests; only single-response reads retain late responses.
+    val hasReadFanOut: Boolean = false,
 ) {
-    USER(Res.string.user, SettingsRoute.User, Res.drawable.ic_person, 0),
-    CHANNELS(Res.string.channels, SettingsRoute.ChannelConfig, Res.drawable.ic_list, 0),
+    // Reads the owner and, on capable firmware, the status message module config.
+    USER(Res.string.user, SettingsRoute.User, Res.drawable.ic_person, 0, hasReadFanOut = true),
+    CHANNELS(Res.string.channels, SettingsRoute.ChannelConfig, Res.drawable.ic_list, 0, hasReadFanOut = true),
     DEVICE(
         Res.string.device,
         SettingsRoute.Device,
@@ -73,6 +76,7 @@ enum class ConfigRoute(
         SettingsRoute.Network,
         Res.drawable.ic_wifi,
         AdminMessage.ConfigType.NETWORK_CONFIG.value,
+        hasReadFanOut = true,
     ),
     DISPLAY(
         Res.string.display,
@@ -80,7 +84,13 @@ enum class ConfigRoute(
         Res.drawable.ic_display_settings,
         AdminMessage.ConfigType.DISPLAY_CONFIG.value,
     ),
-    LORA(Res.string.lora, SettingsRoute.LoRa, Res.drawable.ic_cell_tower, AdminMessage.ConfigType.LORA_CONFIG.value),
+    LORA(
+        Res.string.lora,
+        SettingsRoute.LoRa,
+        Res.drawable.ic_cell_tower,
+        AdminMessage.ConfigType.LORA_CONFIG.value,
+        hasReadFanOut = true,
+    ),
     BLUETOOTH(
         Res.string.bluetooth,
         SettingsRoute.Bluetooth,

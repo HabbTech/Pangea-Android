@@ -63,21 +63,23 @@ class AndroidMeshLocationManager(
                         if (floorSecs > 0 && nowMs - lastSentAtMs < floorSecs * MS_PER_SECOND) return@onEach
                         lastSentAtMs = nowMs
                         sendPositionFn(
-                            ProtoPosition(
-                                latitude_i = Position.degI(location.latitude),
-                                longitude_i = Position.degI(location.longitude),
-                                altitude =
-                                if (LocationCompat.hasMslAltitude(location)) {
-                                    LocationCompat.getMslAltitudeMeters(location).toInt()
-                                } else {
-                                    null
-                                },
-                                altitude_hae = location.altitude.toInt(),
-                                time = (location.time.milliseconds.inWholeSeconds).toInt(),
-                                ground_speed = location.speed.toInt(),
-                                ground_track = location.bearing.toInt(),
-                                location_source = ProtoPosition.LocSource.LOC_EXTERNAL,
-                            ),
+                            ProtoPosition.Builder()
+                                .also { wb ->
+                                    wb.latitude_i = Position.degI(location.latitude)
+                                    wb.longitude_i = Position.degI(location.longitude)
+                                    wb.altitude =
+                                        if (LocationCompat.hasMslAltitude(location)) {
+                                            LocationCompat.getMslAltitudeMeters(location).toInt()
+                                        } else {
+                                            null
+                                        }
+                                    wb.altitude_hae = location.altitude.toInt()
+                                    wb.time = (location.time.milliseconds.inWholeSeconds).toInt()
+                                    wb.ground_speed = location.speed.toInt()
+                                    wb.ground_track = location.bearing.toInt()
+                                    wb.location_source = ProtoPosition.LocSource.LOC_EXTERNAL
+                                }
+                                .build(),
                         )
                     }
                     .launchIn(scope)

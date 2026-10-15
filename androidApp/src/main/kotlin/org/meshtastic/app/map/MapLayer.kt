@@ -16,79 +16,33 @@
  */
 package org.meshtastic.app.map
 
-import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
-import co.touchlab.kermit.Logger
-import org.meshtastic.core.common.util.nowMillis
-import kotlin.uuid.Uuid
+import java.io.InputStream
+
+// All that is left of the Android side of map layers once the store moved to `feature/map`: sniffing a stream, which
+// only this app's KML/KMZ readers do.
+
+/** Zip magic bytes; a KML-typed source starting with these is a KMZ archive rather than bare KML. */
+private val KMZ_MAGIC = byteArrayOf('P'.code.toByte(), 'K'.code.toByte())
 
 /**
- * Flavor-neutral map-layer model shared by the Google (Google Maps data layer) and F-Droid (OSMdroid overlay) flavors.
- * Only the final overlay draw is flavor-specific; the layer list, storage, and import logic live in [MapLayersManager].
+ * True if [this] starts with the zip magic bytes, meaning a nominally-[LayerType.KML] source (`.kml` and `.kmz` both
+ * resolve to that one type — see [KML_EXTENSIONS]) is actually a KMZ archive. Shared by both flavors' parsers so
+ * neither has to duplicate the sniff or trust the file extension, which the content resolver can get wrong.
+ *
+ * Requires a mark-capable stream (wrap with [java.io.BufferedInputStream] first if unsure); leaves the stream position
+ * unchanged either way.
  */
-enum class LayerType {
-    KML,
-    GEOJSON,
-}
-
-data class MapLayerItem(
-    val id: String = Uuid.random().toString(),
-    val name: String,
-    val uri: Uri? = null,
-    val isVisible: Boolean = true,
-    val layerType: LayerType,
-    val isNetwork: Boolean = false,
-    /** UI indicator: whether a refresh is in flight (drives the sheet/toolbar spinner). */
-    val isRefreshing: Boolean = false,
-    /**
-     * Monotonic counter bumped on refresh so the flavor renderers reliably re-read the layer. A [StateFlow] conflates
-     * transient values, so a bounced boolean flag can be missed — an ever-increasing token cannot.
-     */
-    val refreshToken: Int = 0,
-)
-
-private val KML_EXTENSIONS = listOf("kml", "kmz", "vnd.google-earth.kml+xml", "vnd.google-earth.kmz")
-private val GEOJSON_EXTENSIONS = listOf("geojson", "json")
-
-/**
- * Resolve a file extension or MIME subtype (e.g. `geojson`, `vnd.geo+json`) to a [LayerType], or null if unsupported.
- */
-fun resolveLayerType(extensionOrMime: String?): LayerType? = when (extensionOrMime?.lowercase()) {
-    in KML_EXTENSIONS -> LayerType.KML
-
-    in GEOJSON_EXTENSIONS -> LayerType.GEOJSON
-
-    // MIME subtypes the content resolver may report for GeoJSON that aren't a bare "geojson"/"json".
-    "geo+json",
-    "vnd.geo+json",
-    -> LayerType.GEOJSON
-
-    else -> null
-}
-
-/**
- * Resolve a display file name for [this] URI, querying the content resolver for `content://` URIs. Untrusted providers
- * (share/open-with from other apps) can throw or return a null display name, so guard both and fall back to the URI's
- * last path segment.
- */
-@Suppress("NestedBlockDepth")
-fun Uri.getFileName(context: Context): String {
-    var name = lastPathSegment ?: "layer_$nowMillis"
-    if (scheme == "content") {
-        try {
-            context.contentResolver.query(this, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val displayNameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (displayNameIndex != -1) {
-                        cursor.getString(displayNameIndex)?.let { name = it }
-                    }
-                }
-            }
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            // Keep the lastPathSegment fallback assigned above rather than crashing the import.
-            Logger.withTag("MapLayer").w(e) { "Failed to resolve display name for content URI; using fallback" }
-        }
+fun InputStream.isKmzArchive(): Boolean {
+    mark(KMZ_MAGIC.size)
+    val magic = ByteArray(KMZ_MAGIC.size)
+    // read(ByteArray) is only guaranteed to return at least 1 byte before EOF, not to fill the buffer — loop rather
+    // than trust a single call, or a short read could misclassify a real KMZ as bare KML.
+    var totalRead = 0
+    while (totalRead < magic.size) {
+        val read = read(magic, totalRead, magic.size - totalRead)
+        if (read == -1) break
+        totalRead += read
     }
-    return name
+    reset()
+    return totalRead == KMZ_MAGIC.size && magic.contentEquals(KMZ_MAGIC)
 }

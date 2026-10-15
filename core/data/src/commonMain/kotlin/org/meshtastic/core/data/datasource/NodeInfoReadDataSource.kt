@@ -28,9 +28,8 @@ interface NodeInfoReadDataSource {
 
     fun getNodesFlow(
         sort: String,
-        filter: String,
         includeUnknown: Boolean,
-        hopsAwayMax: Int,
+        onlyDirect: Boolean,
         lastHeardMin: Int,
     ): Flow<List<NodeWithRelations>>
 

@@ -23,17 +23,17 @@ import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.ByteString
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.common.di.ServiceScope
 import org.meshtastic.core.common.util.clampTimestampToNow
 import org.meshtastic.core.common.util.crc32
 import org.meshtastic.core.common.util.handledLaunch
+import org.meshtastic.core.model.Capabilities
 import org.meshtastic.core.model.MyNodeInfo
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.NodeAddress
@@ -98,7 +98,7 @@ class NodeManagerImpl(
     private val nodeRepository: NodeRepository,
     private val notificationManager: NotificationManager,
     private val radioInterfaceService: RadioInterfaceService,
-    @Named("ServiceScope") private val scope: CoroutineScope,
+    private val scope: ServiceScope,
 ) : NodeManager {
 
     // Fixed stripes bound mutex lifetime while preserving same-node persistence ordering. Hash collisions only reduce
@@ -347,6 +347,23 @@ class NodeManagerImpl(
         firmwareEdition.value = edition
     }
 
+    // A StateFlow rather than a plain field: setFirmwareVersion, clear, loadCachedNodeDB and the install paths run
+    // on different coroutines, so reads need atomic visibility, and the UI needs to observe it to suppress the
+    // unheard consumers until the database normalization has landed.
+    override val reportsHeardOnCurrentLora = MutableStateFlow(false)
+
+    override fun setFirmwareVersion(version: String?, session: RadioSessionContext?) {
+        val supported = Capabilities(version).supportsHeardOnCurrentLora
+        reportsHeardOnCurrentLora.value = supported
+        // Normalize in the database, not just in nodeState: the node list renders from the repository flows, which
+        // read rows directly and would otherwise still see a false written by a radio whose firmware could report it.
+        // Bound to the originating session lease: a delayed write from a superseded session would otherwise resolve
+        // the next session's database and clear flags that session had legitimately set.
+        if (!supported) {
+            radioInterfaceService.launchSessionWork(scope, session) { nodeRepository.markAllHeardOnCurrentLora() }
+        }
+    }
+
     companion object {
         private const val NODE_PERSISTENCE_LANE_COUNT = 64
         private const val TIME_MS_TO_S = 1000L
@@ -372,11 +389,14 @@ class NodeManagerImpl(
          */
         internal fun preservingKnownPrecision(incoming: ProtoPosition, stored: ProtoPosition): ProtoPosition =
             if (isRedundantCoarsePosition(incoming, stored)) {
-                incoming.copy(
-                    latitude_i = stored.latitude_i,
-                    longitude_i = stored.longitude_i,
-                    precision_bits = stored.precision_bits,
-                )
+                incoming
+                    .newBuilder()
+                    .also { wb ->
+                        wb.latitude_i = stored.latitude_i
+                        wb.longitude_i = stored.longitude_i
+                        wb.precision_bits = stored.precision_bits
+                    }
+                    .build()
             } else {
                 incoming
             }
@@ -431,7 +451,12 @@ class NodeManagerImpl(
             // process-wide nodeDBbyNum StateFlow. The StateFlow is a stateIn cache over SharingStarted.Eagerly and
             // can briefly retain the PREVIOUS database's map after a currentDb switch, which would resurrect retired
             // or stale rows on the new session.
-            val snapshot = nodeRepository.getNodeDbSnapshot()
+            // Cached rows may carry a flag written by a different radio. The connected device's NodeInfo dump
+            // repopulates real values when it reports them, so "heard" is the only safe resting state here.
+            val snapshot =
+                nodeRepository.getNodeDbSnapshot().mapValues { (_, node) ->
+                    if (reportsHeardOnCurrentLora.value) node else node.copy(heardOnCurrentLora = true)
+                }
             val persistedLocalNum = nodeRepository.myNodeInfo.value?.myNodeNum
             nodeState.update { state ->
                 if (generation != sessionGeneration.value) {
@@ -486,6 +511,7 @@ class NodeManagerImpl(
         myNodeNum.value = null
         myDeviceId.value = null
         firmwareEdition.value = null
+        reportsHeardOnCurrentLora.value = false
         _connectionIdentity.value = null
     }
 
@@ -638,7 +664,11 @@ class NodeManagerImpl(
         manuallyVerified: Boolean,
         session: RadioSessionContext?,
     ) {
-        while (true) {
+        // Pin admission and session ownership to packet arrival. A packet that loses a node-state CAS must not become a
+        // live discovery after initial sync, and a packet from a cleared session must never retry into the new one.
+        val allowNotificationAtArrival = isNodeDbReady.value
+        val arrivalSessionGeneration = sessionGeneration.value
+        while (sessionGeneration.value == arrivalSessionGeneration) {
             val before = nodeState.value
             val transition =
                 reduceReceivedUser(
@@ -649,9 +679,11 @@ class NodeManagerImpl(
                     manuallyVerified,
                     before.localNodeNum,
                     before.isRetiredAbsent(fromNum),
+                    allowNotificationAtArrival = allowNotificationAtArrival,
                     retiredKeyHint = before.retiredKeyHints[fromNum],
                 )
             receivedUserReductionHook?.invoke()
+            if (sessionGeneration.value != arrivalSessionGeneration) break
             val after =
                 before
                     .copy(
@@ -678,6 +710,7 @@ class NodeManagerImpl(
                 return
             }
         }
+        Logger.d { "[NodeIdentity] user from=$fromNum discarded after session reset" }
     }
 
     override fun handleReceivedPosition(
@@ -702,15 +735,18 @@ class NodeManagerImpl(
             val newPos =
                 when {
                     isZeroPos ->
-                        p.copy(
-                            time = posTime,
-                            latitude_i = node.position.latitude_i,
-                            longitude_i = node.position.longitude_i,
-                            altitude = p.altitude ?: node.position.altitude,
-                            sats_in_view = p.sats_in_view,
-                        )
+                        p.newBuilder()
+                            .also { wb ->
+                                wb.time = posTime
+                                wb.latitude_i = node.position.latitude_i
+                                wb.longitude_i = node.position.longitude_i
+                                wb.altitude = p.altitude ?: node.position.altitude
+                                wb.sats_in_view = p.sats_in_view
+                            }
+                            .build()
 
-                    else -> preservingKnownPrecision(p.copy(time = posTime), node.position)
+                    else ->
+                        preservingKnownPrecision(p.newBuilder().also { wb -> wb.time = posTime }.build(), node.position)
                 }
 
             node.copy(position = newPos, lastHeard = newLastHeard)
@@ -724,6 +760,7 @@ class NodeManagerImpl(
             telemetry.environment_metrics?.let { nextNode = nextNode.copy(environmentMetrics = it) }
             telemetry.power_metrics?.let { nextNode = nextNode.copy(powerMetrics = it) }
             telemetry.air_quality_metrics?.let { nextNode = nextNode.copy(airQualityMetrics = it) }
+            telemetry.soil_water_metrics?.let { nextNode = nextNode.copy(soilWaterMetrics = it) }
             val telemetryTime = if (telemetry.time != 0) telemetry.time else node.lastHeard
             val newLastHeard = clampTimestampToNow(maxOf(node.lastHeard, telemetryTime))
             nextNode.copy(lastHeard = newLastHeard)
@@ -752,30 +789,43 @@ class NodeManagerImpl(
         node.copy(nodeStatus = status?.takeIf { it.isNotEmpty() })
 
     override fun installNodeInfo(info: ProtoNodeInfo) {
+        val reportsHeard = reportsHeardOnCurrentLora.value
         // Stage-2 configuration installation persists the complete node snapshot through installConfig.
-        updateNodeState(info.num, channel = 0) { node -> applyNodeInfo(node, info) }
+        updateNodeState(info.num, channel = 0) { node -> applyNodeInfo(node, info, reportsHeard) }
     }
 
     override suspend fun installNodeInfoAndPersist(info: ProtoNodeInfo) {
-        updateNodeAndPersist(info.num) { node -> applyNodeInfo(node, info) }
+        val reportsHeard = reportsHeardOnCurrentLora.value
+        updateNodeAndPersist(info.num) { node -> applyNodeInfo(node, info, reportsHeard) }
     }
 
-    private fun applyNodeInfo(node: Node, info: ProtoNodeInfo): Node {
+    private fun applyNodeInfo(node: Node, info: ProtoNodeInfo, reportsHeard: Boolean): Node {
         var next = node
         val user = info.user
         if (user != null && !shouldPreserveExistingUser(node.user, user)) {
-            var newUser = user.let { if (it.is_licensed == true) it.copy(public_key = ByteString.EMPTY) else it }
+            var newUser =
+                user.let {
+                    if (it.is_licensed == true) {
+                        it.newBuilder().also { wb -> wb.public_key = ByteString.EMPTY }.build()
+                    } else {
+                        it
+                    }
+                }
             if (info.via_mqtt && !newUser.long_name.endsWith(" (MQTT)")) {
-                newUser = newUser.copy(long_name = "${newUser.long_name} (MQTT)")
+                newUser = newUser.newBuilder().also { wb -> wb.long_name = "${newUser.long_name} (MQTT)" }.build()
             }
             next = next.copy(user = newUser, publicKey = newUser.public_key)
         }
         info.position?.let { position ->
             // The NodeDB snapshot from the connected device carries the coarsened position for nodes on a
             // precision-limited channel; do not let it clobber a more precise coordinate we already hold (#6360).
-            val timed = position.copy(time = clampTimestampToNow(position.time))
+            val timed = position.newBuilder().also { wb -> wb.time = clampTimestampToNow(position.time) }.build()
             next = next.copy(position = preservingKnownPrecision(timed, next.position))
         }
+        // Firmware that predates the field never sends it, and a proto3 bool decodes as false - which would mark
+        // every node unheard. Normalize rather than skip: a value persisted by a previous radio must not survive
+        // into a session whose firmware cannot report it.
+        next = next.copy(heardOnCurrentLora = !reportsHeard || info.heard_on_current_lora)
         return next.copy(
             lastHeard = clampTimestampToNow(info.last_heard),
             deviceMetrics = info.device_metrics ?: next.deviceMetrics,
@@ -861,6 +911,7 @@ class NodeManagerImpl(
         manuallyVerified: Boolean,
         myNum: Int?,
         retiredAbsent: Boolean,
+        allowNotificationAtArrival: Boolean,
         retiredKeyHint: ByteString? = null,
     ): ReceivedUserTransition {
         val resolvedKey = resolveValidatedPublicKeyHint(p.public_key)
@@ -916,7 +967,7 @@ class NodeManagerImpl(
                 channel = channel,
                 manuallyVerified = manuallyVerified,
                 persist = true,
-                allowNotification = true,
+                allowNotification = allowNotificationAtArrival,
                 unretireNodeNum = fromNum,
             )
                 .copy(decision = ReceivedUserDecision.RETIRED_DIFFERENT_KEY_REACTIVATED)
@@ -1043,7 +1094,7 @@ class NodeManagerImpl(
             channel,
             manuallyVerified,
             persist = true,
-            allowNotification = true,
+            allowNotification = allowNotificationAtArrival,
         )
     }
 
@@ -1082,12 +1133,14 @@ class NodeManagerImpl(
         return Node(
             num = num,
             user =
-            User(
-                id = userId,
-                long_name = "$GENERATED_NODE_NAME_PREFIX ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}",
-                short_name = userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH),
-                hw_model = HardwareModel.UNSET,
-            ),
+            User.Builder()
+                .also { wb ->
+                    wb.id = userId
+                    wb.long_name = "$GENERATED_NODE_NAME_PREFIX ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}"
+                    wb.short_name = userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)
+                    wb.hw_model = HardwareModel.UNSET
+                }
+                .build(),
             channel = channel,
         )
     }
@@ -1101,14 +1154,21 @@ class NodeManagerImpl(
             node.copy(channel = channel, manuallyVerified = manuallyVerified)
         } else {
             val incomingKey = resolveValidatedPublicKeyHint(p.public_key)
-            val sanitizedUser = if (incomingKey == null) p.copy(public_key = ByteString.EMPTY) else p
             // Prefer node.publicKey when valid (the authoritative stored key); fall back to node.user.public_key.
             val existingKey = resolveNodePublicKeyHint(node)
-            val keyMatch = existingKey == null || existingKey == incomingKey
-            val newUser = if (keyMatch) sanitizedUser else sanitizedUser.copy(public_key = ByteString.EMPTY)
+            // Only two valid, different keys are a mismatch. A packet with no usable key says nothing about the one
+            // on file, so it neither flags nor clears anything, and the stored key stays.
+            val keyMismatch = existingKey != null && incomingKey != null && existingKey != incomingKey
+            // First-wins, matching the DAO and the firmware: a different key for a node we already hold one for is
+            // refused and recorded, never applied. Clearing the stored key here would break PKC direct messages to
+            // that contact on the word of whoever sent the substitute.
+            val keptKey = if (incomingKey == null || keyMismatch) existingKey else incomingKey
+            val newUser = p.newBuilder().also { wb -> wb.public_key = keptKey ?: ByteString.EMPTY }.build()
             node.copy(
                 user = newUser,
                 publicKey = newUser.public_key,
+                keyMatch = node.keyMatch && !keyMismatch,
+                newPublicKey = if (keyMismatch) incomingKey else node.newPublicKey,
                 channel = channel,
                 manuallyVerified = manuallyVerified,
             )
@@ -1185,7 +1245,7 @@ class NodeManagerImpl(
         getStringSuspend(Res.string.new_node_seen, shortName)
     }
 
-    /** Test seam invoked after reduction but before CAS to deterministically race a local-node-number update. */
+    /** Test seam invoked after reduction but before CAS to deterministically race a concurrent node-state update. */
     internal var receivedUserReductionHook: (() -> Unit)? = null
 
     override fun toNodeID(nodeNum: Int): String = if (nodeNum == NodeAddress.NODENUM_BROADCAST) {

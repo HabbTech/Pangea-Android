@@ -17,6 +17,7 @@
 package org.meshtastic.core.model
 
 import okio.ByteString
+import org.meshtastic.proto.MeshPacket
 import org.meshtastic.proto.User
 
 data class Reaction(
@@ -24,7 +25,10 @@ data class Reaction(
     val user: User,
     val emoji: String,
     val timestamp: Long,
-    val snr: Float,
+    /**
+     * Signal-to-noise ratio in dB, or null when the packet carried no measurement (locally sent reactions included).
+     */
+    val snr: Float?,
     /** Received signal strength, or null when the radio did not report one (locally sent reactions included). */
     val rssi: Int?,
     val hopsAway: Int,
@@ -36,4 +40,8 @@ data class Reaction(
     val to: String? = null,
     val channel: Int = 0,
     val sfppHash: ByteString? = null,
+    /** True when the radio verified this broadcast reaction's XEdDSA signature ([MeshPacket.xeddsa_signed]). */
+    val xeddsaSigned: Boolean = false,
+    /** The radio's verdict on the ack that delivered this outgoing reaction (see [MeshPacket.AckProofStatus]). */
+    val ackProofStatus: Int = 0,
 )

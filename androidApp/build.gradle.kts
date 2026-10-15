@@ -28,7 +28,7 @@ plugins {
     alias(libs.plugins.meshtastic.android.application.compose)
     alias(libs.plugins.meshtastic.kotlinx.serialization)
     alias(libs.plugins.meshtastic.koin)
-    alias(libs.plugins.secrets)
+    alias(libs.plugins.meshtastic.android.secrets)
     alias(libs.plugins.androidx.baselineprofile)
     alias(libs.plugins.meshtastic.aboutlibraries)
     // Version-less on purpose: mokkery is embedded in the convention-plugin jar (build-logic
@@ -45,23 +45,18 @@ if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
-// The templated Android Auto experience (CarAppService + HomeScreen) is a Google "templated
-// messaging" beta feature that is publishable only to Closed/Internal tracks — Open/Production
-// submissions are auto-rejected (https://developer.android.com/training/cars/communication/templated-messaging).
-// Default builds therefore ship *notification-only* car messaging, which is GA and production-safe.
-// Build a Closed-track templated AAB with: -PenableCarTemplates=true
-val enableCarTemplates = providers.gradleProperty("enableCarTemplates").map { it.toBoolean() }.getOrElse(false)
-
 configure<ApplicationExtension> {
     namespace = "org.meshtastic.app"
 
-    // When templates are enabled, this res dir overrides feature:car's notification-only
-    // automotive_app_desc.xml with one that also declares <uses name="template" />.
-    if (enableCarTemplates) {
-        sourceSets.getByName("google").res.srcDir("src/googleCarTemplates/res")
-    }
-
     signingConfigs {
+        // Shared debug key (checked in; debug keys are not secret) so local builds and CI snapshots
+        // stay update-compatible — AGP's default per-machine key makes every snapshot un-sideloadable.
+        getByName("debug") {
+            storeFile = isolated.rootProject.projectDirectory.file("config/debug.keystore").asFile
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             keyAlias = keystoreProperties["keyAlias"] as String?
             keyPassword = keystoreProperties["keyPassword"] as String?
@@ -170,6 +165,13 @@ configure<ApplicationExtension> {
         configureEach {
             versionName = "${defaultConfig.versionName} (${defaultConfig.versionCode}) $name"
             if (name == "google") {
+                // Only the unit-test manifest merge needs this. The secrets plugin injects
+                // MAPS_API_KEY at *variant* level (from secrets.properties, else
+                // secrets.defaults.properties), which overrides this for the app manifest -- but
+                // variant-level placeholders do not reach the unit-test component, so with no
+                // flavor-level value mergeGoogleDebugUnitTestManifest fails on the unsubstituted
+                // ${MAPS_API_KEY} in src/google/AndroidManifest.xml. This value is never shipped;
+                // what a real build carries comes from the plugin. See #6883.
                 manifestPlaceholders["MAPS_API_KEY"] = "dummy"
             }
         }
@@ -177,10 +179,10 @@ configure<ApplicationExtension> {
 
     buildTypes {
         release {
+            // Unsigned when keystore.properties is absent — a release must never carry the public
+            // debug key. For an installable local release, point keystore.properties at config/debug.keystore.
             if (keystoreProperties["storeFile"] != null) {
                 signingConfig = signingConfigs.named("release").get()
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
             }
             isDebuggable = false
         }
@@ -194,8 +196,6 @@ secrets {
     defaultPropertiesFileName = "secrets.defaults.properties"
     propertiesFileName = "secrets.properties"
 }
-
-ksp { arg("appfunctions:aggregateAppFunctions", "true") }
 
 androidComponents {
     onVariants(selector().withBuildType("debug")) { variant ->
@@ -298,12 +298,26 @@ dependencies {
     // instead of manually polling `dumpsys meminfo`.
     debugImplementation(libs.leakcanary.android)
 
-    googleImplementation(projects.feature.car)
     googleImplementation(libs.location.services)
     googleImplementation(libs.play.services.maps)
     googleImplementation(libs.maps.compose)
     googleImplementation(libs.maps.compose.utils)
     googleImplementation(libs.maps.compose.widgets)
+    // The app draws imported layers through this data layer itself, so it is declared rather than inherited.
+    // The version is a plain floor over maps-utils-ktx 6.2.0's transitive 5.0.0 — see gradle/libs.versions.toml.
+    googleImplementation(libs.android.maps.utils)
+    // Offline vector basemap: extracts PMTiles-format tiles into a local MBTiles archive, then decodes their MVT
+    // protobuf geometry to draw as native GoogleMap Polygon/Polyline overlays. See offline/pmtiles/README.md.
+    googleImplementation(libs.pmtiles.reader)
+    googleImplementation(libs.kotlinx.serialization.protobuf)
+    // Offline terrain (hillshade + contours) for a downloaded region: Terrarium decode, hillshade shading and
+    // marching-squares contours are shared math from :feature:map-terrain; see offline/terrain/ for the
+    // Google-flavor-specific rendering built on top of it.
+    googleImplementation(projects.feature.mapTerrain)
+    // TerrainTileStore's file hierarchy is Okio-based (it also backs Desktop's MapLibre terrain rendering), but
+    // okio is only an `implementation` dependency of :feature:map-terrain, not `api` — this flavor needs its own
+    // dependency to construct a TerrainTileStore itself.
+    googleImplementation(libs.okio)
     // maps-compose-widgets requests androidx.compose.material:material version-less (expects a BOM
     // we exclude). Name it with a version so the version is published in the app's graph metadata.
     googleImplementation(libs.androidx.compose.material)
@@ -322,12 +336,13 @@ dependencies {
     googleImplementation(libs.androidx.appfunctions)
     add("kspGoogle", libs.androidx.appfunctions.compiler)
 
-    fdroidImplementation(libs.osmdroid.android)
-    fdroidImplementation(libs.osmdroid.geopackage) { exclude(group = "com.j256.ormlite") }
-    fdroidImplementation(libs.osmbonuspack)
+    // MapLibre replaces OSMdroid on this flavor; the module also backs the desktop app, and is
+    // deliberately NOT visible to `google`, which stays on Google Maps.
+    fdroidImplementation(projects.feature.mapMaplibre)
 
     testImplementation(kotlin("test-junit"))
     testImplementation(libs.androidx.work.testing)
+    testImplementation(projects.core.testing)
     testImplementation(libs.koin.test)
     testRuntimeOnly(libs.junit.vintage.engine)
     testImplementation(libs.kotlinx.coroutines.test)

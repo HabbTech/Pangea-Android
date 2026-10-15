@@ -37,11 +37,12 @@ import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.ContactSettings
 import org.meshtastic.core.model.Message
 import org.meshtastic.core.model.MessageStatus
+import org.meshtastic.core.repository.ActiveConversationTracker
 import org.meshtastic.core.repository.ConnectionStateProvider
 import org.meshtastic.core.repository.CustomEmojiPrefs
 import org.meshtastic.core.repository.HomoglyphPrefs
+import org.meshtastic.core.repository.MeshNotificationManager
 import org.meshtastic.core.repository.MessagingController
-import org.meshtastic.core.repository.NotificationManager
 import org.meshtastic.core.repository.PacketRepository
 import org.meshtastic.core.repository.QuickChatActionRepository
 import org.meshtastic.core.repository.RadioConfigRepository
@@ -52,6 +53,7 @@ import org.meshtastic.core.resources.UiText
 import org.meshtastic.core.resources.translation_failed
 import org.meshtastic.core.resources.translation_model_download_failed
 import org.meshtastic.core.resources.translation_not_required
+import org.meshtastic.core.testing.FakeFilterPrefs
 import org.meshtastic.core.testing.FakeNodeRepository
 import org.meshtastic.core.testing.TestDataFactory
 import org.meshtastic.core.ui.util.SnackbarManager
@@ -124,7 +126,7 @@ class MessageViewModelTranslationTest {
     private val customEmojiPrefs: CustomEmojiPrefs = mock(MockMode.autofill)
     private val homoglyphPrefs: HomoglyphPrefs = mock(MockMode.autofill)
     private val uiPrefs: UiPrefs = mock(MockMode.autofill)
-    private val notificationManager: NotificationManager = mock(MockMode.autofill)
+    private val meshNotificationManager: MeshNotificationManager = mock(MockMode.autofill)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -164,12 +166,13 @@ class MessageViewModelTranslationTest {
             }
         }
 
-        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet())
+        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet.Builder().build())
         every { connectionStateProvider.connectionState } returns
             MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
         every { customEmojiPrefs.customEmojiFrequency } returns MutableStateFlow<String?>(null)
         every { homoglyphPrefs.homoglyphEncodingEnabled } returns MutableStateFlow(false)
         every { uiPrefs.showQuickChat } returns MutableStateFlow(false)
+        every { uiPrefs.showFullMessageTimestamps } returns MutableStateFlow(false)
         every { packetRepository.getContactSettings() } returns
             MutableStateFlow<Map<String, ContactSettings>>(emptyMap())
         every { quickChatActionRepository.getAllActions() } returns MutableStateFlow(emptyList())
@@ -186,8 +189,10 @@ class MessageViewModelTranslationTest {
                 sendMessageUseCase = sendMessageUseCase,
                 customEmojiPrefs = customEmojiPrefs,
                 homoglyphEncodingPrefs = homoglyphPrefs,
+                filterPrefs = FakeFilterPrefs(),
                 uiPrefs = uiPrefs,
-                notificationManager = notificationManager,
+                meshNotificationManager = meshNotificationManager,
+                activeConversationTracker = ActiveConversationTracker(),
                 messageTranslationService = translationService,
                 snackbarManager = snackbarManager,
             )

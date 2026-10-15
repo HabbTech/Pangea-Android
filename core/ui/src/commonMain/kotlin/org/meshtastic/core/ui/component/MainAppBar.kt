@@ -19,13 +19,10 @@ package org.meshtastic.core.ui.component
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,9 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -64,7 +59,6 @@ import org.meshtastic.core.ui.icon.Check
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.theme.LocalEventTheme
-import org.meshtastic.core.ui.util.EventBrandingIcon
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
 import org.meshtastic.core.ui.util.PowerModeMenuState
@@ -87,9 +81,9 @@ fun MainAppBar(
     showNodeChip: Boolean,
     canNavigateUp: Boolean,
     onNavigateUp: () -> Unit,
-    actions: @Composable () -> Unit,
     onClickChip: (Node) -> Unit,
-    brandingContent: @Composable () -> Unit = { EventAwareBranding() },
+    // Trailing slot: a @Composable content lambda, not an event handler (detekt LambdaParameterEventTrailing).
+    actions: @Composable () -> Unit,
 ) {
     // Ambient event theming: when connected to event firmware (and not opted out), tint the bar with a faint wash of
     // the edition's accent color. Gated with the app-wide fonts via LocalEventTheme / the "Use event theme" toggle.
@@ -137,7 +131,9 @@ fun MainAppBar(
                     }
                 }
             } else {
-                { brandingContent() }
+                // The Meshtastic logo is never swapped for event branding — the app's identity stays put. Event
+                // firmware is surfaced on the Connections screen instead (EventFirmwareCard).
+                { Icon(imageVector = vectorResource(Res.drawable.ic_meshtastic), contentDescription = null) }
             },
             actions = {
                 TopBarActions(
@@ -149,28 +145,6 @@ fun MainAppBar(
             },
         )
         EventPaletteStrip(palette = eventTheme?.palette.orEmpty(), height = EVENT_BRAND_RULE_HEIGHT)
-    }
-}
-
-/**
- * Nav-bar branding slot: the plain brand mark, or the event edition's icon while event branding is active — tappable
- * for its info sheet. Power Mode access lives in the top-bar quick-access action ([PowerModeQuickAccess]), not here.
- */
-@Composable
-private fun EventAwareBranding() {
-    val eventEdition = LocalEventBranding.current
-    var showSheet by remember { mutableStateOf(false) }
-
-    if (eventEdition == null) {
-        Icon(imageVector = vectorResource(Res.drawable.ic_meshtastic), contentDescription = null)
-        return
-    }
-    // Every event edition is tappable for its info sheet. The icon prefers the hosted iconUrl, then a bundled
-    // drawable, then the Meshtastic logo — see EventBrandingIcon.
-    val brandingModifier = Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button) { showSheet = true }
-    EventBrandingIcon(edition = eventEdition, modifier = brandingModifier)
-    if (showSheet) {
-        EventInfoSheet(edition = eventEdition, onDismiss = { showSheet = false })
     }
 }
 

@@ -51,6 +51,7 @@ import org.meshtastic.core.datastore.model.RecentAddress
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.DeviceType
+import org.meshtastic.core.model.InterfaceId
 import org.meshtastic.core.model.util.anonymize
 import org.meshtastic.core.network.repository.NetworkRepository
 import org.meshtastic.core.repository.RadioController
@@ -59,9 +60,6 @@ import org.meshtastic.core.repository.RadioPrefs
 import org.meshtastic.core.repository.ServiceRepository
 import org.meshtastic.core.repository.UiPrefs
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.bluetooth_disabled
-import org.meshtastic.core.resources.bluetooth_scan_location_services_disabled
-import org.meshtastic.core.resources.bluetooth_scan_missing_permission
 import org.meshtastic.core.resources.bluetooth_scan_start_failed
 import org.meshtastic.core.resources.bluetooth_scan_too_frequent
 import org.meshtastic.core.resources.getPluralStringSuspend
@@ -75,6 +73,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 internal val BLE_SCAN_START_FAILURE_RETRY_COOLDOWN = 15.seconds
+
 private const val BLE_SCAN_START_FAILURE_MESSAGE_FALLBACK =
     "Bluetooth scan couldn't start. Try again, or toggle Bluetooth if the problem continues."
 
@@ -82,18 +81,23 @@ private const val BLE_SCAN_START_FAILURE_MESSAGE_FALLBACK =
  * How long to block scan restarts after a scan-start failure.
  *
  * A cooldown only helps where retrying too soon is itself the problem — Android's scan-start quota, or a registration
- * failure that needs time to settle. [BleScanStartFailureReason.BluetoothDisabled] and
- * [BleScanStartFailureReason.LocationServicesDisabled] instead clear the moment the user flips a system toggle, so
- * holding the scan button dead for 15s after they have fixed it would just look broken.
+ * failure that needs time to settle. [BleScanStartFailureReason.BluetoothDisabled],
+ * [BleScanStartFailureReason.LocationServicesDisabled] and [BleScanStartFailureReason.MissingScanPermission] instead
+ * clear the moment the user flips a system toggle or answers a permission dialog, so holding the scan button dead for
+ * 15s after they have fixed it would just look broken.
+ *
+ * MissingScanPermission sat on the wrong side of that line and defeated the whole in-context grant flow: a tap on Scan
+ * armed the cooldown, the user granted the permission seconds later, and the scan they had just asked for was refused
+ * by our own rate limiter with nothing on screen to say so.
  */
 private fun effectiveBleScanRetryCooldown(reason: BleScanStartFailureReason, retryAfter: Duration?): Duration =
     when (reason) {
         BleScanStartFailureReason.BluetoothDisabled,
         BleScanStartFailureReason.LocationServicesDisabled,
+        BleScanStartFailureReason.MissingScanPermission,
         -> retryAfter ?: Duration.ZERO
 
         BleScanStartFailureReason.ApplicationRegistrationFailed,
-        BleScanStartFailureReason.MissingScanPermission,
         BleScanStartFailureReason.ScanningTooFrequently,
         ->
             maxOf(BLE_SCAN_START_FAILURE_RETRY_COOLDOWN, retryAfter ?: Duration.ZERO)
@@ -122,6 +126,9 @@ private fun untranslatedScanStartFailureMessage(reason: BleScanStartFailureReaso
         -> BLE_SCAN_START_FAILURE_MESSAGE_FALLBACK
     }
 
+private fun isBleAddress(address: String?): Boolean =
+    address?.firstOrNull().let { it == InterfaceId.BLUETOOTH.id || it == '!' }
+
 private fun Duration.roundedUpWholeSeconds(): Long {
     val completeSeconds = inWholeSeconds
     return completeSeconds + if (this > completeSeconds.seconds) 1 else 0
@@ -147,13 +154,28 @@ open class ScannerViewModel(
     private val uiPrefs: UiPrefs,
     private val firmwareRecoveryDataSource: FirmwareRecoveryDataSource,
     private val bleScanner: BleScanner? = null,
+    /** False on hardware with no Bluetooth LE: the BLE pane is hidden and never selected or scanned. */
+    val bluetoothSupported: Boolean = true,
+    /** False on hardware with no USB host: the USB pane is hidden and never selected. */
+    val usbSupported: Boolean = true,
 ) : ViewModel() {
 
     // ── Mock / demo transport ─────────────────────────────────────────────────────────────────
-    private val _showMockTransport = MutableStateFlow(false)
 
-    /** Whether the mock/demo transport is currently selected. */
-    val showMockTransport: StateFlow<Boolean> = _showMockTransport.asStateFlow()
+    /**
+     * Whether the Demo Mode entries belong in the device list. Observed rather than sampled once: in a release build
+     * the gate opens mid-session, when the user performs the hidden-features gesture in Settings.
+     */
+    val showMockTransport: StateFlow<Boolean> = radioInterfaceService.mockTransportEnabled
+
+    private val _showReplayTransport = MutableStateFlow(false)
+
+    /**
+     * Whether the replay demo entry should be offered alongside [showMockTransport]. The capture asset is a locally
+     * generated artifact that no clean-checkout build carries, and without it replay silently degrades to the plain
+     * mock — so the entry stays hidden rather than advertising behaviour it cannot deliver.
+     */
+    val showReplayTransport: StateFlow<Boolean> = _showReplayTransport.asStateFlow()
 
     // ── Connection-progress chatter (surfaced as the bottom status pill) ──────────────────────
     private val _connectionProgressText = MutableStateFlow<String?>(null)
@@ -190,6 +212,28 @@ open class ScannerViewModel(
     private val scanGeneration = MutableStateFlow(0)
 
     // ── Network scanning (NSD gating) ─────────────────────────────────────────────────────────
+    private val _blePermissionRefusal = MutableStateFlow(false)
+
+    /**
+     * Set when the platform refused a Bluetooth operation for lack of a permission the app believes it holds — the only
+     * permission failure the Connections screen cannot infer from [PermissionStatus] alone.
+     *
+     * Everything else (never granted, denied, adapter off, location services off) is already visible as a live,
+     * actionable card on that screen, so those paths deliberately raise no message at all: a modal that repeats what
+     * the screen behind it already says, and offers no way to act on it, is an interruption rather than an aid.
+     */
+    val blePermissionRefusal: StateFlow<Boolean> = _blePermissionRefusal.asStateFlow()
+
+    /** Records a platform-level permission refusal. Called from the transport-specific bond/connect paths. */
+    protected fun reportBlePermissionRefusal() {
+        _blePermissionRefusal.value = true
+    }
+
+    /** Clears the refusal once the user has been given, and acted on, a recovery affordance. */
+    fun clearBlePermissionRefusal() {
+        _blePermissionRefusal.value = false
+    }
+
     private val _isNetworkScanning = MutableStateFlow(false)
 
     /** Whether an NSD network scan is currently active. */
@@ -209,12 +253,16 @@ open class ScannerViewModel(
         }
 
     private val discoveredDevicesFlow: StateFlow<DiscoveredDevices> =
-        showMockTransport
-            .flatMapLatest { showMock -> getDiscoveredDevicesUseCase.invoke(showMock, gatedResolvedList) }
+        combine(showMockTransport, showReplayTransport, ::Pair)
+            .flatMapLatest { (showMock, showReplay) ->
+                getDiscoveredDevicesUseCase.invoke(showMock, showReplay, gatedResolvedList)
+            }
             .stateInWhileSubscribed(initialValue = DiscoveredDevices())
 
     init {
-        _showMockTransport.value = radioInterfaceService.isMockTransport()
+        // Sampled once, unlike [showMockTransport]: whether the replay capture ships is fixed when the build is
+        // assembled, so there is nothing for it to react to.
+        _showReplayTransport.value = radioInterfaceService.isReplayTransportAvailable
         serviceRepository.connectionProgress.onEach { _connectionProgressText.value = it }.launchIn(viewModelScope)
         serviceRepository.connectionState
             .onEach { state ->
@@ -291,6 +339,10 @@ open class ScannerViewModel(
     val usbDevicesForUi: StateFlow<List<DeviceListEntry>> =
         discoveredDevicesFlow.map { it.usbDevices }.distinctUntilChanged().stateInWhileSubscribed(emptyList())
 
+    /** Demo Mode entries, listed under whichever transport pane is showing. */
+    val virtualDevicesForUi: StateFlow<List<DeviceListEntry>> =
+        discoveredDevicesFlow.map { it.virtualDevices }.distinctUntilChanged().stateInWhileSubscribed(emptyList())
+
     /** Discovered (NSD) TCP devices for the Connections device list, gated by the network-scan flag. */
     val discoveredTcpDevicesForUi: StateFlow<List<DeviceListEntry>> =
         discoveredDevicesFlow.map { it.discoveredTcpDevices }.distinctUntilChanged().stateInWhileSubscribed(emptyList())
@@ -308,8 +360,28 @@ open class ScannerViewModel(
 
     // ── Current selection ────────────────────────────────────────────────────────────────────
 
-    /** The currently-selected device address, or `null` when nothing is selected. */
-    val selectedAddressFlow: StateFlow<String?> = radioInterfaceService.currentDeviceAddressFlow
+    /**
+     * The currently-selected device address, or `null` when nothing is selected. A BLE address on hardware without
+     * Bluetooth LE, or a serial address on hardware without USB host, reads as `null`: the radio service keeps it saved
+     * but it can never connect.
+     */
+    val selectedAddressFlow: StateFlow<String?> =
+        if (bluetoothSupported && usbSupported) {
+            radioInterfaceService.currentDeviceAddressFlow
+        } else {
+            // Eager so the auto-scan checks that read `.value` see the masked address without a subscriber.
+            radioInterfaceService.currentDeviceAddressFlow
+                .map { it.takeUnless(::isUnsupportedAddress) }
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.Eagerly,
+                    initialValue =
+                    radioInterfaceService.currentDeviceAddressFlow.value.takeUnless(::isUnsupportedAddress),
+                )
+        }
+
+    private fun isUnsupportedAddress(address: String?): Boolean = (!bluetoothSupported && isBleAddress(address)) ||
+        (!usbSupported && address?.firstOrNull() == InterfaceId.SERIAL.id)
 
     /** The persisted device name from the last selection, for use as a UI fallback. */
     val persistedDeviceName: StateFlow<String?> = radioPrefs.devName
@@ -324,25 +396,34 @@ open class ScannerViewModel(
 
     /** The single transport pane currently rendered by the Connections screen. */
     val activeTransport: StateFlow<DeviceType> =
-        combine(uiPrefs.selectedConnectionTransport, selectedAddressFlow) { preferred, selectedAddress ->
-            resolveActiveTransport(preferred, selectedAddress)
-        }
+        // The unmasked address, so a restored serial address still resolves to Network rather than the BLE default.
+        combine(
+            uiPrefs.selectedConnectionTransport,
+            radioInterfaceService.currentDeviceAddressFlow,
+            ::resolveActiveTransport,
+        )
             .distinctUntilChanged()
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.Eagerly,
                 initialValue =
-                resolveActiveTransport(uiPrefs.selectedConnectionTransport.value, selectedAddressFlow.value),
+                resolveActiveTransport(
+                    uiPrefs.selectedConnectionTransport.value,
+                    radioInterfaceService.currentDeviceAddressFlow.value,
+                ),
             )
 
     /** Selects one Connections transport pane and stops scans that cannot belong to that pane. */
     fun selectTransport(type: DeviceType) {
+        if (type == DeviceType.BLE && !bluetoothSupported) return
+        if (type == DeviceType.USB && !usbSupported) return
         when (type) {
             DeviceType.BLE -> stopNetworkScan()
             DeviceType.TCP -> stopBleScan()
             DeviceType.USB -> stopAllScans()
         }
-        if (activeTransport.value != type) uiPrefs.setSelectedConnectionTransport(type)
+        // Compared with the preference, not the pane: a fallback pane is shown without being persisted.
+        if (uiPrefs.selectedConnectionTransport.value != type) uiPrefs.setSelectedConnectionTransport(type)
     }
 
     // ── Scan commands ────────────────────────────────────────────────────────────────────────
@@ -355,11 +436,17 @@ open class ScannerViewModel(
      * prior scan cannot reset the flag on this new scan's state.
      */
     fun startBleScan() {
-        if (_isBleScanning.value || bleScanner == null || scanStartFailureCooldownActive.value) return
+        if (_isBleScanning.value || bleScanner == null || !bluetoothSupported || scanStartFailureCooldownActive.value) {
+            return
+        }
         // Cancel the other scan first so only one flag is ever true. Both stop methods are idempotent.
         stopNetworkScan()
 
         _isBleScanning.value = true
+        // A scan that starts is evidence the last refusal is behind us. Cleared optimistically rather than on connect:
+        // the failure handler below re-sets it if the platform refuses again, and leaving it set would park an error
+        // card above a device list that is visibly working.
+        _blePermissionRefusal.value = false
         val generation = scanGeneration.value + 1
         scanGeneration.value = generation
 
@@ -453,30 +540,48 @@ open class ScannerViewModel(
             "BLE scan could not start: ${exception.reason.androidCode} (${exception.reason.description})"
         }
         val retryCooldownSeconds = retryCooldown.roundedUpWholeSeconds()
-        val errorMessage =
-            safeCatchingAll {
-                when (exception.reason) {
-                    BleScanStartFailureReason.MissingScanPermission ->
-                        getStringSuspend(Res.string.bluetooth_scan_missing_permission)
 
-                    BleScanStartFailureReason.ApplicationRegistrationFailed ->
-                        getStringSuspend(Res.string.bluetooth_scan_start_failed)
+        // The platform can refuse a scan the app believes it is permitted to run — a partial grant, or an OEM quirk —
+        // and the Connections screen's permission card, driven by the app's own view of the grant, would not appear.
+        if (exception.reason == BleScanStartFailureReason.MissingScanPermission) {
+            _blePermissionRefusal.value = true
+        }
 
-                    BleScanStartFailureReason.ScanningTooFrequently ->
-                        getPluralStringSuspend(
-                            Res.plurals.bluetooth_scan_too_frequent,
-                            retryCooldownSeconds.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
-                            retryCooldownSeconds,
-                        )
-
-                    BleScanStartFailureReason.BluetoothDisabled -> getStringSuspend(Res.string.bluetooth_disabled)
-
-                    BleScanStartFailureReason.LocationServicesDisabled ->
-                        getStringSuspend(Res.string.bluetooth_scan_location_services_disabled)
-                }
-            }
-                .getOrDefault(untranslatedScanStartFailureMessage(exception.reason, retryCooldownSeconds))
+        val errorMessage = scanFailureMessageOrNull(exception.reason, retryCooldownSeconds) ?: return
         serviceRepository.setErrorMessage(text = errorMessage, severity = Severity.Warn)
+    }
+
+    /**
+     * The message to raise for a scan-start failure, or `null` for the failures the Connections screen already renders
+     * as live, actionable cards.
+     *
+     * Missing permission, Bluetooth off and location services off each have such a card, driven by system state the UI
+     * observes directly. A modal for those would interrupt the user to restate what is on screen behind the dialog —
+     * and, unlike the card, hand them no way to act on it. What remains is genuinely transient and has no card to fall
+     * back on, so it still gets a message.
+     */
+    private suspend fun scanFailureMessageOrNull(
+        reason: BleScanStartFailureReason,
+        retryCooldownSeconds: Long,
+    ): String? = when (reason) {
+        BleScanStartFailureReason.MissingScanPermission,
+        BleScanStartFailureReason.BluetoothDisabled,
+        BleScanStartFailureReason.LocationServicesDisabled,
+        -> null
+
+        BleScanStartFailureReason.ApplicationRegistrationFailed ->
+            safeCatchingAll { getStringSuspend(Res.string.bluetooth_scan_start_failed) }
+                .getOrDefault(untranslatedScanStartFailureMessage(reason, retryCooldownSeconds))
+
+        BleScanStartFailureReason.ScanningTooFrequently ->
+            safeCatchingAll {
+                getPluralStringSuspend(
+                    Res.plurals.bluetooth_scan_too_frequent,
+                    retryCooldownSeconds.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                    retryCooldownSeconds,
+                )
+            }
+                .getOrDefault(untranslatedScanStartFailureMessage(reason, retryCooldownSeconds))
     }
 
     private fun startBleScanRetryCooldown(cooldown: Duration) {
@@ -553,6 +658,18 @@ open class ScannerViewModel(
     fun persistNetworkAutoScanIntent(enabled: Boolean) {
         uiPrefs.setNetworkAutoScan(enabled)
         if (enabled) uiPrefs.setBleAutoScan(false)
+    }
+
+    /**
+     * Records that the user asked for a BLE scan before the scan could legally start — the mirror of
+     * [persistNetworkAutoScanIntent].
+     *
+     * Used when a tap on Scan resolves to a permission request instead of a scan. Without it the grant lands and
+     * nothing happens: the user answered the dialog they asked for and still has to tap Scan a second time.
+     */
+    fun persistBleAutoScanIntent(enabled: Boolean) {
+        uiPrefs.setBleAutoScan(enabled)
+        if (enabled) uiPrefs.setNetworkAutoScan(false)
     }
 
     // ── Device selection / disconnect ───────────────────────────────────────────────────────
@@ -685,8 +802,15 @@ open class ScannerViewModel(
         }
     }
 
-    private fun resolveActiveTransport(preferred: DeviceType?, selectedAddress: String?): DeviceType =
-        preferred ?: selectedAddress?.let(DeviceType::fromAddress) ?: DeviceType.BLE
+    private fun resolveActiveTransport(preferred: DeviceType?, selectedAddress: String?): DeviceType {
+        // A persisted pane or a restored address can still name a transport this hardware lacks; Network always works.
+        val resolved = preferred ?: selectedAddress?.let(DeviceType::fromAddress) ?: DeviceType.BLE
+        return when {
+            resolved == DeviceType.BLE && !bluetoothSupported -> DeviceType.TCP
+            resolved == DeviceType.USB && !usbSupported -> DeviceType.TCP
+            else -> resolved
+        }
+    }
 
     private fun recordSelectedTransport(fullAddress: String) {
         DeviceType.fromAddress(fullAddress)?.let(uiPrefs::setSelectedConnectionTransport)

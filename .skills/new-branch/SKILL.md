@@ -1,3 +1,8 @@
+---
+name: new-branch
+description: The canonical recipe for starting a fresh working branch off a freshly fetched `origin/main` in Meshtastic-Android. Use this whenever a unit of work starts - "new branch off main", "peel off a fresh branch", "dust off #NNNN" - so the branch is based correctly and nothing is carried over from the last one.
+---
+
 # Skill: New Branch Bootstrap
 
 ## Description
@@ -16,8 +21,8 @@ This replaces the ad-hoc prose that used to be retyped at the start of every ses
 1. **Clean worktree.** If `git status --porcelain` is non-empty, ask the user before proceeding.
 2. **Upstream remote present.** `git remote -v` must list `upstream` pointing at
    `meshtastic/Meshtastic-Android`. If only `origin` exists on a fork, treat `origin` as upstream.
-3. **Secrets bootstrapped.** If `local.properties` is missing, copy `secrets.defaults.properties`
-   (required for `google` flavor builds).
+3. **Secrets:** nothing to bootstrap — `secrets.defaults.properties` is tracked and is the
+   secrets plugin's fallback, so every flavor builds without a local secrets file.
 
 ## Standard Recipe
 
@@ -33,8 +38,10 @@ git --no-pager log -1 --oneline
 ```
 
 ## Branch Naming
-Use conventional-commit style prefixes that match the PR title convention in
-`.github/copilot-pull-request-instructions.md`:
+Use conventional-commit style prefixes. `.specify/memory/constitution.md`
+(Branch naming) is the canonical list **of prefixes**; `AGENTS.md` remains
+authoritative for rules, architecture and workflow. `CONTRIBUTING.md` →
+Pull Requests carries the same set contributor-facing:
 
 | Prefix | Use for |
 | :--- | :--- |
@@ -43,6 +50,18 @@ Use conventional-commit style prefixes that match the PR title convention in
 | `refactor/<scope>` | Code structure changes, no behavior change |
 | `chore/<scope>` | Tooling, deps, CI, cleanup |
 | `docs/<scope>` | Documentation only |
+| `build/<scope>` | Build system changes |
+| `ci/<scope>` | CI workflow changes |
+| `test/<scope>` | Test additions or fixes |
+| `deps/<scope>` | Dependency updates |
+
+Spec-driven work is the exception and takes no prefix from that table: a
+numeric spec prefix (`005-tak-v2-protocol`) or the timestamp form
+`YYYYMMDD-HHMMSS-feature-name` that `/speckit.git.feature` creates. Both are
+valid — don't reject one.
+
+`release/*` and `automation/*` are reserved for maintainers and automated
+workflows.
 
 Keep the slug short and kebab-case, e.g. `fix/r8-animation-release`, `chore/koin-application-migration`.
 
@@ -52,6 +71,7 @@ When the user says *"rebase #NNNN"* or *"dust off PR NNNN"*:
 ```bash
 git fetch upstream --prune
 gh pr checkout <NNNN>          # checks out the PR head locally
+git branch --show-current      # confirm this is the PR you meant, before any push
 git rebase upstream/main
 # Resolve conflicts, then:
 git push --force-with-lease
@@ -59,9 +79,13 @@ git push --force-with-lease
 
 Never use plain `--force`. Always `--force-with-lease` to avoid clobbering collaborator pushes.
 
+Read that branch name before you push. A mistyped `<NNNN>` is a valid PR number
+belonging to someone else, and `--force-with-lease` will not save you: it only
+refuses when the remote ref moved after you fetched it, which is exactly not the
+case here. The lease is intact and the wrong branch gets rewritten.
+
 ## Post-Branch Checklist
-- [ ] Branch name follows conventional prefix.
-- [ ] `local.properties` exists.
+- [ ] Branch name carries a conventional prefix, or is a spec-driven name (numeric or `YYYYMMDD-HHMMSS-`) per Branch Naming above.
 - [ ] `ANDROID_HOME` exported (see AGENTS.md workspace bootstrap).
 - [ ] Optional: run `./gradlew assembleDebug` once to catch environment regressions before editing.
 

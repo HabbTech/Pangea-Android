@@ -23,7 +23,6 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.location.Location
-import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
@@ -42,6 +41,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -70,7 +70,10 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.GroundOverlay
+import com.google.android.gms.maps.model.GroundOverlayOptions
 import com.google.android.gms.maps.model.JointType
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
@@ -93,35 +96,40 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.google.maps.android.compose.widgets.ScaleBar
 import com.google.maps.android.data.parser.geojson.GeoJsonParser
-import com.google.maps.android.data.parser.kml.KmlParser
-import com.google.maps.android.data.parser.kml.KmzParser
 import com.google.maps.android.data.renderer.UrlIconProvider
 import com.google.maps.android.data.renderer.mapper.toLayer
 import com.google.maps.android.data.renderer.mapview.MapViewRenderer
 import com.google.maps.android.data.renderer.model.DataLayer
 import com.google.maps.android.data.renderer.model.Feature
 import com.google.maps.android.data.renderer.model.Geometry
-import com.google.maps.android.data.renderer.model.LineString
 import com.google.maps.android.data.renderer.model.LineStyle
 import com.google.maps.android.data.renderer.model.MultiGeometry
+import com.google.maps.android.data.renderer.model.PointGeometry
+import com.google.maps.android.data.renderer.model.PointStyle
 import com.google.maps.android.data.renderer.model.PolygonStyle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import org.meshtastic.app.map.component.ClusterItemsListDialog
-import org.meshtastic.app.map.component.CustomMapLayersSheet
 import org.meshtastic.app.map.component.CustomTileProviderManagerSheet
-import org.meshtastic.app.map.component.MapFilterDropdown
 import org.meshtastic.app.map.component.MapTypeDropdown
 import org.meshtastic.app.map.component.NodeClusterMarkers
-import org.meshtastic.app.map.component.NodeMapFilterDropdown
 import org.meshtastic.app.map.component.WaypointMarkers
 import org.meshtastic.app.map.model.NodeClusterItem
+import org.meshtastic.app.map.offline.pmtiles.OfflineRegionExtractor
+import org.meshtastic.app.map.offline.pmtiles.OfflineVectorOverlay
+import org.meshtastic.app.map.offline.pmtiles.component.OfflineRegionManagerSection
+import org.meshtastic.app.map.offline.terrain.ContourOverlay
+import org.meshtastic.app.map.offline.terrain.HillshadeTileProvider
+import org.meshtastic.app.map.tiles.RasterBasemap
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.common.util.nowSeconds
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.TracerouteOverlay
@@ -131,9 +139,8 @@ import org.meshtastic.core.model.isModifiableBy
 import org.meshtastic.core.model.util.GeoConstants.DEG_D
 import org.meshtastic.core.model.util.GeoConstants.HEADING_DEG
 import org.meshtastic.core.model.util.isValidCodePoint
+import org.meshtastic.core.model.util.kmhIn
 import org.meshtastic.core.model.util.metersIn
-import org.meshtastic.core.model.util.mpsToKmph
-import org.meshtastic.core.model.util.mpsToMph
 import org.meshtastic.core.model.util.toCodePointString
 import org.meshtastic.core.model.util.toString
 import org.meshtastic.core.model.util.waypointIconOrDefault
@@ -147,35 +154,61 @@ import org.meshtastic.core.resources.latitude
 import org.meshtastic.core.resources.longitude
 import org.meshtastic.core.resources.manage_map_layers
 import org.meshtastic.core.resources.map_tile_source
+import org.meshtastic.core.resources.now
 import org.meshtastic.core.resources.position
 import org.meshtastic.core.resources.sats
 import org.meshtastic.core.resources.speed
+import org.meshtastic.core.resources.speed_kmh
+import org.meshtastic.core.resources.speed_mph
 import org.meshtastic.core.resources.timestamp
 import org.meshtastic.core.resources.track_point
+import org.meshtastic.core.resources.unknown
 import org.meshtastic.core.ui.component.NodeChip
 import org.meshtastic.core.ui.icon.Layers
 import org.meshtastic.core.ui.icon.Map
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.TripOrigin
 import org.meshtastic.core.ui.theme.TracerouteColors
+import org.meshtastic.core.ui.util.ActiveWhileStarted
+import org.meshtastic.core.ui.util.KeepScreenOn
 import org.meshtastic.core.ui.util.PermissionStatus
 import org.meshtastic.core.ui.util.formatAgo
 import org.meshtastic.core.ui.util.formatPositionTime
 import org.meshtastic.core.ui.util.rememberLocationPermissionState
 import org.meshtastic.feature.map.BaseMapViewModel.MapFilterState
-import org.meshtastic.feature.map.LastHeardFilter
+import org.meshtastic.feature.map.MapBounds
+import org.meshtastic.feature.map.MapNodePolicy
+import org.meshtastic.feature.map.component.ClusterMemberEntry
+import org.meshtastic.feature.map.component.ClusterMembersDialog
+import org.meshtastic.feature.map.component.CustomMapLayersSheet
 import org.meshtastic.feature.map.component.DeleteWaypointDialog
 import org.meshtastic.feature.map.component.EditWaypointDialog
 import org.meshtastic.feature.map.component.MapButton
 import org.meshtastic.feature.map.component.MapControlsOverlay
-import org.meshtastic.feature.map.component.SitePlannerParams
+import org.meshtastic.feature.map.component.MapFilterSheet
+import org.meshtastic.feature.map.component.NodeTrackFilterMenu
+import org.meshtastic.feature.map.component.OfflineStatusBanner
+import org.meshtastic.feature.map.component.RasterOverlayToggles
+import org.meshtastic.feature.map.component.SitePlannerLaunch
 import org.meshtastic.feature.map.component.WaypointInfoDialog
+import org.meshtastic.feature.map.component.mapFilterActions
+import org.meshtastic.feature.map.component.toSitePlannerParams
+import org.meshtastic.feature.map.geojson.sanitizeImportedIconUrl
+import org.meshtastic.feature.map.includes
+import org.meshtastic.feature.map.kml.ICON_URL_PROPERTY
+import org.meshtastic.feature.map.kml.KmlGroundOverlay
+import org.meshtastic.feature.map.layers.LayerType
+import org.meshtastic.feature.map.layers.MapLayerItem
+import org.meshtastic.feature.map.layers.opacityOf
+import org.meshtastic.feature.map.layers.toPickedMapFile
+import org.meshtastic.feature.map.terrain.MapterhornEndpoints
+import org.meshtastic.feature.map.tiles.mapAttributionText
 import org.meshtastic.feature.map.tracerouteNodeSelection
 import org.meshtastic.proto.BoundingBox
-import org.meshtastic.proto.Config.DisplayConfig.DisplayUnits
 import org.meshtastic.proto.Position
 import org.meshtastic.proto.Waypoint
 import java.io.BufferedInputStream
+import java.io.ByteArrayInputStream
 import java.io.InputStream
 import kotlin.coroutines.resume
 import kotlin.math.abs
@@ -231,6 +264,16 @@ private const val DEFAULT_GEOJSON_STROKE_WIDTH = 2f
 // (zero-area) so the second tap is ignored.
 private const val BOX_AUTHORING_MIN_CORNER_DELTA = 1e-4
 
+/** Above the raster basemap at -1, below every marker and shape the mesh draws at 0 and up. */
+private const val OVERLAY_Z_INDEX = -0.5f
+
+/** Below the offline vector layer's own water/roads/boundaries (-0.75f) so those still draw on top of the shading. */
+private const val TERRAIN_HILLSHADE_Z_INDEX = -0.9f
+
+/** Clears Google's own logo and the zoom controls, both of which sit along the bottom edge. */
+private val ATTRIBUTION_BOTTOM_PADDING = 4.dp
+private const val ATTRIBUTION_SCRIM_ALPHA = 0.7f
+
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @OptIn(MapsComposeExperimentalApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -263,10 +306,7 @@ fun MapView(
     val filePickerLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.data?.let { uri ->
-                    val fileName = uri.getFileName(context)
-                    mapViewModel.addMapLayer(uri, fileName)
-                }
+                result.data?.data?.let { uri -> mapViewModel.addMapLayer(uri.toPickedMapFile(context)) }
             }
         }
 
@@ -287,7 +327,13 @@ fun MapView(
     var boxAuthoringSecondCorner by remember { mutableStateOf<LatLng?>(null) }
 
     val selectedGoogleMapType by mapViewModel.selectedGoogleMapType.collectAsStateWithLifecycle()
-    val currentCustomTileProviderUrl by mapViewModel.selectedCustomTileProviderUrl.collectAsStateWithLifecycle()
+    val currentRasterBasemap by mapViewModel.selectedRasterBasemap.collectAsStateWithLifecycle()
+    val offlineOverlayEnabled by mapViewModel.offlineOverlayEnabled.collectAsStateWithLifecycle()
+    val terrainHillshadeEnabled by mapViewModel.terrainHillshadeEnabled.collectAsStateWithLifecycle()
+    val terrainContoursEnabled by mapViewModel.terrainContoursEnabled.collectAsStateWithLifecycle()
+    val mapNetworkAvailable by mapViewModel.mapNetworkAvailable.collectAsStateWithLifecycle()
+    val enabledOverlayIds by mapViewModel.enabledOverlayIds.collectAsStateWithLifecycle()
+    val layerOpacity by mapViewModel.layerOpacity.collectAsStateWithLifecycle()
 
     var mapTypeMenuExpanded by remember { mutableStateOf(false) }
     var showCustomTileManagerSheet by remember { mutableStateOf(false) }
@@ -346,27 +392,24 @@ fun MapView(
         }
     }
 
-    LaunchedEffect(isLocationTrackingEnabled, locationPermission.isGranted) {
-        if (isLocationTrackingEnabled && locationPermission.isGranted) {
-            val locationRequest =
-                LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
-                    .setMinUpdateIntervalMillis(2000L)
-                    .build()
-            try {
-                @Suppress("MissingPermission")
-                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
-                Logger.d { "Started location tracking" }
-            } catch (e: SecurityException) {
-                Logger.d { "Location permission not available: ${e.message}" }
-                isLocationTrackingEnabled = false
-            }
-        } else {
+    ActiveWhileStarted(enabled = isLocationTrackingEnabled && locationPermission.isGranted) {
+        val locationRequest =
+            LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L).setMinUpdateIntervalMillis(2000L).build()
+        try {
+            @Suppress("MissingPermission")
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+            Logger.d { "Started location tracking" }
+        } catch (e: SecurityException) {
+            Logger.d { "Location permission not available: ${e.message}" }
+            isLocationTrackingEnabled = false
+        }
+
+        val cleanup: () -> Unit = {
             fusedLocationClient.removeLocationUpdates(locationCallback)
             Logger.d { "Stopped location tracking" }
         }
+        cleanup
     }
-
-    DisposableEffect(Unit) { onDispose { fusedLocationClient.removeLocationUpdates(locationCallback) } }
 
     // --- Node & waypoint data ---
     val allNodes by mapViewModel.nodesWithPosition.collectAsStateWithLifecycle(listOf())
@@ -374,14 +417,7 @@ fun MapView(
     val displayableWaypoints = waypoints.values.mapNotNull { it.waypoint }
     val selectedWaypointId by mapViewModel.selectedWaypointId.collectAsStateWithLifecycle()
 
-    val filteredNodes =
-        allNodes
-            .filter { node -> !mapFilterState.onlyFavorites || node.isFavorite || node.num == ourNodeInfo?.num }
-            .filter { node ->
-                mapFilterState.lastHeardFilter.seconds == 0L ||
-                    (nowSeconds - node.lastHeard) <= mapFilterState.lastHeardFilter.seconds ||
-                    node.num == ourNodeInfo?.num
-            }
+    val filteredNodes = MapNodePolicy.visibleNodes(allNodes, mapFilterState, nowSeconds, ourNodeInfo?.num)
 
     LaunchedEffect(mode, cameraInitialization, isMapLoaded, filteredNodes) {
         if (
@@ -395,9 +431,11 @@ fun MapView(
                 if (points.size == 1) {
                     CameraUpdateFactory.newLatLngZoom(points.first(), 12f)
                 } else {
-                    val bounds = LatLngBounds.builder()
-                    points.forEach(bounds::include)
-                    CameraUpdateFactory.newLatLngBounds(bounds.build(), 80)
+                    // Shared with the MapLibre map, which pads a degenerate box rather than handing the camera
+                    // something it cannot fit to.
+                    val bounds = MapBounds.aroundNodes(filteredNodes)?.toLatLngBounds()
+                    if (bounds == null) return@LaunchedEffect
+                    CameraUpdateFactory.newLatLngBounds(bounds, 80)
                 }
             cameraPositionState.move(cameraUpdate)
             mapViewModel.onInitialNodeBoundsApplied()
@@ -405,6 +443,13 @@ fun MapView(
     }
 
     val myNodeNum = mapViewModel.myNodeNum
+    val relativeTimeBucket = rememberRelativeTimeBucket()
+    val nodeClusterItems =
+        rememberNodeClusterItems(
+            nodes = if (mode is GoogleMapMode.Main) filteredNodes else emptyList(),
+            myNodeNum = myNodeNum,
+            relativeTimeBucket = relativeTimeBucket,
+        )
     val isConnected by mapViewModel.isConnected.collectAsStateWithLifecycle()
     val theme by mapViewModel.theme.collectAsStateWithLifecycle()
     val dark =
@@ -422,12 +467,7 @@ fun MapView(
         if (mode is GoogleMapMode.NodeTrack) {
             val lastHeardTrackFilter = mapFilterState.lastHeardTrackFilter
             remember(mode.positions, lastHeardTrackFilter) {
-                mode.positions
-                    .filter {
-                        lastHeardTrackFilter == LastHeardFilter.Any ||
-                            it.time > nowSeconds - lastHeardTrackFilter.seconds
-                    }
-                    .sortedBy { it.time }
+                mode.positions.filter { lastHeardTrackFilter.includes(it.time, nowSeconds) }.sortedBy { it.time }
             }
         } else {
             emptyList()
@@ -558,43 +598,26 @@ fun MapView(
 
     // --- Tile & layers state ---
     var showLayersBottomSheet by remember { mutableStateOf(false) }
-    // Non-null while the Site Planner estimate dialog/runner is open, holding the initial (prefilled) params.
-    var sitePlannerInitial by remember { mutableStateOf<SitePlannerParams?>(null) }
+    // Non-null while the Site Planner estimate dialog/runner is open, retaining its node-location source.
+    var sitePlannerLaunch by remember { mutableStateOf<SitePlannerLaunch?>(null) }
 
     val onAddLayerClicked = {
         val intent =
             Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
+                // Providers may assign generic MIME types to valid map files; validate the extension after selection.
                 type = "*/*"
-                val mimeTypes =
-                    arrayOf(
-                        "application/vnd.google-earth.kml+xml",
-                        "application/vnd.google-earth.kmz",
-                        "application/vnd.geo+json",
-                        "application/geo+json",
-                        "application/json",
-                    )
-                putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
             }
         filePickerLauncher.launch(intent)
     }
     val onRemoveLayer = { layerId: String -> mapViewModel.removeMapLayer(layerId) }
     val onToggleVisibility = { layerId: String -> mapViewModel.toggleLayerVisibility(layerId) }
 
-    val effectiveGoogleMapType = if (currentCustomTileProviderUrl != null) MapType.NONE else selectedGoogleMapType
+    val effectiveGoogleMapType = if (currentRasterBasemap != null) MapType.NONE else selectedGoogleMapType
 
     var showClusterItemsDialog by remember { mutableStateOf<List<NodeClusterItem>?>(null) }
 
-    // --- Keep screen on while location tracking ---
-    LaunchedEffect(isLocationTrackingEnabled) {
-        val activity = context as? Activity ?: return@LaunchedEffect
-        val window = activity.window
-        if (isLocationTrackingEnabled) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else {
-            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-    }
+    KeepScreenOn(isLocationTrackingEnabled && locationPermission.isGranted)
 
     // --- Main UI ---
     val isMainMode = mode is GoogleMapMode.Main
@@ -634,7 +657,7 @@ fun MapView(
                         // would yield a zero-area box, so ignore it and keep waiting for a valid second corner.
                         boxAuthoringSecondCorner = latLng
                         val box = boundingBoxFromCorners(first, latLng)
-                        editingWaypoint = boxAuthoringDraft?.copy(bounding_box = box)
+                        editingWaypoint = boxAuthoringDraft?.newBuilder()?.also { wb -> wb.bounding_box = box }?.build()
                         boxAuthoringDraft = null
                         boxAuthoringFirstCorner = null
                         boxAuthoringSecondCorner = null
@@ -644,25 +667,83 @@ fun MapView(
             onMapLongClick = { latLng ->
                 if (isMainMode && isConnected && boxAuthoringDraft == null) {
                     editingWaypoint =
-                        Waypoint(
-                            latitude_i = (latLng.latitude / DEG_D).toInt(),
-                            longitude_i = (latLng.longitude / DEG_D).toInt(),
-                        )
+                        Waypoint.Builder()
+                            .also { wb ->
+                                wb.latitude_i = (latLng.latitude / DEG_D).toInt()
+                                wb.longitude_i = (latLng.longitude / DEG_D).toInt()
+                            }
+                            .build()
                 }
             },
         ) {
-            // Custom tile overlay (all modes)
-            key(currentCustomTileProviderUrl) {
-                currentCustomTileProviderUrl?.let { url ->
-                    val config =
-                        mapViewModel.customTileProviderConfigs.collectAsStateWithLifecycle().value.find {
-                            it.urlTemplate == url || it.localUri == url
-                        }
-                    mapViewModel.getTileProvider(config)?.let { tileProvider ->
+            // The raster basemap, when one is selected instead of a Google map type (all modes).
+            key(currentRasterBasemap) {
+                currentRasterBasemap?.let { basemap ->
+                    mapViewModel.getTileProvider(basemap)?.let { tileProvider ->
                         TileOverlay(tileProvider = tileProvider, fadeIn = true, transparency = 0f, zIndex = -1f)
                     }
                 }
             }
+
+            // The downloaded region (if any) covering what's on screen — shared by the offline vector overlay and
+            // offline terrain below, each gated by its own toggle rather than each other's.
+            val visibleBounds = cameraPositionState.projection?.visibleRegion?.latLngBounds
+            val coveringRegion = visibleBounds?.let { mapViewModel.offlineRegionCovering(it) }
+
+            // The offline vector overlay, drawn only while the user has switched it on and a downloaded region
+            // actually covers what's on screen — see MapViewModel.offlineOverlayEnabled/offlineRegionCovering.
+            if (offlineOverlayEnabled) {
+                coveringRegion?.let { region ->
+                    OfflineVectorOverlay(
+                        region = region,
+                        archiveFile = mapViewModel.offlineRegionArchiveFile(region.id),
+                        cameraPositionState = cameraPositionState,
+                    )
+                }
+            }
+
+            // Offline terrain (hillshade + contours) — independent of the vector overlay's own toggle, gated only
+            // by its own two switches and whether the covering region actually has terrain downloaded. See
+            // MapViewModel.terrainHillshadeEnabled/terrainContoursEnabled and OfflineRegionManagerSection.
+            if (coveringRegion?.hasTerrain == true) {
+                if (terrainHillshadeEnabled) {
+                    key(coveringRegion.id) {
+                        val hillshadeProvider =
+                            remember(coveringRegion.id) {
+                                HillshadeTileProvider(mapViewModel.terrainStoreForRegion(coveringRegion.id))
+                            }
+                        TileOverlay(
+                            tileProvider = hillshadeProvider,
+                            fadeIn = true,
+                            transparency = 0f,
+                            zIndex = TERRAIN_HILLSHADE_Z_INDEX,
+                        )
+                    }
+                }
+                if (terrainContoursEnabled) {
+                    ContourOverlay(
+                        region = coveringRegion,
+                        store = mapViewModel.terrainStoreForRegion(coveringRegion.id),
+                        cameraPositionState = cameraPositionState,
+                        metric = displayUnits == MeasurementSystem.METRIC,
+                    )
+                }
+            }
+
+            // Overlays composite over whichever basemap is in use, and stay below the mesh drawn above them.
+            mapViewModel.availableOverlays
+                .filter { it.id in enabledOverlayIds }
+                .forEach { overlay ->
+                    key(overlay.id) {
+                        val provider = remember(overlay.id) { mapViewModel.createTileProvider(overlay.spec) }
+                        TileOverlay(
+                            tileProvider = provider,
+                            fadeIn = true,
+                            transparency = 1f - layerOpacity.opacityOf(overlay.id),
+                            zIndex = OVERLAY_Z_INDEX,
+                        )
+                    }
+                }
 
             // The two-tap flow commits on the second tap, so there is no both-corners-uncommitted state to draw a
             // rectangle preview from; instead mark the first tapped corner so the user sees it registered.
@@ -681,21 +762,7 @@ fun MapView(
             when (mode) {
                 is GoogleMapMode.Main ->
                     MainMapContent(
-                        nodeClusterItems =
-                        filteredNodes.map { node ->
-                            val latLng =
-                                LatLng(
-                                    (node.position.latitude_i ?: 0) * DEG_D,
-                                    (node.position.longitude_i ?: 0) * DEG_D,
-                                )
-                            NodeClusterItem(
-                                node = node,
-                                nodePosition = latLng,
-                                nodeTitle = "${node.user.short_name} ${formatAgo(node.position.time)}",
-                                nodeSnippet = "${node.user.long_name}",
-                                myNodeNum = myNodeNum,
-                            )
-                        },
+                        nodeClusterItems = nodeClusterItems,
                         mapFilterState = mapFilterState,
                         navigateToNodeDetails = navigateToNodeDetails,
                         displayableWaypoints = displayableWaypoints,
@@ -705,6 +772,7 @@ fun MapView(
                         onShowGeofenceInfo = { geofenceInfoWaypoint = it },
                         selectedWaypointId = selectedWaypointId,
                         mapLayers = mapLayers,
+                        layerOpacity = layerOpacity,
                         mapViewModel = mapViewModel,
                         cameraPositionState = cameraPositionState,
                         coroutineScope = coroutineScope,
@@ -719,7 +787,7 @@ fun MapView(
                             displayUnits = displayUnits,
                             myNodeNum = myNodeNum,
                             selectedPositionTime = mode.selectedPositionTime,
-                            onPositionSelected = mode.onPositionSelected,
+                            onPositionSelect = mode.onPositionSelected,
                         )
                     }
                 }
@@ -734,6 +802,11 @@ fun MapView(
                     )
             }
         }
+
+        OfflineStatusBanner(
+            visible = !mapNetworkAvailable,
+            modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 8.dp),
+        )
 
         // Scale bar
         ScaleBar(
@@ -751,11 +824,11 @@ fun MapView(
                     onSend = { updatedWp ->
                         var finalWp = updatedWp
                         if (updatedWp.id == 0) {
-                            finalWp = finalWp.copy(id = mapViewModel.generatePacketId())
+                            finalWp =
+                                finalWp.newBuilder().also { wb -> wb.id = mapViewModel.generatePacketId() }.build()
                         }
-                        if (updatedWp.icon == 0) {
-                            finalWp = finalWp.copy(icon = 0x1F4CD)
-                        }
+                        finalWp =
+                            finalWp.newBuilder().also { wb -> wb.icon = finalWp.icon.waypointIconOrDefault() }.build()
                         mapViewModel.sendWaypoint(finalWp)
                         editingWaypoint = null
                     },
@@ -763,7 +836,7 @@ fun MapView(
                         // Broadcast the removal (expire=1) only for waypoints we're allowed to modify mesh-wide
                         // (unlocked, or locked to us); otherwise just drop our local copy below.
                         if (wpToDelete.isModifiableBy(myNodeNum) && isConnected && wpToDelete.id != 0) {
-                            mapViewModel.sendWaypoint(wpToDelete.copy(expire = 1))
+                            mapViewModel.sendWaypoint(wpToDelete.newBuilder().also { wb -> wb.expire = 1 }.build())
                         }
                         mapViewModel.deleteWaypoint(wpToDelete.id)
                         editingWaypoint = null
@@ -788,7 +861,7 @@ fun MapView(
                     },
                     onDeleteForEveryone = {
                         Logger.d { "User deleted waypoint ${waypoint.id} for everyone" }
-                        mapViewModel.sendWaypoint(waypoint.copy(expire = 1))
+                        mapViewModel.sendWaypoint(waypoint.newBuilder().also { wb -> wb.expire = 1 }.build())
                         mapViewModel.deleteWaypoint(waypoint.id)
                         deletingWaypoint = null
                     },
@@ -858,7 +931,8 @@ fun MapView(
                             val bounds = cameraPositionState.projection?.visibleRegion?.latLngBounds
                             if (bounds != null) {
                                 val box = boundingBoxFromCorners(bounds.southwest, bounds.northeast)
-                                editingWaypoint = boxAuthoringDraft?.copy(bounding_box = box)
+                                editingWaypoint =
+                                    boxAuthoringDraft?.newBuilder()?.also { wb -> wb.bounding_box = box }?.build()
                                 boxAuthoringDraft = null
                                 boxAuthoringFirstCorner = null
                                 boxAuthoringSecondCorner = null
@@ -876,21 +950,66 @@ fun MapView(
         val showRefresh = visibleNetworkLayers.isNotEmpty()
         val isRefreshingLayers = visibleNetworkLayers.any { it.isRefreshing }
 
+        // Tile credit. OpenStreetMap's and Esri's tile policies both require it, and unlike MapLibre — which has an
+        // attribution ornament of its own — the Google map has nowhere to put it but here.
+        //
+        // The offline vector layer's own credit is folded in here too, not left to the archive's metadata table
+        // alone: an on-disk-only attribution is invisible to anyone who never opens the offline-region manager
+        // sheet, which is exactly the gap this mirrors from the sibling iOS app's own terrain layer. The offline
+        // terrain layer's own credit (Mapterhorn) is folded in the same way, whenever hillshade or contours are
+        // actually rendering.
+        val attributionCoveringRegion =
+            cameraPositionState.projection?.visibleRegion?.latLngBounds?.let { mapViewModel.offlineRegionCovering(it) }
+        val offlineRegionActive = offlineOverlayEnabled && attributionCoveringRegion != null
+        val terrainActive =
+            attributionCoveringRegion?.hasTerrain == true && (terrainHillshadeEnabled || terrainContoursEnabled)
+        val attributionText =
+            remember(currentRasterBasemap, enabledOverlayIds, offlineRegionActive, terrainActive) {
+                val baseAttribution =
+                    mapAttributionText(
+                        basemap = (currentRasterBasemap as? RasterBasemap.Remote)?.spec,
+                        overlays = mapViewModel.availableOverlays.filter { it.id in enabledOverlayIds }.map { it.spec },
+                    )
+                buildList {
+                    if (baseAttribution.isNotEmpty()) add(baseAttribution)
+                    if (offlineRegionActive) add(OfflineRegionExtractor.ATTRIBUTION)
+                    if (terrainActive) add(MapterhornEndpoints.ATTRIBUTION)
+                }
+                    .joinToString(" · ")
+            }
+        if (attributionText.isNotEmpty()) {
+            Text(
+                text = attributionText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier =
+                Modifier.align(Alignment.BottomCenter)
+                    .padding(bottom = ATTRIBUTION_BOTTOM_PADDING)
+                    .background(
+                        MaterialTheme.colorScheme.surface.copy(alpha = ATTRIBUTION_SCRIM_ALPHA),
+                        MaterialTheme.shapes.extraSmall,
+                    )
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+
         MapControlsOverlay(
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
             onToggleFilterMenu = { mapFilterMenuExpanded = true },
+            filtersActive = mode !is GoogleMapMode.NodeTrack && mapFilterState.isNarrowing,
             filterDropdownContent = {
                 if (mode is GoogleMapMode.NodeTrack) {
-                    NodeMapFilterDropdown(
+                    NodeTrackFilterMenu(
                         expanded = mapFilterMenuExpanded,
                         onDismissRequest = { mapFilterMenuExpanded = false },
-                        mapViewModel = mapViewModel,
+                        selected = mapFilterState.lastHeardTrackFilter,
+                        onSelect = mapViewModel::setLastHeardTrackFilter,
                     )
-                } else {
-                    MapFilterDropdown(
-                        expanded = mapFilterMenuExpanded,
+                } else if (mapFilterMenuExpanded) {
+                    MapFilterSheet(
                         onDismissRequest = { mapFilterMenuExpanded = false },
-                        mapViewModel = mapViewModel,
+                        filterState = mapFilterState,
+                        actions = mapViewModel.mapFilterActions(),
                     )
                 }
             },
@@ -905,7 +1024,7 @@ fun MapView(
                         expanded = mapTypeMenuExpanded,
                         onDismissRequest = { mapTypeMenuExpanded = false },
                         mapViewModel = mapViewModel,
-                        onManageCustomTileProvidersClicked = {
+                        onManageCustomTileProvidersClick = {
                             mapTypeMenuExpanded = false
                             showCustomTileManagerSheet = true
                         },
@@ -919,12 +1038,9 @@ fun MapView(
                     onClick = { showLayersBottomSheet = true },
                 )
             },
-            // Google flavor only: hands params to the hosted Site Planner and imports the returned coverage.
-            onSitePlannerClick =
-            if (sitePlannerAvailable()) {
-                { sitePlannerInitial = ourNodeInfo.toSitePlannerParams(channelSet) }
-            } else {
-                null
+            // Hands params to the hosted Site Planner and imports the returned coverage.
+            onSitePlannerClick = {
+                sitePlannerLaunch = SitePlannerLaunch(initialParams = ourNodeInfo.toSitePlannerParams(channelSet))
             },
             isLocationTrackingEnabled = isLocationTrackingEnabled,
             onToggleLocationTracking = {
@@ -972,7 +1088,46 @@ fun MapView(
 
     // --- Bottom sheets & dialogs ---
     if (showLayersBottomSheet) {
-        ModalBottomSheet(onDismissRequest = { showLayersBottomSheet = false }) {
+        ModalBottomSheet(
+            onDismissRequest = {
+                showLayersBottomSheet = false
+                mapViewModel.clearOfflineDownloadState()
+                mapViewModel.clearTerrainDownloadState()
+            },
+        ) {
+            val offlineRegions by mapViewModel.offlineRegions.collectAsStateWithLifecycle()
+            val offlineDownloadState by mapViewModel.offlineDownloadState.collectAsStateWithLifecycle()
+            val terrainDownloadState by mapViewModel.terrainDownloadState.collectAsStateWithLifecycle()
+            val terrainDownloadRegionId by mapViewModel.terrainDownloadRegionId.collectAsStateWithLifecycle()
+            OfflineRegionManagerSection(
+                visibleBounds = cameraPositionState.projection?.visibleRegion?.latLngBounds,
+                currentZoom = cameraPositionState.position.zoom.toInt(),
+                regions = offlineRegions,
+                downloadState = offlineDownloadState,
+                offlineOverlayEnabled = offlineOverlayEnabled,
+                estimateTileCount = mapViewModel::estimateOfflineTileCount,
+                onDownload = mapViewModel::downloadOfflineRegion,
+                onDeleteRegion = mapViewModel::deleteOfflineRegion,
+                onToggleOfflineOverlay = mapViewModel::setOfflineOverlayEnabled,
+                terrainDownloadState = terrainDownloadState,
+                terrainDownloadRegionId = terrainDownloadRegionId,
+                terrainHillshadeEnabled = terrainHillshadeEnabled,
+                terrainContoursEnabled = terrainContoursEnabled,
+                onDownloadTerrain = mapViewModel::downloadTerrainForRegion,
+                onToggleHillshade = mapViewModel::setTerrainHillshadeEnabled,
+                onToggleContours = mapViewModel::setTerrainContoursEnabled,
+            )
+            HorizontalDivider()
+
+            // The raster overlays sit above the imported-layer manager, matching where the MapLibre map puts them.
+            RasterOverlayToggles(
+                available = mapViewModel.availableOverlays,
+                enabledIds = enabledOverlayIds,
+                onToggle = { mapViewModel.toggleOverlay(it) },
+                opacity = layerOpacity,
+                onOpacityChange = { key, value -> mapViewModel.setLayerOpacity(key, value) },
+            )
+            HorizontalDivider()
             CustomMapLayersSheet(
                 mapLayers = mapLayers,
                 onToggleVisibility = onToggleVisibility,
@@ -980,6 +1135,8 @@ fun MapView(
                 onAddLayerClicked = onAddLayerClicked,
                 onRefreshLayer = { mapViewModel.refreshMapLayer(it) },
                 onAddNetworkLayer = { name, url -> mapViewModel.addNetworkMapLayer(name, url) },
+                opacity = layerOpacity,
+                onOpacityChange = { key, value -> mapViewModel.setLayerOpacity(key, value) },
             )
         }
     }
@@ -987,11 +1144,15 @@ fun MapView(
     val sitePlannerRequest by mapViewModel.sitePlannerRequest.collectAsStateWithLifecycle()
     LaunchedEffect(sitePlannerRequest) {
         sitePlannerRequest?.let { node ->
-            sitePlannerInitial = node.toSitePlannerParams(channelSet)
-            mapViewModel.consumeSitePlannerRequest()
+            sitePlannerLaunch =
+                SitePlannerLaunch(initialParams = node.toSitePlannerParams(channelSet), selectedNode = node)
+            if (node.validPosition != null) {
+                cameraPositionState.animate(CameraUpdateFactory.newLatLng(LatLng(node.latitude, node.longitude)))
+            }
+            mapViewModel.consumeSitePlannerRequest(node.num)
         }
     }
-    sitePlannerInitial?.let { initial ->
+    sitePlannerLaunch?.let { launch ->
         // Phone GPS: only when permission is already granted; otherwise the field stays manual.
         val onRequestCurrentLocation: (suspend () -> Pair<Double, Double>?)? =
             if (locationPermission.isGranted) {
@@ -999,12 +1160,12 @@ fun MapView(
             } else {
                 null
             }
-        // Our connected node's reported position: only when it has a valid fix.
+        // Route launches retain the selected node; manual map launches continue following our connected node.
         val onUseNodeLocation: (() -> Pair<Double, Double>)? =
-            ourNodeInfo?.takeIf { it.validPosition != null }?.let { node -> { node.latitude to node.longitude } }
+            launch.nodeLocation(ourNodeInfo)?.let { location -> { location } }
         SitePlannerHost(
-            initialParams = initial,
-            onDismiss = { sitePlannerInitial = null },
+            initialParams = launch.initialParams,
+            onDismiss = { sitePlannerLaunch = null },
             onImport = { name, geoJson, latitude, longitude ->
                 mapViewModel.addGeoJsonLayer(name, geoJson)
                 // Recenter on the estimate's transmitter so the freshly-imported coverage is on-screen.
@@ -1017,19 +1178,74 @@ fun MapView(
             onUseMapCenter = { cameraPositionState.position.target.let { it.latitude to it.longitude } },
         )
     }
-    showClusterItemsDialog?.let {
-        ClusterItemsListDialog(
-            items = it,
-            onDismiss = { showClusterItemsDialog = null },
-            onItemClick = { item ->
-                navigateToNodeDetails(item.node.num)
+    showClusterItemsDialog?.let { items ->
+        ClusterMembersDialog(
+            members =
+            items.map {
+                ClusterMemberEntry(
+                    nodeNum = it.node.num,
+                    title = it.nodeTitle,
+                    subtitle = it.nodeSnippet,
+                    node = it.node,
+                )
+            },
+            onMemberClick = { nodeNum ->
+                navigateToNodeDetails(nodeNum)
                 showClusterItemsDialog = null
             },
+            onDismissRequest = { showClusterItemsDialog = null },
         )
     }
     if (showCustomTileManagerSheet) {
         ModalBottomSheet(onDismissRequest = { showCustomTileManagerSheet = false }) {
             CustomTileProviderManagerSheet(mapViewModel = mapViewModel)
+        }
+    }
+}
+
+private const val SECONDS_PER_MINUTE = 60L
+private const val MILLIS_PER_SECOND = 1_000L
+
+@Composable
+private fun rememberRelativeTimeBucket(): Long {
+    val buckets = remember { relativeTimeBuckets() }
+    return buckets.collectAsStateWithLifecycle(initialValue = nowSeconds / SECONDS_PER_MINUTE).value
+}
+
+internal fun relativeTimeBuckets(now: () -> Long = { nowSeconds }): Flow<Long> = flow {
+    while (true) {
+        val currentSeconds = now()
+        emit(currentSeconds / SECONDS_PER_MINUTE)
+        val secondsUntilNextMinute = SECONDS_PER_MINUTE - currentSeconds.mod(SECONDS_PER_MINUTE)
+        delay(secondsUntilNextMinute * MILLIS_PER_SECOND)
+    }
+}
+
+/**
+ * Materializes the native clustering model used by the Google map.
+ *
+ * Camera state invalidates [MapView] on every movement frame, and its filters produce a new-but-equal [List] each time.
+ * Using that structural value as a key avoids rebuilding every [NodeClusterItem] (and its strings/[LatLng]) for
+ * camera-only changes. [relativeTimeBucket] deliberately refreshes the relative marker titles once per minute.
+ */
+@Composable
+internal fun rememberNodeClusterItems(
+    nodes: List<Node>,
+    myNodeNum: Int?,
+    relativeTimeBucket: Long,
+): List<NodeClusterItem> {
+    val unknownText = stringResource(Res.string.unknown)
+    val nowText = stringResource(Res.string.now)
+    return remember(nodes, myNodeNum, relativeTimeBucket, unknownText, nowText) {
+        nodes.map { node ->
+            val latLng = LatLng((node.position.latitude_i ?: 0) * DEG_D, (node.position.longitude_i ?: 0) * DEG_D)
+            NodeClusterItem(
+                node = node,
+                nodePosition = latLng,
+                nodeTitle = "${node.user.short_name} ${formatAgo(node.position.time, unknownText, nowText)}",
+                nodeSnippet = node.user.long_name,
+                myNodeNum = myNodeNum,
+            )
         }
     }
 }
@@ -1050,6 +1266,7 @@ private fun MainMapContent(
     onShowGeofenceInfo: (Waypoint) -> Unit,
     selectedWaypointId: Int?,
     mapLayers: List<MapLayerItem>,
+    layerOpacity: Map<String, Float>,
     mapViewModel: MapViewModel,
     cameraPositionState: CameraPositionState,
     coroutineScope: CoroutineScope,
@@ -1098,7 +1315,10 @@ private fun MainMapContent(
         displayableWaypoints.forEach { waypoint -> WaypointGeofenceOverlay(waypoint) }
     }
 
-    mapLayers.forEach { layerItem -> key(layerItem.id) { MapLayerOverlay(layerItem, mapViewModel) } }
+    mapLayers.forEach { layerItem ->
+        val opacity = layerItem.uri?.let { layerOpacity.opacityOf(it) } ?: 1f
+        key(layerItem.id) { MapLayerOverlay(layerItem, opacity, mapViewModel) }
+    }
 }
 
 /**
@@ -1143,7 +1363,7 @@ private fun WaypointGeofenceOverlay(waypoint: Waypoint) {
  * [TripOrigin] dot with an info-window on tap.
  *
  * When [selectedPositionTime] matches a marker's `Position.time`, that marker is highlighted with the primary color and
- * elevated z-index. Tapping a marker invokes [onPositionSelected] for list synchronization.
+ * elevated z-index. Tapping a marker invokes [onPositionSelect] for list synchronization.
  */
 @OptIn(MapsComposeExperimentalApi::class)
 @Composable
@@ -1151,10 +1371,10 @@ private fun WaypointGeofenceOverlay(waypoint: Waypoint) {
 private fun NodeTrackOverlay(
     focusedNode: Node,
     sortedPositions: List<Position>,
-    displayUnits: DisplayUnits,
+    displayUnits: MeasurementSystem,
     myNodeNum: Int?,
     selectedPositionTime: Int? = null,
-    onPositionSelected: ((Int) -> Unit)? = null,
+    onPositionSelect: ((Int) -> Unit)? = null,
 ) {
     val isHighPriority = focusedNode.num == myNodeNum || focusedNode.isFavorite
     val activeNodeZIndex = if (isHighPriority) 5f else 4f
@@ -1183,7 +1403,7 @@ private fun NodeTrackOverlay(
                     zIndex = activeNodeZIndex,
                     alpha = if (isHighPriority) 1.0f else 0.9f,
                     onClick = {
-                        onPositionSelected?.invoke(position.time)
+                        onPositionSelect?.invoke(position.time)
                         false // Allow default info window behavior
                     },
                 ) {
@@ -1196,7 +1416,7 @@ private fun NodeTrackOverlay(
                     snippet = formatAgo(position.time),
                     zIndex = if (isSelected) activeNodeZIndex - 0.5f else 1f + alpha,
                     onClick = {
-                        onPositionSelected?.invoke(position.time)
+                        onPositionSelect?.invoke(position.time)
                         false // Allow default info window behavior
                     },
                     infoContent = { PositionInfoWindowContent(position = position, displayUnits = displayUnits) },
@@ -1230,7 +1450,7 @@ private fun NodeTrackOverlay(
 
 @Composable
 @Suppress("LongMethod")
-private fun PositionInfoWindowContent(position: Position, displayUnits: DisplayUnits = DisplayUnits.METRIC) {
+private fun PositionInfoWindowContent(position: Position, displayUnits: MeasurementSystem = MeasurementSystem.METRIC) {
     @Composable
     fun PositionRow(label: String, value: String) {
         Row(modifier = Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1266,17 +1486,10 @@ private fun PositionInfoWindowContent(position: Position, displayUnits: DisplayU
 }
 
 @Composable
-private fun speedFromPosition(position: Position, displayUnits: DisplayUnits): String {
-    val speedInMps = position.ground_speed ?: 0
-    val mpsText = "%d m/s".format(speedInMps)
-    return if (speedInMps > 10) {
-        when (displayUnits) {
-            DisplayUnits.METRIC -> "%.1f Km/h".format(speedInMps.mpsToKmph())
-            DisplayUnits.IMPERIAL -> "%.1f mph".format(speedInMps.mpsToMph())
-        }
-    } else {
-        mpsText
-    }
+private fun speedFromPosition(position: Position, displayUnits: MeasurementSystem): String {
+    // Position.ground_speed is km/h on the wire (proto canon), not m/s.
+    val speedRes = if (displayUnits == MeasurementSystem.IMPERIAL) Res.string.speed_mph else Res.string.speed_kmh
+    return stringResource(speedRes, (position.ground_speed ?: 0).kmhIn(displayUnits))
 }
 
 // endregion
@@ -1369,24 +1582,29 @@ private fun offsetPolyline(
 
 @OptIn(MapsComposeExperimentalApi::class)
 @Composable
-private fun MapLayerOverlay(layerItem: MapLayerItem, mapViewModel: MapViewModel) {
+private fun MapLayerOverlay(layerItem: MapLayerItem, opacity: Float, mapViewModel: MapViewModel) {
     var currentLayer by remember { mutableStateOf<RenderedMapLayer?>(null) }
 
-    MapEffect(layerItem.id, layerItem.refreshToken) { map ->
+    // Opacity is part of the key: maps-utils has no way to restyle a layer already on the map, so a fade is a
+    // teardown and a redraw.
+    MapEffect(layerItem.id, layerItem.refreshToken, opacity) { map ->
         currentLayer?.safeHide()
         currentLayer = null
-        val inputStream = mapViewModel.getInputStreamFromUri(layerItem) ?: return@MapEffect
+        val bytes = mapViewModel.readLayerBytes(layerItem) ?: return@MapEffect
         val layer =
             try {
                 val dataLayer =
                     withContext(Dispatchers.IO) {
-                        inputStream.use { stream -> parseMapLayer(layerItem.layerType, stream) }
+                        // Buffered because the KMZ sniff marks and resets the stream before the parser reads it.
+                        BufferedInputStream(ByteArrayInputStream(bytes)).use { stream ->
+                            parseMapLayer(layerItem.layerType, stream)
+                        }
                     }
                 if (dataLayer == null) {
                     Logger.withTag("MapView").e { "Error loading map layer: ${layerItem.name} (unrecognized format)" }
                     null
                 } else {
-                    RenderedMapLayer(map, dataLayer)
+                    RenderedMapLayer(map, dataLayer.scaledByOpacity(opacity), opacity)
                 }
             } catch (e: CancellationException) {
                 // Not a load failure: this MapEffect is relaunched on every refresh (refreshToken) and cancelled when
@@ -1416,46 +1634,63 @@ private fun MapLayerOverlay(layerItem: MapLayerItem, mapViewModel: MapViewModel)
     }
 }
 
-/** Zip magic bytes; a [LayerType.KML] source starting with these is a KMZ archive rather than bare KML. */
-private val KMZ_MAGIC = byteArrayOf('P'.code.toByte(), 'K'.code.toByte())
-
 /**
  * Parse a custom overlay into the maps-utils platform-agnostic [DataLayer] model; null if the format is unrecognized.
  */
 private fun parseMapLayer(layerType: LayerType, stream: InputStream): DataLayer? = when (layerType) {
-    LayerType.KML -> {
-        val buffered = BufferedInputStream(stream)
-        buffered.mark(KMZ_MAGIC.size)
-        val magic = ByteArray(KMZ_MAGIC.size)
-        val read = buffered.read(magic)
-        buffered.reset()
-        val kml =
-            if (read == KMZ_MAGIC.size && magic.contentEquals(KMZ_MAGIC)) {
-                KmzParser().parse(buffered)
-            } else {
-                KmlParser().parse(buffered)
-            }
-        kml.toLayer()
-    }
+    // Converted with the app's own reader rather than maps-utils': keeping both parsers meant keeping the
+    // maps-utils/xmlutil pairing that made every KML import die with NoSuchMethodError in 2.8.0–2.8.1, held off
+    // only by a version floor and a canary test.
+    LayerType.KML ->
+        convertKmlSource(BufferedInputStream(stream))?.let { imported ->
+            GeoJsonParser()
+                .parse(imported.geoJson.byteInputStream())
+                ?.toLayer()
+                ?.applySimpleStyleSpec()
+                // A KMZ carries its icons inside the archive, and a placemark names them by their path in it. The
+                // renderer resolves those through its image cache, which is seeded from this property. Ground
+                // overlays ride the same bag: DataLayer is the one thing that reaches RenderedMapLayer.
+                ?.let { layer ->
+                    layer.copy(
+                        properties =
+                        layer.properties +
+                            ("images" to imported.images) +
+                            ("groundOverlays" to imported.groundOverlays),
+                    )
+                }
+        }
 
-    LayerType.GEOJSON -> GeoJsonParser().parse(stream)?.toLayer()?.applySimpleStyleSpec()
+    LayerType.GEOJSON,
+    LayerType.COVERAGE,
+    -> GeoJsonParser().parse(stream)?.toLayer()?.applySimpleStyleSpec()
 }
 
 /**
  * A parsed custom overlay (KML/KMZ/GeoJSON) plus the machinery to draw it on the map.
  *
  * Each [show] creates a fresh single-use [MapViewRenderer] and [hide] tears it down with [MapViewRenderer.clear].
- * Renderers are deliberately not reused: clear() cancels their icon-loading scope for good, and per-feature removal
- * ([MapViewRenderer.removeFeature]) silently no-ops for MultiGeometry features (the renderer keys rendered map objects
- * by internal per-geometry copies), so clear() is the only teardown that reliably takes everything off the map.
+ * Renderers are deliberately not reused: clear() cancels their icon-loading scope for good, so a hidden layer holds
+ * nothing live and every re-show starts with a working one. Reuse would buy nothing — an opacity change or a refresh
+ * rebuilds this object outright, leaving the visibility toggle as the only re-show path.
  */
-private class RenderedMapLayer(private val map: GmsGoogleMap, private val dataLayer: DataLayer) {
+private class RenderedMapLayer(
+    private val map: GmsGoogleMap,
+    private val dataLayer: DataLayer,
+    private val opacity: Float,
+) {
     private var renderer: MapViewRenderer? = null
 
     /** Images extracted from a KMZ archive, keyed by archive path; the KML mapper stashes them in layer properties. */
     private val localImages: Map<String, Bitmap>
         @Suppress("UNCHECKED_CAST")
         get() = dataLayer.properties["images"] as? Map<String, Bitmap> ?: emptyMap()
+
+    /** KML ground overlays, riding the same property bag as the images they draw with. */
+    private val groundOverlays: List<KmlGroundOverlay>
+        @Suppress("UNCHECKED_CAST")
+        get() = dataLayer.properties["groundOverlays"] as? List<KmlGroundOverlay> ?: emptyList()
+
+    private val renderedGroundOverlays = mutableListOf<GroundOverlay>()
 
     fun show() {
         if (renderer != null) return
@@ -1464,11 +1699,34 @@ private class RenderedMapLayer(private val map: GmsGoogleMap, private val dataLa
                 localImages.forEach { (path, bitmap) -> r.cacheImageData(path, bitmap) }
                 r.addLayer(dataLayer)
             }
+        groundOverlays.forEach { overlay ->
+            val image = localImages[overlay.href]
+            if (image == null) {
+                // The Site Planner's KML export names a sibling file that was never in an archive; there is
+                // nothing to drape. Count, not href — the image name is user content.
+                Logger.withTag("MapView").w { "Skipping a ground overlay whose image is not packed in the archive" }
+                return@forEach
+            }
+            map.addGroundOverlay(
+                GroundOverlayOptions()
+                    .positionFromBounds(
+                        LatLngBounds(LatLng(overlay.south, overlay.west), LatLng(overlay.north, overlay.east)),
+                    )
+                    .image(BitmapDescriptorFactory.fromBitmap(image))
+                    // KML's rotation is degrees counter-clockwise about the box centre; bearing is clockwise.
+                    .bearing((-overlay.rotationDegrees).toFloat())
+                    // A draped image is a raster, so unlike the vector features it does have a transparency to set.
+                    .transparency((1f - opacity).coerceIn(0f, 1f)),
+            )
+                ?.let { renderedGroundOverlays += it }
+        }
     }
 
     fun hide() {
         renderer?.clear()
         renderer = null
+        renderedGroundOverlays.forEach { it.remove() }
+        renderedGroundOverlays.clear()
     }
 }
 
@@ -1491,15 +1749,17 @@ private fun RenderedMapLayer.safeHide() {
 /**
  * Apply simplestyle-spec (https://github.com/mapbox/simplestyle-spec) properties to a parsed GeoJSON layer.
  *
- * The maps-utils GeoJSON mapper reads `fill`/`stroke`/`stroke-width`/`fill-opacity`/`stroke-opacity` itself, but misses
- * several things this app relies on for Meshtastic Site Planner coverage exports: the legacy `color` fallback,
- * `rgb()`/`rgba()` colors, a default fill opacity so stacked contour bands read as a gradient, and polygon styling for
- * MultiPolygon features (the mapper styles any multi-geometry as a line). Rebuild each feature's style from its
- * properties so the coverage draws in its dBm colors instead of the default black outline.
+ * The maps-utils GeoJSON mapper reads `fill`/`stroke`/`stroke-width`/`fill-opacity`/`stroke-opacity` itself, but
+ * attaches no style at all to a feature carrying none of those keys — which is every Meshtastic Site Planner coverage
+ * export that predates them, and leaves the opacity slider nothing to fade. So each feature's style is resolved here,
+ * adding what the mapper does not cover: the legacy `color` fallback, `rgb()`/`rgba()` colors, `stroke-opacity` on
+ * lines, a default fill opacity so stacked contour bands read as a gradient, and the imported `icon-url` it has no
+ * marker styling for. Geometry is classified the way the mapper classifies it, except that a point without an
+ * `icon-url` is left alone — the mapper styles no point at all, and there is nothing of ours to add.
  */
-private fun DataLayer.applySimpleStyleSpec(): DataLayer = copy(features = features.map { it.applySimpleStyleSpec() })
+internal fun DataLayer.applySimpleStyleSpec(): DataLayer = copy(features = features.map { it.applySimpleStyleSpec() })
 
-private fun Feature.applySimpleStyleSpec(): Feature {
+internal fun Feature.applySimpleStyleSpec(): Feature {
     val fill = cssColor("fill") ?: cssColor("color")
     val fillOpacity = stringProperty("fill-opacity")?.toFloatOrNull()
     val strokeOpacity = stringProperty("stroke-opacity")?.toFloatOrNull()
@@ -1509,6 +1769,13 @@ private fun Feature.applySimpleStyleSpec(): Feature {
         }
     val strokeWidth = stringProperty("stroke-width")?.toFloatOrNull() ?: DEFAULT_GEOJSON_STROKE_WIDTH
     return when {
+        // A KML icon reaches us as the `icon-url` the converter writes; the mapper reads no icon property at all, and
+        // sorts a MultiPoint into the line branch below, so without this the map loses the icons it has always drawn.
+        geometry.isPointLike() ->
+            stringProperty(ICON_URL_PROPERTY)?.let(::sanitizeImportedIconUrl)?.let {
+                copy(style = PointStyle(iconUrl = it))
+            } ?: this
+
         geometry.isPolygonal() ->
             copy(
                 style =
@@ -1519,19 +1786,54 @@ private fun Feature.applySimpleStyleSpec(): Feature {
                 ),
             )
 
-        geometry.isLinear() -> copy(style = LineStyle(color = stroke ?: AndroidColor.BLACK, width = strokeWidth))
-
-        else -> this // Points keep the default marker; mixed geometry collections keep the mapper's style.
+        else -> copy(style = LineStyle(color = stroke ?: AndroidColor.BLACK, width = strokeWidth))
     }
 }
 
-/** Polygon or MultiPolygon (a multi-geometry whose members are all polygons). */
-private fun Geometry.isPolygonal(): Boolean =
-    this is ModelPolygon || (this is MultiGeometry && geometries.isNotEmpty() && geometries.all { it is ModelPolygon })
+/**
+ * The same layer with every feature's alpha scaled by [opacity].
+ *
+ * maps-utils draws an imported layer as ordinary map objects — polygons, polylines, markers — so unlike a tile overlay
+ * there is nothing layer-wide to fade. Scaling rather than replacing the alpha keeps an import's own relative
+ * transparency: a coverage export whose contour bands are already translucent stays a gradient as the layer fades.
+ *
+ * Points included: [PointStyle] carries an ARGB colour the renderer turns into marker alpha, so a point-only layer
+ * would otherwise stay fully visible at 0%.
+ */
+internal fun DataLayer.scaledByOpacity(opacity: Float): DataLayer =
+    if (opacity >= 1f) this else copy(features = features.map { it.scaledByOpacity(opacity) })
 
-/** LineString or MultiLineString (a multi-geometry whose members are all line strings). */
-private fun Geometry.isLinear(): Boolean =
-    this is LineString || (this is MultiGeometry && geometries.isNotEmpty() && geometries.all { it is LineString })
+private fun Feature.scaledByOpacity(opacity: Float): Feature = when (val featureStyle = style) {
+    is PolygonStyle ->
+        copy(
+            style =
+            featureStyle.copy(
+                fillColor = featureStyle.fillColor.scaleAlpha(opacity),
+                strokeColor = featureStyle.strokeColor.scaleAlpha(opacity),
+            ),
+        )
+
+    is LineStyle -> copy(style = featureStyle.copy(color = featureStyle.color.scaleAlpha(opacity)))
+
+    is PointStyle -> copy(style = featureStyle.copy(color = featureStyle.color.scaleAlpha(opacity)))
+
+    else -> this
+}
+
+private fun Int.scaleAlpha(opacity: Float): Int = AndroidColor.argb(
+    (AndroidColor.alpha(this) * opacity.coerceIn(0f, 1f)).roundToInt(),
+    AndroidColor.red(this),
+    AndroidColor.green(this),
+    AndroidColor.blue(this),
+)
+
+/** Point or MultiPoint (a multi-geometry whose members are all points). */
+private fun Geometry.isPointLike(): Boolean = this is PointGeometry ||
+    (this is MultiGeometry && geometries.isNotEmpty() && geometries.all { it is PointGeometry })
+
+/** Polygon or MultiPolygon — recursive, so a nested collection is classified the way the mapper classifies it. */
+private fun Geometry.isPolygonal(): Boolean =
+    this is ModelPolygon || (this is MultiGeometry && geometries.isNotEmpty() && geometries.all { it.isPolygonal() })
 
 private fun Feature.stringProperty(key: String): String? = properties[key] as? String
 
@@ -1600,11 +1902,16 @@ private suspend fun FusedLocationProviderClient.awaitLastLocation(): Location? =
 }
 
 /** Builds a proto [BoundingBox] (degrees ×1e7) from two opposite corner taps. */
-private fun boundingBoxFromCorners(a: LatLng, b: LatLng): BoundingBox = BoundingBox(
-    longitude_west_i = (minOf(a.longitude, b.longitude) / DEG_D).toInt(),
-    latitude_south_i = (minOf(a.latitude, b.latitude) / DEG_D).toInt(),
-    longitude_east_i = (maxOf(a.longitude, b.longitude) / DEG_D).toInt(),
-    latitude_north_i = (maxOf(a.latitude, b.latitude) / DEG_D).toInt(),
-)
+private fun boundingBoxFromCorners(a: LatLng, b: LatLng): BoundingBox = BoundingBox.Builder()
+    .also { wb ->
+        wb.longitude_west_i = (minOf(a.longitude, b.longitude) / DEG_D).toInt()
+        wb.latitude_south_i = (minOf(a.latitude, b.latitude) / DEG_D).toInt()
+        wb.longitude_east_i = (maxOf(a.longitude, b.longitude) / DEG_D).toInt()
+        wb.latitude_north_i = (maxOf(a.latitude, b.latitude) / DEG_D).toInt()
+    }
+    .build()
 
 // endregion
+
+/** A shared [MapBounds] as the box the Google map wants. */
+private fun MapBounds.toLatLngBounds(): LatLngBounds = LatLngBounds(LatLng(south, west), LatLng(north, east))

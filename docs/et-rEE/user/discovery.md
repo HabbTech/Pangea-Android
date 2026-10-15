@@ -1,68 +1,72 @@
 ---
-title: Avastamine
-parent: User Guide
+title: Kohalik kärgvõrgu avastaja
+parent: Kasutusjuhend
 nav_order: 12
-last_updated: 2026-07-27
+last_updated: 2026-09-19
 description: Avasta oma kärgvõrku – kohalik kärgvõrgu avastaja skanner, traceroute'i teed, naabri-kaardid ja sõlmede avastamise tööriistad.
 aliases:
+  - discovery
+  - local-mesh-discovery
   - kärgvõrgu-avastamine
   - kohalik-avastamine
-  - network-scan
+  - võrguskannimine
   - traceroute
-  - neighbor-info
+  - naabri-info
 ---
 
-# Avastamine
+# Kohalik kärgvõrgu avastaja
 
 Avastamistööriistad aitavad mõista, **kuidas** kärgvõrk on ühendatud – millised sõlmed üksteist kuulevad, milliseid teid sõnumid läbivad ja kus esinevad kitsaskohad või nõrgad lülid.
 
 The app offers two complementary approaches:
 
-- **Kohalik kärgvõrgu avastaja (skanner)** – automaatne režiim, mis perioodiliselt skaneerib ühendatud raadiol läbi erinevate LoRa eelhäälestuste, kuulab igaüht neist ja järjestab, milline eelhäälestus sinu asukohas kõige paremini toimib.
-- **Manual exploration** — traceroute, Neighbor Info, and the node list, which you can use at any time to investigate specific paths and topology.
-
----
+- **Local Mesh Discovery (Scanner)** — an automated mode that cycles your connected node through different LoRa presets, listens on each, and ranks which preset performs best at your location.
+- **Manuaalne uurimine** – traceroute, naabri info ja sõlmede loend, mida saate igal ajal kasutada konkreetsete teede ja topoloogia uurimiseks.
 
 ## Kohalik kärgvõrgu avastaja (skanner)
 
-Kohalik kärgvõrdu avastaja on spetsiaalne skaneerimisrežiim, mis aitab leida oma asukoha jaoks parima LoRa modemi eelseadistuse ja näha, millised sõlmed on igal eelseadistusel aktiivsed. See kerib ühendatud raadio läbi ühe või mitu valitud eelseadet, kuulab (või "ootab") igaüht neist määratud aja jooksul pakettide kogumiseks ning seejärel analüüsib ja järjestab tulemused.
+Kohalik kärgvõrdu avastaja on spetsiaalne skaneerimisrežiim, mis aitab leida oma asukoha jaoks parima LoRa modemi eelseadistuse ja näha, millised sõlmed on igal eelseadistusel aktiivsed. It cycles your connected node through one or more presets you choose, dwells on each one — listens for a set time — to collect packets, then analyzes and ranks the results.
 
-Open it from **Settings → Advanced → Local Mesh Discovery**. On desktop, it has its own **Settings → Local Mesh Discovery** entry.
+Connect your node, then open **Settings → Advanced → Local Mesh Discovery**. On Android the **Advanced** section appears only for a locally connected node, never over remote admin, and stays grayed out until the app has finished reading the node's configuration. On a managed device its entries are disabled, except **Debug Panel**, which reads app-local logs and stays available. On desktop, Local Mesh Discovery has its own entry on the Settings screen, with no such gate.
 
-> ⚠️ **Märkus:** Discovery muudab skannimise ajal ajutiselt raadio LoRa seadeid ja taastab pärast skannimise lõppu algse konfiguratsiooni. Your device must be connected to run a scan.
+> ℹ️ **Note:** Discovery temporarily changes your node's LoRa settings while it scans, then restores your original configuration when it finishes.
 
-### Setting Up a Scan
+### Setting up a scan
 
 Before starting, configure these controls:
 
-| Control                | Kirjeldus                                                                                                                                                                                                                                |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **LoRa preset picker** | Select one or more presets to scan. Otsing peatub kordamööda iga valitud eelseadistuse juures, et kuulata liiklust.                                                                                      |
-| **Kuulamisaeg**        | Time to listen on each preset. Choose from 1, 5, 15, 30, 45, 60, 90, 120, or 180 minutes. Pikemad kuulamisajad koguvad rohkem pakette ja annavad selgema pildi, kuid võtavad kauem aega. |
-| **Keep screen awake**  | Valikuline lüliti, mis takistab ekraani pika skannimise ajal magamaminekut.                                                                                                                                              |
+| Control                | Kirjeldus                                                                                                                                                                                                                                                |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LoRa preset picker** | Vali skannimiseks üks või mitu eelseadistust. Otsing peatub kordamööda iga valitud eelseadistuse juures, et kuulata liiklust.                                                                                            |
+| **Kuulamisaeg**        | Time to listen on each preset. Vali 1, 5, 15, 30, 45, 60, 90, 120 või 180 minutit. Pikemad kuulamisajad koguvad rohkem pakette ja annavad selgema pildi, kuid võtavad kauem aega.                        |
+| **Keep screen awake**  | Keeps the display on for the scan. The scan itself holds a CPU wake lock for its whole run and posts a **Scanning LoRa presets…** notification, so it keeps collecting with the screen off or the app in the background. |
 
-The **Start** button stays disabled — with an explanation of why — until the scan can run. Common reasons it's disabled:
+The **Start Scan** button stays disabled — with an explanation of why — until the scan can run. Common reasons it's disabled:
 
-- The device is **not connected**.
-- **No presets** have been selected to scan.
-- The selected preset uses **2.4 GHz**, which your hardware doesn't support.
+- The node is **not connected**.
+- Skannimiseks pole **ühtegi eelseadet** valitud.
+- Valitud eelseadistus kasutab **2,4 GHz** sagedust, mida sinu riistvara ei toeta.
 
-### Live Progress
+### Live progress
 
 Skanni ajal näitab Discovery selle praegust etappi:
 
-| Stage                                                 | What's happening                                                                                       |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| **Preparing**                                         | Praeguste sätete salvestamine ja skannimiseks valmistumine.                            |
-| **Shifting to \<preset\>** | Switching the radio to the next preset to test.                                        |
-| **Reconnecting**                                      | Re-establishing the connection after the preset change.                                |
-| **Kuulamine**                                         | Listening on the current preset to collect packets, with a countdown to the next step. |
-| **Analysis**                                          | Processing the collected packets and ranking the presets.                              |
-| **Restoring**                                         | Algsete LoRa seadete taastamine.                                                       |
+| Stage                                                                  | What's happening                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Preparing scan**                                                     | Praeguste sätete salvestamine ja skannimiseks valmistumine.                                                                                                                                                       |
+| **Shifting to \<preset\>**                  | Switching the node to the next preset to test.                                                                                                                                                                    |
+| **Reconnecting on \<preset\>**              | Re-establishing the connection after the preset change.                                                                                                                                                           |
+| **Dwelling on \<preset\>**                  | Kuulatakse praegust eelseadistust pakettide kogumiseks ja järgmise sammuni on oodata loendurit.                                                                                                                   |
+| **Analyzing results**                                                  | Kogutud pakettide töötlemine ja eelseadete järjestamine.                                                                                                                                                          |
+| **Restoring home preset**                                              | Algsete LoRa seadete taastamine.                                                                                                                                                                                  |
+| **Cancelling scan**                                                    | You tapped **Stop Scan**; partial results are saved before the original preset is restored.                                                                                                                       |
+| **Scan failed: \<reason\>** | The scan could not continue — most often the node didn't come back within a minute of a preset change. The results collected so far are saved, and the original preset is restored automatically. |
 
 ![Kuulamis loendur näitab praeguse eelseadistuse järelejäänud aega](../../assets/screenshots/discovery_dwell_progress.png)
 
-### Reading the Results
+If a scan is interrupted — the app is closed, or the node goes away — the app restores your original preset the next time it reconnects to that node, and tells you it has done so. Reconnect the same node to let that happen; until you do, the node stays on whichever preset the scan left it on.
+
+### Reading the results
 
 Kui skann on lõppenud, kuvab Discovery iga testitud eelseadistuse kohta tulemuste kaardi ja üldise kokkuvõtte.
 
@@ -70,137 +74,146 @@ Kui skann on lõppenud, kuvab Discovery iga testitud eelseadistuse kohta tulemus
 
 Metrics include:
 
-| Meetriline                               | What it tells you                                                                              |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| RF health                                | Overall quality of the radio environment on that preset.                       |
-| Kanali kasutus                           | Kui hõivatud olid eetrisagedused kuulamise ajal.                               |
-| Airtime                                  | Transmission time observed.                                                    |
-| Direct vs. relayed nodes | How many mesh nodes were heard directly versus via a relay.                    |
-| Bad / duplicate packets                  | Counts of corrupt and repeated packets, indicating congestion or interference. |
+| Meetriline                | What it tells you                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| RF health                 | Overall quality of the radio environment on that preset.             |
+| Kanali kasutus            | Kui hõivatud olid eetrisagedused kuulamise ajal.                     |
+| Airtime                   | Transmission time observed.                                          |
+| Otse- ja vahendussõlmed   | Kui mitu võrgusõlme kuuldi otse, võrreldes vahendaja kaudu.          |
+| Halvad / duplikaatpaketid | Rikutud ja korduvate pakettide arv, mis näitab ummikuid või häireid. |
 
-Additional features available from the results:
+Tulemustest saadaolevad lisafunktsioonid:
 
 - **Scan History** — saved sessions you can revisit; view or delete past scans.
 - **Avastuskaart** – skanni käigus leitud sõlmede kaart.
 - **Aruande eksport** – ekspordi aruanne PDF-failina Androidis või tekstina muudel platvormidel.
 
-> 💡 **Vihje:** Androidis saab Discovery genereerida tulemustest seadmesisese TI kokkuvõtte (Gemini Nano). If the on-device model isn't available, an algorithmic summary is used instead — so you always get a readable interpretation of the scan.
-
----
+> 💡 **Tip:** On **Google Play** builds, Discovery can generate an on-device AI summary (Gemini Nano) of your results. F-Droid builds always use the algorithmic summary — the proprietary ML Kit dependency is deliberately excluded from that flavor — so you get a readable interpretation of the scan either way.
 
 ## Kärgvõrgu majakas
 
-Mesh Beacon lets nodes invite others to join their mesh. A beaconing node periodically broadcasts an invitation — optionally advertising a channel, region, and modem preset — that nearby devices can hear even before they share a configuration.
+Kärgvõrgu majakas võimaldab sõlmedel kutsuda teisi oma võrguga liituma. A beaconing node periodically broadcasts an invitation — optionally advertising a channel, region, and modem preset — that nearby nodes can hear even before they share a configuration.
 
-Configure it under **Settings → Module Config → Mesh Beacon**:
+Configure it under **Settings → Module configuration → Mesh Beacon**. The entry appears only on nodes running firmware 2.8.0 or newer. A read-only **Region** row at the top of the screen shows the region the beacon advertises: that region, and the preset, are always the ones the node itself uses, so a beacon can't invite anyone onto settings your node isn't running.
 
-- **Listen for beacons** — receive invitations broadcast by other nodes.
-- **Broadcast beacon** — send your own invitation at a set interval, with an optional message and an offered channel.
+- **Kuula majakaid** — võta vastu teiste sõlmede edastatud kutseid.
+- **Broadcast a beacon** — periodically advertise this mesh to nearby nodes, with an optional **Beacon message** of up to 100 bytes, a **Broadcast interval** picked from fixed intervals between 1 hour and 72 hours, and an **Offered channel** chosen from your node's own channels. The offered channel is required, and defaults to your primary channel. Over remote admin the picker offers the primary channel only.
+- **Broadcast targets** — where the beacon actually transmits. The list always holds at least one row: the first is the beacon's own transmission, not an extra. Each row picks a **Channel** and a **Transmit preset**. **Add target** appends a row, and **Remove target** deletes one — removing the last row replaces it with a fresh default rather than emptying the list.
 
-Received invitations appear as **Mesh invitations** cards on the Discovery screen. Each card shows the sender's message plus the offered channel, region, preset, and signal quality, with these actions:
+Two conditions block beacon setup:
 
-- **Join** — switch to the offered channel and preset (retunes the radio and reboots). When the offer matches your current frequency slot, an **Add channel** action adds it without a reboot.
-- **Discover** — seed a Discovery scan with the offered preset so you can survey that mesh before joining (shown only when the beacon offers a preset).
+- **The node has no region set.** The screen shows nothing but _Set your node's region before setting up a beacon._ Set the region on **Settings → LoRa** first.
+- **The node uses custom LoRa settings.** A beacon advertises a modem preset for others to join, so a node with **Use Preset** turned off has no standard preset to offer. In that state **Broadcast a beacon** can be turned off but not on, and the broadcast settings are read-only. Listening for beacons is unaffected.
+
+Received invitations appear as **Mesh invitations** cards on the Discovery screen. Igal kaardil kuvatakse saatja sõnum koos pakutava kanali, piirkonna, eelseadistuse ja signaali kvaliteedi ning järgmiste toimingutega:
+
+- **Join** — switch to the offered channel and preset (retunes the node and reboots). Kui pakkumine sobib praeguse sageduspesaga, lisab toiming **Lisa kanal** selle taaskäivituseta.
+- **Avasta** – sisesta pakutud eelseadistusega avastusskannimisskeem, et saaksid enne liitumist seda võrku uurida (kuvatakse ainult siis, kui majakas pakub eelseadistust).
 - **Dismiss** — ignore the invitation.
 
-Channels advertised by beacons also show up in the scan setup as **Beacon channels** — select one to include it as a scan target.
+Majakate poolt reklaamitud kanalid kuvatakse skannimise seadistuses ka **Majakakanalitena** – valige üks, et see skannimise sihtmärgina lisada.
 
----
+An invitation to a mesh your node is already on is suppressed: no card, no notification, and no **Beacon channels** entry. A channel counts as one you already have only when both its name and its key match a channel on your node — the same name with a different key is a different mesh, so that invitation still reaches you.
 
-## Manual Exploration
+## Manual exploration
 
-The tools below are available at any time from the node list and node detail screens. Use them to investigate specific paths and build a topology picture, alongside or instead of a full scan.
+The following tools are available at any time from the node list and node detail screens. Use them to investigate specific paths and build a topology picture, alongside or instead of a full scan.
 
-## Marsruudi
+### Marsruudi
 
-Traceroute reveals the exact path a message takes from your node to any other node on the mesh. See on kõige kasulikum tööriist ühenduvusprobleemide tõrkeotsinguks.
+Traceroute näitab täpset teed, mida sõnum sõlmest mis tahes teise kärgvõrgu sõlme kulgeb. See on kõige kasulikum tööriist ühenduvusprobleemide tõrkeotsinguks.
 
-### Running a Traceroute
+#### Traceroute'i käivitamine
 
 1. Mine valikuni **Sõlmed** ja puuduta sõlme, mida soovid jälgida.
-2. Sõlme üksikasjade ekraanil puuduta **Traceroute**.
-3. The app sends a traceroute request and waits for the response.
-4. Tulemused kuvatakse iga hüppe kohta, koos signaali kvaliteediga igal sammul.
+2. On the node detail screen, find **Traceroute** in the **Telemetry** section and tap its request button. Once a result arrives, a second button on the same row opens the traceroute log, where each hop is listed with its signal quality.
 
-### Reading the Results
+#### Reading the results
 
-A traceroute result looks like this:
+Traceroute'i tulemus näeb välja selline:
 
+```text
+Route traced toward destination:
+
+■ Your Node (YOUR)
+⇊ 8.5 dB
+■ Relay Node (RLAY)
+⇊ -8.75 dB
+■ Target Node (TGT1)
 ```
-You → Node A (SNR: 8.5, RSSI: -95) → Node B (SNR: 5.2, RSSI: -108) → Target
-```
 
-Iga hüpe näitab vahendussõlme, mis sõnumi edastas. The SNR and RSSI values at each hop tell you about the link quality on that specific segment.
+Each `⇊` line between two nodes is one relay hop, and the SNR on that line is the quality of that segment alone. The app colors it against the demodulation floor of the preset in use, not a fixed number: green above the floor, yellow within 5.5 dB below it, orange within 7.5 dB, and red beyond that. The floor is −7.5 dB on Short Fast and improves 2.5 dB per spreading-factor step, so it is −17.5 dB on Long Fast — the same SNR reads differently on different presets. See [Signal Meter](signal-meter). A request that also gets a reply adds a second block under **Route traced back to us:**.
 
-| What to look for                                                                  | What it means                                                               |
-| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| All hops show Good SNR (≥ −7 dB, green)                        | Healthy path — messages flow reliably                                       |
-| One hop shows Bad SNR (< −15 dB, red) | Kehv ühendus – see releesegment on habras                                   |
-| Mitu hüppet (4+)                                               | Pikk tee – kaalu sõlme ümberpaigutamist selle lühendamiseks                 |
-| Different path on retry                                                           | Mesh is adapting — multiple routes exist (this is good!) |
+| What to look for                                            | What it means                                                               |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------- |
+| All hops show Good SNR (green)           | Healthy path — messages flow reliably                                       |
+| One hop shows a poor SNR (orange or red) | Kehv ühendus – see releesegment on habras                                   |
+| Mitu hüppet (4+)                         | Pikk tee – kaalu sõlme ümberpaigutamist selle lühendamiseks                 |
+| Different path on retry                                     | Mesh is adapting — multiple routes exist (this is good!) |
 
 > 💡 **Vihje:** Käivita traceroute'i mitu korda mõne minuti tagant. If the path changes, your mesh has redundant routes — a sign of a well-connected network.
 
-### Troubleshooting with Traceroute
+#### Veaotsing koos Traceroute
 
-- **"Marsruuti ei leitud"** — Sihtsõlm võib olla võrguühenduseta, leviulatusest väljas või teisel kanalil. Kontrolli, et mõlemad sõlmed jagaksid vähemalt ühte kanalit sama krüpteerimisvõtmega.
-- **Traceroute aegus** — Tee võib olla liiga pikk (ületab hüppete limiidi) või on vahendussõlm ülekoormatud. Proovi hüppe limiiti suurendada menüüs **Seaded → LoRa konfiguratsioon**.
-- **Asymmetric paths** — A traceroute from A→B may take a different path than B→A. This is normal — radio propagation is not always symmetric.
+- **No Response** — The traceroute got nothing back. The target node may be offline, out of range, or on a different channel. Kontrolli, et mõlemad sõlmed jagaksid vähemalt ühte kanalit sama krüpteerimisvõtmega.
+- **Traceroute aegus** — Tee võib olla liiga pikk (ületab hüppete limiidi) või on vahendussõlm ülekoormatud. Try increasing the hop limit in **Settings → LoRa**.
+- **Cannot show traceroute map because the start or destination node has no position information** — The path was traced, but one end has never shared a position.
+- **Asümmeetrilised teed** – Jälgimismarsruut teelt A→B võib minna teist teed kui teelt B→A. This is normal — radio propagation isn't always symmetric.
 
----
+### Naabruse teave
 
-## Naabruse teave
+Naabriinfo moodul võimaldab igal sõlmel levitada nimekirja sõlmedest, mida see **otse kuuleb** (üksik-hüpe). Kui mitu sõlme jagavad oma naaberloendeid, saate kokku panna kogu võrgu topoloogiakaardi.
 
-Naabriinfo moodul võimaldab igal sõlmel levitada nimekirja sõlmedest, mida see **otse kuuleb** (üksik-hüpe). When multiple nodes share their neighbor lists, you can piece together a topology map of the entire mesh.
+#### Naabriinfo lubamine
 
-### Enabling Neighbor Info
-
-1. Mine menüüsse **Seaded → Mooduli konfiguratsioon → Naabriinfo**.
+1. Navigate to **Settings → Module configuration → Neighbor Info**.
 2. Luba moodul.
-3. Määra levintervall (vaikimisi: 900 sekundit / 15 minutit).
+3. Set **Update Interval**. The app accepts whatever you type; the firmware enforces its own minimum and resets a value below it.
+4. Turn on **Transmit over LoRa**. Without it, your neighbor list goes only to MQTT and to this app, never over the air.
 
-Kui see on lubatud, levitab sõlm perioodiliselt oma naabri-tabelit. Teised sõlmed, millel on naabriinfo lubatud, teevad sama.
+Once enabled and transmitting over LoRa, your node periodically broadcasts its neighbor list. Teised sõlmed, millel on naabriinfo lubatud, teevad sama.
 
-### Viewing Neighbor Data
+#### Viewing neighbor data
 
-- Open any node's detail screen and look for the **Neighbors** section.
-- Each neighbor entry shows the node that was directly heard and its signal quality.
-- Combine neighbor data from multiple nodes to understand the full mesh topology.
+- Open a node's detail screen and find **Neighbor Info** in the **Telemetry** section. The request button asks the node for its current neighbor list; once the app has received one, a second button on the same row opens the log of everything that node has reported. The row appears only on nodes that can answer a neighbor request, or that have already reported neighbors.
+- Iga naabri-kirje näitab otse kuuldud sõlme ja selle signaali kvaliteeti.
+- Kogu kärgvõrgu topoloogia mõistmiseks kombineerige mitme sõlme naaberandmeid.
 
-> ⚠️ **Märkus:** Naabriinfo suurendab eetriaega, kuna iga lubatud sõlm levitab perioodiliselt oma naabrite nimekirja. Paljude sõlmedega tiheda liiklusega kärgvõrgu puhul kaaluge ummikute vältimiseks pikemaid levitamise intervalle (3600 sekundit või rohkem).
+> ℹ️ **Note:** Neighbor Info increases airtime usage because every enabled node periodically broadcasts its neighbor list. The firmware doesn't accept an interval shorter than 14400 seconds (4 hours) for this reason; on busy meshes, leave it at the 21600-second default or raise it further.
 
----
-
-## Sõlmede loend avastusvahendina
+### Node list as a discovery tool
 
 Sõlmede loend ise on võimas avastusvahend, kui kasutada selle filtreerimis- ja sortimisfunktsioone tõhusalt.
 
-### Finding New Nodes
+#### Finding new nodes
 
-- Sort by **Last heard** to see the most recently active nodes at the top.
-- Enable **Include unknown** to see nodes that have appeared on the mesh but haven't sent user info yet — these are often newly powered-on devices.
+- Sorteeri **Viimati kuuldud** järgi, et näha kõige hiljutisemaid aktiivseid sõlmi ülaosas.
+- Enable **Include unknown** to see nodes that have appeared on the mesh but haven't sent user info yet — these are often newly powered-on nodes.
 
-### Assessing Connectivity
+#### Assessing connectivity
 
 - Sorteeri **Hüpete arvu järgi**, et näha, millised sõlmed on otse kättesaadavad (0 hüpet) ja millised vahendatavate sõlmedega.
 - Sort by **Distance** to find nearby nodes and verify they're reachable.
-- Kasuta **Välista MQTT** raadio teel (mitte internetisilla kaudu) ligipääsetavatele sõlmedele keskendumiseks.
+- Use **Exclude MQTT** to focus on nodes reachable over LoRa (not via internet bridge).
 
-### Infrastructure Audit
+#### Infrastructure audit
 
 - Disable **Exclude infrastructure** to see Router, Router Late, and Client Base nodes.
-- Check their signal quality and last-heard times to verify your infrastructure nodes are healthy.
+- Kontrolli nende signaali kvaliteeti ja viimase kuulmise aegu, et veenduda oma infrastruktuuri sõlmede töökorras olekus.
 
-See [Nodes](nodes) for full details on filtering and sorting options.
+Filtreerimis- ja sortimisvalikute kohta leiate lisateavet jaotisest [Nodes](nodes).
 
----
+## Tips for Mesh exploration
 
-## Tips for Mesh Exploration
-
-- **Start with traceroute** — it gives you immediate, actionable information about a specific path.
+- **Alusta traceroute'ist** — see annab sulle kohest ja praktilist teavet konkreetse tee kohta.
 - **Luba naabriinfo funktsioon võtmesõlmedes** – eriti ruuterites ja repiiterites, et saada ülevaade magistraalvõrgust.
 - **Kontrolli kaarti** — sõlmede asukohad [Kaart] (map-and-waypoints) koos signaaliandmetega aitavad sul mõista, miks mõned ühendused on tugevad ja teised nõrgad.
 - **Compare signal over time** — use the [Signal Meter](signal-meter) guide to interpret SNR and RSSI values correctly.
 
----
+## Seotud teemad
 
+- [Nodes](nodes) — the node list these scans populate
+- [Map & Waypoints](map-and-waypoints) — see discovered nodes geographically
+- [Signal Meter](signal-meter) — interpret the SNR and RSSI a scan reports
+- [Settings — Modules & Admin](settings-module-admin) — configure the Mesh Beacon and Neighbor Info modules
+- [Messages & Channels](messages-and-channels) — join a mesh you found and start talking

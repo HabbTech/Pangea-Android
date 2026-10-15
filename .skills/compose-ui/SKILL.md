@@ -1,3 +1,8 @@
+---
+name: compose-ui
+description: Build shared Compose Multiplatform UI in Meshtastic-Android - adaptive layouts on Material 3 Adaptive, plus the string and resource rules. Use this whenever you add or change a composable, add a user-facing string, or work on tablet, desktop or landscape layout. Consult the bundled `strings-index.txt` rather than opening the raw `strings.xml`, which is guarded for size.
+---
+
 # Skill: Compose Multiplatform (CMP) UI
 
 ## Description
@@ -8,7 +13,7 @@ Guidelines for building shared UI, adaptive layouts, and handling strings/resour
 - **Dialogs & Alerts:** Use centralized components like `AlertHost(alertManager)` from `core:ui/commonMain`. Do NOT trigger alerts inline or duplicate alert logic. Use `SharedDialogs(uiViewModel)` for general popups.
 - **Placeholders:** Use `PlaceholderScreen(name)` from `core:ui/commonMain` for unimplemented desktopApp/JVM features.
 - **Theme Picker:** Use `ThemePickerDialog` from `feature:settings/commonMain`.
-- **Platform Implementations:** Inject platform-specific behavior (e.g., Map providers) via `CompositionLocal` from the `app` or `desktop` shells. Do not tightly couple Google Maps/osmdroid dependencies to `commonMain`.
+- **Platform Implementations:** Inject platform-specific behavior (e.g., Map providers) via `CompositionLocal` from the `androidApp` or `desktopApp` shells. Do not tightly couple Google Maps dependencies to `commonMain`; the MapLibre surfaces live in `:feature:map-maplibre`, not in a `core` module.
 
 ## 2. Strings & Resources
 - **Multiplatform Resources:** MUST use `core:resources` (e.g., `stringResource(Res.string.your_key)`). Never use hardcoded strings.
@@ -44,9 +49,18 @@ Choose the right tool for the job:
   2. Run `python3 scripts/sort-strings.py` — keeps the file sorted and regenerates `strings-index.txt`.
   3. Use the generated `org.meshtastic.core.resources.<key>` symbol.
   4. Validate UI presentation.
+- **Schema strings are generated, not written.** Every label and description in the protobufs field metadata is
+  in `values/schema_strings.xml`, keyed by schema path: `Config.LoRaConfig.hop_limit` is
+  `Res.string.schema_lora_hop_limit`, its summary `schema_lora_hop_limit_description`, the enum value
+  `PositionFlags.DOP` `schema_position_positionflags_dop` (all indexed under `### SCHEMA` in `strings-index.txt`).
+  A control that edits one whole schema field uses that key; a control that edits a bit, a threshold, a negation or
+  drops a unit keeps a hand-written string. Never edit the generated file or write a `schema_` key by hand;
+  `:schema-strings:test` fails on both. Wrong wording is a `protobufs` change. After a protobufs pin bump the
+  hourly `scheduled-updates` run regenerates the file (it records the pin it was built from); run
+  `./gradlew :schema-strings:sync` yourself only when you need a new key before that PR lands.
 
 ## 3. Tooling & Capabilities
-- **Image Loading:** Use `libs.coil` (Coil Compose) in feature modules. Configuration/Networking for Coil (`coil-network-ktor3`) happens strictly in the `app` and `desktop` host modules.
+- **Image Loading:** Use `libs.coil` (Coil Compose) in feature modules. Configuration/Networking for Coil (`coil-network-ktor3`) happens strictly in the `androidApp` and `desktopApp` host modules.
 - **QR Codes:** Use `rememberQrCodePainter` from `core:ui/commonMain` powered by `qrcode-kotlin`. No ZXing or Android Bitmap APIs in shared code.
 
 ## 4. Compose Previews
@@ -55,6 +69,13 @@ Choose the right tool for the job:
 
 ## 5. Dialog & State Patterns
 - **Dialog State Preservation:** Use `rememberSaveable` for dialog state (search queries, selected tabs, expanded flags) to preserve across configuration changes. Boolean and String types are auto-saveable — no custom `Saver` needed.
+
+## 6. Driving the running desktop app
+CMP 1.12+ ships an MCP server inside Compose Hot Reload; `.mcp.json` registers it as `compose-hot-reload` (`:desktopApp:hotMcpServer`). With `./gradlew :desktopApp:hotRun` running, it drives the **live** app — inspect, input and reload without a rebuild.
+- **Tools:** `status`, `reload`, `await_reload`, `get_semantic_tree`, `click`, `type_text`, `scroll`, `get_logs`, `get_ui_error`, `take_screenshot`.
+- **Poll `status` until `connected: true`** before anything else — the server accepts requests before the app has connected to it.
+- **`get_semantic_tree` is the assertion surface:** roles, text, `selected`/`focused`, available actions and bounds. `click` addresses nodes by `nodeId` taken from that tree. Prefer it over `take_screenshot`, whose output depends on the host renderer.
+- **`reload` after editing sources** applies the change into the running app; use `await_reload` instead when the app was started with `--auto`.
 
 ## Reference Anchors
 - **Shared Strings:** `core/resources/src/commonMain/composeResources/values/strings.xml`

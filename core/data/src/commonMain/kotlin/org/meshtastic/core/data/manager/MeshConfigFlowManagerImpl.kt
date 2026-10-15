@@ -19,11 +19,10 @@ package org.meshtastic.core.data.manager
 import co.touchlab.kermit.Logger
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.common.di.ServiceScope
 import org.meshtastic.core.common.util.handledLaunch
 import org.meshtastic.core.common.util.safeCatching
 import org.meshtastic.core.model.ConnectionState
@@ -62,7 +61,7 @@ class MeshConfigFlowManagerImpl(
     private val heartbeatSender: DataLayerHeartbeatSender,
     private val notificationPrefs: NotificationPrefs,
     private val radioInterfaceService: RadioInterfaceService,
-    @Named("ServiceScope") private val scope: CoroutineScope,
+    private val scope: ServiceScope,
 ) : MeshConfigFlowManager {
     private val wantConfigDelay = 100L
 
@@ -283,6 +282,15 @@ class MeshConfigFlowManagerImpl(
     private suspend fun installAndPublishNodeDatabase(state: HandshakeState.ReceivingNodeInfo) {
         val session = state.session
         val info = state.myNodeInfo
+
+        // Stage 1 streamed the radio's channels in one slot at a time, and its LoRa config arrived as a separate
+        // write, so no single one of those could tell a replaced channel from a half-downloaded set. Now that the
+        // whole set has landed, re-key the conversations once -- before Connected, so the list is never rendered
+        // with one channel's history under another's name.
+        safeCatching { radioConfigRepository.reconcileConversations() }
+            .onFailure { e -> Logger.e(e) { "Conversation reconciliation failed after handshake" } }
+        if (!isActiveSession(session)) return
+
         val entities = mutableListOf<Node>()
         state.nodes.forEach { nodeInfo ->
             nodeManager.installNodeInfo(nodeInfo)
@@ -380,10 +388,13 @@ class MeshConfigFlowManagerImpl(
                 val state = handshakeState.value
                 if (state is HandshakeState.ReceivingConfig && state.belongsTo(session)) {
                     handled = true
+                    // Only the session that owns the handshake may move the capability: a late frame from a
+                    // superseded session would otherwise reclassify the NodeInfo batch still being installed.
+                    nodeManager.setFirmwareVersion(metadata.firmware_version, session)
                     handshakeState.value = state.copy(metadata = metadata)
                     // Persist the metadata immediately, but never let a queued old-session write target the next
                     // session's selected database.
-                    if (metadata != DeviceMetadata()) {
+                    if (metadata != DeviceMetadata.Builder().build()) {
                         metadataNodeNum = state.rawMyNodeInfo.my_node_num
                     }
                     connectionManager.value.onHandshakeProgress()

@@ -2,48 +2,46 @@
 title: Help & In-App Docs
 parent: Kasutaja juhis
 nav_order: 21
-last_updated: 2026-06-25
+last_updated: 2026-09-11
 description: Sirvi seda dokumentatsiooni rakenduses, otsi seda ja küsi Chirpylt – seadmesisesele TI assistendile – küsimusi Meshtasticu kohta.
 aliases:
-  - help
+  - abi
   - docs-browser
   - chirpy
-  - assistant
+  - assistent
 ---
 
 # Help & In-App Docs
 
-Sama kasutajadokumentatsioon on **rakenduse sees**, nii et saate seda lugeda võrguühenduseta ilma Meshtasticust lahkumata. Open it from **Settings → Help & Documentation**.
+Sama kasutajadokumentatsioon on **rakenduse sees**, nii et saate seda lugeda võrguühenduseta ilma Meshtasticust lahkumata. Ava see menüüst **Seaded → Abi ja dokumentatsioon**.
 
 ## Browsing
 
-The docs browser lists every user-guide page. Selle lugemiseks klõpsa lehel; pildid ja ristlingid toimivad ka.
+Dokumendibrauser loetleb kõik kasutusjuhendi lehed. Selle lugemiseks klõpsa lehel; pildid ja ristlingid toimivad ka.
 
-![In-app documentation browser table of contents](../../assets/screenshots/docs-browser_toc.png)
+![Rakendusesisese dokumentatsiooni brauseri sisukord](../../assets/screenshots/docs-browser_toc.png)
 
-### Search
+### Otsi
 
-Lehtede pealkirja ja märksõnade järgi filtreerimiseks puuduta otsinguikooni ja tippi – tulemused värskendatakse tippimise ajal.
+Tap the search field at the top of the docs browser to open a full-screen search view. Type to filter pages by title and keywords — results update as you type, under the same field. The back arrow, or the keyboard's search action, closes the view. The field hides while you scroll down the page list and comes back when you scroll up.
 
-![Searching the in-app documentation](../../assets/screenshots/docs-browser_search.png)
+![Rakendusesisese dokumentatsiooni otsimine](../../assets/screenshots/docs-browser_search.png)
 
 A page open in the browser:
 
-![A documentation page rendered in the app](../../assets/screenshots/docs-browser_page.png)
+![Rakenduses kuvatav dokumentatsioonileht(../../assets/screenshots/docs-browser_page.png)
 
-## Chirpy — the AI Assistant
+## Chirpy — TI assistent
 
 **Chirpy** vastab Meshtasticu kohta käivatele lihtsatele küsimustele, kasutades allikana seda komplekti kuuluvat dokumentatsiooni. Klõpsai dokumendibrauseris nuppu Chirpy, sisesta küsimus ja see vastab vastuse ja linkidega asjakohastele lehtedele.
 
 ![Chirpy TI assistent vastab küsimusele lehelinkide abil](../../assets/screenshots/docs-browser_chirpy.png)
 
-> 🔒 **Privacy:** On supported Google-flavor devices, Chirpy runs **on-device** using Gemini Nano — your questions never leave your phone. Väike mudel laetakse alla esmakordsel kasutamisel.
+Chirpy is Google-flavor Android only. On F-Droid, desktop and iOS builds the assistant button does not appear at all — the same is true on a phone whose hardware cannot run the on-device model. Browsing and the docs browser's own search work normally on every platform.
 
-> ⚠️ **Märkus:** F-Droidi, töölaua ja iOS-i versioonide puhul kasutab Chirpy dokumentatsiooni asemel **märksõnaotsingut**, mitte generatiivset mudelit. If your device doesn't support on-device AI, the assistant is hidden and you can still browse and search the docs normally.
+> 🔒 **Privacy:** On supported phones running the Google-flavor build, Chirpy runs **on-device** using Gemini Nano — your questions never leave your phone. Väike mudel laetakse alla esmakordsel kasutamisel.
 
-## Related Topics
+## Seotud teemad
 
 - [Tõlgi rakendus] (translate) — kuidas need lehed teistesse keeltesse lokaliseeritakse
-- [App Functions](app-functions) — the separate system-AI integration (distinct from Chirpy)
-
----
+- [Rakenduse funktsioonid](app-functions) — eraldi süsteemi ja tehisintellekti integratsioon (erineb Chirpyst)

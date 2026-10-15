@@ -17,6 +17,7 @@
   -->
 <resources>
     <!-- A11Y -->
+    <string name="about">אודות</string>
     <string name="accept">אישור</string>
     <!-- ACTION -->
     <string name="action_delete_message">מחק הודעה</string>
@@ -24,7 +25,6 @@
     <string name="add">הוסף</string>
     <string name="add_network_device">הוסף</string>
     <!-- AIR -->
-    <!-- ALERT -->
     <!-- APP -->
     <string name="app_too_old">נדרש עדכון של האפליקציה</string>
     <string name="apply">החל</string>
@@ -44,6 +44,7 @@
     <!-- CHIRPY -->
     <string name="choose_theme">בחר ערכת עיצוב</string>
     <!-- CLEAN -->
+    <!-- CLEAR -->
     <string name="clear">נקה</string>
     <string name="close">סגור</string>
     <!-- COMPASS -->
@@ -58,7 +59,6 @@
     <plurals name="delete_messages">
         <item quantity="one">מחק הודעה?</item>
         <item quantity="two">מחק %1$s הודעות?</item>
-        <item quantity="many">מחק %1$s הודעות?</item>
         <item quantity="other">מחק %1$s הודעות?</item>
     </plurals>
     <string name="description">תיאור</string>
@@ -69,14 +69,13 @@
     <string name="disconnected">מנותק</string>
     <!-- DISCOVERY -->
     <string name="discovery_stat_messages">הודעות</string>
-    <!-- DISPLAY -->
     <!-- DISTANCE -->
     <string name="distance">מרחק</string>
     <!-- DOC -->
-    <!-- ENCRYPTION -->
-    <!-- ENVIRONMENT -->
+    <!-- EMOJI -->
     <string name="error">שגיאה</string>
     <string name="error_duty_cycle">הגעת לרף ה-duty cycle. לא ניתן לשלוח הודעות כרגע, בבקשה נסה שוב מאוחר יותר.</string>
+    <!-- EXPORT -->
     <string name="factory_reset">איפוס להגדרות היצרן</string>
     <!-- FILTER -->
     <string name="filter_icon">פילטר</string>
@@ -86,8 +85,6 @@
     <string name="firmware_update_failed">העדכון נכשל</string>
     <!-- FORMAT -->
     <!-- GEOFENCE -->
-    <!-- GPIO -->
-    <!-- IGNORE -->
     <string name="ignore">התעלם</string>
     <string name="ignore_add">הוסף '%1$s' לרשימת ההתעלמות? המכשיר יתחיל מחדש.</string>
     <string name="ignore_remove">הורד '%1$s' מרשימת ההתעלמות? המכשיר יתחיל מחדש.</string>
@@ -97,9 +94,11 @@
     <string name="ip_address">‏כתובת IP:</string>
     <string name="ip_port">פורט:</string>
     <!-- KEY -->
-    <!-- LABEL -->
+    <!-- LAYER -->
+    <!-- LICENSED -->
     <!-- LOAD -->
     <!-- LOCAL -->
+    <!-- LOCATION -->
     <string name="location_disabled">שירותי מיקום כבויים, לא ניתן לספק מיקום לרשת משטסטיק.</string>
     <!-- LOCKDOWN -->
     <string name="locked">נעול</string>
@@ -122,6 +121,8 @@
     <string name="map_tile_download_estimate">הערכת זמן להורדה:</string>
     <string name="map_tile_source">מקור מפות</string>
     <!-- MESH -->
+    <string name="mesh_beacon_region_label">אזור</string>
+    <string name="mesh_beacon_target_channel_index">ערוץ</string>
     <!-- MESHTASTIC -->
     <string name="meshtastic_alerts_notifications">התראות</string>
     <string name="meshtastic_service_notifications">התראות שירות</string>
@@ -152,14 +153,16 @@
     <string name="none">לא מחובר (כבוי)</string>
     <string name="not_connected">לא מחובר</string>
     <!-- NOTIFICATIONS -->
+    <!-- OFFLINE -->
     <string name="okay">אישור</string>
     <!-- ONE -->
     <!-- OPEN -->
-    <!-- OUTPUT -->
     <!-- PACKET -->
     <!-- PAX -->
+    <!-- PERMISSION -->
+    <!-- PERMISSIONS -->
+    <!-- PM -->
     <!-- POSITION -->
-    <!-- POWER -->
     <string name="preferences_language">שפה</string>
     <string name="preferences_system_default">ברירות מחדל</string>
     <!-- PREVIEW -->
@@ -173,8 +176,6 @@
     <string name="quick_chat_new">צ'ט מהיר חדש</string>
     <string name="radio_configuration">הגדרות רדיו</string>
     <string name="reboot">אתחול מחדש</string>
-    <!-- REBROADCAST -->
-    <string name="region_frequency_plan">אזור</string>
     <!-- REMOTE -->
     <!-- REMOVE -->
     <string name="report">דווח</string>
@@ -184,7 +185,6 @@
     <string name="reset_to_defaults">איפוס לברירת מחדל</string>
     <!-- ROLE -->
     <!-- ROUTING -->
-    <!-- SAVE -->
     <string name="save">שמור</string>
     <string name="save_changes">שמור</string>
     <!-- SCAN -->
@@ -192,13 +192,13 @@
     <!-- SECURITY -->
     <string name="select_all">בחר הכל</string>
     <string name="send">שלח</string>
-    <!-- SERIAL -->
     <string name="settings">הגדרות</string>
     <!-- SHARE -->
     <string name="share">שתף</string>
     <!-- SHOW -->
     <string name="shutdown">כיבוי</string>
     <!-- SITE -->
+    <string name="swipe_action_delete">מחק</string>
     <!-- TAK -->
     <string name="theme">ערכת נושא</string>
     <string name="theme_dark">כהה</string>
@@ -210,10 +210,11 @@
     <!-- TRAFFIC -->
     <!-- TRANSLATION -->
     <!-- TRANSPORT -->
+    <!-- UNITS -->
+    <string name="units_follow_system">ברירות מחדל</string>
     <!-- UNKNOWN -->
     <string name="unknown_username">שם המשתמש אינו מוכר</string>
     <!-- URL -->
-    <!-- USE -->
     <!-- USER -->
     <string name="waypoint_delete">מחק נקודת ציון?</string>
     <string name="waypoint_edit">ערוך נקודת ציון</string>

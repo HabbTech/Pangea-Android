@@ -17,6 +17,7 @@
   -->
 <resources>
     <!-- A11Y -->
+    <string name="about">Σχετικά</string>
     <string name="accept">Αποδοχή</string>
     <!-- ACTION -->
     <!-- ADD -->
@@ -25,7 +26,6 @@
     <string name="address">Διεύθυνση</string>
     <string name="administration">Διαχείριση</string>
     <!-- AIR -->
-    <!-- ALERT -->
     <!-- APP -->
     <string name="app_too_old">Εφαρμογή πολύ παλαιά</string>
     <string name="apply">Εφαρμογή</string>
@@ -33,7 +33,6 @@
     <string name="are_you_sure_change_default">Είστε σίγουροι ότι θέλετε να αλλάξετε στο προεπιλεγμένο κανάλι;</string>
     <string name="audio">Ήχος</string>
     <string name="battery">Μπαταρία</string>
-    <string name="blue">Μπλε</string>
     <!-- BLUETOOTH -->
     <string name="bluetooth">Bluetooth</string>
     <string name="bluetooth_config">Ρυθμίσεις Bluetooth</string>
@@ -58,6 +57,7 @@
     <!-- CHIRPY -->
     <string name="choose_theme">Επέλεξε θέμα</string>
     <!-- CLEAN -->
+    <!-- CLEAR -->
     <string name="clear">Καθαρό, Εκκαθάριση,</string>
     <string name="close">Κλείσιμο</string>
     <!-- COMPASS -->
@@ -85,7 +85,6 @@
     <string name="disconnected">Αποσυνδεδεμένο</string>
     <!-- DISCOVERY -->
     <string name="discovery_stat_messages">Μηνύματα</string>
-    <!-- DISPLAY -->
     <string name="display">Οθόνη</string>
     <!-- DISTANCE -->
     <string name="distance">Απόσταση</string>
@@ -93,12 +92,11 @@
     <string name="doc_title_mqtt">MQTT</string>
     <string name="edit">Επεξεργασία</string>
     <string name="eight_hours">8 Ώρες</string>
-    <!-- ENCRYPTION -->
+    <!-- EMOJI -->
     <string name="encryption_error">Ασυμφωνία δημόσιου κλειδιού</string>
     <string name="encryption_pkc">Κρυπτογράφηση Δημόσιου Κλειδιού</string>
-    <string name="encryption_psk">Κοινόχρηστο Κλειδί</string>
-    <!-- ENVIRONMENT -->
     <string name="error">Σφάλμα</string>
+    <!-- EXPORT -->
     <string name="factory_reset">Επαναφορά εργοστασιακών ρυθμίσεων</string>
     <string name="favorite">Αγαπημένο</string>
     <!-- FILTER -->
@@ -109,10 +107,7 @@
     <string name="firmware_update_failed">Αποτυχία ενημέρωσης</string>
     <!-- FORMAT -->
     <!-- GEOFENCE -->
-    <!-- GPIO -->
-    <string name="green">Πράσινο</string>
     <string name="i_know_what_i_m_doing">Ξέρω τι κάνω.</string>
-    <!-- IGNORE -->
     <string name="ignore">Παράβλεψη</string>
     <!-- IMPORT -->
     <string name="info">Πληροφορίες</string>
@@ -122,10 +117,12 @@
     <string name="ip_address">IP διεύθυνση:</string>
     <string name="ip_port">Θύρα:</string>
     <!-- KEY -->
-    <!-- LABEL -->
     <string name="latitude">Γεωγραφικό Πλάτος</string>
+    <!-- LAYER -->
+    <!-- LICENSED -->
     <!-- LOAD -->
     <!-- LOCAL -->
+    <!-- LOCATION -->
     <string name="location_disabled">Η πρόσβαση στην τοποθεσία είναι απενεργοποιημένη, δεν μπορεί να παρέχει θέση στο πλέγμα.</string>
     <!-- LOCKDOWN -->
     <string name="locked">Κλειδωμένο</string>
@@ -141,11 +138,14 @@
     <string name="map_download_complete">Η λήψη ολοκληρώθηκε!</string>
     <string name="map_download_errors">Λήψη ολοκληρώθηκε με %1$d σφάλματα</string>
     <string name="map_download_region">Λήψη Περιοχής</string>
+    <string name="map_filter_display_title">Οθόνη</string>
     <string name="map_offline_manager">Διαχειριστής Εκτός Δικτύου</string>
     <string name="map_purge_success">Η προσωρινή μνήμη SQL καθαρίστηκε για %1$s</string>
     <string name="map_select_download_region">Επιλογή περιοχής λήψης</string>
     <string name="map_start_download">Εκκίνηση Λήψης</string>
     <!-- MESH -->
+    <string name="mesh_beacon_region_label">Περιφέρεια</string>
+    <string name="mesh_beacon_target_channel_index">Κανάλι</string>
     <!-- MESHTASTIC -->
     <string name="meshtastic_service_notifications">Ειδοποιήσεις Υπηρεσίας</string>
     <!-- MESSAGE -->
@@ -176,25 +176,27 @@
     <string name="node_sort_distance">Απόσταση</string>
     <string name="node_sort_via_mqtt">μέσω MQTT</string>
     <!-- NODES -->
+    <string name="nodes_unheard_remove">Διαγραφή</string>
     <string name="none">Κανένα (απενεργοποιημένο)</string>
     <string name="not_connected">Αποσυνδεδεμένο</string>
     <!-- NOTIFICATIONS -->
+    <!-- OFFLINE -->
     <string name="okay">Εντάξει</string>
     <!-- ONE -->
     <string name="one_day">24 Ώρες</string>
     <!-- OPEN -->
-    <!-- OUTPUT -->
     <!-- PACKET -->
     <string name="password">Κωδικός πρόσβασης</string>
     <!-- PAX -->
+    <!-- PERMISSION -->
+    <!-- PERMISSIONS -->
+    <!-- PM -->
     <!-- POSITION -->
     <string name="position">Τοποθεσία</string>
     <string name="position_log">Τοποθεσία</string>
-    <!-- POWER -->
     <string name="preferences_language">Γλώσσα</string>
     <string name="preferences_system_default">Προκαθορισμένο του συστήματος</string>
     <!-- PREVIEW -->
-    <string name="private_key">Ιδιωτικό Κλειδί</string>
     <string name="provide_location_to_mesh">Παρέχετε τοποθεσία στο πλέγμα</string>
     <string name="psk">PSK</string>
     <string name="public_key">Δημόσιο Κλειδί</string>
@@ -206,9 +208,6 @@
     <string name="quick_chat_new">Νέα γρήγορη συνομιλία</string>
     <string name="radio_configuration">Ρυθμίσεις συσκευής</string>
     <string name="reboot">Επανεκκίνηση</string>
-    <!-- REBROADCAST -->
-    <string name="red">Κόκκινο</string>
-    <string name="region_frequency_plan">Περιφέρεια</string>
     <!-- REMOTE -->
     <string name="remote_admin">Απομακρυσμένη Διαχείριση</string>
     <!-- REMOVE -->
@@ -222,13 +221,9 @@
     <string name="reset">Επαναφορά</string>
     <string name="reset_to_defaults">Επαναφορά προεπιλογών</string>
     <!-- ROLE -->
+    <string name="role_client_base">Πελάτης Βάση</string>
     <!-- ROUTING -->
-    <string name="routing_error_bad_request">Εσφαλμένο Αίτημα</string>
-    <string name="routing_error_max_retransmit">Max. Anzahl Wiederholungen erreicht</string>
-    <string name="routing_error_no_channel">Kein Kanal</string>
-    <string name="routing_error_pki_unknown_pubkey">Άγνωστο Δημόσιο Κλειδί</string>
     <string name="routing_error_timeout">Λήξη χρονικού ορίου</string>
-    <!-- SAVE -->
     <string name="save">Αποθήκευση</string>
     <string name="save_changes">Αποθήκευση</string>
     <!-- SCAN -->
@@ -237,7 +232,6 @@
     <string name="security">Ασφάλεια</string>
     <string name="select_all">Επιλογή όλων</string>
     <string name="send">Αποστολή</string>
-    <!-- SERIAL -->
     <string name="settings">ρυθμίσεις</string>
     <!-- SHARE -->
     <string name="share">Κοινοποίηση</string>
@@ -245,11 +239,9 @@
     <string name="shutdown">Τερματισμός λειτουργίας</string>
     <!-- SITE -->
     <string name="site_planner_section_display">Οθόνη</string>
-    <string name="ssid">SSID</string>
+    <string name="swipe_action_delete">Διαγραφή</string>
+    <string name="swipe_action_mute">Σίγαση</string>
     <!-- TAK -->
-    <string name="tak_team_blue">Μπλε</string>
-    <string name="tak_team_green">Πράσινο</string>
-    <string name="tak_team_red">Κόκκινο</string>
     <string name="telemetry">Τηλεμετρία</string>
     <string name="theme">Θέμα</string>
     <string name="theme_dark">Σκούρο</string>
@@ -265,14 +257,14 @@
     <string name="transport_lora">LoRa</string>
     <string name="transport_mqtt">MQTT</string>
     <string name="two_days">48 Ώρες</string>
+    <!-- UNITS -->
+    <string name="units_follow_system">Προκαθορισμένο του συστήματος</string>
     <!-- UNKNOWN -->
     <string name="unknown_username">Άγνωστο Όνομα Χρήστη</string>
     <!-- URL -->
     <string name="url">URL</string>
-    <!-- USE -->
     <!-- USER -->
     <string name="user">Χρήστης</string>
-    <string name="username">Όνομα χρήστη</string>
     <string name="via_mqtt">μέσω MQTT</string>
     <string name="voltage">Τάση</string>
     <string name="waypoint_delete">Διαγραφή σημείου πορείας;</string>
@@ -282,8 +274,6 @@
     <!-- WIFI -->
     <string name="wifi_provision_success_ip_address">IP διεύθυνση</string>
     <string name="wifi_provision_success_username">Όνομα χρήστη</string>
-    <string name="wifi_qr_code_error">Μη έγκυρη μορφή QR διαπιστευτηρίων WiFi</string>
-    <string name="wifi_qr_code_scan">Σάρωση QR κωδικού WiFi</string>
     <!-- WIND -->
     <!-- WRITE -->
     <string name="you">Εσύ</string>

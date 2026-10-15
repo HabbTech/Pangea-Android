@@ -24,6 +24,12 @@ object UnitConversions {
     @Suppress("MagicNumber")
     fun celsiusToFahrenheit(celsius: Float): Float = (celsius * 1.8F) + 32
 
+    @Suppress("MagicNumber")
+    fun metersPerSecondToMph(metersPerSecond: Float): Float = metersPerSecond * 2.23694f
+
+    @Suppress("MagicNumber")
+    fun metersPerSecondToKph(metersPerSecond: Float): Float = metersPerSecond * 3.6f
+
     /** Formats temperature as a string with the unit suffix. */
     fun Float.toTempString(isFahrenheit: Boolean): String {
         if (this.isNaN()) return "--"

@@ -20,6 +20,7 @@ import co.touchlab.kermit.Logger
 import com.google.firebase.Firebase
 import com.google.firebase.ai.DownloadStatus
 import com.google.firebase.ai.InferenceMode
+import com.google.firebase.ai.InferenceSource
 import com.google.firebase.ai.OnDeviceConfig
 import com.google.firebase.ai.OnDeviceModelOption
 import com.google.firebase.ai.OnDeviceModelStatus
@@ -193,12 +194,15 @@ class GeminiNanoDocAssistant(
 
             // Rank pages by relevance: full-text content search + keyword/title matching.
             val rankedPages = rankPagesByRelevance(queryTerms, bundle.pages, allContent)
-            Logger.d(tag = TAG) { "Ranked pages: ${rankedPages.take(5).map { "${it.first.id}(${it.second})" }}" }
+            Logger.d(tag = TAG) {
+                "Ranked pages: ${rankedPages.take(RANKED_PAGES_LOG_COUNT).map { "${it.first.id}(${it.second})" }}"
+            }
 
             // Build compact context by extracting only relevant paragraphs.
             val contextResult = buildContext(currentPageId, queryTerms, rankedPages, allContent, MAX_CONTEXT_CHARS)
             Logger.d(tag = TAG) {
-                "Context: ${contextResult.parts.size} pages, ${contextResult.totalChars} chars (budget $MAX_CONTEXT_CHARS)"
+                "Context: ${contextResult.parts.size} pages, " +
+                    "${contextResult.totalChars} chars (budget $MAX_CONTEXT_CHARS)"
             }
 
             prompt = buildPrompt(question, contextResult.parts)
@@ -218,36 +222,41 @@ class GeminiNanoDocAssistant(
             try {
                 val accumulatedText = StringBuilder()
                 var lastEmitTime = 0L
+                var lastInferenceSource: InferenceSource? = null
                 onDeviceModel.generateContentStream(prompt).collect { chunk ->
+                    lastInferenceSource = chunk.inferenceSource
                     val text = chunk.text
                     if (!text.isNullOrEmpty()) {
                         accumulatedText.append(text)
                         val now = System.nanoTime()
-                        val elapsedMs = (now - lastEmitTime) / 1_000_000
+                        val elapsedMs = (now - lastEmitTime) / NANOS_PER_MILLI
                         if (elapsedMs >= STREAM_THROTTLE_MS) {
                             lastEmitTime = now
                             emit(
                                 AIDocAssistantResult.Partial(
                                     answer = cleanResponse(accumulatedText.toString()),
                                     sourcePages = contextPages,
-                                    usedOnDeviceModel = true,
+                                    usedOnDeviceModel = chunk.inferenceSource == InferenceSource.ON_DEVICE,
                                 ),
                             )
                         }
                     }
-                    // Log token usage from last chunk
+                    // Log token usage and model version from the last chunk
                     chunk.usageMetadata?.let { meta ->
                         Logger.d(tag = TAG) {
-                            "Tokens — prompt: ${meta.promptTokenCount}, response: ${meta.candidatesTokenCount}, total: ${meta.totalTokenCount}"
+                            "Tokens — prompt: ${meta.promptTokenCount}, response: ${meta.candidatesTokenCount}, " +
+                                "total: ${meta.totalTokenCount}, source: ${chunk.inferenceSource}, " +
+                                "model: ${chunk.modelVersion}"
                         }
                     }
                 }
+                val usedOnDeviceModel = lastInferenceSource == InferenceSource.ON_DEVICE
                 // Emit final partial to ensure UI has the complete text before Success
                 emit(
                     AIDocAssistantResult.Partial(
                         answer = cleanResponse(accumulatedText.toString()),
                         sourcePages = contextPages,
-                        usedOnDeviceModel = true,
+                        usedOnDeviceModel = usedOnDeviceModel,
                     ),
                 )
                 val onDeviceAnswer = cleanResponse(accumulatedText.toString().trimEnd())
@@ -265,7 +274,7 @@ class GeminiNanoDocAssistant(
                     AIDocAssistantResult.Success(
                         answer = onDeviceAnswer,
                         sourcePages = allSourcePages,
-                        usedOnDeviceModel = true,
+                        usedOnDeviceModel = usedOnDeviceModel,
                     ),
                 )
                 return@flow // Success — exit retry loop
@@ -477,7 +486,8 @@ class GeminiNanoDocAssistant(
         val metricsInfo =
             if (ourNode != null) {
                 val battery = ourNode.batteryLevel
-                val batteryStr = if (battery != null && battery in 1..100) "$battery%" else "Unknown (External Power)"
+                val batteryStr =
+                    if (battery != null && battery in VALID_BATTERY_RANGE) "$battery%" else "Unknown (External Power)"
                 val voltage = ourNode.voltage
                 val voltStr = if (voltage != null && voltage > 0f) "${voltage}V" else "Unknown"
 
@@ -605,6 +615,15 @@ Guidelines:
         /** Minimum interval between partial stream emissions to avoid UI jank. */
         private const val STREAM_THROTTLE_MS = 80L
 
+        /** Nanoseconds per millisecond, for stream-throttle elapsed-time math. */
+        private const val NANOS_PER_MILLI = 1_000_000
+
+        /** Number of top-ranked pages to include in debug logging. */
+        private const val RANKED_PAGES_LOG_COUNT = 5
+
+        /** Battery percentages treated as a real reading; anything else means external power. */
+        private val VALID_BATTERY_RANGE = 1..100
+
         // Scoring weights for page ranking
         private const val CONTENT_MATCH_SCORE = 3
         private const val TITLE_MATCH_SCORE = 10
@@ -641,7 +660,7 @@ Guidelines:
 
         private const val FALLBACK_CONTEXT =
             "Meshtastic is an open-source mesh networking platform for LoRa radios. " +
-                "The app connects to Meshtastic devices via Bluetooth or WiFi to send messages, " +
+                "The app connects to Meshtastic devices via Bluetooth or Wi-Fi to send messages, " +
                 "share location, and manage mesh network settings like channels, nodes, and modules."
     }
 }

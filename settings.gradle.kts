@@ -16,6 +16,7 @@
  */
 
 pluginManagement {
+    includeBuild("build-logic/settings-plugin")
     includeBuild("build-logic")
     repositories {
         google {
@@ -32,9 +33,13 @@ pluginManagement {
 }
 
 plugins {
-    id("com.gradle.develocity") version "4.5.0"
+    // Develocity + CCUD + build cache; shared with build-logic, versions from the catalog.
+    id("meshtastic.develocity")
     id("org.gradle.toolchains.foojay-resolver") version "1.0.0"
-    id("org.meshtastic.flatpak.sources.settings") version "0.1.5"
+    // 0.1.7 fixed the Isolated Projects incompatibility (shares state via a BuildService instead of
+    // gradle.extensions) that previously required gating this behind an opt-in property.
+    // 0.2.0 resolves platformDependencies transitively — see the collapsed list in build.gradle.kts.
+    id("org.meshtastic.flatpak.sources.settings") version "0.2.2"
 }
 
 @Suppress("UnstableApiUsage")
@@ -70,22 +75,6 @@ rootProject.name = "MeshtasticAndroid"
 // https://docs.gradle.org/current/userguide/declaring_dependencies.html#sec:type-safe-project-accessors
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
-// Build Cache configuration (HTTP remote cache + local)
-apply(from = "gradle/build-cache.settings.gradle")
-
-// Build Scans — publish in CI only for debugging and performance profiling.
-develocity {
-    buildScan {
-        capture {
-            fileFingerprints = true
-        }
-        val isCi = providers.environmentVariable("CI").isPresent
-        publishing.onlyIf { isCi }
-        uploadInBackground = !isCi
-        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
-        termsOfUseAgree = "yes"
-    }
-}
 
 @Suppress("UnstableApiUsage")
 toolchainManagement {
@@ -122,18 +111,21 @@ include(
     ":feature:messaging",
     ":feature:connections",
     ":feature:map",
+    ":feature:map-maplibre",
+    ":feature:map-terrain",
     ":feature:node",
     ":feature:settings",
     ":feature:discovery",
     ":feature:docs",
     ":feature:firmware",
     ":feature:wifi-provision",
-    ":feature:car",
     ":desktopApp",
     ":androidApp",
     ":core:barcode",
     ":feature:widget",
     ":screenshot-tests",
     ":docs-screenshots",
+    ":marketing-screenshots",
+    ":schema-strings",
     ":baselineprofile",
 )

@@ -34,15 +34,16 @@ import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.net.toUri
 import co.touchlab.kermit.Logger
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.common.di.ServiceScope
+import org.meshtastic.core.common.state.RadioOperation
+import org.meshtastic.core.common.state.RadioOperationLock
 import org.meshtastic.core.common.util.NumberFormatter
 import org.meshtastic.core.common.util.nowMillis
 import org.meshtastic.core.common.util.safeCatching
@@ -51,6 +52,7 @@ import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.Message
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.NodeAddress
+import org.meshtastic.core.model.noiseFloorOrNull
 import org.meshtastic.core.model.util.formatUptime
 import org.meshtastic.core.navigation.DEEP_LINK_BASE_URI
 import org.meshtastic.core.repository.MeshNotificationManager
@@ -67,6 +69,8 @@ import org.meshtastic.core.resources.connected
 import org.meshtastic.core.resources.connecting
 import org.meshtastic.core.resources.device_sleeping
 import org.meshtastic.core.resources.disconnected
+import org.meshtastic.core.resources.discovery_scan_in_progress
+import org.meshtastic.core.resources.firmware_update_in_progress
 import org.meshtastic.core.resources.getString
 import org.meshtastic.core.resources.getStringSuspend
 import org.meshtastic.core.resources.local_stats_bad
@@ -123,7 +127,8 @@ class MeshNotificationManagerImpl(
     private val nodeRepository: Lazy<NodeRepository>,
     private val conversationShortcutPublisher: Lazy<ConversationShortcutPublisher>,
     private val radioConfigRepository: Lazy<RadioConfigRepository>,
-    @Named("ServiceScope") private val scope: CoroutineScope,
+    private val radioOperationLock: RadioOperationLock,
+    private val scope: ServiceScope,
 ) : MeshNotificationManager {
 
     private val notificationManager =
@@ -149,6 +154,14 @@ class MeshNotificationManagerImpl(
         // overwrite the foreground-service notification, or num == 1 the group summary). notify()/cancel() must use
         // the same (tag, id) pair.
         private const val TAG_MESSAGE = "message"
+
+        /**
+         * Fully-qualified name of the bubble host, as a string to avoid a module dependency back onto `:androidApp`.
+         */
+        private const val BUBBLE_ACTIVITY_CLASS = "org.meshtastic.app.BubbleActivity"
+
+        /** Roughly a phone's lower half — enough conversation to reply in without covering what is underneath. */
+        private const val BUBBLE_DESIRED_HEIGHT_DP = 600
         private const val TAG_MESSAGE_SUMMARY = "message_summary"
         private const val TAG_WAYPOINT = "waypoint"
         private const val TAG_ALERT = "alert"
@@ -163,6 +176,7 @@ class MeshNotificationManagerImpl(
         val deviceMetrics: DeviceMetrics?,
         val previousMessage: String?,
         val nextUpdateAt: Long,
+        val activeOperations: Set<RadioOperation> = emptySet(),
     )
 
     private data class RenderedServiceNotification(val notification: Notification, val message: String)
@@ -173,6 +187,12 @@ class MeshNotificationManagerImpl(
      * entries are cheap and colors/names rarely change.
      */
     private val personIconCache = ConcurrentHashMap<String, IconCompat>()
+
+    /** Adaptive variant, for notification bubbles, which the system masks to its own shape. */
+    private fun cachedBubblePersonIcon(key: String, shortName: String, backgroundColor: Int, foregroundColor: Int) =
+        personIconCache.getOrPut("adaptive|$key|$shortName|$backgroundColor|$foregroundColor") {
+            PersonIconFactory.createAdaptive(shortName, backgroundColor, foregroundColor)
+        }
 
     /** Circular, node-colored avatar holding the sender's full short name (e.g. "2c3d"), not just its first letter. */
     private fun cachedPersonIcon(key: String, shortName: String, backgroundColor: Int, foregroundColor: Int) =
@@ -275,6 +295,10 @@ class MeshNotificationManagerImpl(
     /**
      * Creates all necessary notification channels on devices running Android O or newer. This should be called once
      * when the service is created.
+     *
+     * Deliberately blocking (Main-thread, one-time cost): the orchestrator posts the foreground-service notification
+     * synchronously right after this returns, so channels must exist before then — do not lazy-gate this into the
+     * suspend notify paths. Blocking [getString] is safe here only because Main is not a Dispatchers.Default worker.
      */
     override fun initChannels() {
         notificationManager.removeLegacyCategoryChannels()
@@ -352,6 +376,16 @@ class MeshNotificationManagerImpl(
 
     init {
         scope.launch { serviceNotificationSnapshots.collectLatest(::renderAndPostServiceNotification) }
+        // A long operation changes the notification without any connection-state change to piggyback on — a
+        // firmware update in particular deselects the device, so the state alone would read "Disconnected".
+        scope.launch {
+            radioOperationLock.holders.collect { holders ->
+                synchronized(serviceNotificationLock) {
+                    val last = serviceNotificationSnapshots.replayCache.lastOrNull() ?: return@synchronized
+                    serviceNotificationSnapshots.tryEmit(last.copy(activeOperations = holders.values.toSet()))
+                }
+            }
+        }
     }
 
     /**
@@ -433,21 +467,25 @@ class MeshNotificationManagerImpl(
             deviceMetrics = cachedDeviceMetrics,
             previousMessage = cachedMessage,
             nextUpdateAt = nextStatsUpdateMillis,
+            activeOperations = radioOperationLock.activeOperations,
         )
     }
 
     private suspend fun renderServiceNotification(snapshot: ServiceNotificationSnapshot): RenderedServiceNotification {
+        // A held operation outranks the connection state. During a firmware update the device is deliberately
+        // deselected, so the state alone would report "Disconnected" over a flash that is running perfectly.
         val title =
-            when (snapshot.state) {
-                is ConnectionState.Connected ->
-                    getStringSuspend(Res.string.meshtastic_app_name) + ": " + getStringSuspend(Res.string.connected)
+            snapshot.activeOperations.notificationTitleResource()?.let { getStringSuspend(it) }
+                ?: when (snapshot.state) {
+                    is ConnectionState.Connected ->
+                        getStringSuspend(Res.string.meshtastic_app_name) + ": " + getStringSuspend(Res.string.connected)
 
-                is ConnectionState.Disconnected -> getStringSuspend(Res.string.disconnected)
+                    is ConnectionState.Disconnected -> getStringSuspend(Res.string.disconnected)
 
-                is ConnectionState.DeviceSleep -> getStringSuspend(Res.string.device_sleeping)
+                    is ConnectionState.DeviceSleep -> getStringSuspend(Res.string.device_sleeping)
 
-                is ConnectionState.Connecting -> getStringSuspend(Res.string.connecting)
-            }
+                    is ConnectionState.Connecting -> getStringSuspend(Res.string.connecting)
+                }
 
         val freshMessage =
             when {
@@ -548,7 +586,7 @@ class MeshNotificationManagerImpl(
         showGroupSummary()
     }
 
-    private fun showGroupSummary(justCancelledId: Int? = null) {
+    private suspend fun showGroupSummary(justCancelledId: Int? = null) {
         // Exclude the summary itself by its group-summary flag rather than by id, so a conversation whose
         // contactKey.hashCode() happens to equal SUMMARY_ID is still counted as an active conversation.
         // Also exclude a conversation we just cancelled: activeNotifications does not reflect a cancel() issued
@@ -569,7 +607,7 @@ class MeshNotificationManagerImpl(
         }
 
         val ourNode = nodeRepository.value.ourNodeInfo.value
-        val meName = ourNode?.user?.long_name ?: getString(Res.string.you)
+        val meName = ourNode?.user?.long_name ?: getStringSuspend(Res.string.you)
         val me =
             Person.Builder()
                 .setName(meName)
@@ -584,7 +622,7 @@ class MeshNotificationManagerImpl(
         val messagingStyle =
             NotificationCompat.MessagingStyle(me)
                 .setGroupConversation(true)
-                .setConversationTitle(getString(Res.string.meshtastic_app_name))
+                .setConversationTitle(getStringSuspend(Res.string.meshtastic_app_name))
 
         activeNotifications.forEach { sbn ->
             // Prefer the child's real MessagingStyle: its latest message carries the actual sender (Person, icon) and
@@ -594,7 +632,7 @@ class MeshNotificationManagerImpl(
                     ?.messages
                     ?.lastOrNull()
             if (latest?.text != null) {
-                val senderPerson = latest.person ?: Person.Builder().setName(getString(Res.string.you)).build()
+                val senderPerson = latest.person ?: Person.Builder().setName(getStringSuspend(Res.string.you)).build()
                 messagingStyle.addMessage(latest.text, latest.timestamp, senderPerson)
             } else {
                 // Fallback for children without an extractable style: rebuild a generic line from the extras.
@@ -643,7 +681,7 @@ class MeshNotificationManagerImpl(
         notificationManager.notify(TAG_CLIENT, clientNotification.toString().hashCode(), notification)
     }
 
-    override fun cancelMessageNotification(contactKey: String) {
+    override suspend fun cancelMessageNotification(contactKey: String) {
         val id = contactKey.hashCode()
         notificationManager.cancel(TAG_MESSAGE, id)
         // Rebuild (or clear) the group summary so it doesn't keep showing the dismissed conversation in Android Auto.
@@ -667,13 +705,13 @@ class MeshNotificationManagerImpl(
             val index = contactKey.substringBefore(NodeAddress.ID_BROADCAST).toIntOrNull()
             channelName = index?.let { channelSet.settings.getOrNull(it) }?.let { Channel(it, lora).name }
             // Never fall back to the raw contactKey for user-facing labels (privacy-first convention).
-            conversationName = channelName ?: getString(Res.string.channel)
+            conversationName = channelName ?: getStringSuspend(Res.string.channel)
         } else {
             // DM contactKey is "<channelIndex><userId>" where userId starts at the '!'.
             val userId = "!" + contactKey.substringAfter("!", missingDelimiterValue = "")
             val peer = nodeRepository.value.nodeDBbyNum.value.values.find { it.user.id == userId }
             conversationName =
-                peer?.user?.long_name?.takeIf { it.isNotBlank() } ?: getString(Res.string.unknown_username)
+                peer?.user?.long_name?.takeIf { it.isNotBlank() } ?: getStringSuspend(Res.string.unknown_username)
         }
         showConversationNotification(contactKey, isBroadcast, channelName, conversationName, isSilent = true)
     }
@@ -716,7 +754,7 @@ class MeshNotificationManagerImpl(
     }
 
     @Suppress("LongMethod")
-    private fun createConversationNotification(
+    private suspend fun createConversationNotification(
         contactKey: String,
         isBroadcast: Boolean,
         channelName: String?,
@@ -731,7 +769,7 @@ class MeshNotificationManagerImpl(
         }
 
         val ourNode = nodeRepository.value.ourNodeInfo.value
-        val meName = ourNode?.user?.long_name ?: getString(Res.string.you)
+        val meName = ourNode?.user?.long_name ?: getStringSuspend(Res.string.you)
         val me =
             Person.Builder()
                 .setName(meName)
@@ -808,12 +846,31 @@ class MeshNotificationManagerImpl(
             }
         }
         val lastMessage = history.last()
+        // The bubble wears the other party's avatar, not ours — a bubble is recognised by who is in it.
+        val bubbleNode = lastMessage.node
+        val bubbleIcon =
+            cachedBubblePersonIcon(
+                bubbleNode.user.id,
+                bubbleNode.user.short_name,
+                bubbleNode.colors.second,
+                bubbleNode.colors.first,
+            )
 
         builder
             .setCategory(Notification.CATEGORY_MESSAGE)
             // Link to the conversation shortcut so this is treated as a Conversation notification (Android 11+).
             .setShortcutId(contactKey)
             .setLocusId(LocusIdCompat(contactKey))
+            // MessagingStyle carries per-message Persons, but conversation and bubble eligibility is judged on the
+            // notification's own person list, so the counterpart is added here too.
+            .addPerson(
+                Person.Builder()
+                    .setName(bubbleNode.user.long_name.ifEmpty { bubbleNode.user.short_name })
+                    .setKey(bubbleNode.user.id)
+                    .setIcon(bubbleIcon)
+                    .build(),
+            )
+            .setBubbleMetadata(createBubbleMetadata(contactKey, bubbleIcon))
             .setAutoCancel(true)
             .setStyle(style)
             .setGroup(GROUP_KEY_MESSAGES)
@@ -939,6 +996,37 @@ class MeshNotificationManagerImpl(
         }
     }
 
+    /**
+     * Bubble target: [org.meshtastic.app.BubbleActivity], not the launcher activity. A bubble's activity must be
+     * resizeable, embeddable and document-launched, and making the launcher activity document-launched would change how
+     * the whole app behaves in recents.
+     *
+     * The icon is the same per-node avatar the conversation notification already builds, so a bubble is recognisable as
+     * that conversation rather than as the app.
+     */
+    private fun createBubbleMetadata(contactKey: String, icon: IconCompat): NotificationCompat.BubbleMetadata {
+        val deepLinkUri = "$DEEP_LINK_BASE_URI/messages/$contactKey".toUri()
+        // Two halves of one rule. The intent carries no task flags, because the platform is the thing that applies
+        // FLAG_ACTIVITY_NEW_DOCUMENT and FLAG_ACTIVITY_MULTIPLE_TASK for a bubble — setting them here instead
+        // launches outside the bubble and collapses it. And the PendingIntent must be MUTABLE precisely so the
+        // platform can add them; this is the documented exception to preferring FLAG_IMMUTABLE everywhere else.
+        val intent = Intent(Intent.ACTION_VIEW, deepLinkUri, context, Class.forName(BUBBLE_ACTIVITY_CLASS))
+        val pendingIntent =
+            PendingIntent.getActivity(
+                context,
+                contactKey.hashCode(),
+                intent,
+                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        return NotificationCompat.BubbleMetadata.Builder(pendingIntent, icon)
+            .setDesiredHeight(BUBBLE_DESIRED_HEIGHT_DP)
+            // Never auto-expand or suppress the shade entry: the user opts a conversation into bubbling, the app does
+            // not decide to take over their screen because a packet arrived.
+            .setAutoExpandBubble(false)
+            .setSuppressNotification(false)
+            .build()
+    }
+
     private fun createOpenWaypointIntent(waypointId: Int): PendingIntent {
         val deepLinkUri = "$DEEP_LINK_BASE_URI/map?waypointId=$waypointId".toUri()
         val deepLinkIntent =
@@ -965,8 +1053,8 @@ class MeshNotificationManagerImpl(
         }
     }
 
-    private fun createReplyAction(contactKey: String): NotificationCompat.Action {
-        val replyLabel = getString(Res.string.reply)
+    private suspend fun createReplyAction(contactKey: String): NotificationCompat.Action {
+        val replyLabel = getStringSuspend(Res.string.reply)
         val remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY).setLabel(replyLabel).build()
 
         val replyIntent =
@@ -990,8 +1078,8 @@ class MeshNotificationManagerImpl(
             .build()
     }
 
-    private fun createMarkAsReadAction(contactKey: String): NotificationCompat.Action {
-        val label = getString(Res.string.mark_as_read)
+    private suspend fun createMarkAsReadAction(contactKey: String): NotificationCompat.Action {
+        val label = getStringSuspend(Res.string.mark_as_read)
         val intent =
             Intent(context, MarkAsReadReceiver::class.java).apply {
                 action = MARK_AS_READ_ACTION
@@ -1097,7 +1185,8 @@ class MeshNotificationManagerImpl(
 
         // Diagnostic Fields
         val diagnosticParts = mutableListOf<String>()
-        if (noise_floor != 0) diagnosticParts.add(getStringSuspend(Res.string.local_stats_noise, noise_floor))
+        val noiseFloor = noiseFloorOrNull
+        if (noiseFloor != null) diagnosticParts.add(getStringSuspend(Res.string.local_stats_noise, noiseFloor))
         if (num_packets_rx_bad > 0) {
             diagnosticParts.add(getStringSuspend(Res.string.local_stats_bad, num_packets_rx_bad))
         }
@@ -1131,4 +1220,18 @@ class MeshNotificationManagerImpl(
     }
 
     // endregion
+}
+
+/**
+ * The notification title for the most significant operation in flight, or null when none is.
+ *
+ * Firmware work outranks a discovery scan: it is the one the user must not interrupt.
+ */
+internal fun Set<RadioOperation>.notificationTitleResource(): StringResource? = when {
+    isEmpty() -> null
+
+    contains(RadioOperation.FirmwareUpdate) || contains(RadioOperation.FirmwareMaintenance) ->
+        Res.string.firmware_update_in_progress
+
+    else -> Res.string.discovery_scan_in_progress
 }

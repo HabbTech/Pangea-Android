@@ -33,6 +33,8 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.meshtastic.core.common.di.asServiceScope
+import org.meshtastic.core.common.state.RadioOperationLock
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.MyNodeInfo
 import org.meshtastic.core.repository.NodeRepository
@@ -42,6 +44,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.disconnected
 import org.meshtastic.core.resources.getString
 import org.meshtastic.core.resources.local_stats_nodes
+import org.meshtastic.core.testing.runUntilSettled
 import org.meshtastic.core.testing.runWithRenderScope
 import org.meshtastic.proto.LocalStats
 import org.meshtastic.proto.Telemetry
@@ -120,7 +123,7 @@ class MeshNotificationManagerImplTest {
         notifications.updateServiceStateNotification(ConnectionState.Disconnected, populatedTelemetry())
 
         assertNull(activeServiceNotification())
-        advanceUntilIdle()
+        runUntilSettled { activeServiceNotification() != null }
         assertNotNull(activeServiceNotification())
     }
 
@@ -160,13 +163,20 @@ class MeshNotificationManagerImplTest {
 
     @Test
     fun `service state seeds local stats before the local node row is available`() = runWithRenderScope { renderScope ->
-        val stats = LocalStats(uptime_seconds = 1, num_online_nodes = 2, num_total_nodes = 3)
+        val stats =
+            LocalStats.Builder()
+                .also { wb ->
+                    wb.uptime_seconds = 1
+                    wb.num_online_nodes = 2
+                    wb.num_total_nodes = 3
+                }
+                .build()
         every { nodeRepository.localStats } returns MutableStateFlow(stats)
         val notifications = createManager(renderScope)
         notifications.initChannels()
 
         notifications.updateServiceStateNotification(ConnectionState.Disconnected, telemetry = null)
-        advanceUntilIdle()
+        runUntilSettled { activeServiceNotification() != null }
 
         val text = activeServiceNotification()?.notification?.extras?.getCharSequence(Notification.EXTRA_TEXT)
         assertNotNull(text)
@@ -179,11 +189,22 @@ class MeshNotificationManagerImplTest {
         nodeRepository = lazy { nodeRepository },
         conversationShortcutPublisher = lazy { error("Not used in this test") },
         radioConfigRepository = lazy { error("Not used in this test") },
-        scope = scope,
+        radioOperationLock = RadioOperationLock(),
+        scope = scope.asServiceScope(),
     )
 
-    private fun populatedTelemetry() =
-        Telemetry(local_stats = LocalStats(uptime_seconds = 1, num_online_nodes = 1, num_total_nodes = 1))
+    private fun populatedTelemetry() = Telemetry.Builder()
+        .also { wb ->
+            wb.local_stats =
+                LocalStats.Builder()
+                    .also { wb ->
+                        wb.uptime_seconds = 1
+                        wb.num_online_nodes = 1
+                        wb.num_total_nodes = 1
+                    }
+                    .build()
+        }
+        .build()
 
     private fun activeServiceNotification() =
         systemNotificationManager.activeNotifications.singleOrNull { it.id == SERVICE_NOTIFY_ID }

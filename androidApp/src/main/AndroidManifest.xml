@@ -85,12 +85,25 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
+    <!-- The legacy BLUETOOTH permissions imply this feature as required, which hides the app on Android XR. -->
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="false" />
 
     <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <uses-feature
         android:name="android.hardware.nfc"
+        android:required="false" />
+
+    <uses-feature
+        android:name="android.hardware.nfc.hce"
         android:required="false" />
 
     <!-- for USB serial access -->
@@ -180,6 +193,24 @@
             android:name="google_analytics_default_allow_analytics_storage"
             android:value="false" />
 
+        <!--
+             Presents the armed share URL as an NFC Forum Type 4 Tag, so another phone can take a
+             contact or channel by tapping this one. Serves nothing unless a share dialog has armed
+             it. BIND_NFC_SERVICE is the system-only permission that makes exported="true" safe.
+        -->
+        <service
+            android:name="org.meshtastic.core.nfc.MeshtasticHostApduService"
+            android:exported="true"
+            android:permission="android.permission.BIND_NFC_SERVICE">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.nfc.cardemulation.host_apdu_service"
+                android:resource="@xml/nfc_apduservice" />
+        </service>
+
         <!-- In-app mesh foreground service -->
         <service
             android:name="org.meshtastic.core.service.MeshService"
@@ -195,6 +226,15 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
+
+        <activity
+            android:name="org.meshtastic.app.BubbleActivity"
+            android:allowEmbedded="true"
+            android:documentLaunchMode="always"
+            android:resizeableActivity="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+            android:exported="false" />
 
         <activity
             android:name="org.meshtastic.app.MainActivity"

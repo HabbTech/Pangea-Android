@@ -35,6 +35,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.meshtastic.app.BuildConfig
 import org.meshtastic.core.model.ConnectionState
+import org.meshtastic.core.model.DeviceAddress
 import org.meshtastic.core.model.service.LockdownState
 import org.meshtastic.core.navigation.MultiBackstack
 import org.meshtastic.core.navigation.NodesRoute
@@ -68,7 +69,8 @@ import org.meshtastic.feature.wifiprovision.navigation.wifiProvisionGraph
 @Composable
 fun MainScreen() {
     val viewModel: UIViewModel = koinViewModel()
-    val multiBackstack = rememberMultiBackstack(rememberInitialTab(viewModel))
+    val initialTab = remember { initialRoute(viewModel.currentDeviceAddressFlow.value) }
+    val multiBackstack = rememberMultiBackstack(initialTab)
     val backStack = multiBackstack.activeBackStack
     val scrollToTopEvents = viewModel.scrollToTopEventFlow
     val settingsRadioConfigViewModelProvider = rememberSettingsRadioConfigViewModelProvider(backStack)
@@ -127,18 +129,8 @@ fun MainScreen() {
     }
 }
 
-/**
- * Lands on Connections for first-run / no-device-selected; otherwise on Nodes. Read synchronously from the StateFlow
- * (seeded from persisted prefs) so the initial tab is set in one shot.
- */
-@Composable
-private fun rememberInitialTab(viewModel: UIViewModel) = remember {
-    if (viewModel.currentDeviceAddressFlow.value.isNullOrSelectedNone()) {
-        TopLevelDestination.Connect.route
-    } else {
-        NodesRoute.Nodes
-    }
-}
+private fun initialRoute(deviceAddress: String?): NavKey =
+    if (DeviceAddress.parse(deviceAddress) == null) TopLevelDestination.Connect.route else NodesRoute.Nodes
 
 /** Builds the nav-bar Power Mode menu state: current selection, selection handler, and About navigation. */
 @Composable
@@ -154,9 +146,6 @@ private fun rememberPowerModeMenu(multiBackstack: MultiBackstack): PowerModeMenu
         },
     )
 }
-
-/** True when no device address is persisted, or the address is the "none" sentinel (`"n"`). */
-private fun String?.isNullOrSelectedNone(): Boolean = isNullOrBlank() || this == "n"
 
 @Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod")

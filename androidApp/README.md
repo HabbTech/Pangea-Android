@@ -26,7 +26,8 @@ The module primarily serves as a "glue" layer, connecting:
 graph TB
   :androidApp[androidApp]:::android-application
   :androidApp -.-> :baselineprofile
-  :androidApp -.-> :feature:car
+  :androidApp -.-> :feature:map-maplibre
+  :androidApp -.-> :feature:map-terrain
   :androidApp -.-> :core:ble
   :androidApp -.-> :core:common
   :androidApp -.-> :core:data
@@ -55,6 +56,7 @@ graph TB
   :androidApp -.-> :feature:firmware
   :androidApp -.-> :feature:wifi-provision
   :androidApp -.-> :feature:widget
+  :androidApp -.-> :core:testing
 
 classDef android-application fill:#CAFFBF,stroke:#000,stroke-width:2px,color:#000;
 classDef android-application-compose fill:#CAFFBF,stroke:#000,stroke-width:2px,color:#000;

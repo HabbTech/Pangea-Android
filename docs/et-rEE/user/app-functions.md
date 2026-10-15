@@ -1,63 +1,62 @@
 ---
-title: App Functions
+title: Rakenduse funktsioonid
 parent: Kasutaja juhis
 nav_order: 19
-last_updated: 2026-06-11
-description: Expose mesh capabilities to the Android system and on-device AI assistants (e.g. Gemini) so they can run mesh workflows without opening the app.
+last_updated: 2026-08-30
+description: Ava kärgvõrgu funktsioonid Androidi süsteemile ja seadme tehisintellektil põhinevatele assistentidele (nt Gemini), et nad saaksid kärgvõrgu töövooge käivitada rakendust avamata.
 aliases:
-  - app-functions
+  - rakenduse funktsioonid
   - süsteemi-ti
   - gemini
-  - assistant
+  - assistent
 ---
 
-# App Functions
+# Rakenduse funktsioonid
 
-Rakendusfunktsioonid avaldavad Meshtasticu võimalused Androidi süsteemile ja seadmesisestele TI assistentidele (näiteks Gemini) Androidi rakenduste funktsioonide API kaudu. Kui need on lubatud, saab assistent sinu eest kärgvõrgu töövooge avastada ja käivitada – näiteks sõnumi saata või kärgvõrgu olekut kontrollida – ilma, et peaksid rakendust avama.
+Rakendusfunktsioonid avaldavad Meshtasticu võimalused Androidi süsteemile ja seadmesisestele TI assistentidele (näiteks Gemini) Androidi rakenduste funktsioonide API kaudu. Kui need on lubatud, saab assistent sinu eest kärgvõrgu töövooge avastada ja käivitada – näiteks sõnumi saata või kärgvõrgu olekut kontrollida – ilma, et peaksid rakendust avama. App Functions are available on **Google-flavor Android builds only**.
 
-> ⚠️ **Märkus:** Rakenduse funktsioonid on saadaval ainult **Google'i-tüüpi Androidi versioonides**.
+> ℹ️ **Note:** This is separate from the in-app **Chirpy** assistant. Rakenduse funktsioonid lasevad _süsteemi_ TI assistendil kärgvõrgu kallal tegutseda; Chirpy on vestlusassistent Meshtasticu rakenduses endas.
 
-> ⚠️ **Märkus:** See on eraldi rakenduse sisesest **Chirpy** assistendist. Rakenduse funktsioonid lasevad _süsteemi_ TI assistendil kärgvõrgu kallal tegutseda; Chirpy on vestlusassistent Meshtasticu rakenduses endas.
+## Luba rakenduse funktsioonid
 
-## Enabling App Functions
+Control App Functions from **Settings → System AI**. The screen has:
 
-Rakenduse funktsioone saab juhtida menüüst **Seaded → Süsteemi TI** (rakenduse sisemine ekraan on tähistatud kui „Süsteemi TI“). The screen has:
+- **Pealüliti** sildiga **"Luba tehisintellektile juurdepääs"** alapealkirjaga _"Luba süsteemi TI assistentidel (nt Gemini) kärgvõrgu funktsioone avastada ja kasutada"_. Väljalülitatud olekus pole süsteemile ühtegi funktsiooni avatud.
+- **Iga funktsiooni jaoks on eraldi lüliti**, nii et saad kuvada ainult soovitud võimalusi.
 
-- **Pealüliti** sildiga **"Luba tehisintellektile juurdepääs"** alapealkirjaga _"Luba süsteemi TI assistentidel (nt Gemini) kärgvõrgu funktsioone avastada ja kasutada"_. When off, no functions are exposed to the system.
-- An **individual toggle for each function**, so you can expose only the capabilities you want.
+> ⚠️ **Important:** App Functions ship switched on. On a Google-flavor build the master toggle and every individual function, **Send message** included, start enabled — so an assistant can read your mesh data and send messages to your mesh until you turn **Allow AI access** off.
 
-The functions are grouped into a **Write** section (functions that change something or send data to your mesh) and a **Read** section (functions that only return information).
+Funktsioonid on rühmitatud kirjutamis- (Write) sektsiooni (funktsioonid, mis midagi muudavad või andmeid kärgvõrgule saadavad) ja lugemis- (Read) sektsiooni (funktsioonid, mis ainult teavet tagastavad).
 
-![App Functions screen with master and per-function toggles](../../assets/screenshots/app-functions_settings.png)
+![Rakenduse funktsioonide ekraan põhi- ja funktsioonipõhiste lülititega](../../assets/screenshots/app-functions_settings.png)
 
-### Write Functions
+The screenshot has **Send message** and **Get recent messages** switched off to illustrate per-function control; a fresh install shows every switch on.
 
-| Function         | What it does                                                                                                |
-| ---------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Send Message** | Saadab kontaktile (otsesõnum) või kanalile tekstisõnumi, kuni 237 baiti. |
+### Kirjutamis funktsioonid
 
-### Read Functions
+| Funktsioon       | What it does                                                                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Send message** | Sends a text message to a contact (direct message) or to a channel. The mesh carries at most 233 bytes of text, so keep assistant-composed messages short. |
 
-| Function                | What it returns                                             |
-| ----------------------- | ----------------------------------------------------------- |
-| **Get Mesh Status**     | Overall mesh status.                        |
-| **Get Node List**       | The list of nodes on your mesh.             |
-| **Saa kanali info**     | Teave kanalite kohta.                       |
-| **Get Device Status**   | Status of your connected radio.             |
-| **Get Node Details**    | Detailed information about a specific node. |
-| **Get Recent Messages** | Recent messages from your conversations.    |
-| **Get Unread Summary**  | A summary of unread messages.               |
-| **Get Mesh Metrics**    | Telemetry and metrics from your mesh.       |
+### Lugemis funktsioonid
+
+| Funktsioon              | What it returns                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| **Get mesh status**     | Whether you're connected to a radio, and how many nodes are online. |
+| **Get node list**       | Teie kärgvõrgu sõlmede loend.                                       |
+| **Get channel info**    | Teave kanalite kohta.                                               |
+| **Get device status**   | Ühendatud raadio olek.                                              |
+| **Get node details**    | Detailed information about a specific node.                         |
+| **Get mesh metrics**    | Telemetry and metrics from your mesh.                               |
+| **Get recent messages** | Recent messages from your conversations.                            |
+| **Get unread summary**  | A summary of unread messages.                                       |
 
 ## Privacy
 
-> 🔒 **Privaatsus:** Funktsioon **Saada sõnum** võimaldab assistendil sinu nimel sinu kärgvõrku sõnumeid saata. Only enable functions you trust the assistant to use. The read functions expose node, message, and metric data to the assistant — enable only what you're comfortable sharing. Igal funktsioonil on oma lüliti ja peamine lüliti lülitab need kõik korraga välja.
+> 🔒 **Privacy:** The **Send message** function lets an assistant send messages to your mesh on your behalf, and the read functions expose node, message, and metric data to it. Because all of them start enabled, the choice you make here is what to turn off rather than what to turn on. Each function has its own toggle, and **Allow AI access** turns all of them off at once.
 
-## Related Topics
+## Seotud teemad
 
 - [Sõnumid ja kanalid](user/messages-and-channels)— sõnumite saatmine otse rakenduses
-- [Nodes](nodes) — the node list the read functions draw from
-- [Node Metrics](node-metrics) — the telemetry behind Get Mesh Metrics
-
----
-
+- [Sõlmed](nodes) — sõlmede loend, millest lugemisfunktsioonid ammutavad
+- [Node Metrics](node-metrics) — the telemetry behind Get mesh metrics

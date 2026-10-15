@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import org.meshtastic.core.database.entity.DiscoveredNodeEntity
 import org.meshtastic.core.database.entity.DiscoveryPresetResultEntity
 import org.meshtastic.core.database.entity.DiscoverySessionEntity
+import org.meshtastic.core.database.entity.DiscoverySessionStatus
 
 @Dao
 @Suppress("TooManyFunctions")
@@ -46,25 +47,60 @@ interface DiscoveryDao {
     @Query("SELECT * FROM discovery_session WHERE id = :sessionId")
     suspend fun getSession(sessionId: Long): DiscoverySessionEntity?
 
+    @Query("UPDATE discovery_session SET completion_status = :status WHERE id = :sessionId")
+    suspend fun updateSessionCompletionStatus(sessionId: Long, status: String): Int
+
+    @Query(
+        "UPDATE discovery_session SET total_unique_nodes = :totalUniqueNodes, " +
+            "total_dwell_seconds = :totalDwellSeconds, total_messages = :totalMessages, " +
+            "total_sensor_packets = :totalSensorPackets, " +
+            "furthest_node_distance = :furthestNodeDistance, avg_channel_utilization = :avgChannelUtilization " +
+            "WHERE id = :sessionId",
+    )
+    suspend fun updateSessionAggregates(
+        sessionId: Long,
+        totalUniqueNodes: Int,
+        totalDwellSeconds: Long,
+        totalMessages: Int,
+        totalSensorPackets: Int,
+        furthestNodeDistance: Double,
+        avgChannelUtilization: Double,
+    )
+
+    @Query(
+        "UPDATE discovery_session SET completion_status = :status WHERE id = :sessionId " +
+            "AND completion_status IN (" +
+            DiscoverySessionStatus.RECOVERABLE_SQL_LIST +
+            ")",
+    )
+    suspend fun updateRecoverableSessionCompletionStatus(sessionId: Long, status: String): Int
+
     @Query("SELECT * FROM discovery_session WHERE id = :sessionId")
     fun getSessionFlow(sessionId: Long): Flow<DiscoverySessionEntity?>
 
     @Query("DELETE FROM discovery_session WHERE id = :sessionId")
     suspend fun deleteSession(sessionId: Long)
 
-    @Query("UPDATE discovery_session SET completion_status = 'interrupted' WHERE completion_status = 'in_progress'")
+    @Query(
+        "UPDATE discovery_session SET completion_status = '" +
+            DiscoverySessionStatus.INTERRUPTED +
+            "' WHERE completion_status = '" +
+            DiscoverySessionStatus.IN_PROGRESS +
+            "'",
+    )
     suspend fun markInterruptedSessions()
 
     /**
-     * The most recent session left mid-scan by a prior process (crash, BLE loss, or force-quit) for [deviceAddress] —
-     * "in_progress" if the process died before [markInterruptedSessions] ever ran, "interrupted" otherwise.
+     * The most recent recoverable session for [deviceAddress]. This includes active/interrupted scans and terminal
+     * scans whose home-radio restoration is still pending, so callers must inspect completionStatus rather than
+     * assuming an unfinished scan.
      */
     @Query(
-        """
-        SELECT * FROM discovery_session
-        WHERE device_address = :deviceAddress AND completion_status IN ('in_progress', 'interrupted')
-        ORDER BY timestamp DESC LIMIT 1
-        """,
+        "SELECT * FROM discovery_session " +
+            "WHERE device_address = :deviceAddress " +
+            "AND completion_status IN (" +
+            DiscoverySessionStatus.RECOVERABLE_SQL_LIST +
+            ") ORDER BY timestamp DESC LIMIT 1",
     )
     suspend fun getInterruptedSession(deviceAddress: String): DiscoverySessionEntity?
 
@@ -128,6 +164,37 @@ interface DiscoveryDao {
         """,
     )
     suspend fun getMaxDistance(sessionId: Long): Double?
+
+    @Query("SELECT COUNT(*) FROM discovery_session WHERE id = :sessionId AND device_address = :deviceAddress")
+    suspend fun countSessionsForDevice(sessionId: Long, deviceAddress: String): Int
+
+    /**
+     * Writes one dwell's preset result and its discovered nodes, but only if the parent session row exists in *this*
+     * database and belongs to [deviceAddress], returning null when it does not.
+     *
+     * The parent check and the child writes share one transaction on purpose. Every [SwitchingDiscoveryDao] call
+     * re-resolves the active database, so a caller that checks the session and then inserts issues two independent
+     * resolutions and a device/DB switch landing between them orphans the foreign key. Callers must not reimplement
+     * this as check-then-insert.
+     *
+     * The id alone is not an identity: every per-device database autogenerates from 1, so a dwell can match an
+     * unrelated session of the same id in another database. [deviceAddress] is what makes the match unambiguous.
+     *
+     * [nodes] are stamped with the new preset-result id, so callers pass them with any placeholder.
+     */
+    @Transaction
+    suspend fun insertDwellIfSessionExists(
+        result: DiscoveryPresetResultEntity,
+        nodes: List<DiscoveredNodeEntity>,
+        deviceAddress: String,
+    ): Long? {
+        if (countSessionsForDevice(result.sessionId, deviceAddress) == 0) return null
+        val presetResultId = insertPresetResult(result)
+        if (nodes.isNotEmpty()) {
+            insertDiscoveredNodes(nodes.map { it.copy(presetResultId = presetResultId) })
+        }
+        return presetResultId
+    }
 
     @Transaction
     @Query("SELECT * FROM discovery_session WHERE id = :sessionId")

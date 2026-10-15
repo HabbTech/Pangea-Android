@@ -51,16 +51,12 @@ class SwitchingNodeInfoWriteDataSource(
         withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().clearMyNodeInfo() } }
     }
 
-    override suspend fun deleteNode(num: Int) {
-        withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().deleteNode(num) } }
+    override suspend fun deleteNodeAndMetadata(num: Int) {
+        withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().deleteNodeAndMetadata(num) } }
     }
 
-    override suspend fun deleteNodes(nodeNums: List<Int>) {
-        withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().deleteNodes(nodeNums) } }
-    }
-
-    override suspend fun deleteMetadata(num: Int) {
-        withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().deleteMetadata(num) } }
+    override suspend fun deleteNodesAndMetadata(nodeNums: List<Int>) {
+        withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().deleteNodesAndMetadata(nodeNums) } }
     }
 
     override suspend fun upsert(metadata: MetadataEntity) {
@@ -69,6 +65,10 @@ class SwitchingNodeInfoWriteDataSource(
 
     override suspend fun setNodeNotes(num: Int, notes: String) {
         withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().setNodeNotes(num, notes) } }
+    }
+
+    override suspend fun markAllHeardOnCurrentLora() {
+        withContext(dispatchers.io) { dbManager.withDb { it.nodeInfoDao().markAllHeardOnCurrentLora() } }
     }
 
     override suspend fun updatePowerChannelLabel(num: Int, channelIndex: Int, label: String) {

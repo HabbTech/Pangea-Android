@@ -16,7 +16,7 @@
  */
 package org.meshtastic.core.prefs.ui
 
-import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -31,20 +31,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.model.PowerMode
 import org.meshtastic.core.prefs.cachedFlow
+import org.meshtastic.core.prefs.di.UiDataStore
+import org.meshtastic.core.repository.NodeFilterPrefs
 import org.meshtastic.core.repository.UiPrefs
 
 @Single
 @Suppress("TooManyFunctions")
-class UiPrefsImpl(
-    @Named("UiDataStore") private val dataStore: DataStore<Preferences>,
-    dispatchers: CoroutineDispatchers,
-) : UiPrefs {
+class UiPrefsImpl(private val dataStore: UiDataStore, dispatchers: CoroutineDispatchers) : UiPrefs {
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
 
     // Maps nodeNum to a flow for the for the "provide-location-nodeNum" pref
@@ -80,6 +78,15 @@ class UiPrefsImpl(
         scope.launch { dataStore.edit { it[KEY_THEME] = value } }
     }
 
+    // Eagerly, unlike most prefs here: LocaleUnitsProvider folds this into every unit the app renders, so the window
+    // in which a fresh process shows OS units to a user who overrode them should close as early as possible.
+    override val unitsOverride: StateFlow<Int> =
+        dataStore.data.map { it[KEY_UNITS_OVERRIDE] ?: 0 }.stateIn(scope, SharingStarted.Eagerly, 0)
+
+    override fun setUnitsOverride(value: Int) {
+        scope.launch { dataStore.edit { it[KEY_UNITS_OVERRIDE] = value } }
+    }
+
     override val locale: StateFlow<String> =
         dataStore.data.map { it[KEY_LOCALE] ?: "" }.stateIn(scope, SharingStarted.Eagerly, "")
 
@@ -94,46 +101,14 @@ class UiPrefsImpl(
         scope.launch { dataStore.edit { it[KEY_NODE_SORT] = value } }
     }
 
-    override val includeUnknown: StateFlow<Boolean> =
-        dataStore.data.map { it[KEY_INCLUDE_UNKNOWN] ?: false }.stateIn(scope, SharingStarted.Lazily, false)
+    // Defaults on so nodes heard before their NodeInfo arrives stay visible and messageable (design#16).
+    override val nodeFilters: StateFlow<NodeFilterPrefs> =
+        dataStore.data.map { it.toNodeFilterPrefs() }.stateIn(scope, SharingStarted.Lazily, NodeFilterPrefs())
 
-    override fun setIncludeUnknown(value: Boolean) {
-        scope.launch { dataStore.edit { it[KEY_INCLUDE_UNKNOWN] = value } }
-    }
-
-    override val excludeInfrastructure: StateFlow<Boolean> =
-        dataStore.data.map { it[KEY_EXCLUDE_INFRASTRUCTURE] ?: false }.stateIn(scope, SharingStarted.Lazily, false)
-
-    override fun setExcludeInfrastructure(value: Boolean) {
-        scope.launch { dataStore.edit { it[KEY_EXCLUDE_INFRASTRUCTURE] = value } }
-    }
-
-    override val onlyOnline: StateFlow<Boolean> =
-        dataStore.data.map { it[KEY_ONLY_ONLINE] ?: false }.stateIn(scope, SharingStarted.Lazily, false)
-
-    override fun setOnlyOnline(value: Boolean) {
-        scope.launch { dataStore.edit { it[KEY_ONLY_ONLINE] = value } }
-    }
-
-    override val onlyDirect: StateFlow<Boolean> =
-        dataStore.data.map { it[KEY_ONLY_DIRECT] ?: false }.stateIn(scope, SharingStarted.Lazily, false)
-
-    override fun setOnlyDirect(value: Boolean) {
-        scope.launch { dataStore.edit { it[KEY_ONLY_DIRECT] = value } }
-    }
-
-    override val showIgnored: StateFlow<Boolean> =
-        dataStore.data.map { it[KEY_SHOW_IGNORED] ?: false }.stateIn(scope, SharingStarted.Lazily, false)
-
-    override fun setShowIgnored(value: Boolean) {
-        scope.launch { dataStore.edit { it[KEY_SHOW_IGNORED] = value } }
-    }
-
-    override val excludeMqtt: StateFlow<Boolean> =
-        dataStore.data.map { it[KEY_EXCLUDE_MQTT] ?: false }.stateIn(scope, SharingStarted.Lazily, false)
-
-    override fun setExcludeMqtt(value: Boolean) {
-        scope.launch { dataStore.edit { it[KEY_EXCLUDE_MQTT] = value } }
+    override fun updateNodeFilters(transform: (NodeFilterPrefs) -> NodeFilterPrefs) {
+        // Read-modify-write inside edit{}, which is transactional — the same lost-update guard updateHiddenLayerUrls
+        // uses. Writing every key rather than the changed one keeps this a single pure transform.
+        scope.launch { dataStore.edit { it.writeNodeFilterPrefs(transform(it.toNodeFilterPrefs())) } }
     }
 
     override val hasShownNotPairedWarning: StateFlow<Boolean> =
@@ -150,6 +125,15 @@ class UiPrefsImpl(
 
     override fun setShowQuickChat(show: Boolean) {
         scope.launch { dataStore.edit { it[KEY_SHOW_QUICK_CHAT_PREF] = show } }
+    }
+
+    override val showFullMessageTimestamps: StateFlow<Boolean> =
+        dataStore.data
+            .map { it[KEY_SHOW_FULL_MESSAGE_TIMESTAMPS] ?: false }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+
+    override fun setShowFullMessageTimestamps(show: Boolean) {
+        scope.launch { dataStore.edit { it[KEY_SHOW_FULL_MESSAGE_TIMESTAMPS] = show } }
     }
 
     override val eventThemeEnabled: StateFlow<Boolean> =
@@ -313,23 +297,52 @@ class UiPrefsImpl(
         scope.launch { dataStore.edit { it[NodeListLayoutPreferences.KEY_SHOW_TELEMETRY] = value } }
     }
 
+    private fun Preferences.toNodeFilterPrefs() = NodeFilterPrefs(
+        includeUnknown = this[KEY_INCLUDE_UNKNOWN] ?: NodeFilterPrefs().includeUnknown,
+        excludeInfrastructure = this[KEY_EXCLUDE_INFRASTRUCTURE] ?: false,
+        onlyOnline = this[KEY_ONLY_ONLINE] ?: false,
+        onlyDirect = this[KEY_ONLY_DIRECT] ?: false,
+        showIgnored = this[KEY_SHOW_IGNORED] ?: false,
+        onlySigned = this[KEY_ONLY_SIGNED] ?: false,
+        onlyEncrypted = this[KEY_ONLY_ENCRYPTED] ?: false,
+        excludeMqtt = this[KEY_EXCLUDE_MQTT] ?: false,
+        excludeUnheard = this[KEY_EXCLUDE_UNHEARD] ?: false,
+    )
+
+    private fun MutablePreferences.writeNodeFilterPrefs(prefs: NodeFilterPrefs) {
+        this[KEY_INCLUDE_UNKNOWN] = prefs.includeUnknown
+        this[KEY_EXCLUDE_INFRASTRUCTURE] = prefs.excludeInfrastructure
+        this[KEY_ONLY_ONLINE] = prefs.onlyOnline
+        this[KEY_ONLY_DIRECT] = prefs.onlyDirect
+        this[KEY_SHOW_IGNORED] = prefs.showIgnored
+        this[KEY_ONLY_SIGNED] = prefs.onlySigned
+        this[KEY_ONLY_ENCRYPTED] = prefs.onlyEncrypted
+        this[KEY_EXCLUDE_MQTT] = prefs.excludeMqtt
+        this[KEY_EXCLUDE_UNHEARD] = prefs.excludeUnheard
+    }
+
     companion object {
         val KEY_HAS_SHOWN_NOT_PAIRED_WARNING_PREF = booleanPreferencesKey("has_shown_not_paired_warning")
         val KEY_SHOW_QUICK_CHAT_PREF = booleanPreferencesKey("show-quick-chat")
+        val KEY_SHOW_FULL_MESSAGE_TIMESTAMPS = booleanPreferencesKey("show-full-message-timestamps")
         val KEY_EVENT_THEME_ENABLED = booleanPreferencesKey("event-theme-enabled")
 
         val KEY_APP_INTRO_COMPLETED = booleanPreferencesKey("app_intro_completed")
         val KEY_EXPERT_MODE_ENABLED = booleanPreferencesKey("expert-mode-enabled")
         val KEY_POWER_MODE = stringPreferencesKey("power_mode")
         val KEY_THEME = intPreferencesKey("theme")
+        private val KEY_UNITS_OVERRIDE = intPreferencesKey("units_override")
         val KEY_LOCALE = stringPreferencesKey("locale")
         val KEY_NODE_SORT = intPreferencesKey("node-sort-option")
         val KEY_INCLUDE_UNKNOWN = booleanPreferencesKey("include-unknown")
         val KEY_EXCLUDE_INFRASTRUCTURE = booleanPreferencesKey("exclude-infrastructure")
         val KEY_ONLY_ONLINE = booleanPreferencesKey("only-online")
         val KEY_ONLY_DIRECT = booleanPreferencesKey("only-direct")
+        val KEY_ONLY_SIGNED = booleanPreferencesKey("only-signed")
+        val KEY_ONLY_ENCRYPTED = booleanPreferencesKey("only-encrypted")
         val KEY_SHOW_IGNORED = booleanPreferencesKey("show-ignored")
         val KEY_EXCLUDE_MQTT = booleanPreferencesKey("exclude-mqtt")
+        val KEY_EXCLUDE_UNHEARD = booleanPreferencesKey("exclude-unheard")
         val KEY_BLE_AUTO_SCAN = booleanPreferencesKey("ble-auto-scan")
         val KEY_NETWORK_AUTO_SCAN = booleanPreferencesKey("network-auto-scan")
         val KEY_SELECTED_CONNECTION_TRANSPORT = stringPreferencesKey("selected-connection-transport")

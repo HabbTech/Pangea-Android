@@ -17,17 +17,24 @@
 package org.meshtastic.core.network.repository
 
 import co.touchlab.kermit.Logger
+import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -41,6 +48,7 @@ import org.koin.core.annotation.Single
 import org.meshtastic.core.common.util.safeCatching
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.MqttJsonPayload
+import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.util.decodeOrNull
 import org.meshtastic.core.model.util.subscribeList
 import org.meshtastic.core.repository.NodeRepository
@@ -51,6 +59,7 @@ import org.meshtastic.mqtt.MqttEndpoint
 import org.meshtastic.mqtt.MqttException
 import org.meshtastic.mqtt.MqttLogLevel
 import org.meshtastic.mqtt.MqttMessage
+import org.meshtastic.mqtt.MqttProtocolVersion
 import org.meshtastic.mqtt.QoS
 import org.meshtastic.mqtt.ReasonCode
 import org.meshtastic.mqtt.packet.Subscription
@@ -60,7 +69,6 @@ import org.meshtastic.mqtt.transport.ws.WebSocketTransportFactory
 import org.meshtastic.proto.ModuleConfig
 import org.meshtastic.proto.MqttClientProxyMessage
 import org.meshtastic.proto.ServiceEnvelope
-import kotlin.concurrent.Volatile
 import kotlin.uuid.Uuid
 
 @Single(binds = [MQTTRepository::class])
@@ -96,26 +104,31 @@ class MQTTRepositoryImpl(
         private const val RECONNECT_BACKOFF_MULTIPLIER = 2
     }
 
-    @Volatile private var client: MqttClientSession? = null
     private var mqttClientFactory: (MqttClientSetup) -> MqttClientSession = ::defaultMqttClientFactory
+    private val scope = CoroutineScope(dispatchers.default + SupervisorJob())
+    private val activeSession = MutableStateFlow<ActiveMqttSession?>(null)
 
-    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected.Idle)
-    override val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+    override val connectionState: StateFlow<ConnectionState> =
+        activeSession
+            .flatMapLatest { session -> session?.client?.connectionState ?: flowOf(ConnectionState.Disconnected.Idle) }
+            .onEach(::logConnectionState)
+            .stateIn(scope, SharingStarted.Eagerly, ConnectionState.Disconnected.Idle)
+
+    override val subscriptionRefusal: StateFlow<MqttException.SubscriptionRefused?> =
+        activeSession
+            .flatMapLatest { session -> session?.subscriptionRefusal ?: flowOf(null) }
+            .stateIn(scope, SharingStarted.Eagerly, null)
 
     @OptIn(ExperimentalSerializationApi::class)
     private val json = Json {
         ignoreUnknownKeys = true
         exceptionsWithDebugInfo = false
     }
-    private val scope = CoroutineScope(dispatchers.default + SupervisorJob())
     private val publishSemaphore = Semaphore(20)
 
     override fun disconnect() {
         Logger.i { "MQTT Disconnecting" }
-        val c = client
-        client = null
-        _connectionState.value = ConnectionState.Disconnected.Idle
-        scope.launch { safeCatching { c?.close() }.onFailure { e -> Logger.w(e) { "MQTT clean disconnect failed" } } }
+        closeSession(takeActiveSession())
     }
 
     // json_enabled is deprecated in the protobuf schema but remains the only way to toggle MQTT JSON
@@ -145,97 +158,129 @@ class MQTTRepositoryImpl(
                     logLevel = if (buildConfigProvider.isDebug) MqttLogLevel.DEBUG else MqttLogLevel.WARN,
                 ),
             )
-        client = newClient
-
-        val subscriptions: List<Subscription> = buildList {
-            channelSet.subscribeList.forEach { globalId ->
-                add(
-                    Subscription(
-                        "$rootTopic$DEFAULT_TOPIC_LEVEL$globalId/+",
-                        maxQos = QoS.AT_LEAST_ONCE,
-                        noLocal = true,
-                    ),
-                )
-                if (mqttConfig?.json_enabled == true) {
-                    add(
-                        Subscription(
-                            "$rootTopic$JSON_TOPIC_LEVEL$globalId/+",
-                            maxQos = QoS.AT_LEAST_ONCE,
-                            noLocal = true,
-                        ),
-                    )
-                }
-            }
-            add(
-                Subscription(
-                    "$rootTopic$DEFAULT_TOPIC_LEVEL$PKI_CHANNEL_ID/+",
-                    maxQos = QoS.AT_LEAST_ONCE,
-                    noLocal = true,
-                ),
-            )
-        }
+        val session = ActiveMqttSession(newClient)
+        closeSession(replaceActiveSession(session))
 
         // Collect from the SharedFlow before connecting to avoid missing retained messages
         // that arrive immediately after SUBSCRIBE.
         launch { newClient.messages.collect { msg -> processMessage(msg) } }
 
-        // Forward the client's connection state to the repo-level StateFlow for UI observation.
-        // Also emit structured log messages on transitions so reconnect attempt counts and
-        // disconnect reason codes are visible in Crashlytics/Datadog without any PII.
-        launch { newClient.connectionState.collect { state -> updateConnectionState(state) } }
-
         // Retry the initial connect with exponential backoff. Once established,
         // autoReconnect handles subsequent drops and re-subscribes internally.
-        launch {
-            var reconnectDelay = INITIAL_RECONNECT_DELAY_MS
-            while (true) {
-                val result = safeCatching {
-                    Logger.i {
-                        if (buildConfigProvider.isDebug) "MQTT Connecting to $endpoint" else "MQTT Connecting..."
-                    }
-                    newClient.connect(endpoint)
-                    if (subscriptions.isNotEmpty()) {
-                        Logger.d { "MQTT subscribing to ${subscriptions.size} topics" }
-                        newClient.subscribe(subscriptions)
-                    }
-                    Logger.i { "MQTT connected and subscribed" }
-                }
-                val failure = result.exceptionOrNull()
-                when {
-                    result.isSuccess -> return@launch
-
-                    failure is MqttException.ConnectionRejected && failure.isCredentialRejection() -> {
-                        Logger.e(failure) { "MQTT connection rejected (unrecoverable), stopping" }
-                        close(failure)
-                        return@launch
-                    }
-
-                    else -> {
-                        // Broker- and network-side failures are what this retry loop exists to absorb — an
-                        // unreachable host, a TLS problem, a dropped connection, or a broker that violates the
-                        // MQTT 5 spec (e.g. the topic-alias limit). None are defects in this app, and reporting
-                        // every retry as a non-fatal drowned real regressions.
-                        //
-                        // Anything else landing here is unexpected — a fault in our own connect/subscribe setup
-                        // rather than the peer's — so it keeps reporting.
-                        if (failure.isExpectedMqttRetryFailure()) {
-                            Logger.w(failure) { "MQTT connect failed, retrying in ${reconnectDelay}ms" }
-                        } else {
-                            Logger.e(failure) { "MQTT connect failed unexpectedly, retrying in ${reconnectDelay}ms" }
+        val connectJob =
+            launch(start = CoroutineStart.LAZY) {
+                var reconnectDelay = INITIAL_RECONNECT_DELAY_MS
+                while (isActiveSession(session)) {
+                    val result = safeCatching {
+                        if (!isActiveSession(session)) return@launch
+                        Logger.i {
+                            if (buildConfigProvider.isDebug) "MQTT Connecting to $endpoint" else "MQTT Connecting..."
                         }
-                        delay(reconnectDelay)
-                        reconnectDelay =
-                            (reconnectDelay * RECONNECT_BACKOFF_MULTIPLIER).coerceAtMost(MAX_RECONNECT_DELAY_MS)
+                        newClient.connect(endpoint)
+                        if (!isActiveSession(session)) return@launch
+                        // Built here, not before connect: the option set depends on the version the broker accepted.
+                        val subscriptions =
+                            buildSubscriptions(
+                                globalIds = channelSet.subscribeList,
+                                rootTopic = rootTopic,
+                                jsonEnabled = mqttConfig?.json_enabled == true,
+                                version = newClient.negotiatedProtocolVersion,
+                            )
+                        if (subscriptions.isNotEmpty()) {
+                            Logger.d { "MQTT subscribing to ${subscriptions.size} topics" }
+                            subscribe(session, subscriptions)
+                        }
+                        Logger.i { "MQTT connected and subscribed" }
+                    }
+                    val failure = result.exceptionOrNull()
+                    when {
+                        result.isSuccess -> return@launch
+
+                        failure is MqttException.ConnectionRejected && failure.isCredentialRejection() -> {
+                            Logger.e(failure) { "MQTT connection rejected (unrecoverable), stopping" }
+                            close(failure)
+                            return@launch
+                        }
+
+                        else -> {
+                            if (!isActiveSession(session)) return@launch
+                            // Broker- and network-side failures are what this retry loop exists to absorb — an
+                            // unreachable host, a TLS problem, a dropped connection, or a broker that violates the
+                            // MQTT 5 spec (e.g. the topic-alias limit). None are defects in this app, and reporting
+                            // every retry as a non-fatal drowned real regressions.
+                            //
+                            // Anything else landing here is unexpected — a fault in our own connect/subscribe setup
+                            // rather than the peer's — so it keeps reporting.
+                            if (failure.isExpectedMqttRetryFailure()) {
+                                Logger.w(failure) { "MQTT connect failed, retrying in ${reconnectDelay}ms" }
+                            } else {
+                                Logger.e(failure) {
+                                    "MQTT connect failed unexpectedly, retrying in ${reconnectDelay}ms"
+                                }
+                            }
+                            delay(reconnectDelay)
+                            reconnectDelay =
+                                (reconnectDelay * RECONNECT_BACKOFF_MULTIPLIER).coerceAtMost(MAX_RECONNECT_DELAY_MS)
+                        }
                     }
                 }
             }
+        session.connectJob.value = connectJob
+        if (isActiveSession(session)) {
+            connectJob.start()
+        } else {
+            session.connectJob.getAndSet(null)?.cancel()
         }
 
-        awaitClose { disconnect() }
+        awaitClose {
+            activeSession.compareAndSet(session, null)
+            closeSession(session)
+        }
     }
 
-    internal fun updateConnectionState(state: ConnectionState) {
-        _connectionState.value = state
+    // A refusal is the broker's verdict on a filter, not a failed attempt: the client keeps the filters it granted,
+    // and retrying the connect would only draw the same SUBACK on a backoff for ever. Record it for the UI instead.
+    private suspend fun subscribe(session: ActiveMqttSession, subscriptions: List<Subscription>) {
+        try {
+            session.client.subscribe(subscriptions)
+        } catch (e: MqttException.SubscriptionRefused) {
+            Logger.w {
+                if (buildConfigProvider.isDebug) {
+                    "MQTT broker refused ${e.refused.size} of ${subscriptions.size} topics: ${e.message}"
+                } else {
+                    "MQTT broker refused ${e.refused.size} of ${subscriptions.size} topics"
+                }
+            }
+            session.subscriptionRefusal.value = e
+        }
+    }
+
+    private fun replaceActiveSession(replacement: ActiveMqttSession): ActiveMqttSession? {
+        while (true) {
+            val current = activeSession.value
+            if (activeSession.compareAndSet(current, replacement)) return current
+        }
+    }
+
+    private fun takeActiveSession(): ActiveMqttSession? {
+        while (true) {
+            val current = activeSession.value ?: return null
+            if (activeSession.compareAndSet(current, null)) return current
+        }
+    }
+
+    private fun closeSession(session: ActiveMqttSession?) {
+        if (session == null || !session.closeStarted.compareAndSet(expect = false, update = true)) return
+        session.connectJob.getAndSet(null)?.cancel()
+        scope.launch {
+            safeCatching { session.client.close() }.onFailure { e -> Logger.w(e) { "MQTT clean disconnect failed" } }
+        }
+    }
+
+    private fun isActiveSession(session: ActiveMqttSession): Boolean =
+        !session.closeStarted.value && activeSession.value === session
+
+    private fun logConnectionState(state: ConnectionState) {
         when (state) {
             ConnectionState.Connecting -> Logger.i { "MQTT connecting" }
 
@@ -252,6 +297,53 @@ class MQTTRepositoryImpl(
         }
     }
 
+    /**
+     * Builds the SUBSCRIBE list for the protocol version the broker actually accepted.
+     *
+     * `noLocal` stops the broker echoing our own uplink back to us, but it is an MQTT 5 subscription option. The client
+     * offers 5.0 and silently falls back to 3.1.1 when the broker refuses, and mqtt-client then rejects the whole
+     * SUBSCRIBE with `IllegalArgumentException`. Because the failure is deterministic, the connect loop retried it
+     * forever: 121,003 reported errors across 72 users in fourteen days, with MQTT never once working for them.
+     *
+     * On 3.1.1 the broker hands our own traffic back instead, which [classifyMqttSelfTraffic] sorts out. No
+     * subscription at all is strictly worse.
+     */
+    private fun buildSubscriptions(
+        globalIds: List<String>,
+        rootTopic: String,
+        jsonEnabled: Boolean,
+        version: MqttProtocolVersion,
+    ): List<Subscription> {
+        val noLocal = version == MqttProtocolVersion.V5_0
+        return buildList {
+            globalIds.forEach { globalId ->
+                add(
+                    Subscription(
+                        "$rootTopic$DEFAULT_TOPIC_LEVEL$globalId/+",
+                        maxQos = QoS.AT_LEAST_ONCE,
+                        noLocal = noLocal,
+                    ),
+                )
+                if (jsonEnabled) {
+                    add(
+                        Subscription(
+                            "$rootTopic$JSON_TOPIC_LEVEL$globalId/+",
+                            maxQos = QoS.AT_LEAST_ONCE,
+                            noLocal = noLocal,
+                        ),
+                    )
+                }
+            }
+            add(
+                Subscription(
+                    "$rootTopic$DEFAULT_TOPIC_LEVEL$PKI_CHANNEL_ID/+",
+                    maxQos = QoS.AT_LEAST_ONCE,
+                    noLocal = noLocal,
+                ),
+            )
+        }
+    }
+
     @OptIn(ExperimentalSerializationApi::class)
     private fun ProducerScope<MqttClientProxyMessage>.processMessage(msg: MqttMessage) {
         val topic = msg.topic
@@ -260,50 +352,85 @@ class MQTTRepositoryImpl(
         if (topic.contains("/json/")) {
             try {
                 val jsonStr = payload.decodeToString()
-                json.decodeFromString<MqttJsonPayload>(jsonStr)
-                trySend(MqttClientProxyMessage(topic = topic, text = jsonStr, retained = msg.retain))
+                val decoded = json.decodeFromString<MqttJsonPayload>(jsonStr)
+                val selfTraffic = classifyMqttJsonSelfTraffic(decoded.from, decoded.sender, nodeRepository.myId.value)
+                if (selfTraffic != MqttSelfTraffic.FORWARD) {
+                    Logger.d { "MQTT json dropped ($selfTraffic)" }
+                } else {
+                    trySend(
+                        MqttClientProxyMessage.Builder()
+                            .also { wb ->
+                                wb.topic = topic
+                                wb.text = jsonStr
+                                wb.retained = msg.retain
+                            }
+                            .build(),
+                    )
+                }
             } catch (e: JsonDecodingException) {
-                Logger.e(e) { "Failed to parse MQTT JSON: ${e.shortMessage} (path: ${e.path})" }
+                // Warn, not error: a non-conforming payload recurs for as long as a busy public broker
+                // stays subscribed, not an app defect worth a non-fatal per message.
+                Logger.w(e) { "Failed to parse MQTT JSON: ${e.shortMessage} (path: ${e.path})" }
             } catch (e: SerializationException) {
-                Logger.e(e) { "Failed to parse MQTT JSON: ${e.message}" }
+                Logger.w(e) { "Failed to parse MQTT JSON: ${e.message}" }
             } catch (e: IllegalArgumentException) {
-                Logger.e(e) { "Failed to parse MQTT JSON: ${e.message}" }
+                Logger.w(e) { "Failed to parse MQTT JSON: ${e.message}" }
             }
         } else {
-            // Drop provably-undeliverable downlink packets before spending BLE bandwidth on
-            // them. In client-proxy mode the public broker floods payload-less packet-header
-            // stubs the node can only decrypt-fail and discard; stopping them here saves BLE
-            // airtime, a decrypt attempt, and a node-side warning per packet.
-            if (isUndeliverableDownlink(payload, nodeRepository.myId.value)) {
-                Logger.d {
-                    if (buildConfigProvider.isDebug) {
-                        "MQTT downlink dropped (no payload): $topic"
-                    } else {
-                        "MQTT downlink dropped (no payload)"
+            val myId = nodeRepository.myId.value
+            val selfTraffic = classifyMqttSelfTraffic(payload, myId)
+            when {
+                // A broker that negotiated MQTT 3.1.1 cannot honour `noLocal`, so our own traffic comes straight
+                // back. Only two of the three self-traffic cases are worth dropping - our own uplink returning is
+                // what firmware reads as a local ack, so it is relayed. See [classifyMqttSelfTraffic].
+                selfTraffic == MqttSelfTraffic.FORGED_SENDER ->
+                    Logger.w { "MQTT packet claiming our node id via another gateway dropped" }
+
+                selfTraffic == MqttSelfTraffic.OWN_UPLINK_ECHO -> Logger.d { "MQTT own-uplink echo dropped" }
+
+                // Drop provably-undeliverable downlink packets before spending BLE bandwidth on
+                // them. In client-proxy mode the public broker floods payload-less packet-header
+                // stubs the node can only decrypt-fail and discard; stopping them here saves BLE
+                // airtime, a decrypt attempt, and a node-side warning per packet.
+                isUndeliverableDownlink(payload, myId) ->
+                    Logger.d {
+                        if (buildConfigProvider.isDebug) {
+                            "MQTT downlink dropped (no payload): $topic"
+                        } else {
+                            "MQTT downlink dropped (no payload)"
+                        }
                     }
-                }
-                return
+
+                else ->
+                    trySend(
+                        MqttClientProxyMessage.Builder()
+                            .also { wb ->
+                                wb.topic = topic
+                                wb.data_ = payload.toByteString()
+                                wb.retained = msg.retain
+                            }
+                            .build(),
+                    )
             }
-            trySend(MqttClientProxyMessage(topic = topic, data_ = payload.toByteString(), retained = msg.retain))
         }
     }
 
     override fun publish(topic: String, data: ByteArray, retained: Boolean) {
-        val currentClient = client
-        if (currentClient == null) {
-            Logger.w {
-                if (buildConfigProvider.isDebug) {
-                    "MQTT publish to $topic dropped: client not connected"
-                } else {
-                    "MQTT publish dropped: client not connected"
-                }
-            }
-            return
-        }
         scope.launch {
             publishSemaphore.withPermit {
+                val session = activeSession.value
+                if (session == null || !isActiveSession(session)) {
+                    Logger.w {
+                        if (buildConfigProvider.isDebug) {
+                            "MQTT publish to $topic dropped: client not connected"
+                        } else {
+                            "MQTT publish dropped: client not connected"
+                        }
+                    }
+                    return@withPermit
+                }
                 safeCatching {
-                    currentClient.publish(
+                    session.client.publish(
                         MqttMessage(topic = topic, payload = data, qos = QoS.AT_LEAST_ONCE, retain = retained),
                     )
                 }
@@ -319,6 +446,12 @@ class MQTTRepositoryImpl(
             }
         }
     }
+}
+
+private class ActiveMqttSession(val client: MqttClientSession) {
+    val closeStarted = atomic(false)
+    val connectJob = atomic<Job?>(null)
+    val subscriptionRefusal = MutableStateFlow<MqttException.SubscriptionRefused?>(null)
 }
 
 /**
@@ -369,6 +502,9 @@ internal interface MqttClientSession {
     val messages: Flow<MqttMessage>
     val connectionState: StateFlow<ConnectionState>
 
+    /** The version the broker accepted, valid only after [connect] returns. */
+    val negotiatedProtocolVersion: MqttProtocolVersion
+
     suspend fun connect(endpoint: MqttEndpoint)
 
     suspend fun subscribe(subscriptions: List<Subscription>)
@@ -381,6 +517,10 @@ internal interface MqttClientSession {
 private class DefaultMqttClientSession(private val delegate: MqttClient) : MqttClientSession {
     override val messages: Flow<MqttMessage> = delegate.messages
     override val connectionState: StateFlow<ConnectionState> = delegate.connectionState
+
+    // Read through on every access: the client resets it on connect and preserves it across auto-reconnects.
+    override val negotiatedProtocolVersion: MqttProtocolVersion
+        get() = delegate.negotiatedProtocolVersion
 
     override suspend fun connect(endpoint: MqttEndpoint) {
         delegate.connect(endpoint)
@@ -493,15 +633,71 @@ internal fun extractHost(address: String): String {
 
 private const val PKI_CHANNEL_ID = "PKI"
 
+/** What to do with a downlink envelope once its `from` and `gateway_id` are compared against this device. */
+internal enum class MqttSelfTraffic {
+    /** Not self-traffic, or our own uplink returning, which firmware reads as delivery. Relay it. */
+    FORWARD,
+
+    /** Our `from` via someone else's gateway: only a peer could have published it. Drop. */
+    FORGED_SENDER,
+
+    /** Our gateway id on someone else's packet: our own uplink of their traffic. We already have it. Drop. */
+    OWN_UPLINK_ECHO,
+}
+
+/**
+ * Classifies a downlink envelope by comparing both `from` and `gateway_id` against this device.
+ *
+ * `gateway_id` alone is not enough, and the three cases pull in different directions:
+ * - **ours via us** - our uplink returning. Firmware turns it into a local ack, so it must be relayed; the broker
+ *   echoes back only what it accepted, which is what makes it meaningful.
+ * - **ours via another gateway** - nothing legitimate produces this. `ReliableRouter` checks only `p->from` before
+ *   generating an implicit ack, so a peer that publishes a packet carrying our `from` manufactures a delivery receipt
+ *   for a message that was never delivered.
+ * - **theirs via us** - our own uplink of traffic we bridged, coming back. Relaying it would spend phone-API and BLE
+ *   bandwidth handing the node a packet it just gave us.
+ *
+ * This mirrors `MqttFraming.toCanonical` in meshtastic-node-kmp, which is the closest reading of the firmware rules we
+ * have. Fails open: unparseable bytes, a packet-less envelope, or an unknown local node id all forward as before.
+ */
+internal fun classifyMqttSelfTraffic(payload: ByteArray, myId: String?): MqttSelfTraffic {
+    val envelope = myId?.let { ServiceEnvelope.ADAPTER.decodeOrNull(payload) }
+    val from = envelope?.packet?.from
+
+    return if (myId == null || from == null) {
+        MqttSelfTraffic.FORWARD
+    } else {
+        selfTrafficOf(fromUs = NodeAddress.numToDefaultId(from) == myId, viaUs = envelope.gateway_id == myId)
+    }
+}
+
+/** The shared decision behind both classifiers, so the two topics cannot drift apart. */
+private fun selfTrafficOf(fromUs: Boolean, viaUs: Boolean): MqttSelfTraffic = when {
+    fromUs && !viaUs -> MqttSelfTraffic.FORGED_SENDER
+    !fromUs && viaUs -> MqttSelfTraffic.OWN_UPLINK_ECHO
+    else -> MqttSelfTraffic.FORWARD
+}
+
+/**
+ * The JSON-topic counterpart of [classifyMqttSelfTraffic]. `sender` is the gateway id and `from` the originating node.
+ */
+internal fun classifyMqttJsonSelfTraffic(from: Long, sender: String?, myId: String?): MqttSelfTraffic =
+    if (myId == null || sender == null) {
+        MqttSelfTraffic.FORWARD
+    } else {
+        selfTrafficOf(fromUs = NodeAddress.numToDefaultId(from.toInt()) == myId, viaUs = sender == myId)
+    }
+
 /**
  * Returns true when a downlink [ServiceEnvelope] is provably un-usable by the node and should be dropped before
  * forwarding over BLE (MQTT client-proxy mode).
  *
  * Fails open — returns false (forward) for anything it cannot positively prove undeliverable: unparseable bytes,
- * traffic on the `PKI` channel (public-key-encrypted direct messages the node accepts without first decrypting), our
- * own echoed-back packets (used as implicit ACKs), a packet-less envelope, or any packet that actually carries a
- * payload. The only drop case is Tier 1: a [MeshPacket] with neither `decoded` nor `encrypted` set — no legitimate
- * Meshtastic packet is payload-less.
+ * traffic on the `PKI` channel (public-key-encrypted direct messages the node accepts without first decrypting), a
+ * packet-less envelope, or any packet that actually carries a payload. Our own uplink returning still reaches this
+ * function and is guarded here, because firmware reads it as a local ack; [classifyMqttSelfTraffic] has already dropped
+ * the other two self-traffic cases. The only drop case is Tier 1: a [MeshPacket] with neither `decoded` nor `encrypted`
+ * set — no legitimate Meshtastic packet is payload-less.
  *
  * Extracted as an internal top-level function so [MQTTRepositoryImplTest] can exercise every branch without spinning up
  * the full repository.
@@ -511,7 +707,7 @@ private const val PKI_CHANNEL_ID = "PKI"
  */
 internal fun isUndeliverableDownlink(payload: ByteArray, myId: String?): Boolean {
     // Decode without a logger: this is fail-open and, on a public broker, may see arbitrary bytes on the binary
-    // topic. Passing Logger would emit an error log per unparseable downlink — expensive noise for an expected case.
+    // topic. Passing Logger would emit a warn log per unparseable downlink — expensive noise for an expected case.
     val envelope = ServiceEnvelope.ADAPTER.decodeOrNull(payload) ?: return false // fail open on garbage
     // Guards — never drop: PKI-channel traffic (accepted without decryption) or our own echoed-back
     // packets (used as implicit ACKs).

@@ -30,6 +30,7 @@ import org.meshtastic.core.resources.a11y_node_offline
 import org.meshtastic.core.resources.a11y_node_online
 import org.meshtastic.core.resources.a11y_node_role
 import org.meshtastic.core.resources.a11y_node_signal
+import org.meshtastic.core.resources.node_incomplete
 import org.meshtastic.core.resources.now
 import org.meshtastic.core.resources.unknown
 import org.meshtastic.core.ui.util.formatAgo
@@ -37,7 +38,6 @@ import org.meshtastic.proto.Config.LoRaConfig.ModemPreset
 
 private const val MILLIS_PER_SECOND = 1000L
 private const val MAX_BATTERY_PERCENT = 100
-private const val SNR_UNSET_THRESHOLD = 100f
 
 /** Pre-resolved localized strings for TalkBack node descriptions. */
 @Immutable
@@ -53,6 +53,7 @@ internal data class NodeDescriptionStrings(
     val signal: String,
     val unknown: String,
     val now: String,
+    val incomplete: String,
 )
 
 /** Resolves [NodeDescriptionStrings] from Compose string resources. */
@@ -69,6 +70,7 @@ internal fun rememberNodeDescriptionStrings(): NodeDescriptionStrings = NodeDesc
     signal = stringResource(Res.string.a11y_node_signal, "%s"),
     unknown = stringResource(Res.string.unknown),
     now = stringResource(Res.string.now),
+    incomplete = stringResource(Res.string.node_incomplete),
 )
 
 /** Builds a TalkBack-friendly description aggregating node state. Shared between [NodeItem] and [NodeItemCompact]. */
@@ -82,14 +84,18 @@ internal fun buildNodeDescription(
     hopsAway: Int,
     batteryLevel: Int?,
     distance: String?,
-    snr: Float,
-    rssi: Int,
+    snr: Float?,
     viaMqtt: Boolean,
     strings: NodeDescriptionStrings,
     lastHeardIsRelative: Boolean = true,
     modemPreset: ModemPreset? = null,
+    isUnknownUser: Boolean = false,
 ): String = buildString {
     append(name)
+    if (isUnknownUser) {
+        append(", ")
+        append(strings.incomplete)
+    }
     append(", ")
     append(if (isOnline) strings.online else strings.offline)
     if (isFavorite) {
@@ -122,7 +128,9 @@ internal fun buildNodeDescription(
         append(", ")
         append(strings.distanceAway.replace("%s", it))
     }
-    if (hopsAway == 0 && !viaMqtt && snr < SNR_UNSET_THRESHOLD && rssi < 0) {
+    // Rated from SNR alone: RSSI cannot indicate demodulability without the noise floor, and the old `rssi < 0` gate
+    // suppressed the announcement for a genuine 0 dBm reading.
+    if (hopsAway == 0 && !viaMqtt && snr != null) {
         val quality = determineSignalQuality(snr, modemPreset)
         append(", ")
         append(strings.signal.replace("%s", quality.name.lowercase()))

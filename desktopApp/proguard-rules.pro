@@ -40,11 +40,37 @@
 -dontwarn sun.misc.Unsafe
 -dontwarn java.lang.invoke.**
 
-# ---- JNA (Java Native Access) — used by LinuxNotificationSender for libnotify ---
+# ---- JNA (Java Native Access) — libnotify sender + kable's btleplug BLE bindings ---
 # JNA uses reflection to bind native methods; keep its core and callback classes.
 -keep class com.sun.jna.** { *; }
 -keep class com.sun.jna.ptr.** { *; }
 -dontwarn com.sun.jna.**
+
+# JNA callbacks are only ever invoked from native code, so the shrinker sees the
+# abstract methods as unused and empties the interface. JNA then can't resolve
+# the callback method and rejects the whole vtable Structure at <clinit>:
+#   IllegalArgumentException: Structure field "uniffiFree" was declared as
+#   ...UniffiCallbackInterfaceFree, which is not supported within a Structure
+# which killed BLE scanning in every packaged desktop build (#6553).
+-keep class * implements com.sun.jna.Callback { *; }
+-keep class * extends com.sun.jna.Structure { *; }
+
+# ---- MapLibre's Panama FFI bindings - upcalls resolved by MethodHandle ------
+# Every callback maplibre-native makes back into Kotlin is an upcall stub built
+# from a MethodHandle the bindings look up by name at <clinit>: `upcallHandle`
+# findVirtual's "apply" on each `mln_*_callback$Function`, and each callback
+# *State class findVirtual's its own "invoke". Nothing calls either statically,
+# so the shrinker empties the nine interfaces and drops the four methods, and
+# the lookup fails on the first map composed:
+#   NoSuchMethodException: no such method: ...mln_log_callback$Function
+#   .apply(MemorySegment,int,int,long,MemorySegment)int/invokeInterface
+# rethrown as "Could not configure MapLibre's offline runtime" (#7286). Same
+# shape as the JNA callbacks above: a vtable only native code ever calls.
+#
+# Android binds through JavaCPP/JNI instead, and that AAR ships the consumer
+# rules R8 needs. The JVM bindings jar ships none.
+-keep class org.maplibre.nativeffi.** { *; }
+-keep interface org.maplibre.nativeffi.** { *; }
 
 # ---- jSerialComm Android stubs (cross-platform serial library) --------------
 # jSerialComm bundles Android shims that reference android.* classes; harmless

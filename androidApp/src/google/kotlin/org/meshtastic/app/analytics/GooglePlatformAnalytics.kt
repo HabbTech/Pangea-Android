@@ -18,7 +18,9 @@ package org.meshtastic.app.analytics
 
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -56,6 +58,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.koin.core.annotation.Single
 import org.meshtastic.app.BuildConfig
+import org.meshtastic.core.common.log.ErrorReportThrottle
 import org.meshtastic.core.common.log.shouldDowngradeForDatadog
 import org.meshtastic.core.common.log.shouldReportAsException
 import org.meshtastic.core.repository.AnalyticsPrefs
@@ -85,6 +88,22 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
             return "true" == testLabSetting
         }
 
+    /**
+     * True under Robolectric, where initializing the SDKs is both pointless and actively harmful.
+     *
+     * `Datadog.initialize` registers a `BroadcastReceiver` and installs a JVM shutdown hook. Robolectric tears the
+     * application context down between test classes, so at JVM shutdown that hook unregisters a receiver that no longer
+     * exists and throws `IllegalArgumentException: Receiver not registered` on its own `datadog_shutdown` thread.
+     * Robolectric attributes a stray uncaught exception to whichever test is entering, so the failure lands on an
+     * unrelated test — it surfaced as `MapNodeClusterItemsTest` failing at its `runComposeUiTest` line, in CI and in
+     * the merge queue (where it ejects whatever else is queued), while passing locally and on rerun.
+     *
+     * Only the three test classes that deliberately boot the real [org.meshtastic.app.MeshUtilApplication] reach this
+     * path; the rest already substitute a bare `Application` for the same family of reasons.
+     */
+    private val isRobolectric: Boolean
+        get() = "robolectric" == Build.FINGERPRINT
+
     companion object {
         private const val TAG = "GooglePlatformAnalytics"
         private const val SERVICE_NAME = "org.meshtastic"
@@ -92,7 +111,14 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
         private const val KEY_PRIORITY = "priority"
         private const val KEY_TAG = "tag"
         private const val KEY_MESSAGE = "message"
+        private const val KEY_SUPPRESSED = "suppressed_since_last_report"
+        private const val KEY_FIRMWARE_VERSION = "firmware_version"
+        private const val KEY_DEVICE_HARDWARE = "device_hardware"
     }
+
+    /** Separate budgets per backend — see the comment in [DatadogLogWriter]. */
+    private val reportThrottle = ErrorReportThrottle(nowMs = SystemClock::elapsedRealtime)
+    private val datadogThrottle = ErrorReportThrottle(nowMs = SystemClock::elapsedRealtime)
 
     init {
         // Setup Kermit log writers immediately, they will handle delayed SDK initialization gracefully.
@@ -119,7 +145,7 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
      * Ensures that Datadog and Firebase SDKs are initialized if allowed. This is called lazily when consent is granted.
      */
     private fun ensureInitialized() {
-        if (!analyticsPrefs.analyticsAllowed.value || isInTestLab) return
+        if (!analyticsPrefs.analyticsAllowed.value || isInTestLab || isRobolectric) return
 
         if (!Datadog.isInitialized()) {
             initDatadog(context as Application)
@@ -180,11 +206,14 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
         Trace.enable(traceConfig)
 
         // Session Replay is Android-only debug tooling — iOS ships no Session Replay at all. Enabled for
-        // debug builds only, and masks all text inputs to protect message content.
+        // debug builds only, and MASK_ALL so no message content is ever recorded: MASK_ALL_INPUTS,
+        // which this used before, masks input fields only and leaves rendered text — a conversation on
+        // screen, a node's position — in the replay. That was inert while CI debug builds carried fake
+        // datadog tokens; it stops being inert the moment they carry real ones.
         if (BuildConfig.DEBUG) {
             val sessionReplayConfig =
                 SessionReplayConfiguration.Builder(sampleRate)
-                    .setTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL_INPUTS)
+                    .setTextAndInputPrivacy(TextAndInputPrivacy.MASK_ALL)
                     .build()
             SessionReplay.enable(sessionReplayConfig)
         }
@@ -252,8 +281,24 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
     }
 
     override fun setDeviceAttributes(firmwareVersion: String, model: String) {
+        val semanticFirmware = firmwareVersion.extractSemanticVersion()
+
+        // The connected radio is the most diagnostic axis this app has, and crash triage happens in Crashlytics.
+        // Without these a crash report says nothing about which hardware or firmware produced it. Keys are sticky
+        // for the process and are refreshed on every connect; there is no disconnect hook on PlatformAnalytics, so
+        // a crash after an explicit disconnect still carries the last radio's values.
+        // Deliberately not gated on isCrashlyticsCollectionEnabled: setting a key is legal while collection is off,
+        // and updateAnalyticsConsent does not replay device attributes, so gating would leave the keys unset until
+        // the next connect for anyone who grants consent after pairing a radio.
+        if (isFirebaseInitialized) {
+            Firebase.crashlytics.setCustomKeys {
+                key(KEY_FIRMWARE_VERSION, semanticFirmware)
+                key(KEY_DEVICE_HARDWARE, model)
+            }
+        }
+
         if (!Datadog.isInitialized() || !GlobalRumMonitor.isRegistered()) return
-        GlobalRumMonitor.get().addAttribute("firmware_version", firmwareVersion.extractSemanticVersion())
+        GlobalRumMonitor.get().addAttribute("firmware_version", semanticFirmware)
         GlobalRumMonitor.get().addAttribute("device_hardware", model)
     }
 
@@ -273,6 +318,11 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
             if (connectionRestored) put("connectionRestored", true)
         }
         GlobalRumMonitor.get().addAction(RumActionType.CUSTOM, "connect", attributes)
+    }
+
+    override fun trackAction(name: String, attributes: Map<String, Any>) {
+        if (!Datadog.isInitialized() || !GlobalRumMonitor.isRegistered()) return
+        GlobalRumMonitor.get().addAction(RumActionType.CUSTOM, name, attributes)
     }
 
     override fun startScreenView(key: String, name: String) {
@@ -305,6 +355,12 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
             // Cancellations and expected conditions stay breadcrumbs only — see shouldReportAsException.
             if (!shouldReportAsException(severity, throwable)) return
 
+            val suppressed = reportThrottle.acquire(ErrorReportThrottle.signature(tag, message)) ?: return
+
+            // Custom keys stay set for every later report, so this is written unconditionally — skipping it when
+            // the count is zero would leave an earlier report's positive count attached to this one.
+            Firebase.crashlytics.setCustomKeys { key(KEY_SUPPRESSED, suppressed) }
+
             if (throwable != null) {
                 Firebase.crashlytics.recordException(throwable)
             } else {
@@ -313,7 +369,7 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
                     key(KEY_TAG, tag)
                     key(KEY_MESSAGE, message)
                 }
-                Firebase.crashlytics.recordException(Exception(message))
+                Firebase.crashlytics.recordException(loggedException(message))
             }
         }
     }
@@ -326,6 +382,15 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
             // error tracking while still emitting the log line. Note this deliberately keeps CancellationException
             // at error here even though Crashlytics drops it; see shouldDowngradeForDatadog.
             val effectiveSeverity = if (shouldDowngradeForDatadog(severity, throwable)) Severity.Warn else severity
+
+            // Only error-level logs become RUM errors, so only those are worth throttling; everything below stays a
+            // plain log line and is cheap. Sharing the throttle with the Crashlytics writer would halve each
+            // backend's allowance, so they keep separate budgets for the same signature.
+            var suppressed = 0
+            if (effectiveSeverity >= Severity.Error) {
+                suppressed = datadogThrottle.acquire(ErrorReportThrottle.signature(tag, message)) ?: return
+            }
+
             val datadogPriority =
                 when (effectiveSeverity) {
                     Severity.Verbose -> android.util.Log.VERBOSE
@@ -335,7 +400,12 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
                     Severity.Error -> android.util.Log.ERROR
                     Severity.Assert -> android.util.Log.ASSERT
                 }
-            logger.log(datadogPriority, message, throwable, mapOf("tag" to tag))
+            val attributes =
+                buildMap<String, Any> {
+                    put("tag", tag)
+                    if (suppressed > 0) put(KEY_SUPPRESSED, suppressed)
+                }
+            logger.log(datadogPriority, message, throwable, attributes)
         }
     }
 
@@ -375,4 +445,32 @@ class GooglePlatformAnalytics(private val context: Context, private val analytic
         }
         Firebase.analytics.logEvent(event, bundle)
     }
+}
+
+/**
+ * Class-name prefixes of the logging machinery that sits between a call site and [loggedException].
+ *
+ * Resolved at runtime rather than written as literals so they still match after R8 renames them. Kermit is matched by
+ * the package of [LogWriter], which is the Kermit type this file already depends on.
+ */
+private val loggingFramePrefixes: List<String> =
+    listOfNotNull(
+        GooglePlatformAnalytics::class.java.name,
+        LogWriter::class.java.name.substringBeforeLast('.', "").takeIf { it.isNotBlank() },
+    )
+
+/**
+ * Builds the stand-in exception for a log line that carried no [Throwable].
+ *
+ * Crashlytics groups a report by the topmost frame it can attribute. Because the exception is constructed inside the
+ * log writer, every such stack starts with that writer and Kermit's dispatch, and Crashlytics walks past synthetic
+ * coroutine lambda frames looking for something nameable — so every error logged from inside a `suspend` block
+ * collapsed into a single `BaseLogger.processLog` issue (4,636 events across 1,203 users in a day and a half, hiding a
+ * dozen unrelated signatures). Dropping the logging frames puts the real call site on top.
+ *
+ * Falls back to the untrimmed stack if the trim would leave nothing, since R8 may repackage these classes.
+ */
+private fun loggedException(message: String): Exception = Exception(message).apply {
+    val callerFrames = stackTrace.dropWhile { frame -> loggingFramePrefixes.any { frame.className.startsWith(it) } }
+    if (callerFrames.isNotEmpty()) stackTrace = callerFrames.toTypedArray()
 }

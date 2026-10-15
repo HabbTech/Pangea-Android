@@ -27,12 +27,21 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.meshtastic.core.repository.Notification
+import org.meshtastic.core.repository.notificationId
+import org.meshtastic.proto.ClientNotification
+import org.meshtastic.proto.DuplicatedPublicKey
+import org.meshtastic.proto.KeyVerificationFinal
+import org.meshtastic.proto.KeyVerificationNumberInform
+import org.meshtastic.proto.KeyVerificationNumberRequest
+import org.meshtastic.proto.LogRecord
+import org.meshtastic.proto.LowEntropyKey
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [34])
@@ -187,6 +196,160 @@ class AndroidNotificationManagerTest {
         assertEquals(0, shadowOf(systemNotificationManager).allNotifications.size)
     }
 
+    @Test
+    fun `client notification identity cancels the notification posted with that identity`() = runTest {
+        val manager = AndroidNotificationManager(context)
+        val clientNotification =
+            ClientNotification.Builder()
+                .also { wb ->
+                    wb.message = "Protected position advisory"
+                    wb.reply_id = 123
+                }
+                .build()
+        val id = clientNotification.notificationId()
+
+        manager.dispatch(
+            Notification(
+                title = "Client notification",
+                message = clientNotification.message,
+                category = Notification.Category.Alert,
+                id = id,
+            ),
+        )
+
+        assertEquals(1, shadowOf(systemNotificationManager).allNotifications.size)
+        manager.cancel(clientNotification.notificationId())
+        assertEquals(0, shadowOf(systemNotificationManager).allNotifications.size)
+    }
+
+    @Test
+    fun `exact protected position advisory is recognized`() {
+        val manager = AndroidNotificationManager(context)
+
+        assertTrue(manager.suppressClientNotificationModal(protectedPositionAdvisory(replyId = 123, time = 1_000)))
+    }
+
+    @Test
+    fun `protected position advisory predicate rejects every near miss`() {
+        val manager = AndroidNotificationManager(context)
+        val advisory = protectedPositionAdvisory(replyId = 123, time = 1_000)
+        val nearMisses =
+            listOf(
+                advisory.newBuilder().also { wb -> wb.message = "Location sharing is disabled" }.build(),
+                advisory.newBuilder().also { wb -> wb.level = LogRecord.Level.INFO }.build(),
+                advisory.newBuilder().also { wb -> wb.reply_id = 0 }.build(),
+                advisory.newBuilder().also { wb -> wb.reply_id = null }.build(),
+                advisory
+                    .newBuilder()
+                    .also { wb -> wb.key_verification_number_inform = KeyVerificationNumberInform.Builder().build() }
+                    .build(),
+                advisory
+                    .newBuilder()
+                    .also { wb -> wb.key_verification_number_request = KeyVerificationNumberRequest.Builder().build() }
+                    .build(),
+                advisory
+                    .newBuilder()
+                    .also { wb -> wb.key_verification_final = KeyVerificationFinal.Builder().build() }
+                    .build(),
+                advisory
+                    .newBuilder()
+                    .also { wb -> wb.duplicated_public_key = DuplicatedPublicKey.Builder().build() }
+                    .build(),
+                advisory.newBuilder().also { wb -> wb.low_entropy_key = LowEntropyKey.Builder().build() }.build(),
+                advisory.newBuilder().also { wb -> wb.message = "Rebooting to WiFi OTA" }.build(),
+            )
+
+        nearMisses.forEach { notification ->
+            assertFalse(manager.suppressClientNotificationModal(notification), notification.toString())
+        }
+    }
+
+    @Test
+    fun `protected position advisories replace one stable only-alert-once system notification`() = runTest {
+        val manager = AndroidNotificationManager(context)
+        val first = protectedPositionAdvisory(replyId = 123, time = 1_000)
+        val second = protectedPositionAdvisory(replyId = 456, time = 2_000)
+
+        listOf(first, second).forEach { advisory ->
+            manager.dispatchClientNotification(
+                Notification(
+                    title = "Client notification",
+                    message = advisory.message,
+                    category = Notification.Category.Alert,
+                    id = advisory.notificationId(),
+                ),
+                advisory,
+            )
+        }
+
+        val posted = shadowOf(systemNotificationManager).allNotifications.single()
+        assertTrue(posted.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE != 0)
+        val active = systemNotificationManager.activeNotifications.single()
+        assertEquals(first.notificationId(), active.id)
+    }
+
+    @Test
+    fun `repeated generic client notifications with the same message coalesce into one tray entry`() = runTest {
+        val manager = AndroidNotificationManager(context)
+        // A near-miss of the protected-position predicate (message differs slightly), so it takes the plain
+        // dispatch path — but reply_id/time still change on every firmware reply, exactly like the real advisory.
+        val first =
+            ClientNotification.Builder()
+                .also { wb ->
+                    wb.message = "Location sharing is disabled"
+                    wb.reply_id = 100
+                    wb.time = 1_000
+                }
+                .build()
+        val second =
+            ClientNotification.Builder()
+                .also { wb ->
+                    wb.message = "Location sharing is disabled"
+                    wb.reply_id = 200
+                    wb.time = 2_000
+                }
+                .build()
+
+        listOf(first, second).forEach { cn ->
+            manager.dispatchClientNotification(
+                Notification(
+                    title = "Client notification",
+                    message = cn.message,
+                    category = Notification.Category.Alert,
+                    id = cn.notificationId(),
+                ),
+                cn,
+            )
+        }
+
+        assertEquals(1, shadowOf(systemNotificationManager).allNotifications.size)
+    }
+
+    @Test
+    fun `generic client notification does not enable only-alert-once`() = runTest {
+        val manager = AndroidNotificationManager(context)
+        val clientNotification =
+            ClientNotification.Builder()
+                .also { wb ->
+                    wb.message = "Generic warning"
+                    wb.reply_id = 123
+                }
+                .build()
+
+        manager.dispatchClientNotification(
+            Notification(
+                title = "Client notification",
+                message = clientNotification.message,
+                category = Notification.Category.Alert,
+                id = clientNotification.notificationId(),
+            ),
+            clientNotification,
+        )
+
+        val posted = shadowOf(systemNotificationManager).allNotifications.single()
+        assertEquals(0, posted.flags and android.app.Notification.FLAG_ONLY_ALERT_ONCE)
+    }
+
     private suspend fun assertDispatchesToChannel(
         manager: AndroidNotificationManager,
         category: Notification.Category,
@@ -239,4 +402,13 @@ class AndroidNotificationManagerTest {
 
         channelIds.forEach { channelId -> systemNotificationManager.deleteNotificationChannel(channelId) }
     }
+
+    private fun protectedPositionAdvisory(replyId: Int, time: Int) = ClientNotification.Builder()
+        .also { wb ->
+            wb.message = "Location sharing is disabled on this channel"
+            wb.reply_id = replyId
+            wb.time = time
+            wb.level = LogRecord.Level.WARNING
+        }
+        .build()
 }

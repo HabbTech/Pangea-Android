@@ -144,7 +144,7 @@ configuration settings screen. Constraints are sourced from two layers:
 | `region` | Enum | Dropdown: `RegionInfo` entries | Regional frequency plans |
 | `use_preset` | Boolean | Toggle | Controls manual vs preset LoRa settings visibility |
 | `modem_preset` | Enum | Dropdown: `ChannelOption` entries | Visible only when `use_preset = true` |
-| `bandwidth` | Integer | Numeric input | Visible only when `use_preset = false` |
+| `bandwidth` | Integer | Numeric input outside `LORA_24`; region/target-aware dropdown in `LORA_24` | Visible only when `use_preset = false`; protobuf default `0` is shown as the firmware's 812.5 kHz `LORA_24` default, while unsupported nonzero values remain visible and block Save until replaced |
 | `spread_factor` | Integer | Numeric input | Visible only when `use_preset = false` |
 | `coding_rate` | Integer | Numeric input | Visible only when `use_preset = false` |
 | `hop_limit` | Integer | Dropdown: 0–7 | — |
@@ -349,7 +349,7 @@ configuration settings screen. Constraints are sourced from two layers:
 
 | Field | Type | Validation | Notes |
 |-------|------|------------|-------|
-| `node_status` | String | maxSize: 80 bytes | Clearable; requires `supportsStatusMessage` capability |
+| `node_status` | String | maxSize: 80 bytes | Clearable; requires `supportsStatusMessage` capability. Edited on the User screen, not a module screen |
 
 ### Traffic Management (`ModuleConfig.TrafficManagementConfig`)
 
@@ -379,10 +379,12 @@ configuration settings screen. Constraints are sourced from two layers:
 
 ### Mesh Beacon (`ModuleConfig.MeshBeaconConfig`)
 
-Gated behind the `supportsMeshBeacon` capability. There is no `AdminMessage.ModuleConfigType`
-value for this module, so the editor reads from the connect-time config sync (no per-module
-refresh) and writes via `AdminMessage.setModuleConfig`. Flag edits are read-modify-write so
-`FLAG_LEGACY_SPLIT` and any unknown bits survive.
+Gated behind the `supportsMeshBeacon` capability. The editor reads via
+`AdminMessage.getModuleConfigRequest(MESHBEACON_CONFIG)` plus the LoRa config and channel 0
+(the region gate and the offer-channel picker need both on a remote node) and writes via
+`AdminMessage.setModuleConfig`. Flag edits are read-modify-write so `FLAG_LEGACY_SPLIT` and any
+unknown bits survive. Over remote admin only the primary channel is read, so the picker offers
+the primary only there.
 
 | Field | Type | Validation | Notes |
 |-------|------|------------|-------|
@@ -394,11 +396,7 @@ refresh) and writes via `AdminMessage.setModuleConfig`. Flag edits are read-modi
 | `broadcast_offer_channel.psk` | Base64 | Must decode as Base64 | Field shows an error while invalid; the value is only committed once it decodes (confirming while invalid reverts to the last valid value) |
 | `broadcast_offer_region` | Enum | Dropdown: `RegionCode` entries | — |
 | `broadcast_offer_preset` | Enum | Dropdown: `ModemPreset` entries | Defaults to `LONG_FAST` |
-| `broadcast_targets` | Target list | Rows added/removed via buttons | Per row: `region` dropdown, `preset` dropdown, `channel_index` signed integer input. Non-empty list supersedes the `broadcast_on_*` scalars |
-| `broadcast_on_region` | Enum | Dropdown: `RegionCode` entries | Visible only when `broadcast_targets` is empty |
-| `broadcast_on_preset` | Enum | Dropdown: `ModemPreset` entries | Visible only when `broadcast_targets` is empty; defaults to `LONG_FAST` |
-| `broadcast_send_as_node` | Integer | Signed integer input | Node number to send as; always visible |
-| `broadcast_on_channel` | — | Not editable | Preserved verbatim through the save round-trip; superseded by the targets list |
+| `broadcast_targets` | Target list | Rows added/removed via buttons | Per row: `region` dropdown, `preset` dropdown, `channel_index` signed integer input. Empty list = one beacon on the running preset/region over the primary channel |
 
 ---
 

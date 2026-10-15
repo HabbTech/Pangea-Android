@@ -18,14 +18,13 @@ package org.meshtastic.core.data.manager
 
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.common.di.ServiceScope
 import org.meshtastic.core.common.util.handledLaunch
 import org.meshtastic.core.repository.MeshConfigHandler
 import org.meshtastic.core.repository.MeshConnectionManager
@@ -49,13 +48,13 @@ class MeshConfigHandlerImpl(
     private val nodeManager: NodeManager,
     private val connectionManager: Lazy<MeshConnectionManager>,
     private val radioInterfaceService: RadioInterfaceService,
-    @Named("ServiceScope") private val scope: CoroutineScope,
+    private val scope: ServiceScope,
 ) : MeshConfigHandler {
 
-    private val _localConfig = MutableStateFlow(LocalConfig())
+    private val _localConfig = MutableStateFlow(LocalConfig.Builder().build())
     override val localConfig = _localConfig.asStateFlow()
 
-    private val _moduleConfig = MutableStateFlow(LocalModuleConfig())
+    private val _moduleConfig = MutableStateFlow(LocalModuleConfig.Builder().build())
     override val moduleConfig = _moduleConfig.asStateFlow()
 
     init {

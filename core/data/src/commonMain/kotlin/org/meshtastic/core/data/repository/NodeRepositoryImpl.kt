@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.common.di.PROCESS_LIFECYCLE
 import org.meshtastic.core.data.datasource.NodeInfoReadDataSource
 import org.meshtastic.core.data.datasource.NodeInfoWriteDataSource
 import org.meshtastic.core.database.entity.MetadataEntity
@@ -48,6 +49,7 @@ import org.meshtastic.core.model.MyNodeInfo
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.NodeSortOption
+import org.meshtastic.core.model.matchesSearch
 import org.meshtastic.core.model.util.onlineTimeThreshold
 import org.meshtastic.core.repository.NodeRepository
 import org.meshtastic.proto.DeviceMetadata
@@ -58,7 +60,7 @@ import org.meshtastic.proto.User
 @Single
 @Suppress("TooManyFunctions")
 class NodeRepositoryImpl(
-    @Named("ProcessLifecycle") private val processLifecycle: Lifecycle,
+    @Named(PROCESS_LIFECYCLE) private val processLifecycle: Lifecycle,
     private val nodeInfoReadDataSource: NodeInfoReadDataSource,
     private val nodeInfoWriteDataSource: NodeInfoWriteDataSource,
     private val dispatchers: CoroutineDispatchers,
@@ -89,7 +91,7 @@ class NodeRepositoryImpl(
         localStatsDataSource.localStatsFlow.stateIn(
             processLifecycle.coroutineScope,
             SharingStarted.Eagerly,
-            LocalStats(),
+            LocalStats.Builder().build(),
         )
 
     /** Update the cached local stats telemetry. */
@@ -97,7 +99,13 @@ class NodeRepositoryImpl(
         processLifecycle.coroutineScope.launch { localStatsDataSource.setLocalStats(stats) }
     }
 
-    /** A reactive map from nodeNum to [Node] objects, representing the entire mesh. */
+    /**
+     * A reactive map from nodeNum to [Node] objects, representing the entire mesh.
+     *
+     * `SharingStarted.Eagerly` over the process lifecycle means a terminal upstream failure is unrecoverable for the
+     * process — re-navigation cannot restart the sharing coroutine. [NodeInfoReadDataSource] therefore restarts its DB
+     * flows after a recoverable Room pool failure, so this upstream never terminates on a pool wedge (#6608).
+     */
     override val nodeDBbyNum: StateFlow<Map<Int, Node>> =
         nodeInfoReadDataSource
             .nodeDBbyNumFlow()
@@ -168,10 +176,20 @@ class NodeRepositoryImpl(
                 fallbackId
             }
 
-        return found?.copy(
-            long_name = found.long_name.takeIf { it.isNotBlank() } ?: defaultLong,
-            short_name = found.short_name.takeIf { it.isNotBlank() } ?: defaultShort,
-        ) ?: User(id = userId, long_name = defaultLong, short_name = defaultShort)
+        return found
+            ?.newBuilder()
+            ?.also { wb ->
+                wb.long_name = found.long_name.takeIf { it.isNotBlank() } ?: defaultLong
+                wb.short_name = found.short_name.takeIf { it.isNotBlank() } ?: defaultShort
+            }
+            ?.build()
+            ?: User.Builder()
+                .also { wb ->
+                    wb.id = userId
+                    wb.long_name = defaultLong
+                    wb.short_name = defaultShort
+                }
+                .build()
     }
 
     /** Returns a flow of nodes filtered and sorted according to the parameters. */
@@ -184,12 +202,11 @@ class NodeRepositoryImpl(
     ): Flow<List<Node>> = nodeInfoReadDataSource
         .getNodesFlow(
             sort = sort.sqlValue,
-            filter = filter,
             includeUnknown = includeUnknown,
-            hopsAwayMax = if (onlyDirect) 0 else -1,
+            onlyDirect = onlyDirect,
             lastHeardMin = if (onlyOnline) onlineTimeThreshold() else -1,
         )
-        .mapLatest { list -> list.map { it.toModel() } }
+        .mapLatest { list -> list.map { it.toModel() }.filter { node -> node.matchesSearch(filter) } }
         .flowOn(dispatchers.io)
         .conflate()
 
@@ -210,16 +227,12 @@ class NodeRepositoryImpl(
     override suspend fun clearMyNodeInfo() = withContext(dispatchers.io) { nodeInfoWriteDataSource.clearMyNodeInfo() }
 
     /** Deletes a node and its metadata by [num]. */
-    override suspend fun deleteNode(num: Int) = withContext(dispatchers.io) {
-        nodeInfoWriteDataSource.deleteNode(num)
-        nodeInfoWriteDataSource.deleteMetadata(num)
-    }
+    override suspend fun deleteNode(num: Int) =
+        withContext(dispatchers.io) { nodeInfoWriteDataSource.deleteNodeAndMetadata(num) }
 
     /** Deletes multiple nodes and their metadata. */
-    override suspend fun deleteNodes(nodeNums: List<Int>) = withContext(dispatchers.io) {
-        nodeInfoWriteDataSource.deleteNodes(nodeNums)
-        nodeNums.forEach { nodeInfoWriteDataSource.deleteMetadata(it) }
-    }
+    override suspend fun deleteNodes(nodeNums: List<Int>) =
+        withContext(dispatchers.io) { nodeInfoWriteDataSource.deleteNodesAndMetadata(nodeNums) }
 
     override suspend fun getNodesOlderThan(lastHeard: Int): List<Node> =
         withContext(dispatchers.io) { nodeInfoReadDataSource.getNodesOlderThan(lastHeard).map { it.toModel() } }
@@ -253,6 +266,9 @@ class NodeRepositoryImpl(
     override suspend fun setNodeNotes(num: Int, notes: String) =
         withContext(dispatchers.io) { nodeInfoWriteDataSource.setNodeNotes(num, notes) }
 
+    override suspend fun markAllHeardOnCurrentLora() =
+        withContext(dispatchers.io) { nodeInfoWriteDataSource.markAllHeardOnCurrentLora() }
+
     override suspend fun updatePowerChannelLabel(num: Int, channelIndex: Int, label: String) =
         withContext(dispatchers.io) { nodeInfoWriteDataSource.updatePowerChannelLabel(num, channelIndex, label) }
 
@@ -280,16 +296,28 @@ class NodeRepositoryImpl(
         snr = snr,
         rssi = rssi,
         lastHeard = lastHeard,
-        deviceTelemetry = org.meshtastic.proto.Telemetry(device_metrics = deviceMetrics),
+        deviceTelemetry =
+        org.meshtastic.proto.Telemetry.Builder().also { wb -> wb.device_metrics = deviceMetrics }.build(),
         channel = channel,
         viaMqtt = viaMqtt,
         hopsAway = hopsAway,
         isFavorite = isFavorite,
         isIgnored = isIgnored,
         isMuted = isMuted,
-        environmentTelemetry = org.meshtastic.proto.Telemetry(environment_metrics = environmentMetrics),
-        powerTelemetry = org.meshtastic.proto.Telemetry(power_metrics = powerMetrics),
-        airQualityTelemetry = org.meshtastic.proto.Telemetry(air_quality_metrics = airQualityMetrics),
+        environmentTelemetry =
+        org.meshtastic.proto.Telemetry.Builder()
+            .also { wb -> wb.environment_metrics = environmentMetrics }
+            .build(),
+        powerTelemetry =
+        org.meshtastic.proto.Telemetry.Builder().also { wb -> wb.power_metrics = powerMetrics }.build(),
+        airQualityTelemetry =
+        org.meshtastic.proto.Telemetry.Builder()
+            .also { wb -> wb.air_quality_metrics = airQualityMetrics }
+            .build(),
+        soilWaterTelemetry =
+        org.meshtastic.proto.Telemetry.Builder()
+            .also { wb -> wb.soil_water_metrics = soilWaterMetrics }
+            .build(),
         paxcounter = paxcounter,
         publicKey = publicKey,
         notes = notes,
@@ -297,5 +325,8 @@ class NodeRepositoryImpl(
         nodeStatus = nodeStatus,
         lastTransport = lastTransport,
         signsPackets = signsPackets,
+        heardOnCurrentLora = heardOnCurrentLora,
+        keyMatch = keyMatch,
+        newPublicKey = newPublicKey,
     )
 }

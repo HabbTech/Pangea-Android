@@ -20,17 +20,13 @@ package org.meshtastic.feature.discovery
 
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.meshtastic.core.common.di.ApplicationCoroutineScope
-import org.meshtastic.core.database.dao.DiscoveryDao
-import org.meshtastic.core.database.entity.DiscoveredNodeEntity
+import org.meshtastic.core.common.state.RadioOperationLock
 import org.meshtastic.core.database.entity.DiscoveryPresetResultEntity
 import org.meshtastic.core.database.entity.DiscoverySessionEntity
 import org.meshtastic.core.di.CoroutineDispatchers
@@ -66,21 +62,29 @@ import kotlin.test.assertTrue
  */
 class DiscoveryPacketCollectionTest {
 
-    private val radioController = FakeRadioController()
+    private val radioController = FakeRadioController().apply { selectedDeviceAddress = DEFAULT_DEVICE_ADDRESS }
     private val serviceRepository = FakeServiceRepository().apply { setConnectionState(ConnectionState.Connected) }
     private val nodeRepository = FakeNodeRepository()
     private val radioConfigRepository =
         FakeRadioConfigRepository().apply {
             setLocalConfigDirect(
-                LocalConfig(
-                    lora = Config.LoRaConfig(use_preset = true, modem_preset = ChannelOption.LONG_FAST.modemPreset),
-                ),
+                LocalConfig.Builder()
+                    .also { wb ->
+                        wb.lora =
+                            Config.LoRaConfig.Builder()
+                                .also { wb ->
+                                    wb.use_preset = true
+                                    wb.modem_preset = ChannelOption.LONG_FAST.modemPreset
+                                }
+                                .build()
+                    }
+                    .build(),
             )
         }
     private val collectorRegistry = PacketTestCollectorRegistry()
-    private val discoveryDao = InMemoryDiscoveryDao()
+    private val discoveryDao = SharedInMemoryDiscoveryDao()
     private val aiProvider = PacketTestAiProvider()
-    private val meshPrefs = FakeMeshPrefs()
+    private val meshPrefs = FakeMeshPrefs().apply { setDeviceAddress(DEFAULT_DEVICE_ADDRESS) }
 
     private fun createEngine(testScope: TestScope): DiscoveryScanEngine {
         val testDispatcher = UnconfinedTestDispatcher(testScope.testScheduler)
@@ -100,6 +104,7 @@ class DiscoveryPacketCollectionTest {
             applicationScope = appScope,
             dispatchers = dispatchers,
             meshPrefs = meshPrefs,
+            radioOperationLock = RadioOperationLock(),
         )
     }
 
@@ -286,22 +291,74 @@ class DiscoveryPacketCollectionTest {
     )
 
     private fun positionPacket(from: Int, latI: Int, lonI: Int, snr: Float = 5.5f, rssi: Int = -70): MeshPacket {
-        val posPayload = Position.ADAPTER.encode(Position(latitude_i = latI, longitude_i = lonI)).toByteString()
-        val data = Data(portnum = PortNum.POSITION_APP, payload = posPayload)
-        return MeshPacket(from = from, decoded = data, rx_snr = snr, rx_rssi = rssi)
+        val posPayload =
+            Position.ADAPTER.encode(
+                Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = latI
+                        wb.longitude_i = lonI
+                    }
+                    .build(),
+            )
+                .toByteString()
+        val data =
+            Data.Builder()
+                .also { wb ->
+                    wb.portnum = PortNum.POSITION_APP
+                    wb.payload = posPayload
+                }
+                .build()
+        return MeshPacket.Builder()
+            .also { wb ->
+                wb.from = from
+                wb.decoded = data
+                wb.rx_snr = snr
+                wb.rx_rssi = rssi
+            }
+            .build()
     }
 
     private fun textMessagePacket(from: Int): MeshPacket {
-        val data = Data(portnum = PortNum.TEXT_MESSAGE_APP, payload = "hello".encodeToByteArray().toByteString())
-        return MeshPacket(from = from, decoded = data, rx_snr = 3.0f, rx_rssi = -80)
+        val data =
+            Data.Builder()
+                .also { wb ->
+                    wb.portnum = PortNum.TEXT_MESSAGE_APP
+                    wb.payload = "hello".encodeToByteArray().toByteString()
+                }
+                .build()
+        return MeshPacket.Builder()
+            .also { wb ->
+                wb.from = from
+                wb.decoded = data
+                wb.rx_snr = 3.0f
+                wb.rx_rssi = -80
+            }
+            .build()
     }
 
     private fun neighborInfoPacket(from: Int, neighborNodeIds: List<Int>): MeshPacket {
-        val neighbors = neighborNodeIds.map { Neighbor(node_id = it) }
-        val ni = NeighborInfo(node_id = from, neighbors = neighbors)
+        val neighbors = neighborNodeIds.map { Neighbor.Builder().also { wb -> wb.node_id = it }.build() }
+        val ni =
+            NeighborInfo.Builder()
+                .also { wb ->
+                    wb.node_id = from
+                    wb.neighbors = neighbors
+                }
+                .build()
         val payload = NeighborInfo.ADAPTER.encode(ni).toByteString()
-        val data = Data(portnum = PortNum.NEIGHBORINFO_APP, payload = payload)
-        return MeshPacket(from = from, decoded = data)
+        val data =
+            Data.Builder()
+                .also { wb ->
+                    wb.portnum = PortNum.NEIGHBORINFO_APP
+                    wb.payload = payload
+                }
+                .build()
+        return MeshPacket.Builder()
+            .also { wb ->
+                wb.from = from
+                wb.decoded = data
+            }
+            .build()
     }
 
     private fun dataPacket(from: Int) = DataPacket(
@@ -314,6 +371,10 @@ class DiscoveryPacketCollectionTest {
     )
 
     // endregion
+
+    private companion object {
+        const val DEFAULT_DEVICE_ADDRESS = "x:TEST-DEVICE"
+    }
 }
 
 // region Inline test doubles
@@ -331,106 +392,4 @@ private class PacketTestAiProvider : DiscoverySummaryAiProvider {
     ): String? = null
 
     override suspend fun generatePresetSummary(result: DiscoveryPresetResultEntity): String? = null
-}
-
-private class InMemoryDiscoveryDao : DiscoveryDao {
-    private var nextSessionId = 1L
-    private var nextPresetResultId = 1L
-    private var nextNodeId = 1L
-
-    val sessions = mutableMapOf<Long, DiscoverySessionEntity>()
-    val presetResults = mutableMapOf<Long, DiscoveryPresetResultEntity>()
-    val discoveredNodes = mutableMapOf<Long, DiscoveredNodeEntity>()
-
-    override suspend fun insertSession(session: DiscoverySessionEntity): Long {
-        val id = nextSessionId++
-        sessions[id] = session.copy(id = id)
-        return id
-    }
-
-    override suspend fun updateSession(session: DiscoverySessionEntity) {
-        sessions[session.id] = session
-    }
-
-    override fun getAllSessions(): Flow<List<DiscoverySessionEntity>> =
-        flowOf(sessions.values.sortedByDescending { it.timestamp })
-
-    override suspend fun getAllSessionsSnapshot(): List<DiscoverySessionEntity> = sessions.values.toList()
-
-    override suspend fun getSession(sessionId: Long): DiscoverySessionEntity? = sessions[sessionId]
-
-    override fun getSessionFlow(sessionId: Long): Flow<DiscoverySessionEntity?> = MutableStateFlow(sessions[sessionId])
-
-    override suspend fun deleteSession(sessionId: Long) {
-        sessions.remove(sessionId)
-        val resultIds = presetResults.values.filter { it.sessionId == sessionId }.map { it.id }
-        resultIds.forEach { rid ->
-            discoveredNodes.entries.removeAll { it.value.presetResultId == rid }
-            presetResults.remove(rid)
-        }
-    }
-
-    override suspend fun insertPresetResult(result: DiscoveryPresetResultEntity): Long {
-        val id = nextPresetResultId++
-        presetResults[id] = result.copy(id = id)
-        return id
-    }
-
-    override suspend fun updatePresetResult(result: DiscoveryPresetResultEntity) {
-        presetResults[result.id] = result
-    }
-
-    override suspend fun getPresetResults(sessionId: Long) = presetResults.values.filter { it.sessionId == sessionId }
-
-    override fun getPresetResultsFlow(sessionId: Long) =
-        flowOf(presetResults.values.filter { it.sessionId == sessionId })
-
-    override suspend fun insertDiscoveredNode(node: DiscoveredNodeEntity): Long {
-        val id = nextNodeId++
-        discoveredNodes[id] = node.copy(id = id)
-        return id
-    }
-
-    override suspend fun insertDiscoveredNodes(nodes: List<DiscoveredNodeEntity>) {
-        nodes.forEach { insertDiscoveredNode(it) }
-    }
-
-    override suspend fun updateDiscoveredNode(node: DiscoveredNodeEntity) {
-        discoveredNodes[node.id] = node
-    }
-
-    override suspend fun getDiscoveredNodes(presetResultId: Long) =
-        discoveredNodes.values.filter { it.presetResultId == presetResultId }
-
-    override fun getDiscoveredNodesFlow(presetResultId: Long) =
-        flowOf(discoveredNodes.values.filter { it.presetResultId == presetResultId })
-
-    override suspend fun getUniqueNodeNums(sessionId: Long) = presetResults.values
-        .filter { it.sessionId == sessionId }
-        .flatMap { pr -> discoveredNodes.values.filter { it.presetResultId == pr.id } }
-        .map { it.nodeNum }
-        .distinct()
-
-    override suspend fun getUniqueNodeCount(sessionId: Long) = getUniqueNodeNums(sessionId).size
-
-    override suspend fun getMaxDistance(sessionId: Long) = presetResults.values
-        .filter { it.sessionId == sessionId }
-        .flatMap { pr -> discoveredNodes.values.filter { it.presetResultId == pr.id } }
-        .mapNotNull { it.distanceFromUser }
-        .maxOrNull()
-
-    override suspend fun getSessionWithResults(sessionId: Long) = sessions[sessionId]
-
-    override suspend fun markInterruptedSessions() {
-        sessions.keys.toList().forEach { key ->
-            val session = sessions[key]!!
-            if (session.completionStatus == "in_progress") {
-                sessions[key] = session.copy(completionStatus = "interrupted")
-            }
-        }
-    }
-
-    override suspend fun getInterruptedSession(deviceAddress: String): DiscoverySessionEntity? = sessions.values
-        .filter { it.deviceAddress == deviceAddress && it.completionStatus in setOf("in_progress", "interrupted") }
-        .maxByOrNull { it.timestamp }
 }

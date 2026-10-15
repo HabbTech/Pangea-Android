@@ -19,21 +19,26 @@ package org.meshtastic.feature.messaging
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.ContactSettings
+import org.meshtastic.core.repository.ActiveConversationTracker
 import org.meshtastic.core.repository.ConnectionStateProvider
 import org.meshtastic.core.repository.CustomEmojiPrefs
 import org.meshtastic.core.repository.HomoglyphPrefs
@@ -43,6 +48,7 @@ import org.meshtastic.core.repository.QuickChatActionRepository
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.UiPrefs
 import org.meshtastic.core.repository.usecase.SendMessageUseCase
+import org.meshtastic.core.testing.FakeFilterPrefs
 import org.meshtastic.core.testing.FakeNodeRepository
 import org.meshtastic.core.testing.TestDataFactory
 import org.meshtastic.core.ui.util.SnackbarManager
@@ -57,6 +63,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 class MessageViewModelTest {
 
@@ -72,7 +82,10 @@ class MessageViewModelTest {
     private val customEmojiPrefs: CustomEmojiPrefs = mock(MockMode.autofill)
     private val homoglyphPrefs: HomoglyphPrefs = mock(MockMode.autofill)
     private val uiPrefs: UiPrefs = mock(MockMode.autofill)
-    private val notificationManager: org.meshtastic.core.repository.NotificationManager = mock(MockMode.autofill)
+    private lateinit var filterPrefs: FakeFilterPrefs
+    private val meshNotificationManager: org.meshtastic.core.repository.MeshNotificationManager =
+        mock(MockMode.autofill)
+    private val activeConversationTracker = ActiveConversationTracker()
     private val messageTranslationService: MessageTranslationService = mock(MockMode.autofill)
     private val snackbarManager: SnackbarManager = SnackbarManager()
 
@@ -80,6 +93,7 @@ class MessageViewModelTest {
 
     private val connectionStateFlow = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     private val showQuickChatFlow = MutableStateFlow(false)
+    private val showFullMessageTimestampsFlow = MutableStateFlow(false)
     private val customEmojiFrequencyFlow = MutableStateFlow<String?>(null)
     private val contactSettingsFlow = MutableStateFlow<Map<String, ContactSettings>>(emptyMap())
 
@@ -88,17 +102,19 @@ class MessageViewModelTest {
         Dispatchers.setMain(testDispatcher)
         savedStateHandle = SavedStateHandle(mapOf("contactKey" to "0!12345678"))
         nodeRepository = FakeNodeRepository()
+        filterPrefs = FakeFilterPrefs()
 
         connectionStateFlow.value = ConnectionState.Disconnected
         showQuickChatFlow.value = false
+        showFullMessageTimestampsFlow.value = false
         customEmojiFrequencyFlow.value = null
         contactSettingsFlow.value = emptyMap()
 
         // Core flows - MUST be separate every blocks
-        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet())
-        every { radioConfigRepository.localConfigFlow } returns MutableStateFlow(LocalConfig())
-        every { radioConfigRepository.moduleConfigFlow } returns MutableStateFlow(LocalModuleConfig())
-        every { radioConfigRepository.deviceProfileFlow } returns MutableStateFlow(DeviceProfile())
+        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet.Builder().build())
+        every { radioConfigRepository.localConfigFlow } returns MutableStateFlow(LocalConfig.Builder().build())
+        every { radioConfigRepository.moduleConfigFlow } returns MutableStateFlow(LocalModuleConfig.Builder().build())
+        every { radioConfigRepository.deviceProfileFlow } returns MutableStateFlow(DeviceProfile.Builder().build())
 
         every { connectionStateProvider.connectionState } returns connectionStateFlow
 
@@ -106,6 +122,7 @@ class MessageViewModelTest {
         every { homoglyphPrefs.homoglyphEncodingEnabled } returns MutableStateFlow(false)
         every { uiPrefs.showQuickChat } returns showQuickChatFlow
         every { uiPrefs.setShowQuickChat(any()) } returns Unit
+        every { uiPrefs.showFullMessageTimestamps } returns showFullMessageTimestampsFlow
 
         every { packetRepository.getContactSettings() } returns contactSettingsFlow
         every { packetRepository.getFirstUnreadMessageUuid(any<String>()) } returns MutableStateFlow(null)
@@ -127,8 +144,10 @@ class MessageViewModelTest {
                 sendMessageUseCase = sendMessageUseCase,
                 customEmojiPrefs = customEmojiPrefs,
                 homoglyphEncodingPrefs = homoglyphPrefs,
+                filterPrefs = filterPrefs,
                 uiPrefs = uiPrefs,
-                notificationManager = notificationManager,
+                meshNotificationManager = meshNotificationManager,
+                activeConversationTracker = activeConversationTracker,
                 messageTranslationService = messageTranslationService,
                 snackbarManager = snackbarManager,
             )
@@ -139,10 +158,70 @@ class MessageViewModelTest {
         Dispatchers.resetMain()
     }
 
+    /**
+     * Waits for work the view model launched on the real IO dispatcher.
+     *
+     * [advanceUntilIdle] only drains the test scheduler, but `safeLaunch(context = ioDispatcher)` passes an explicit
+     * dispatcher to `viewModelScope.launch`, which overrides the `Dispatchers.setMain` replacement — so that coroutine
+     * runs on real `Dispatchers.IO` and an assertion straight after `advanceUntilIdle` races it. That is why these
+     * tests pass locally and fail on a loaded CI machine. Retries [verification] in real time until it holds, then
+     * gives up with the assertion's own error.
+     */
+    private suspend fun eventually(timeout: Duration = 5.seconds, verification: () -> Unit) {
+        withContext(Dispatchers.Default) {
+            val start = TimeSource.Monotonic.markNow()
+            while (true) {
+                try {
+                    verification()
+                    return@withContext
+                } catch (e: AssertionError) {
+                    if (start.elapsedNow() >= timeout) throw e
+                    delay(POLL_INTERVAL)
+                }
+            }
+        }
+    }
+
     @Test fun testInitialization() = runTest { assertNotNull(viewModel) }
 
     @Test
+    fun testMessageFilterEnabledFollowsTheGlobalSetting() = runTest {
+        assertEquals(false, viewModel.messageFilterEnabled.value)
+        filterPrefs.setFilterEnabled(true)
+        assertEquals(true, viewModel.messageFilterEnabled.value)
+    }
+
+    private val draftContact = "0!12345678"
+
+    /** Draft edits are ignored until the stored value has been read back, so every draft test loads first. */
+    private suspend fun loadDraftAndAwait(stored: String = "") {
+        everySuspend { packetRepository.getDraft(draftContact) } returns stored
+        viewModel.draftMessage.test {
+            assertNull(awaitItem())
+            viewModel.loadDraft(draftContact)
+            assertEquals(stored, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+        // Drain the load coroutine fully before the caller starts asserting on debounce timing, so a slow CI machine
+        // cannot interleave its tail with the edits that follow.
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @Test fun testDraftIsRestoredFromTheRepository() = runTest { loadDraftAndAwait(stored = "half typed") }
+
+    @Test
+    fun testDraftEditsAreIgnoredBeforeTheStoredValueIsRead() = runTest {
+        // The composer reports its initial empty value as soon as it composes; that must not erase a stored draft.
+        viewModel.setDraftMessage("")
+        assertNull(viewModel.draftMessage.value)
+
+        loadDraftAndAwait(stored = "survived")
+        assertEquals("survived", viewModel.draftMessage.value)
+    }
+
+    @Test
     fun testDraftPersistenceDebouncesRapidEdits() = runTest {
+        loadDraftAndAwait()
         viewModel.setDraftMessage("a")
         testDispatcher.scheduler.runCurrent()
         testDispatcher.scheduler.advanceTimeBy(100L)
@@ -155,29 +234,32 @@ class MessageViewModelTest {
         testDispatcher.scheduler.runCurrent()
 
         assertEquals("abc", viewModel.draftMessage.value)
-        assertNull(savedStateHandle.get<String>("draftMessage"))
+        assertNull(savedStateHandle.get<String>("draftMessage:$draftContact"))
 
         testDispatcher.scheduler.advanceTimeBy(299L)
         testDispatcher.scheduler.runCurrent()
-        assertNull(savedStateHandle.get<String>("draftMessage"))
+        assertNull(savedStateHandle.get<String>("draftMessage:$draftContact"))
 
         testDispatcher.scheduler.advanceTimeBy(1L)
         testDispatcher.scheduler.runCurrent()
-        assertEquals("abc", savedStateHandle.get<String>("draftMessage"))
+        assertEquals("abc", savedStateHandle.get<String>("draftMessage:$draftContact"))
+        advanceUntilIdle()
+        eventually { verifySuspend { packetRepository.setDraft(draftContact, "abc") } }
     }
 
     @Test
     fun testClearDraftCancelsPendingPersistenceAndClearsImmediately() = runTest {
+        loadDraftAndAwait()
         viewModel.setDraftMessage("pending")
         testDispatcher.scheduler.runCurrent()
 
         viewModel.clearDraftMessage()
         assertEquals("", viewModel.draftMessage.value)
-        assertEquals("", savedStateHandle.get<String>("draftMessage"))
+        assertEquals("", savedStateHandle.get<String>("draftMessage:$draftContact"))
 
         testDispatcher.scheduler.advanceTimeBy(300L)
         testDispatcher.scheduler.runCurrent()
-        assertEquals("", savedStateHandle.get<String>("draftMessage"))
+        assertEquals("", savedStateHandle.get<String>("draftMessage:$draftContact"))
     }
 
     @Test
@@ -215,6 +297,17 @@ class MessageViewModelTest {
     }
 
     @Test
+    fun testShowFullMessageTimestampsReflectsUiPreference() = runTest {
+        viewModel.showFullMessageTimestamps.test {
+            assertEquals(false, awaitItem())
+
+            showFullMessageTimestampsFlow.value = true
+            assertEquals(true, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun testFrequentEmojis() = runTest {
         customEmojiFrequencyFlow.value = "👍=10,👎=5,😂=20"
 
@@ -233,7 +326,25 @@ class MessageViewModelTest {
         advanceUntilIdle()
 
         // Verify via mokkery
-        verifySuspend { sendMessageUseCase.invoke("Hello", "0!12345678", null) }
+        eventually { verifySuspend { sendMessageUseCase.invoke("Hello", "0!12345678", null) } }
+    }
+
+    @Test
+    fun `send persistence failure is shown through the snackbar manager`() = runTest {
+        everySuspend { sendMessageUseCase.invoke(any(), any(), any()) } calls
+            {
+                throw IllegalStateException("Message could not be saved")
+            }
+
+        snackbarManager.events.test {
+            viewModel.sendMessage("Hello", "0!12345678", null)
+            advanceUntilIdle()
+
+            assertEquals("Message could not be saved", awaitItem().message)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        eventually { verifySuspend { sendMessageUseCase.invoke("Hello", "0!12345678", null) } }
     }
 
     @Test
@@ -244,7 +355,7 @@ class MessageViewModelTest {
 
         advanceUntilIdle()
 
-        verifySuspend { messagingController.sendReaction("❤️", 123, "0!12345678") }
+        eventually { verifySuspend { messagingController.sendReaction("❤️", 123, "0!12345678") } }
     }
 
     @Test
@@ -255,7 +366,7 @@ class MessageViewModelTest {
 
         advanceUntilIdle()
 
-        verifySuspend { packetRepository.deleteMessages(listOf(1L, 2L)) }
+        eventually { verifySuspend { packetRepository.deleteMessages(listOf(1L, 2L)) } }
     }
 
     @Test
@@ -282,15 +393,37 @@ class MessageViewModelTest {
         everySuspend { packetRepository.clearUnreadCount(contact, 1000L) } returns Unit
         everySuspend { packetRepository.updateLastReadMessage(contact, 1L, 1000L) } returns Unit
         everySuspend { packetRepository.getUnreadCount(contact) } returns 0
-        every { notificationManager.cancel(contact.hashCode()) } returns Unit
+        everySuspend { meshNotificationManager.cancelMessageNotification(contact) } returns Unit
+        activeConversationTracker.setActive(contact)
 
         viewModel.clearUnreadCount(contact, 1L, 1000L)
 
         advanceUntilIdle()
 
-        verifySuspend { packetRepository.clearUnreadCount(contact, 1000L) }
-        verifySuspend { packetRepository.updateLastReadMessage(contact, 1L, 1000L) }
-        verifySuspend { notificationManager.cancel(contact.hashCode()) }
+        eventually {
+            verifySuspend { packetRepository.clearUnreadCount(contact, 1000L) }
+            verifySuspend { packetRepository.updateLastReadMessage(contact, 1L, 1000L) }
+            verifySuspend { meshNotificationManager.cancelMessageNotification(contact) }
+        }
+    }
+
+    @Test
+    fun testClearUnreadCountLeavesNotificationAloneOnceTheUserHasLeft() = runTest {
+        // The count was read before this coroutine suspended. If the user left in the meantime, a message that
+        // arrived since posted a notification that is legitimately theirs to see — cancelling would erase it.
+        val contact = "0!12345678"
+        everySuspend { packetRepository.clearUnreadCount(contact, 1000L) } returns Unit
+        everySuspend { packetRepository.updateLastReadMessage(contact, 1L, 1000L) } returns Unit
+        everySuspend { packetRepository.getUnreadCount(contact) } returns 0
+        activeConversationTracker.clearActive(contact)
+
+        viewModel.clearUnreadCount(contact, 1L, 1000L)
+
+        advanceUntilIdle()
+        // A negative assertion cannot be retried into correctness — retrying would pass on the first attempt and
+        // miss a cancel that lands a moment later. Wait for the IO work to have had its chance, then assert.
+        eventually { verifySuspend { packetRepository.updateLastReadMessage(contact, 1L, 1000L) } }
+        verifySuspend(mode = VerifyMode.not) { meshNotificationManager.cancelMessageNotification(contact) }
     }
 
     @Test
@@ -306,5 +439,9 @@ class MessageViewModelTest {
             assertEquals(3, list.size)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    private companion object {
+        val POLL_INTERVAL = 10.milliseconds
     }
 }

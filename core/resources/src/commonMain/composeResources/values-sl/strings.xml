@@ -17,6 +17,7 @@
   -->
 <resources>
     <!-- A11Y -->
+    <string name="about">O programu</string>
     <string name="accept">Sprejmi</string>
     <!-- ACTION -->
     <string name="action_delete_message">Izbriši sporočilo</string>
@@ -26,7 +27,6 @@
     <string name="administration">Administracija</string>
     <!-- AIR -->
     <string name="air_util_definition">Odstotek časa oddajanja v zadnji uri.</string>
-    <!-- ALERT -->
     <string name="alert_bell_text">Znak opozorilnega zvonca!</string>
     <!-- APP -->
     <string name="app_too_old">Aplikacija je prestara</string>
@@ -50,13 +50,12 @@
     <!-- CHIRPY -->
     <string name="choose_theme">Izberi temo</string>
     <!-- CLEAN -->
+    <!-- CLEAR -->
     <string name="clear">Počisti</string>
     <string name="close">Zapri</string>
     <!-- COMPASS -->
     <!-- CONFIG -->
-    <string name="config_device_doubleTapAsButtonPress_summary">Obravnavaj dvojni pritisk na podprtih merilnikih pospeška kot pritisk uporabnika.</string>
     <string name="config_device_ledHeartbeatEnabled_summary">Upravlja utripajočo LED na napravi. Pri večini naprav bo to krmililo eno od največ 4 LED diod, LED napajanja in GPS ni mogoče nadzorovati.</string>
-    <string name="config_device_transmitOverLora_summary">Izbira ali je treba naš NeighborInfo poleg pošiljanja v MQTT in PhoneAPI posredovati tudi prek LoRa. Ni na voljo na kanalu s privzetim ključem in imenom.</string>
     <string name="connected_sleeping">Povezan z radiem, vendar radio "spi"</string>
     <string name="copy">Kopiraj</string>
     <!-- DEBUG -->
@@ -81,19 +80,17 @@
     <string name="disconnected">Prekinjeno</string>
     <!-- DISCOVERY -->
     <string name="discovery_stat_direct">Neposreden</string>
-    <!-- DISPLAY -->
     <!-- DISTANCE -->
     <string name="distance">Razdalja</string>
     <!-- DOC -->
     <string name="edit">Uredi</string>
     <string name="eight_hours">8 Ur</string>
-    <!-- ENCRYPTION -->
+    <!-- EMOJI -->
     <string name="encryption_error">Neujemanje javnega ključa</string>
     <string name="encryption_pkc">Šifriranje javnega ključa</string>
-    <string name="encryption_psk">Skupni ključ</string>
-    <!-- ENVIRONMENT -->
     <string name="error">Napaka</string>
     <string name="error_duty_cycle">Dosežena je omejitev delovnega cikla. Trenutno ne morete pošiljati sporočil, poskusite kasneje.</string>
+    <!-- EXPORT -->
     <string name="factory_reset">Povrnitev tovarniških nastavitev</string>
     <string name="fair">Precejšen</string>
     <!-- FILTER -->
@@ -105,11 +102,9 @@
     <!-- FORMAT -->
     <!-- GEOFENCE -->
     <string name="good">Dober</string>
-    <!-- GPIO -->
     <string name="hops_away">Skokov stran</string>
     <string name="iaq">IAQ</string>
     <string name="iaq_definition">(Kakovost zraka v zaprtih prostorih) relativna vrednost IAQ na lestvici, izmerjena z Bosch BME680. Razpon vrednosti 0–500.</string>
-    <!-- IGNORE -->
     <string name="ignore">Prezri</string>
     <string name="ignore_add">Dodaj '%1$s' na prezrto listo?</string>
     <string name="ignore_remove">Odstrani '%1$s' iz prezrte liste?</string>
@@ -119,9 +114,11 @@
     <string name="intro_show">Pokaži napoved</string>
     <string name="ip_address">IP naslov:</string>
     <!-- KEY -->
-    <!-- LABEL -->
+    <!-- LAYER -->
+    <!-- LICENSED -->
     <!-- LOAD -->
     <!-- LOCAL -->
+    <!-- LOCATION -->
     <string name="location_disabled">Dostop do lokacije je onemogočen, mreža ne more prikazati položaja.</string>
     <!-- LOCKDOWN -->
     <string name="locked">Zaklenjeno</string>
@@ -147,6 +144,8 @@
     <string name="max">Maks.</string>
     <!-- MESH -->
     <string name="mesh_beacon_preset_none">Brez</string>
+    <string name="mesh_beacon_region_label">Regija</string>
+    <string name="mesh_beacon_target_channel_index">Kanal</string>
     <!-- MESHTASTIC -->
     <string name="meshtastic_new_nodes_notifications">Obvestila novih vozlišč</string>
     <string name="meshtastic_service_notifications">Obvestila storitve</string>
@@ -182,24 +181,26 @@
     <string name="node_sort_via_mqtt">Preko MQTT</string>
     <string name="nodedb_reset">Ponastavi NodeDB</string>
     <!-- NODES -->
+    <string name="nodes_unheard_remove">Odstrani</string>
     <string name="none">Brez (onemogoči)</string>
     <string name="none_quality">Brez</string>
     <string name="not_connected">Ni povezano</string>
     <!-- NOTIFICATIONS -->
+    <!-- OFFLINE -->
     <string name="okay">V redu</string>
     <!-- ONE -->
     <string name="one_day">24 Ur</string>
     <string name="one_week">1T</string>
     <!-- OPEN -->
-    <!-- OUTPUT -->
     <!-- PACKET -->
     <!-- PAX -->
+    <!-- PERMISSION -->
+    <!-- PERMISSIONS -->
+    <!-- PM -->
     <!-- POSITION -->
-    <!-- POWER -->
     <string name="preferences_language">Jezik</string>
     <string name="preferences_system_default">Privzeta sistemska</string>
     <!-- PREVIEW -->
-    <string name="private_key">Zasebni ključ</string>
     <string name="provide_location_to_mesh">Zagotovi lokacijo telefona v omrežju</string>
     <string name="public_key">Javni ključ</string>
     <string name="qr_code">QR koda</string>
@@ -211,14 +212,6 @@
     <string name="quick_chat_new">Novi hitri klepet</string>
     <string name="radio_configuration">Nastavitev radia</string>
     <string name="reboot">Ponovni zagon</string>
-    <!-- REBROADCAST -->
-    <string name="rebroadcast_mode_all_desc">Ponovno oddaja vsako opaženo sporočilo, če je bilo na našem zasebnem kanalu ali iz drugega omrežja z enakimi parametri.</string>
-    <string name="rebroadcast_mode_all_skip_decoding_desc">Enako kot vedenje ALL, vendar preskoči dekodiranje paketkov in jih preprosto ponovno odda. Na voljo samo v vlogi Repeater. Če to nastavite za katero koli drugo vlogo, bo to povzročilo vedenje ALL.</string>
-    <string name="rebroadcast_mode_core_portnums_only_desc">Ignorira nestandardne paketke, kot so: TAK, RangeTest, PaxCounter itd. Ponovno oddaja samo standardne paketke: NodeInfo, Text, Position, Telemetry in Routing.</string>
-    <string name="rebroadcast_mode_known_only_desc">Ignorira opažena sporočila iz tujih mrež, kot je LOCAL ONLY, vendar gre korak dlje, tako da ignorira tudi sporočila vozlišč, ki še niso na seznamu znanih.</string>
-    <string name="rebroadcast_mode_local_only_desc">Ignorira opažena sporočila tujih odprtih mrež, ali tistih, ki jih ne more dešifrirati. Ponovno oddaja samo sporočila na lokalnih primarnih/sekundarnih kanalih vozlišč.</string>
-    <string name="rebroadcast_mode_none_desc">Dovoljeno samo za vloge SENSOR, TRACKER in TAK_TRACKER, prepovedano bo vsakršnje ponovno oddajanje, v nasprotju z vlogo CLIENT_MUTE.</string>
-    <string name="region_frequency_plan">Regija</string>
     <!-- REMOTE -->
     <string name="remote_admin">Administracija na daljavo</string>
     <!-- REMOVE -->
@@ -231,38 +224,13 @@
     <string name="reset">Ponastavi</string>
     <string name="reset_to_defaults">Ponastavi na osnovno</string>
     <!-- ROLE -->
-    <string name="role_client_desc">Aplikacija povezana ali samostojna naprava za sporočanje.</string>
-    <string name="role_client_hidden_desc">Naprava, ki oddaja samo po potrebi zaradi prikritosti ali varčevanja z energijo.</string>
-    <string name="role_client_mute_desc">Naprava ki ne posreduje paketkov drugih naprav.</string>
-    <string name="role_lost_and_found_desc">Redno oddaja lokacijo kot sporočilo privzetemu kanalu za pomoč pri vrnitvi naprave.</string>
-    <string name="role_repeater_desc">Infrastrukturno vozlišče za razširitev pokritosti omrežja s posredovanjem sporočil z minimalnimi stroški. Ni vidno na seznamu vozlišč.</string>
-    <string name="role_router_client_desc">Kombinacija ROUTER in CLIENT. Ni za mobilne naprave.</string>
-    <string name="role_router_desc">Infrastrukturno vozlišče za razširitev pokritosti omrežja s posredovanjem sporočil. Vidno na seznamu vozlišč.</string>
-    <string name="role_router_late_desc">Infrastrukturno vozlišče, ki vedno znova oddaja paketke enkrat, vendar šele po vseh drugih načinih, kar zagotavlja dodatno pokritost za lokalne gruče. Vidno na seznamu vozlišč.</string>
-    <string name="role_sensor_desc">Prednostno oddaja paketke telemetrije.</string>
-    <string name="role_tak_desc">Optimizirano za komunikacijo sistema ATAK, zmanjšuje rutinsko oddajanje.</string>
-    <string name="role_tak_tracker_desc">Omogoča samodejno oddajanje TAK PLI in zmanjšuje rutinsko oddajanje.</string>
-    <string name="role_tracker_desc">Prednostno oddaja paketke GPS položaja.</string>
     <!-- ROUTING -->
-    <string name="routing_error_admin_bad_session_key">Napačen sejni ključ</string>
-    <string name="routing_error_admin_public_key_unauthorized">Javni ključ ni pooblaščen</string>
-    <string name="routing_error_bad_request">Slaba zahteva</string>
-    <string name="routing_error_duty_cycle_limit">Dosežena regionalna omejitev delovnega cikla</string>
     <string name="routing_error_got_nak">Prejeta negativna potrditev</string>
-    <string name="routing_error_max_retransmit">Dosežena meja ponovnega pošiljanja</string>
-    <string name="routing_error_no_channel">Brez kanala</string>
-    <string name="routing_error_no_interface">Brez vmesnika</string>
-    <string name="routing_error_no_response">Brez odgovora</string>
     <string name="routing_error_no_route">Brez poti</string>
     <string name="routing_error_none">Potrjeno</string>
-    <string name="routing_error_not_authorized">Niste pooblaščeni</string>
-    <string name="routing_error_pki_failed">Šifrirano pošiljanje ni uspelo</string>
-    <string name="routing_error_pki_unknown_pubkey">Neznan javni ključ</string>
     <string name="routing_error_timeout">Časovna omejitev</string>
-    <string name="routing_error_too_large">Paketek je prevelik</string>
     <string name="rssi">RSSI</string>
     <string name="rssi_definition">Indikator moči sprejetega signala je meritev, ki se uporablja za določanje ravni moči, ki jo sprejema antena. Višja vrednost RSSI na splošno pomeni močnejšo in stabilnejšo povezavo.</string>
-    <!-- SAVE -->
     <string name="save">Shrani</string>
     <string name="save_changes">Shrani</string>
     <!-- SCAN -->
@@ -270,7 +238,6 @@
     <!-- SECURITY -->
     <string name="select_all">Izberi vse</string>
     <string name="send">Pošlji</string>
-    <!-- SERIAL -->
     <!-- SHARE -->
     <string name="share">Souporaba</string>
     <string name="share_to">Delite z…</string>
@@ -281,6 +248,8 @@
     <!-- SITE -->
     <string name="snr">SNR</string>
     <string name="snr_definition">Razmerje med signalom in šumom je merilo, ki se uporablja v komunikacijah za količinsko opredelitev ravni želenega signala glede na raven hrupa v ozadju. V Meshtastic in drugih brezžičnih sistemih višji SNR pomeni jasnejši signal, ki lahko poveča zanesljivost in kakovost prenosa podatkov.</string>
+    <string name="swipe_action_delete">Izbriši</string>
+    <string name="swipe_action_mute">Utišaj</string>
     <!-- TAK -->
     <string name="theme">Tema</string>
     <string name="theme_dark">Temna tema</string>
@@ -304,11 +273,12 @@
     <string name="twenty_four_hours">24ur</string>
     <string name="two_days">48 Ur</string>
     <string name="two_weeks">2T</string>
+    <!-- UNITS -->
+    <string name="units_follow_system">Privzeta sistemska</string>
     <!-- UNKNOWN -->
     <string name="unknown_username">Neznano uporabniško ime</string>
     <string name="unrecognized">Neprepoznano</string>
     <!-- URL -->
-    <!-- USE -->
     <!-- USER -->
     <string name="via_mqtt">Preko MQTT</string>
     <string name="waypoint_delete">Izbriši točko poti?</string>
@@ -317,8 +287,6 @@
     <string name="waypoint_received">Prejeta točka poti: %1$s</string>
     <!-- WIFI -->
     <string name="wifi_provision_success_ip_address">IP naslov</string>
-    <string name="wifi_qr_code_error">Neveljavna oblika WiFi QR kode</string>
-    <string name="wifi_qr_code_scan">Skeniraj WiFi QR kodo</string>
     <!-- WIND -->
     <!-- WRITE -->
     <string name="you">Jaz</string>

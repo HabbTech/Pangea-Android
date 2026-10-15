@@ -30,9 +30,9 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.Node
-import org.meshtastic.proto.Config
 import org.meshtastic.proto.User
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -85,14 +85,24 @@ class CompassViewModelTest {
 
     @Test
     fun `uiState reflects target node info after start`() = runTest {
-        val node = Node(num = 1234, user = User(id = "!1234", long_name = "Target Node"))
+        val node =
+            Node(
+                num = 1234,
+                user =
+                User.Builder()
+                    .also { wb ->
+                        wb.id = "!1234"
+                        wb.long_name = "Target Node"
+                    }
+                    .build(),
+            )
 
-        viewModel.start(node, Config.DisplayConfig.DisplayUnits.METRIC)
+        viewModel.start(node, MeasurementSystem.METRIC)
 
         viewModel.uiState.test {
             val state = awaitItem()
             assertEquals("Target Node", state.targetName)
-            assertEquals(Config.DisplayConfig.DisplayUnits.METRIC, state.displayUnits)
+            assertEquals(MeasurementSystem.METRIC, state.displayUnits)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -102,15 +112,17 @@ class CompassViewModelTest {
         val node =
             Node(
                 num = 1234,
-                user = User(id = "!1234"),
+                user = User.Builder().also { wb -> wb.id = "!1234" }.build(),
                 position =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000000,
-                    longitude_i = 10000000,
-                ), // 1 deg North, 1 deg East
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000000
+                        wb.longitude_i = 10000000
+                    }
+                    .build(), // 1 deg North, 1 deg East
             )
 
-        viewModel.start(node, Config.DisplayConfig.DisplayUnits.METRIC)
+        viewModel.start(node, MeasurementSystem.METRIC)
 
         viewModel.uiState.test {
             // Skip initial states
@@ -145,13 +157,15 @@ class CompassViewModelTest {
         val state =
             startAndGetUiState(
                 targetPosition =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000000,
-                    longitude_i = 10010000,
-                    time = 1,
-                    gps_accuracy = 5000,
-                    PDOP = 250,
-                ),
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000000
+                        wb.longitude_i = 10010000
+                        wb.time = 1
+                        wb.gps_accuracy = 5000
+                        wb.PDOP = 250
+                    }
+                    .build(),
             )
 
         assertEquals("± 12 m", state.errorRadiusText)
@@ -162,14 +176,16 @@ class CompassViewModelTest {
         val state =
             startAndGetUiState(
                 targetPosition =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000000,
-                    longitude_i = 10010000,
-                    time = 1,
-                    gps_accuracy = 5000,
-                    HDOP = 300,
-                    VDOP = 400,
-                ),
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000000
+                        wb.longitude_i = 10010000
+                        wb.time = 1
+                        wb.gps_accuracy = 5000
+                        wb.HDOP = 300
+                        wb.VDOP = 400
+                    }
+                    .build(),
             )
 
         assertEquals("± 25 m", state.errorRadiusText)
@@ -180,13 +196,15 @@ class CompassViewModelTest {
         val state =
             startAndGetUiState(
                 targetPosition =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000000,
-                    longitude_i = 10010000,
-                    time = 1,
-                    gps_accuracy = 5000,
-                    HDOP = 175,
-                ),
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000000
+                        wb.longitude_i = 10010000
+                        wb.time = 1
+                        wb.gps_accuracy = 5000
+                        wb.HDOP = 175
+                    }
+                    .build(),
             )
 
         assertEquals("± 8 m", state.errorRadiusText)
@@ -197,12 +215,14 @@ class CompassViewModelTest {
         val state =
             startAndGetUiState(
                 targetPosition =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000000,
-                    longitude_i = 10010000,
-                    time = 1,
-                    precision_bits = 15,
-                ),
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000000
+                        wb.longitude_i = 10010000
+                        wb.time = 1
+                        wb.precision_bits = 15
+                    }
+                    .build(),
             )
 
         assertEquals("± 729 m", state.errorRadiusText)
@@ -213,12 +233,14 @@ class CompassViewModelTest {
         val state =
             startAndGetUiState(
                 targetPosition =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000000,
-                    longitude_i = 10010000,
-                    time = 1,
-                    gps_accuracy = 5000,
-                ),
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000000
+                        wb.longitude_i = 10010000
+                        wb.time = 1
+                        wb.gps_accuracy = 5000
+                    }
+                    .build(),
             )
 
         assertNull(state.errorRadiusText)
@@ -230,13 +252,15 @@ class CompassViewModelTest {
         val state =
             startAndGetUiState(
                 targetPosition =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000000,
-                    longitude_i = 10000000,
-                    time = 1,
-                    gps_accuracy = 5000,
-                    PDOP = 250,
-                ),
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000000
+                        wb.longitude_i = 10000000
+                        wb.time = 1
+                        wb.gps_accuracy = 5000
+                        wb.PDOP = 250
+                    }
+                    .build(),
                 location = PhoneLocation(1.0, 1.0, 0.0, 1000L),
             )
 
@@ -250,13 +274,15 @@ class CompassViewModelTest {
         val state =
             startAndGetUiState(
                 targetPosition =
-                org.meshtastic.proto.Position(
-                    latitude_i = 10000100,
-                    longitude_i = 10000000,
-                    time = 1,
-                    gps_accuracy = 5000,
-                    PDOP = 250,
-                ),
+                org.meshtastic.proto.Position.Builder()
+                    .also { wb ->
+                        wb.latitude_i = 10000100
+                        wb.longitude_i = 10000000
+                        wb.time = 1
+                        wb.gps_accuracy = 5000
+                        wb.PDOP = 250
+                    }
+                    .build(),
                 location = PhoneLocation(1.0, 1.0, 0.0, 1000L),
             )
 
@@ -270,8 +296,8 @@ class CompassViewModelTest {
         location: PhoneLocation = PhoneLocation(1.0, 1.0, 0.0, 1000L),
     ): CompassUiState {
         viewModel.start(
-            Node(num = 1234, user = User(id = "!1234"), position = targetPosition),
-            Config.DisplayConfig.DisplayUnits.METRIC,
+            Node(num = 1234, user = User.Builder().also { wb -> wb.id = "!1234" }.build(), position = targetPosition),
+            MeasurementSystem.METRIC,
         )
 
         locationFlow.value = PhoneLocationState(permissionGranted = true, providerEnabled = true, location = location)

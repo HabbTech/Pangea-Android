@@ -19,6 +19,7 @@ package org.meshtastic.feature.settings.navigation
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.meshtastic.core.model.Capabilities
+import org.meshtastic.core.model.excludes
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.resources.Res
@@ -49,13 +50,13 @@ import org.meshtastic.core.resources.paxcounter
 import org.meshtastic.core.resources.range_test
 import org.meshtastic.core.resources.remote_hardware
 import org.meshtastic.core.resources.serial
-import org.meshtastic.core.resources.status_message
 import org.meshtastic.core.resources.store_forward
 import org.meshtastic.core.resources.tak
 import org.meshtastic.core.resources.telemetry
 import org.meshtastic.proto.AdminMessage
 import org.meshtastic.proto.Config
 import org.meshtastic.proto.DeviceMetadata
+import org.meshtastic.proto.ExcludedModules
 
 enum class ModuleRoute(
     val title: StringResource,
@@ -64,9 +65,7 @@ enum class ModuleRoute(
     val type: Int = 0,
     val isSupported: (Capabilities) -> Boolean = { true },
     val isApplicable: (Config.DeviceConfig.Role?) -> Boolean = { true },
-    // False when the firmware has no ModuleConfigType to request this module per-request; the editor then relies on the
-    // connect-time config sync instead of a get (MeshBeacon: MeshBeaconConfig is in ModuleConfig but not in the enum).
-    val refreshable: Boolean = true,
+    val hasReadFanOut: Boolean = false,
 ) {
     MQTT(Res.string.mqtt, SettingsRoute.MQTT, Res.drawable.ic_cloud, AdminMessage.ModuleConfigType.MQTT_CONFIG.value),
     SERIAL(
@@ -80,6 +79,7 @@ enum class ModuleRoute(
         SettingsRoute.ExtNotification,
         Res.drawable.ic_notifications,
         AdminMessage.ModuleConfigType.EXTNOTIF_CONFIG.value,
+        hasReadFanOut = true,
     ),
     STORE_FORWARD(
         Res.string.store_forward,
@@ -104,6 +104,7 @@ enum class ModuleRoute(
         SettingsRoute.CannedMessage,
         Res.drawable.ic_message,
         AdminMessage.ModuleConfigType.CANNEDMSG_CONFIG.value,
+        hasReadFanOut = true,
     ),
     AUDIO(
         Res.string.audio,
@@ -141,13 +142,6 @@ enum class ModuleRoute(
         Res.drawable.ic_perm_scan_wifi,
         AdminMessage.ModuleConfigType.PAXCOUNTER_CONFIG.value,
     ),
-    STATUS_MESSAGE(
-        Res.string.status_message,
-        SettingsRoute.StatusMessage,
-        Res.drawable.ic_message,
-        AdminMessage.ModuleConfigType.STATUSMESSAGE_CONFIG.value,
-        isSupported = { it.supportsStatusMessage },
-    ),
     TAK(
         Res.string.tak,
         SettingsRoute.TAK,
@@ -157,14 +151,15 @@ enum class ModuleRoute(
         isApplicable = { it == Config.DeviceConfig.Role.TAK || it == Config.DeviceConfig.Role.TAK_TRACKER },
     ),
 
-    // MeshBeaconConfig has no AdminMessage.ModuleConfigType value upstream — the editor reads from the connect-time
-    // config sync, so refreshable=false (no per-module get is issued). Gated to firmware that ships the beacon module.
+    // Reads the module config plus the LoRa config and the primary channel, which the editor's region gate and
+    // channel picker need on a remote node whose connect-time snapshot is empty.
     MESH_BEACON(
         Res.string.mesh_beacon,
         SettingsRoute.MeshBeacon,
         Res.drawable.ic_perm_scan_wifi,
+        AdminMessage.ModuleConfigType.MESHBEACON_CONFIG.value,
         isSupported = { it.supportsMeshBeacon },
-        refreshable = false,
+        hasReadFanOut = true,
     ),
     ;
 
@@ -189,58 +184,37 @@ enum class ModuleRoute(
                 NEIGHBOR_INFO,
                 DETECTION_SENSOR,
                 PAXCOUNTER,
-                STATUS_MESSAGE,
                 TAK,
                 MESH_BEACON,
                 -> true
             }
 
-    val bitfield: Int
+    /** The `excluded_modules` bit a node sets when this module is compiled out of its firmware. */
+    val excludedAs: ExcludedModules
         get() =
             when (this) {
-                MQTT -> 0x0001
-
-                SERIAL -> 0x0002
-
-                EXT_NOTIFICATION -> 0x0004
-
-                STORE_FORWARD -> 0x0008
-
-                RANGE_TEST -> 0x0010
-
-                TELEMETRY -> 0x0020
-
-                CANNED_MESSAGE -> 0x0040
-
-                AUDIO -> 0x0080
-
-                REMOTE_HARDWARE -> 0x0100
-
-                NEIGHBOR_INFO -> 0x0200
-
-                AMBIENT_LIGHTING -> 0x0400
-
-                DETECTION_SENSOR -> 0x0800
-
-                PAXCOUNTER -> 0x1000
-
-                STATUS_MESSAGE -> 0x0000
-
-                // Not excludable yet
-                TAK -> 0x0000
-
-                // Not excludable yet
-
-                MESH_BEACON -> 0x0000 // Not excludable yet
+                MQTT -> ExcludedModules.MQTT_CONFIG
+                SERIAL -> ExcludedModules.SERIAL_CONFIG
+                EXT_NOTIFICATION -> ExcludedModules.EXTNOTIF_CONFIG
+                STORE_FORWARD -> ExcludedModules.STOREFORWARD_CONFIG
+                RANGE_TEST -> ExcludedModules.RANGETEST_CONFIG
+                TELEMETRY -> ExcludedModules.TELEMETRY_CONFIG
+                CANNED_MESSAGE -> ExcludedModules.CANNEDMSG_CONFIG
+                AUDIO -> ExcludedModules.AUDIO_CONFIG
+                REMOTE_HARDWARE -> ExcludedModules.REMOTEHARDWARE_CONFIG
+                NEIGHBOR_INFO -> ExcludedModules.NEIGHBORINFO_CONFIG
+                AMBIENT_LIGHTING -> ExcludedModules.AMBIENTLIGHTING_CONFIG
+                DETECTION_SENSOR -> ExcludedModules.DETECTIONSENSOR_CONFIG
+                PAXCOUNTER -> ExcludedModules.PAXCOUNTER_CONFIG
+                TAK -> ExcludedModules.TAK_CONFIG
+                MESH_BEACON -> ExcludedModules.MESHBEACON_CONFIG
             }
 
     companion object {
         fun filterExcludedFrom(metadata: DeviceMetadata?, role: Config.DeviceConfig.Role?): List<ModuleRoute> {
             val capabilities = Capabilities(metadata?.firmware_version)
             return entries.filter {
-                val excludedModules = metadata?.excluded_modules ?: 0
-                val isExcluded = (excludedModules and it.bitfield) != 0
-                !isExcluded && it.isSupported(capabilities) && it.isApplicable(role)
+                !metadata.excludes(it.excludedAs) && it.isSupported(capabilities) && it.isApplicable(role)
             }
         }
 

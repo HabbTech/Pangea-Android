@@ -19,6 +19,7 @@ package org.meshtastic.app
 import android.app.PendingIntent
 import android.app.TaskStackBuilder
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.usb.UsbManager
 import android.net.Uri
@@ -41,7 +42,9 @@ import androidx.compose.runtime.remember
 import androidx.core.content.IntentCompat
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.lifecycle.lifecycleScope
 import co.touchlab.kermit.Logger
 import com.eygraber.uri.toKmpUri
@@ -53,13 +56,14 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import org.meshtastic.app.intro.AnalyticsIntro
 import org.meshtastic.app.map.getMapViewProvider
-import org.meshtastic.app.map.sitePlannerAvailable
 import org.meshtastic.app.node.component.InlineMap
 import org.meshtastic.app.node.metrics.getTracerouteMapOverlayInsets
 import org.meshtastic.app.ui.MainScreen
 import org.meshtastic.core.barcode.rememberBarcodeScanner
+import org.meshtastic.core.model.DeviceAddress
 import org.meshtastic.core.navigation.DEEP_LINK_BASE_URI
 import org.meshtastic.core.network.repository.UsbRepository
+import org.meshtastic.core.nfc.NfcEmulatorEffect
 import org.meshtastic.core.nfc.NfcScannerEffect
 import org.meshtastic.core.nfc.NfcWriterEffect
 import org.meshtastic.core.resources.Res
@@ -82,6 +86,8 @@ import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalInlineMapProvider
 import org.meshtastic.core.ui.util.LocalMapMainScreenProvider
 import org.meshtastic.core.ui.util.LocalMapViewProvider
+import org.meshtastic.core.ui.util.LocalNfcEmulationSupported
+import org.meshtastic.core.ui.util.LocalNfcEmulatorProvider
 import org.meshtastic.core.ui.util.LocalNfcScannerProvider
 import org.meshtastic.core.ui.util.LocalNfcScannerSupported
 import org.meshtastic.core.ui.util.LocalNfcWriterProvider
@@ -96,11 +102,12 @@ import org.meshtastic.core.ui.util.brandHighlightOrNull
 import org.meshtastic.core.ui.util.brandPalette
 import org.meshtastic.core.ui.util.showToast
 import org.meshtastic.core.ui.viewmodel.UIViewModel
-import org.meshtastic.feature.connections.NO_DEVICE_SELECTED
 import org.meshtastic.feature.intro.AppIntroductionScreen
 import org.meshtastic.feature.intro.IntroViewModel
 import org.meshtastic.feature.map.MapScreen
 import org.meshtastic.feature.map.SharedMapViewModel
+import org.meshtastic.feature.map.layers.MapLayersManager
+import org.meshtastic.feature.map.layers.toPickedMapFile
 import org.meshtastic.feature.map.node.NodeMapViewModel
 import org.meshtastic.feature.node.metrics.MetricsViewModel
 import org.meshtastic.feature.node.metrics.TracerouteMapScreen
@@ -109,6 +116,7 @@ class MainActivity : AppCompatActivity() {
     private val model: UIViewModel by viewModel()
 
     private val usbRepository: UsbRepository by inject()
+    private val mapLayersManager: MapLayersManager by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -221,10 +229,23 @@ class MainActivity : AppCompatActivity() {
             LocalNfcScannerProvider provides { onResult, onDisabled -> NfcScannerEffect(onResult, onDisabled) },
             LocalNfcWriterProvider provides { url, onResult, onDisabled -> NfcWriterEffect(url, onResult, onDisabled) },
             LocalBarcodeScannerSupported provides true,
-            LocalNfcScannerSupported provides true,
+            // Was a constant true, so the NFC affordance appeared on phones with no NFC radio and
+            // failed when used. uses-feature declares nfc as not required, so such devices do install.
+            LocalNfcScannerSupported provides packageManager.hasSystemFeature(PackageManager.FEATURE_NFC),
+            // Arm card emulation only while the app is actually in the foreground. A share dialog left open behind a
+            // home-press stays composed, and a channel URL carries the channel PSK. This reads the activity's own
+            // lifecycle, not LocalLifecycleOwner: the effect is composed inside a Dialog, whose own lifecycle stays
+            // RESUMED when the activity is backgrounded.
+            LocalNfcEmulatorProvider provides
+                { url ->
+                    val lifecycleState by lifecycle.currentStateAsState()
+                    if (lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) NfcEmulatorEffect(url)
+                },
+            LocalNfcEmulationSupported provides
+                packageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION),
             LocalAnalyticsIntroProvider provides { AnalyticsIntro() },
             LocalMapViewProvider provides getMapViewProvider(),
-            LocalSitePlannerAvailable provides sitePlannerAvailable(),
+            LocalSitePlannerAvailable provides true,
             LocalInlineMapProvider provides { node, modifier -> InlineMap(node, modifier) },
             LocalNodeTrackMapProvider provides
                 { destNum, positions, modifier, selectedPositionTime, onPositionSelected ->
@@ -242,7 +263,7 @@ class MainActivity : AppCompatActivity() {
                     org.meshtastic.app.map.traceroute.TracerouteMap(
                         tracerouteOverlay = overlay,
                         tracerouteNodePositions = nodePositions,
-                        onMappableCountChanged = onMappableCountChanged,
+                        onMappableCountChange = onMappableCountChanged,
                         modifier = modifier,
                     )
                 },
@@ -269,13 +290,14 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
             LocalMapMainScreenProvider provides
-                { onClickNodeChip, navigateToNodeDetails, waypointId ->
+                { onClickNodeChip, navigateToNodeDetails, waypointId, sitePlannerNodeNum ->
                     val viewModel = koinViewModel<SharedMapViewModel>()
                     MapScreen(
                         viewModel = viewModel,
                         onClickNodeChip = onClickNodeChip,
                         navigateToNodeDetails = navigateToNodeDetails,
                         waypointId = waypointId,
+                        sitePlannerNodeNum = sitePlannerNodeNum,
                     )
                 },
             content = content,
@@ -357,20 +379,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Hand a map file received via an OS "Open in / Send to Meshtastic" intent to the map, then bring the Map tab
-     * forward so the imported overlay is visible. Only the Google-flavor map consumes this (see [MapFileImportBus]);
-     * the read grant on [uri] lives as long as this activity, which is long enough for the map to copy the file in.
+     * Import a map file received via an OS "Open in / Send to Meshtastic" intent — the Site Planner's "Send to App"
+     * share among them — then bring the Map tab forward so the overlay is visible.
+     *
+     * Handed to the layer store directly rather than through a one-slot bus for the map to drain. The store is common
+     * code now, so both flavours import a shared file; the bus only ever reached the Google map, which meant the same
+     * share silently did nothing on F-Droid. The read grant on [uri] lives as long as this activity, which is long
+     * enough for the store to copy the file in.
      */
     private fun importMapFile(uri: Uri) {
         Logger.d { "Importing shared map file: $uri" }
-        MapFileImportBus.pending.value = uri
+        mapLayersManager.addMapLayer(uri.toPickedMapFile(this))
         handleMeshtasticUri("$DEEP_LINK_BASE_URI/map".toUri())
     }
 
     private fun createShareIntent(message: String): PendingIntent {
-        val deepLink = "$DEEP_LINK_BASE_URI/share?message=$message"
         val startActivityIntent =
-            Intent(Intent.ACTION_VIEW, deepLink.toUri(), this, MainActivity::class.java).apply {
+            Intent(Intent.ACTION_VIEW, createShareMessageDeepLink(message), this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
             }
 
@@ -383,8 +408,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showConnectionsPageIfNoDeviceSelected() {
-        val selectedAddress = model.currentDeviceAddressFlow.value
-        if (!selectedAddress.isNullOrBlank() && selectedAddress != NO_DEVICE_SELECTED) return
+        if (DeviceAddress.parse(model.currentDeviceAddressFlow.value) != null) return
 
         handleMeshtasticUri("$DEEP_LINK_BASE_URI/connections".toUri())
     }
@@ -393,3 +417,6 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_SKIP_ONBOARDING = "skip_onboarding"
     }
 }
+
+internal fun createShareMessageDeepLink(message: String): Uri =
+    "$DEEP_LINK_BASE_URI/share".toUri().buildUpon().appendQueryParameter("message", message).build()

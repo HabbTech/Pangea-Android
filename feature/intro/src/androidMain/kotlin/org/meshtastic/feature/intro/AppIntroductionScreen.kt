@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import org.meshtastic.core.ui.component.MeshtasticNavDisplay
+import org.meshtastic.core.ui.util.isBluetoothSupported
 import org.meshtastic.core.ui.util.rememberBluetoothPermissionState
 import org.meshtastic.core.ui.util.rememberLocationPermissionState
 import org.meshtastic.core.ui.util.rememberNotificationPermissionState
@@ -46,15 +47,21 @@ fun AppIntroductionScreen(onDone: () -> Unit, viewModel: IntroViewModel) {
 
     val locationPermissionState = rememberLocationPermissionState()
     val bluetoothPermissionState = rememberBluetoothPermissionState()
+    // Pre-Android 12 the BLE scan is gated by ACCESS_FINE_LOCATION, which rememberBluetoothPermissionState already
+    // reflects. The Bluetooth screen needs to know so its copy names the permission the user will actually be shown.
+    val bluetoothRequiresLocation = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
 
+    // Deliberately not remembered: rememberRuntimePermissionState returns a fresh PermissionUiState carrying the
+    // current status on every composition, so caching this wrapper would pin the intro screens to a stale status —
+    // exactly the bug that left the primary button inert after a denial.
     val permissions =
-        remember(notificationPermissionState, locationPermissionState, bluetoothPermissionState) {
-            AndroidIntroPermissions(
-                bluetoothState = bluetoothPermissionState,
-                locationState = locationPermissionState,
-                notificationState = notificationPermissionState,
-            )
-        }
+        AndroidIntroPermissions(
+            bluetooth = bluetoothPermissionState,
+            location = locationPermissionState,
+            notification = notificationPermissionState,
+            bluetoothRequiresLocation = bluetoothRequiresLocation,
+            bluetoothSupported = isBluetoothSupported(),
+        )
     val settingsNavigator = remember(context) { AndroidIntroSettingsNavigator(context) }
     val backStack = rememberNavBackStack(Welcome)
 

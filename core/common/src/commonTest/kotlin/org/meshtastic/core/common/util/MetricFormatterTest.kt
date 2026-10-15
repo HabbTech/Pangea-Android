@@ -68,12 +68,26 @@ class MetricFormatterTest {
 
     @Test
     fun pressure() {
-        assertEquals("1013.3 hPa", MetricFormatter.pressure(1013.25f))
+        // Grouped, because display formatting follows the locale and en-US groups thousands. The test JVMs are pinned
+        // to en-US for exactly this reason.
+        assertEquals("1,013.3 hPa", MetricFormatter.pressure(1013.25f))
     }
 
     @Test
     fun snr() {
         assertEquals("5.5 dB", MetricFormatter.snr(5.5f))
+        assertEquals("-12.5 dB", MetricFormatter.snr(-12.5f))
+    }
+
+    @Test
+    fun snrAbsentIsUnknown() {
+        assertEquals("—", MetricFormatter.snr(null))
+    }
+
+    @Test
+    fun snrZeroIsARealReading() {
+        // Must not render as unknown: 0 dB is a signal at the noise floor, not a missing measurement.
+        assertEquals("0.0 dB", MetricFormatter.snr(0f))
     }
 
     @Test
@@ -128,12 +142,12 @@ class MetricFormatterTest {
 
     @Test
     fun windSpeed() {
-        assertEquals("12.3 m/s", MetricFormatter.windSpeed(12.34f, isImperial = false))
+        assertEquals("44.4 km/h", MetricFormatter.windSpeed(12.34f, isImperial = false))
     }
 
     @Test
     fun windSpeedZero() {
-        assertEquals("0.0 m/s", MetricFormatter.windSpeed(0.0f, isImperial = false))
+        assertEquals("0.0 km/h", MetricFormatter.windSpeed(0.0f, isImperial = false))
     }
 
     @Test
@@ -154,5 +168,20 @@ class MetricFormatterTest {
     @Test
     fun rainfallImperial() {
         assertEquals("0.10 in", MetricFormatter.rainfall(2.54f, isImperial = true, decimalPlaces = 2))
+    }
+
+    @Test
+    fun weight() {
+        assertEquals("1.50 kg", MetricFormatter.weight(1.5f, isImperial = false))
+    }
+
+    @Test
+    fun weightImperial() {
+        assertEquals("2.20 lb", MetricFormatter.weight(1.0f, isImperial = true))
+    }
+
+    @Test
+    fun weightZero() {
+        assertEquals("0.00 kg", MetricFormatter.weight(0.0f, isImperial = false))
     }
 }

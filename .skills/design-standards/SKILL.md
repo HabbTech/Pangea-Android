@@ -1,3 +1,8 @@
+---
+name: design-standards
+description: Apply the Meshtastic design standards on Android - brand colours, Material 3 tokens, MeshtasticIcons and accessibility - with the upstream `meshtastic/design` standards as the source of truth. Use this whenever you choose a colour, icon, spacing value or contrast level, and before claiming a screen matches the design.
+---
+
 # Skill: Meshtastic Design Standards
 
 ## Description
@@ -7,7 +12,7 @@ Android-specific guidance for applying the Meshtastic design standards. All visu
 >
 > **Brand tokens — Pangea wins.** The M3 `primary` family (`primary`, `onPrimary`, `primaryContainer`, `onPrimaryContainer`, `inversePrimary`, both modes), the `PangeaFossil` brand mark, and launcher/brand imagery are governed by [`design/PANGEA-BRAND.md`](../../design/PANGEA-BRAND.md) **in this repo**. These INTENTIONALLY diverge from Meshtastic green. Never "fix" them to match upstream — a failing `PangeaPaletteTest` (core/ui) means exactly that mistake happened.
 >
-> **Everything else — upstream wins.** Components, spacing, typography, motion, status colours, units/locale: [`meshtastic/design/standards/`](https://github.com/meshtastic/design/tree/main/standards) remains authoritative (`meshtastic_design_standards_latest.md` → `meshtastic_design_standards_v1_4.md` at time of writing). If this skill diverges from upstream on those matters, upstream wins.
+> **Everything else — upstream wins.** Components, spacing, typography, motion, status colours, units/locale: [`meshtastic/design/standards/`](https://github.com/meshtastic/design/tree/master/standards) remains authoritative (that index names the current version; don't fetch `meshtastic_design_standards_latest.md` over HTTP — it is a symlink). If this skill diverges from upstream on those matters, upstream wins.
 
 ## 1. How to Use the Standards
 

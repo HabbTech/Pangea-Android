@@ -38,12 +38,14 @@ import org.meshtastic.core.repository.Location
 import org.meshtastic.core.repository.LocationRepository
 import org.meshtastic.core.repository.MeshLocationManager
 import org.meshtastic.core.repository.MeshWorkerManager
+import org.meshtastic.core.repository.PersistedPacketId
 import org.meshtastic.core.repository.PlatformAnalytics
 import org.meshtastic.core.repository.RadioInterfaceService
 import org.meshtastic.core.repository.RadioSessionContext
 import org.meshtastic.core.repository.RadioSessionLease
 import org.meshtastic.core.repository.ReceivedRadioFrame
 import org.meshtastic.core.repository.TransportDisconnectReason
+import org.meshtastic.mqtt.MqttException
 import org.meshtastic.proto.MqttClientProxyMessage
 import org.meshtastic.mqtt.ConnectionState as MqttConnectionState
 import org.meshtastic.proto.Position as ProtoPosition
@@ -56,7 +58,7 @@ import org.meshtastic.proto.Position as ProtoPosition
  * real `commonMain` implementations wired through the generated Koin K2 modules.
  *
  * As real desktop implementations become available (e.g., serial transport, TCP transport), they replace individual
- * stubs in [desktopModule].
+ * stubs in [org.meshtastic.desktop.di.DesktopStubsModule].
  */
 private const val TAG = "NoopStub"
 
@@ -83,14 +85,17 @@ class NoopRadioInterfaceService : RadioInterfaceService {
         block: suspend (RadioSessionLease) -> Unit,
     ): Boolean = false
 
-    override fun isMockTransport(): Boolean = false
+    override val mockTransportEnabled: StateFlow<Boolean> = MutableStateFlow(false)
+
+    override val isReplayTransportAvailable: Boolean = false
 
     override val receivedData = MutableSharedFlow<ReceivedRadioFrame>()
     override val meshActivity: Flow<MeshActivity> = MutableSharedFlow<MeshActivity>()
     override val connectionError: Flow<String> = MutableSharedFlow<String>()
 
-    override fun sendToRadio(bytes: ByteArray) {
-        logWarn("NoopRadioInterfaceService.sendToRadio(${bytes.size} bytes)")
+    override fun trySendToRadio(bytes: ByteArray): Boolean {
+        logWarn("NoopRadioInterfaceService.trySendToRadio(${bytes.size} bytes)")
+        return false
     }
 
     override fun resetReceivedBuffer() {
@@ -150,7 +155,7 @@ class NoopAppWidgetUpdater : AppWidgetUpdater {
 // region WorkManager / Location Stubs (Android-only)
 
 class NoopMeshWorkerManager : MeshWorkerManager {
-    override fun enqueueSendMessage(packetId: Int) {}
+    override fun enqueueSendMessage(persistedId: PersistedPacketId) {}
 }
 
 class NoopMeshLocationManager : MeshLocationManager {
@@ -179,6 +184,8 @@ class NoopMQTTRepository : MQTTRepository {
     override fun publish(topic: String, data: ByteArray, retained: Boolean) {}
 
     override val connectionState = MutableStateFlow<MqttConnectionState>(MqttConnectionState.Disconnected.Idle)
+
+    override val subscriptionRefusal = MutableStateFlow<MqttException.SubscriptionRefused?>(null)
 }
 
 // endregion

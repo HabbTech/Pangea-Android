@@ -21,8 +21,18 @@ import com.juul.kable.AndroidPeripheral
 import com.juul.kable.Peripheral
 import com.juul.kable.PeripheralBuilder
 import com.juul.kable.PooledThreadingStrategy
+import com.juul.kable.ScannerBuilder
 import com.juul.kable.toIdentifier
 import org.meshtastic.core.model.util.anonymize
+
+// The scan callback never blocks; a capacity of 1 conflates, so a dense BLE environment cannot back
+// advertisements up behind a slow collector.
+internal actual fun ScannerBuilder.platformScanConfig() {
+    bufferCapacity = 1
+}
+
+/** Android's scanner filters on address in hardware, so Kable's `Filter.Address` works natively here. */
+internal actual val supportsNativeAddressScanFilter: Boolean = true
 
 /**
  * Shared thread pool for Kable BLE connections.

@@ -47,22 +47,24 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.TelemetryType
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.ic_air
 import org.meshtastic.core.resources.ic_person
 import org.meshtastic.core.resources.ic_thermostat
+import org.meshtastic.core.resources.ic_water_drop
 import org.meshtastic.core.resources.logs
 import org.meshtastic.core.resources.request_air_quality_metrics
 import org.meshtastic.core.resources.request_telemetry
+import org.meshtastic.core.resources.soil_water_metrics
 import org.meshtastic.core.resources.telemetry
 import org.meshtastic.core.resources.userinfo
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.feature.node.model.LogsType
 import org.meshtastic.feature.node.model.NodeDetailAction
-import org.meshtastic.proto.Config
 import org.meshtastic.proto.Telemetry
 
 private data class TelemetricFeature(
@@ -84,7 +86,7 @@ internal fun TelemetricActionsSection(
     availableLogs: Set<LogsType>,
     lastTracerouteTime: Long?,
     lastRequestNeighborsTime: Long?,
-    displayUnits: Config.DisplayConfig.DisplayUnits,
+    displayUnits: MeasurementSystem,
     isFahrenheit: Boolean,
     onAction: (NodeDetailAction) -> Unit,
     isLocal: Boolean = false,
@@ -128,7 +130,7 @@ private fun rememberTelemetricFeatures(
     ourNode: Node?,
     lastTracerouteTime: Long?,
     lastRequestNeighborsTime: Long?,
-    displayUnits: Config.DisplayConfig.DisplayUnits,
+    displayUnits: MeasurementSystem,
     isFahrenheit: Boolean,
     isLocal: Boolean,
     airQualityHistory: List<Telemetry>,
@@ -193,6 +195,16 @@ private fun rememberTelemetricFeatures(
             logsType = LogsType.AIR_QUALITY,
             content = { node, _ -> AirQualityInfoCards(node, airQualityHistory, isFahrenheit) },
             hasContent = { it.hasAirQualityMetrics },
+        ),
+        // Soil-water telemetry has no log screen and no on-demand request yet, so the row is cards only and appears
+        // only once the node has reported some.
+        TelemetricFeature(
+            titleRes = Res.string.soil_water_metrics,
+            icon = Res.drawable.ic_water_drop,
+            requestAction = null,
+            isVisible = { it.hasSoilWaterMetrics },
+            content = { node, _ -> SoilWaterMetrics(node) },
+            hasContent = { it.hasSoilWaterMetrics },
         ),
         TelemetricFeature(
             titleRes = LogsType.POWER.titleRes,

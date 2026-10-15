@@ -24,19 +24,25 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Single
+import org.meshtastic.core.model.BootloaderOtaQuirksResponse
 import org.meshtastic.core.model.EventFirmwareResponse
 import org.meshtastic.core.model.FirmwareReleaseManifest
+import org.meshtastic.core.model.MaintenanceUf2Manifest
 import org.meshtastic.core.model.NetworkDeviceHardware
 import org.meshtastic.core.model.NetworkDeviceLinksResponse
 import org.meshtastic.core.model.NetworkFirmwareNightly
 import org.meshtastic.core.model.NetworkFirmwareReleases
+import org.meshtastic.core.network.HttpClientDefaults
 
 /**
- * Pointer to the nightly preview build published by CI to meshtastic.github.io. Served from GitHub Pages raw content
- * (not api.meshtastic.org) as `text/plain`, so it is parsed manually rather than via content negotiation.
+ * Pointer to the nightly preview build published by CI, served at the root of [HttpClientDefaults.NIGHTLY_BASE_URL]
+ * rather than by api.meshtastic.org.
+ *
+ * Decoded manually rather than via content negotiation so that a 404 — nothing currently published — can be told apart
+ * from a transport failure. The not-found body is the host's HTML error page, which content negotiation would reject
+ * before the status could be inspected.
  */
-private const val NIGHTLY_INDEX_URL =
-    "https://raw.githubusercontent.com/meshtastic/meshtastic.github.io/master/firmware-nightly/index.json"
+private const val NIGHTLY_INDEX_URL = "${HttpClientDefaults.NIGHTLY_BASE_URL}/index.json"
 
 private val firmwareJson = Json {
     isLenient = true
@@ -65,13 +71,28 @@ interface ApiService {
     suspend fun getFirmwareReleaseManifest(manifestUrl: String): FirmwareReleaseManifest
 
     /**
-     * Fetches the nightly preview build pointer from meshtastic.github.io. Returns null when no nightly is currently
+     * Fetches the nightly preview build pointer from the nightly host. Returns null when no nightly is currently
      * published (HTTP 404); throws on transport or server errors so callers can distinguish "gone" from "unreachable".
      */
     suspend fun getNightlyFirmware(): NetworkFirmwareNightly?
 
     /** Fetches event-firmware display metadata (editions, welcome messages, links) from the Meshtastic API. */
     suspend fun getEventFirmware(): EventFirmwareResponse
+
+    /**
+     * Fetches the nRF52 bootloader/OTA quirk catalog (advisory bootloader-upgrade flags and the SoftDevice-variant
+     * gating table) from the Meshtastic API. Decodes directly to the same model the bundled asset seed uses — the
+     * server serves this file verbatim, so there is nothing to transform.
+     */
+    suspend fun getBootloaderOtaQuirks(): BootloaderOtaQuirksResponse
+
+    /**
+     * Fetches the pinned maintenance-UF2 manifest (factory-erase and OTAFIX bootloader self-update images) from the
+     * Meshtastic API. Decodes directly to the same model the bundled asset seed uses — the server serves this file
+     * verbatim, so there is nothing to transform. Each image's own `sha256` is still checked against the downloaded
+     * bytes before any write; that is unaffected by how this manifest itself is fetched.
+     */
+    suspend fun getMaintenanceUf2Manifest(): MaintenanceUf2Manifest
 }
 
 /**
@@ -103,4 +124,10 @@ class ApiServiceImpl(private val client: HttpClient) : ApiService {
     }
 
     override suspend fun getEventFirmware(): EventFirmwareResponse = client.get("resource/eventFirmware").body()
+
+    override suspend fun getBootloaderOtaQuirks(): BootloaderOtaQuirksResponse =
+        client.get("resource/bootloaderOtaQuirks").body()
+
+    override suspend fun getMaintenanceUf2Manifest(): MaintenanceUf2Manifest =
+        client.get("resource/maintenanceUf2").body()
 }

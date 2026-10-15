@@ -17,12 +17,15 @@
 package org.meshtastic.feature.discovery.export
 
 import org.meshtastic.core.common.util.DateFormatter
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.common.util.MetricFormatter
 import org.meshtastic.core.common.util.NumberFormatter
 import org.meshtastic.core.database.entity.DiscoveredNodeEntity
 import org.meshtastic.core.database.entity.DiscoveryPresetResultEntity
 import org.meshtastic.core.database.entity.DiscoverySessionEntity
+import org.meshtastic.core.model.util.toDistanceString
 import org.meshtastic.feature.discovery.ui.formatDuration
+import kotlin.math.roundToInt
 
 internal object DiscoveryReportFormatter {
 
@@ -55,14 +58,14 @@ internal object DiscoveryReportFormatter {
         }
     }
 
-    fun formatNodeLine(node: DiscoveredNodeEntity): String = buildString {
+    fun formatNodeLine(node: DiscoveredNodeEntity, measurementSystem: MeasurementSystem): String = buildString {
         append(node.longName ?: node.shortName ?: "!${node.nodeNum.toString(radix = 16)}")
         append(" | ${node.neighborType}")
-        append(" | SNR: ${NumberFormatter.format(node.snr, 1)}")
+        append(" | SNR: ${MetricFormatter.snr(node.snr)}")
         append(" | RSSI: ${MetricFormatter.rssi(node.rssi)}")
         val distance = node.distanceFromUser
         if (distance != null) {
-            append(" | ${NumberFormatter.format(distance, 0)}m")
+            append(" | ${distance.roundToInt().toDistanceString(measurementSystem)}")
         }
     }
 

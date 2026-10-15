@@ -42,7 +42,10 @@ import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.qualifier.named
+import org.meshtastic.core.common.di.GOOGLE_SERVICES_AVAILABLE
+import org.meshtastic.core.common.util.UnitsOverride
 import org.meshtastic.core.common.util.nowMillis
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
@@ -74,20 +77,27 @@ import org.meshtastic.core.ui.icon.List
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.SettingsRemote
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.util.isBluetoothSupported
 import org.meshtastic.feature.settings.component.AppInfoSection
 import org.meshtastic.feature.settings.component.AppearanceSettingsContent
 import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.feature.settings.component.PermissionsSettingsContent
 import org.meshtastic.feature.settings.component.PersistenceSettingsContent
 import org.meshtastic.feature.settings.component.PowerModeSection
 import org.meshtastic.feature.settings.component.PrivacySettingsContent
 import org.meshtastic.feature.settings.component.ThemePickerDialog
+import org.meshtastic.feature.settings.component.UnitsOption
+import org.meshtastic.feature.settings.component.UnitsPickerDialog
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.component.EditDeviceProfileDialog
+import org.meshtastic.feature.settings.search.SettingsSearchBar
+import org.meshtastic.feature.settings.search.SettingsSearchViewModel
 import org.meshtastic.feature.settings.util.LanguageUtils
 import org.meshtastic.feature.settings.util.LanguageUtils.languageMap
+import org.meshtastic.feature.settings.util.deviceProfileExportFileName
 import org.meshtastic.proto.DeviceProfile
 import kotlin.time.Instant.Companion.fromEpochMilliseconds
 
@@ -100,13 +110,14 @@ fun SettingsScreen(
     onNavigate: (Route) -> Unit = {},
     onBack: (() -> Unit)? = null,
 ) {
-    val appFunctionsAvailable: Boolean = koinInject(qualifier = named("googleServicesAvailable"))
+    val appFunctionsAvailable: Boolean = koinInject(qualifier = named(GOOGLE_SERVICES_AVAILABLE))
     val hiddenFeaturesUnlocked by settingsViewModel.hiddenFeaturesUnlocked.collectAsStateWithLifecycle()
     val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
     val localConfig by settingsViewModel.localConfig.collectAsStateWithLifecycle()
     val ourNode by settingsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
     val isConnected by settingsViewModel.isConnected.collectAsStateWithLifecycle(false)
     val isOtaCapable by settingsViewModel.isOtaCapable.collectAsStateWithLifecycle()
+    val showFullMessageTimestamps by settingsViewModel.showFullMessageTimestamps.collectAsStateWithLifecycle()
     val destNode by viewModel.destNode.collectAsStateWithLifecycle()
     val state by viewModel.radioConfigState.collectAsStateWithLifecycle()
 
@@ -145,7 +156,6 @@ fun SettingsScreen(
                     viewModel.installProfile(it)
                 } else {
                     deviceProfile = it
-                    val nodeName = (it.short_name ?: "").ifBlank { "node" }
                     val dateStr =
                         fromEpochMilliseconds(nowMillis)
                             .toLocalDateTime(TimeZone.currentSystemDefault())
@@ -156,7 +166,7 @@ fun SettingsScreen(
                                     day()
                                 },
                             )
-                    val fileName = "Meshtastic_${nodeName}_${dateStr}_nodeConfig.cfg"
+                    val fileName = deviceProfileExportFileName(it.long_name, it.short_name, dateStr)
                     val intent =
                         Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE)
@@ -182,6 +192,15 @@ fun SettingsScreen(
     }
 
     var showThemePickerDialog by rememberSaveable { mutableStateOf(false) }
+    var showUnitsPickerDialog by rememberSaveable { mutableStateOf(false) }
+    val unitsOverride = UnitsOverride.fromValue(settingsViewModel.unitsOverride.collectAsStateWithLifecycle().value)
+    if (showUnitsPickerDialog) {
+        UnitsPickerDialog(
+            current = unitsOverride,
+            onClickUnits = { settingsViewModel.setUnitsOverride(it) },
+            onDismiss = { showUnitsPickerDialog = false },
+        )
+    }
     if (showThemePickerDialog) {
         ThemePickerDialog(
             onClickTheme = { settingsViewModel.setTheme(it) },
@@ -215,6 +234,13 @@ fun SettingsScreen(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(paddingValues).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            SettingsSearchBar(
+                viewModel = koinViewModel<SettingsSearchViewModel>(),
+                onNavigate = onNavigate,
+                // This phone's own settings are hidden below while administering another node; search hides them too.
+                includeAppLocal = state.isLocal,
+            )
+
             RadioConfigItemList(
                 state = state,
                 isManaged = localConfig.security?.is_managed ?: false,
@@ -255,6 +281,9 @@ fun SettingsScreen(
 
             // App-local settings are only relevant when configuring the local node
             if (state.isLocal) {
+                // Ahead of the app settings block: onboarding runs once, so this is the only place a user who skipped
+                // or declined a permission can find their way back to it.
+                PermissionsSettingsContent()
                 // Power Mode renders its own ExpressiveSection, so it sits as a sibling above App
                 // Settings rather than nested inside it.
                 PowerModeSection()
@@ -273,14 +302,20 @@ fun SettingsScreen(
                         stopProvideLocation = { settingsViewModel.stopProvidingLocation() },
                     )
                     AppearanceSettingsContent(
+                        showFullMessageTimestamps = showFullMessageTimestamps,
+                        onShowFullMessageTimestampsChange = settingsViewModel::setShowFullMessageTimestamps,
                         onShowLanguagePicker = { showLanguagePickerDialog = true },
                         onShowThemePicker = { showThemePickerDialog = true },
+                        unitsSummary = stringResource(UnitsOption.entries.first { it.override == unitsOverride }.label),
+                        onShowUnitsPicker = { showUnitsPickerDialog = true },
                     )
                     PersistenceSettingsContent(
                         cacheLimit = settingsViewModel.dbCacheLimit.collectAsStateWithLifecycle().value,
+                        onCheckCacheLimitEvictionCount = { settingsViewModel.cachedDeviceCountExceeding(it) },
                         onSetCacheLimit = { settingsViewModel.setDbCacheLimit(it) },
                         nodeShortName = ourNode?.user?.short_name ?: "",
                         onExportData = { settingsViewModel.saveDataCsv(it.toKmpUri()) },
+                        onExportNodeDb = { settingsViewModel.saveNodeDbJson(it) },
                     )
                     ListItem(
                         text = stringResource(Res.string.node_layout_section_title),
@@ -288,8 +323,11 @@ fun SettingsScreen(
                     ) {
                         onNavigate(SettingsRoute.NodeList)
                     }
-                    ListItem(text = stringResource(Res.string.wifi_devices), leadingIcon = MeshtasticIcons.Wifi) {
-                        onNavigate(WifiProvisionRoute.WifiProvision())
+                    // Wi-Fi provisioning reaches the device over BLE.
+                    if (isBluetoothSupported()) {
+                        ListItem(text = stringResource(Res.string.wifi_devices), leadingIcon = MeshtasticIcons.Wifi) {
+                            onNavigate(WifiProvisionRoute.WifiProvision())
+                        }
                     }
                     ListItem(
                         text = stringResource(Res.string.filter_settings),

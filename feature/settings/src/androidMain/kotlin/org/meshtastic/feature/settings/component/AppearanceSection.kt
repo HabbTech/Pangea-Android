@@ -31,8 +31,10 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.app_settings
 import org.meshtastic.core.resources.preferences_language
 import org.meshtastic.core.resources.theme
+import org.meshtastic.core.resources.units
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.icon.ChevronRight
+import org.meshtastic.core.ui.icon.Distance
 import org.meshtastic.core.ui.icon.FormatPaint
 import org.meshtastic.core.ui.icon.Language
 import org.meshtastic.core.ui.icon.MeshtasticIcons
@@ -40,7 +42,14 @@ import org.meshtastic.core.ui.theme.AppTheme
 
 /** Section for app appearance settings like language and theme. */
 @Composable
-internal fun ColumnScope.AppearanceSettingsContent(onShowLanguagePicker: () -> Unit, onShowThemePicker: () -> Unit) {
+internal fun ColumnScope.AppearanceSettingsContent(
+    showFullMessageTimestamps: Boolean,
+    onShowFullMessageTimestampsChange: (Boolean) -> Unit,
+    onShowLanguagePicker: () -> Unit,
+    onShowThemePicker: () -> Unit,
+    unitsSummary: String,
+    onShowUnitsPicker: () -> Unit,
+) {
     val context = LocalContext.current
     val settingsLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {}
@@ -70,6 +79,20 @@ internal fun ColumnScope.AppearanceSettingsContent(onShowLanguagePicker: () -> U
     ListItem(text = stringResource(Res.string.theme), leadingIcon = MeshtasticIcons.FormatPaint, trailingIcon = null) {
         onShowThemePicker()
     }
+
+    ListItem(
+        text = stringResource(Res.string.units),
+        supportingText = unitsSummary,
+        leadingIcon = MeshtasticIcons.Distance,
+        trailingIcon = null,
+    ) {
+        onShowUnitsPicker()
+    }
+
+    FullMessageTimestampsSetting(
+        checked = showFullMessageTimestamps,
+        onCheckedChange = onShowFullMessageTimestampsChange,
+    )
 }
 
 @Preview(showBackground = true)
@@ -77,7 +100,14 @@ internal fun ColumnScope.AppearanceSettingsContent(onShowLanguagePicker: () -> U
 fun AppearanceSectionPreview() {
     AppTheme {
         ExpressiveSection(title = stringResource(Res.string.app_settings)) {
-            AppearanceSettingsContent(onShowLanguagePicker = {}, onShowThemePicker = {})
+            AppearanceSettingsContent(
+                showFullMessageTimestamps = false,
+                onShowFullMessageTimestampsChange = {},
+                onShowLanguagePicker = {},
+                onShowThemePicker = {},
+                unitsSummary = "System default",
+                onShowUnitsPicker = {},
+            )
         }
     }
 }

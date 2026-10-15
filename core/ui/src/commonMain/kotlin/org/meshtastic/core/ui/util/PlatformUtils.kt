@@ -34,6 +34,15 @@ import org.meshtastic.core.common.util.CommonUri
 /** Returns a function to open the platform's map application at the given coordinates. */
 @Composable expect fun rememberOpenMap(): (latitude: Double, longitude: Double, label: String) -> Unit
 
+/**
+ * Returns a function that hands [text] to the platform's share mechanism, so the user can send it through any app they
+ * have. [subject] titles the share where the platform shows one.
+ *
+ * Distinct from copying to the clipboard: the clipboard makes the user find the destination themselves, which is the
+ * difference between sharing with someone in the room and sharing with someone who is not.
+ */
+@Composable expect fun rememberShareText(): (text: String, subject: String) -> Unit
+
 /** Returns a function to open the platform's browser with the given URL. */
 @Composable expect fun rememberOpenUrl(): (url: String) -> Unit
 
@@ -45,6 +54,16 @@ expect fun rememberSaveFileLauncher(
 
 /** Returns a launcher function to prompt the user to open/pick a file. The callback receives the selected file URI. */
 @Composable expect fun rememberOpenFileLauncher(onUriReceived: (CommonUri?) -> Unit): (mimeType: String) -> Unit
+
+/**
+ * Returns a launcher that prompts the user to pick a *directory*. The callback receives a tree URI, or `null` if the
+ * user cancelled.
+ *
+ * Distinct from [rememberSaveFileLauncher] because a tree URI grants access to the picked directory's contents, which a
+ * single-document URI does not. Needed where the app must inspect a volume before writing to it — for example reading a
+ * UF2 bootloader's `INFO_UF2.TXT` to confirm which board it is and that the volume really is a bootloader drive.
+ */
+@Composable expect fun rememberOpenDocumentTreeLauncher(onTreeUriSelect: (CommonUri?) -> Unit): () -> Unit
 
 /**
  * Returns a suspend function that reads up to [maxChars] characters of text from a [CommonUri]. Returns `null` if the
@@ -71,10 +90,20 @@ expect fun rememberSaveFileLauncher(
 @Composable expect fun isGpsDisabled(): Boolean
 
 /**
+ * True where a BLE scan additionally requires system **Location Services** to be switched on, over and above holding
+ * the permission — Android 11 and lower. On those releases a scan with location turned off returns zero results and
+ * reports no error, which is indistinguishable from "no devices nearby" unless the UI says otherwise.
+ */
+expect val bleScanRequiresLocationServices: Boolean
+
+/**
  * Returns whether Bluetooth is currently turned off at the system level (the adapter exists but is disabled). Always
  * `false` on devices without Bluetooth and on platforms where the concept doesn't apply.
  */
 @Composable expect fun isBluetoothDisabled(): Boolean
+
+/** Returns whether the device has Bluetooth LE hardware at all, so a BLE surface is worth offering. */
+@Composable expect fun isBluetoothSupported(): Boolean
 
 /**
  * Returns whether the device currently lacks any transport that can back the network-scan discovery (no active Wi-Fi,

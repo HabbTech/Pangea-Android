@@ -17,6 +17,7 @@
 package org.meshtastic.core.ui.util
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLinkStyles
@@ -38,6 +39,8 @@ actual fun annotatedStringFromHtml(html: String, linkStyles: TextLinkStyles?): A
 
 @Composable actual fun rememberOpenUrl(): (url: String) -> Unit = { _ -> }
 
+@Composable actual fun rememberShareText(): (text: String, subject: String) -> Unit = { _, _ -> }
+
 @Composable
 actual fun rememberSaveFileLauncher(
     onUriReceived: (CommonUri) -> Unit,
@@ -46,9 +49,14 @@ actual fun rememberSaveFileLauncher(
 @Composable
 actual fun rememberOpenFileLauncher(onUriReceived: (CommonUri?) -> Unit): (mimeType: String) -> Unit = { _ -> }
 
+@Composable actual fun rememberOpenDocumentTreeLauncher(onTreeUriSelect: (CommonUri?) -> Unit): () -> Unit = {}
+
 @Composable actual fun rememberReadTextFromUri(): suspend (uri: CommonUri, maxChars: Int) -> String? = { _, _ -> null }
 
-@Composable actual fun KeepScreenOn(enabled: Boolean) {}
+@Composable
+actual fun KeepScreenOn(enabled: Boolean) {
+    // No-op iOS stub.
+}
 
 @Composable actual fun rememberOpenLocationSettings(): () -> Unit = {}
 
@@ -56,13 +64,20 @@ actual fun rememberOpenFileLauncher(onUriReceived: (CommonUri?) -> Unit): (mimeT
 
 @Composable actual fun rememberOpenWifiSettings(): () -> Unit = {}
 
+actual val bleScanRequiresLocationServices: Boolean = false
+
 @Composable actual fun isGpsDisabled(): Boolean = false
 
 @Composable actual fun isBluetoothDisabled(): Boolean = false
 
+@Composable actual fun isBluetoothSupported(): Boolean = true
+
 @Composable actual fun isWifiUnavailable(): Boolean = false
 
-@Composable actual fun SetScreenBrightness(brightness: Float) {}
+@Composable
+actual fun SetScreenBrightness(brightness: Float) {
+    // No-op iOS stub.
+}
 
 @Composable actual fun rememberOpenAppSettings(): () -> Unit = {}
 
@@ -75,3 +90,5 @@ actual fun rememberOpenFileLauncher(onUriReceived: (CommonUri?) -> Unit): (mimeT
 @Composable actual fun rememberLocalNetworkPermissionState(): PermissionUiState = grantedPermissionUiState()
 
 @Composable actual fun rememberCameraPermissionState(): PermissionUiState = grantedPermissionUiState()
+
+actual fun KeyEvent.isFromSoftKeyboard(): Boolean = false

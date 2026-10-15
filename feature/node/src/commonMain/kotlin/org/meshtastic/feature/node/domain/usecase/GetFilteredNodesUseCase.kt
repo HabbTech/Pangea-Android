@@ -17,6 +17,7 @@
 package org.meshtastic.feature.node.domain.usecase
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
 import org.meshtastic.core.model.Node
@@ -37,7 +38,8 @@ open class GetFilteredNodesUseCase constructor(private val nodeRepository: NodeR
             onlyOnline = filter.onlyOnline,
             onlyDirect = filter.onlyDirect,
         )
-        .map { list ->
+        .combine(nodeRepository.myNodeInfo) { list, myNodeInfo -> list to myNodeInfo?.myNodeNum }
+        .map { (list, ourNum) ->
             list
                 .filter { node -> node.isIgnored == filter.showIgnored }
                 .filter { node ->
@@ -57,6 +59,14 @@ open class GetFilteredNodesUseCase constructor(private val nodeRepository: NodeR
                         true
                     }
                 }
+                // The raw signing flag, not the version-gated indicator: the filter answers "has the radio verified
+                // this node's signature", which is what the badge beside it claims.
+                .filter { node -> if (filter.onlySigned) node.signsPackets else true }
+                .filter { node -> if (filter.onlyEncrypted) node.hasPKC && !node.mismatchKey else true }
                 .filter { node -> if (filter.excludeMqtt) !node.viaMqtt else true }
+                // The connected node is never unreachable from itself, and both row renderers already exempt it.
+                .filter { node ->
+                    if (filter.excludeUnheard) !node.isUnheardOnCurrentLora || node.num == ourNum else true
+                }
         }
 }

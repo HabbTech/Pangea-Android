@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import okio.ByteString.Companion.toByteString
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.ui.component.NodeItem
 import org.meshtastic.core.ui.component.NodeItemCompact
@@ -52,7 +53,7 @@ fun NodeItemCompletePreview() {
                 NodeItem(
                     thisNode = previewNodes.mickeyMouse,
                     thatNode = previewNodes.minnieMouse,
-                    distanceUnits = 0,
+                    distanceUnits = MeasurementSystem.METRIC,
                     tempInFahrenheit = false,
                     connectionState = ConnectionState.Connected,
                 )
@@ -70,10 +71,56 @@ fun NodeItemCompleteActivePreview() {
                 NodeItem(
                     thisNode = previewNodes.mickeyMouse,
                     thatNode = previewNodes.mickeyMouse,
-                    distanceUnits = 0,
+                    distanceUnits = MeasurementSystem.METRIC,
                     tempInFahrenheit = false,
                     connectionState = ConnectionState.Connected,
                     isActive = true,
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+fun NodeItemUnheardPreview() {
+    // Heard recently enough to count as online, but not on the LoRa config the radio is using now. The unheard
+    // marker has to win over the online tint here: green would claim it is reachable.
+    val unheardNode =
+        previewNodes.minnieMouse.copy(
+            lastHeard = (org.meshtastic.core.common.util.nowSeconds - 300).toInt(),
+            heardOnCurrentLora = false,
+        )
+    AppTheme {
+        Surface {
+            Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                NodeItem(
+                    thisNode = previewNodes.mickeyMouse,
+                    thatNode = unheardNode,
+                    distanceUnits = MeasurementSystem.METRIC,
+                    tempInFahrenheit = false,
+                    connectionState = ConnectionState.Connected,
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+fun NodeItemCompactUnheardPreview() {
+    val unheardNode =
+        previewNodes.minnieMouse.copy(
+            lastHeard = (org.meshtastic.core.common.util.nowSeconds - 300).toInt(),
+            heardOnCurrentLora = false,
+        )
+    AppTheme {
+        Surface {
+            Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                NodeItemCompact(
+                    thisNode = previewNodes.mickeyMouse,
+                    thatNode = unheardNode,
+                    distanceUnits = MeasurementSystem.METRIC,
                 )
             }
         }
@@ -91,7 +138,26 @@ fun NodeItemSignedPreview() {
                 NodeItem(
                     thisNode = previewNodes.mickeyMouse,
                     thatNode = signedNode,
-                    distanceUnits = 0,
+                    distanceUnits = MeasurementSystem.METRIC,
+                    tempInFahrenheit = false,
+                    connectionState = ConnectionState.Connected,
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+fun NodeItemUnknownPreview() {
+    // A node heard before its NodeInfo arrived — placeholder identity, italic name, incomplete badge (design#16).
+    AppTheme {
+        Surface {
+            Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                NodeItem(
+                    thisNode = previewNodes.mickeyMouse,
+                    thatNode = previewNodes.unknown,
+                    distanceUnits = MeasurementSystem.METRIC,
                     tempInFahrenheit = false,
                     connectionState = ConnectionState.Connected,
                 )
@@ -106,6 +172,22 @@ fun NodeItemSignedPreview() {
 
 @PreviewLightDark
 @Composable
+fun NodeItemCompactUnknownPreview() {
+    AppTheme {
+        Surface {
+            Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                NodeItemCompact(
+                    thisNode = previewNodes.mickeyMouse,
+                    thatNode = previewNodes.unknown,
+                    distanceUnits = MeasurementSystem.METRIC,
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
 fun NodeItemCompactAllFieldsPreview() {
     AppTheme {
         Surface {
@@ -113,7 +195,7 @@ fun NodeItemCompactAllFieldsPreview() {
                 NodeItemCompact(
                     thisNode = previewNodes.mickeyMouse,
                     thatNode = previewNodes.minnieMouse,
-                    distanceUnits = 0,
+                    distanceUnits = MeasurementSystem.METRIC,
                 )
             }
         }
@@ -129,7 +211,7 @@ fun NodeItemCompactMinimalPreview() {
                 NodeItemCompact(
                     thisNode = previewNodes.mickeyMouse,
                     thatNode = previewNodes.minnieMouse,
-                    distanceUnits = 0,
+                    distanceUnits = MeasurementSystem.METRIC,
                     showPower = false,
                     showLastHeard = false,
                     showLocation = false,
@@ -153,7 +235,7 @@ fun NodeItemCompactActivePreview() {
                 NodeItemCompact(
                     thisNode = previewNodes.mickeyMouse,
                     thatNode = previewNodes.mickeyMouse,
-                    distanceUnits = 0,
+                    distanceUnits = MeasurementSystem.METRIC,
                     isActive = true,
                 )
             }
@@ -169,7 +251,11 @@ fun NodeItemCompactOnlineRemotePreview() {
     AppTheme {
         Surface {
             Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                NodeItemCompact(thisNode = previewNodes.mickeyMouse, thatNode = onlineNode, distanceUnits = 0)
+                NodeItemCompact(
+                    thisNode = previewNodes.mickeyMouse,
+                    thatNode = onlineNode,
+                    distanceUnits = MeasurementSystem.METRIC,
+                )
             }
         }
     }
@@ -186,7 +272,7 @@ fun NodeItemCompleteOnlineRemotePreview() {
                 NodeItem(
                     thisNode = previewNodes.mickeyMouse,
                     thatNode = onlineNode,
-                    distanceUnits = 0,
+                    distanceUnits = MeasurementSystem.METRIC,
                     tempInFahrenheit = false,
                     connectionState = ConnectionState.Connected,
                 )

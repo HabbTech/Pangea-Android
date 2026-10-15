@@ -16,11 +16,14 @@
  */
 package org.meshtastic.feature.node.metrics
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +34,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import okio.ByteString.Companion.decodeBase64
@@ -39,7 +41,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.koin.core.annotation.InjectedParam
 import org.koin.core.annotation.KoinViewModel
 import org.meshtastic.core.common.util.CommonUri
-import org.meshtastic.core.common.util.formatString
+import org.meshtastic.core.common.util.NumberFormatter
 import org.meshtastic.core.common.util.nowSeconds
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.MeshLog
@@ -47,8 +49,15 @@ import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.TelemetryType
 import org.meshtastic.core.model.TracerouteOverlay
 import org.meshtastic.core.model.evaluateTracerouteMapAvailability
+import org.meshtastic.core.model.noiseFloorOrNull
 import org.meshtastic.core.model.util.GeoConstants
+import org.meshtastic.core.model.util.TELEMETRY_CHANNEL_COUNT
 import org.meshtastic.core.model.util.UnitConversions
+import org.meshtastic.core.model.util.adcVoltage
+import org.meshtastic.core.model.util.oneWireTemperature
+import org.meshtastic.core.model.util.rxTimeOrNull
+import org.meshtastic.core.model.util.snrOrNull
+import org.meshtastic.core.model.util.withOneWireTemperature
 import org.meshtastic.core.repository.FileService
 import org.meshtastic.core.repository.MeshLogRepository
 import org.meshtastic.core.repository.NodeRepository
@@ -143,16 +152,22 @@ open class MetricsViewModel(
             if (currentState.isFahrenheit) {
                 data.map { telemetry ->
                     val em = telemetry.environment_metrics ?: return@map telemetry
-                    telemetry.copy(
-                        environment_metrics =
-                        em.copy(
-                            temperature = em.temperature?.let { UnitConversions.celsiusToFahrenheit(it) },
-                            soil_temperature =
-                            em.soil_temperature?.let { UnitConversions.celsiusToFahrenheit(it) },
-                            one_wire_temperature =
-                            em.one_wire_temperature.map { UnitConversions.celsiusToFahrenheit(it) },
-                        ),
-                    )
+                    // Each 1-Wire channel converts independently; an absent channel must stay null rather than
+                    // becoming a converted zero.
+                    var converted =
+                        em.newBuilder()
+                            .also { wb ->
+                                wb.temperature = em.temperature?.let { UnitConversions.celsiusToFahrenheit(it) }
+                                wb.soil_temperature =
+                                    em.soil_temperature?.let { UnitConversions.celsiusToFahrenheit(it) }
+                            }
+                            .build()
+                    for (channel in 0 until TELEMETRY_CHANNEL_COUNT) {
+                        val celsius = em.oneWireTemperature(channel) ?: continue
+                        converted =
+                            converted.withOneWireTemperature(channel, UnitConversions.celsiusToFahrenheit(celsius))
+                    }
+                    telemetry.newBuilder().also { wb -> wb.environment_metrics = converted }.build()
                 }
             } else {
                 data
@@ -256,13 +271,15 @@ open class MetricsViewModel(
 
     fun requestPosition() {
         (manualNodeId.value ?: nodeIdFromRoute)?.let {
-            viewModelScope.launch { nodeRequestActions.requestPosition(it, state.value.node?.user?.long_name ?: "") }
+            safeLaunch(tag = "requestPosition") {
+                nodeRequestActions.requestPosition(it, state.value.node?.user?.long_name ?: "")
+            }
         }
     }
 
     fun requestTelemetry(type: TelemetryType) {
         (manualNodeId.value ?: nodeIdFromRoute)?.let {
-            viewModelScope.launch {
+            safeLaunch(tag = "requestTelemetry") {
                 nodeRequestActions.requestTelemetry(it, state.value.node?.user?.long_name ?: "", type)
             }
         }
@@ -270,13 +287,15 @@ open class MetricsViewModel(
 
     fun requestTraceroute() {
         (manualNodeId.value ?: nodeIdFromRoute)?.let {
-            viewModelScope.launch { nodeRequestActions.requestTraceroute(it, state.value.node?.user?.long_name ?: "") }
+            safeLaunch(tag = "requestTraceroute") {
+                nodeRequestActions.requestTraceroute(it, state.value.node?.user?.long_name ?: "")
+            }
         }
     }
 
     fun requestNeighborInfo() {
         (manualNodeId.value ?: nodeIdFromRoute)?.let {
-            viewModelScope.launch {
+            safeLaunch(tag = "requestNeighborInfo") {
                 nodeRequestActions.requestNeighborInfo(it, state.value.node?.user?.long_name ?: "")
             }
         }
@@ -285,7 +304,11 @@ open class MetricsViewModel(
     fun showLogDetail(titleRes: StringResource, annotatedMessage: AnnotatedString) {
         alertManager.showAlert(
             titleRes = titleRes,
-            composableMessage = { SelectionContainer { Text(text = annotatedMessage) } },
+            composableMessage = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    SelectionContainer { Text(text = annotatedMessage) }
+                }
+            },
         )
     }
 
@@ -300,7 +323,11 @@ open class MetricsViewModel(
             val snapshotPositions = tracerouteSnapshotRepository.getSnapshotPositions(responseLogUuid).first()
             alertManager.showAlert(
                 titleRes = Res.string.traceroute,
-                composableMessage = { SelectionContainer { Text(text = annotatedMessage) } },
+                composableMessage = {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        SelectionContainer { Text(text = annotatedMessage) }
+                    }
+                },
                 confirmTextRes = Res.string.view_on_map,
                 onConfirm = {
                     val positionedNodeNums =
@@ -377,7 +404,9 @@ open class MetricsViewModel(
         ) { pos ->
             val lat = (pos.latitude_i ?: 0) * GeoConstants.DEG_D
             val lon = (pos.longitude_i ?: 0) * GeoConstants.DEG_D
-            val heading = formatString("%.2f", (pos.ground_track ?: 0) * GeoConstants.HEADING_DEG)
+            // Invariant: a CSV column is parsed, not read. A comma decimal here would shift every later field.
+            val heading =
+                NumberFormatter.formatInvariant((pos.ground_track ?: 0) * GeoConstants.HEADING_DEG, HEADING_DECIMALS)
             "\"$lat\",\"$lon\",\"${pos.altitude}\",\"${pos.sats_in_view}\",\"${pos.ground_speed}\",\"$heading\""
         }
     }
@@ -399,7 +428,7 @@ open class MetricsViewModel(
             epochSeconds = { it.time.toLong() },
         ) { telemetry ->
             val stats = telemetry.local_stats
-            "\"${stats?.noise_floor ?: ""}\",\"${stats?.uptime_seconds ?: ""}\"," +
+            "\"${stats?.noiseFloorOrNull ?: ""}\",\"${stats?.uptime_seconds ?: ""}\"," +
                 "\"${stats?.channel_utilization ?: ""}\",\"${stats?.air_util_tx ?: ""}\"," +
                 "\"${stats?.num_packets_tx ?: ""}\",\"${stats?.num_packets_rx ?: ""}\"," +
                 "\"${stats?.num_packets_rx_bad ?: ""}\",\"${stats?.num_rx_dupe ?: ""}\"," +
@@ -425,25 +454,34 @@ open class MetricsViewModel(
     }
 
     fun saveEnvironmentMetricsCSV(uri: CommonUri, data: List<Telemetry>) {
-        val oneWireHeaders = (1..ONE_WIRE_SENSOR_COUNT).joinToString(",") { "\"oneWireTemp$it\"" }
+        val oneWireHeaders = (1..TELEMETRY_CHANNEL_COUNT).joinToString(",") { "\"oneWireTemp$it\"" }
+        val adcHeaders = (1..TELEMETRY_CHANNEL_COUNT).joinToString(",") { "\"adcVoltage$it\"" }
         exportCsv(
             uri = uri,
             header =
             "\"date\",\"time\",\"temperature\",\"relativeHumidity\",\"barometricPressure\"," +
                 "\"gasResistance\",\"iaq\",\"windSpeed\",\"windDirection\",\"soilTemperature\"," +
-                "\"soilMoisture\",$oneWireHeaders\n",
+                "\"soilMoisture\",$oneWireHeaders,$adcHeaders," +
+                "\"lightningStrikeCount1h\",\"lightningDistanceKm\"\n",
             rows = data,
             epochSeconds = { it.time.toLong() },
         ) { t ->
             val em = t.environment_metrics
-            val owt = em?.one_wire_temperature ?: emptyList()
+            // An absent channel exports as an empty field, keeping it distinguishable from a measured 0°C / 0 V.
             val oneWireValues =
-                (0 until ONE_WIRE_SENSOR_COUNT).joinToString(",") { i -> "\"${owt.getOrNull(i) ?: ""}\"" }
+                (0 until TELEMETRY_CHANNEL_COUNT).joinToString(",") { i ->
+                    "\"${em?.oneWireTemperature(i)?.takeIf { !it.isNaN() } ?: ""}\""
+                }
+            val adcValues =
+                (0 until TELEMETRY_CHANNEL_COUNT).joinToString(",") { i ->
+                    "\"${em?.adcVoltage(i)?.takeIf { !it.isNaN() } ?: ""}\""
+                }
             "\"${em?.temperature ?: ""}\",\"${em?.relative_humidity ?: ""}\"," +
                 "\"${em?.barometric_pressure ?: ""}\",\"${em?.gas_resistance ?: ""}\"," +
                 "\"${em?.iaq ?: ""}\",\"${em?.wind_speed ?: ""}\"," +
                 "\"${em?.wind_direction ?: ""}\",\"${em?.soil_temperature ?: ""}\"," +
-                "\"${em?.soil_moisture ?: ""}\",$oneWireValues"
+                "\"${em?.soil_moisture ?: ""}\",$oneWireValues,$adcValues," +
+                "\"${em?.lightning_strike_count_1h ?: ""}\",\"${em?.lightning_distance_km ?: ""}\""
         }
     }
 
@@ -452,10 +490,11 @@ open class MetricsViewModel(
             uri = uri,
             header = "\"date\",\"time\",\"rssi\",\"snr\"\n",
             rows = data,
-            epochSeconds = { it.rx_time.toLong() },
+            epochSeconds = { (it.rxTimeOrNull() ?: 0).toLong() },
         ) { p ->
-            // An absent rssi exports as an empty field, matching the other optional metrics above.
-            "\"${p.rx_rssi ?: ""}\",\"${p.rx_snr}\""
+            // An absent rssi or snr exports as an empty field, matching the other optional metrics above. An empty
+            // field and "0" must stay distinguishable: 0 dB is a real reading.
+            "\"${p.rx_rssi ?: ""}\",\"${p.snrOrNull() ?: ""}\""
         }
     }
 
@@ -492,7 +531,7 @@ open class MetricsViewModel(
                 "\"form_formaldehyde\",\"form_humidity\",\"form_temperature\"," +
                 "\"pm40_standard\",\"particles_40um\"," +
                 "\"pm_temperature\",\"pm_humidity\",\"pm_voc_idx\",\"pm_nox_idx\"," +
-                "\"particles_tps\"\n",
+                "\"particles_tps\",\"pm_status_flags\"\n",
             rows = data,
             epochSeconds = { it.telemetry.time.toLong() },
         ) { sample ->
@@ -524,7 +563,8 @@ open class MetricsViewModel(
                 "\"${aq?.pm_humidity ?: ""}\"," +
                 "\"${aq?.pm_voc_idx ?: ""}\"," +
                 "\"${aq?.pm_nox_idx ?: ""}\"," +
-                "\"${aq?.particles_tps ?: ""}\""
+                "\"${aq?.particles_tps ?: ""}\"," +
+                "\"${aq?.pm_status_flags ?: ""}\""
         }
     }
 
@@ -559,17 +599,17 @@ open class MetricsViewModel(
     }
 
     protected fun decodeBase64(base64: String): ByteArray = base64.decodeBase64()?.toByteArray() ?: ByteArray(0)
-
-    companion object {
-        private const val ONE_WIRE_SENSOR_COUNT = 8
-    }
 }
 
-private fun buildGpx(positions: List<org.meshtastic.proto.Position>, trackName: String): String {
+/**
+ * Coordinates are formatted invariantly: GPX is XML another program parses, and a comma decimal makes
+ * `lat="52,5200000"` — a file no importer accepts. Internal so a test can pin a comma locale and prove it.
+ */
+internal fun buildGpx(positions: List<org.meshtastic.proto.Position>, trackName: String): String {
     val trkpts = buildString {
         for (pos in positions) {
-            val lat = formatString("%.7f", (pos.latitude_i ?: 0) * GeoConstants.DEG_D)
-            val lon = formatString("%.7f", (pos.longitude_i ?: 0) * GeoConstants.DEG_D)
+            val lat = NumberFormatter.formatInvariant((pos.latitude_i ?: 0) * GeoConstants.DEG_D, COORDINATE_DECIMALS)
+            val lon = NumberFormatter.formatInvariant((pos.longitude_i ?: 0) * GeoConstants.DEG_D, COORDINATE_DECIMALS)
             append("    <trkpt lat=\"$lat\" lon=\"$lon\">")
             if ((pos.altitude ?: 0) != 0) append("<ele>${pos.altitude}</ele>")
             if (pos.time > 0) append("<time>${Instant.fromEpochSeconds(pos.time.toLong())}</time>")
@@ -586,3 +626,8 @@ $trkpts    </trkseg>
   </trk>
 </gpx>"""
 }
+
+/** GPX stores coordinates to 7 decimals, roughly a centimetre. */
+private const val COORDINATE_DECIMALS = 7
+
+private const val HEADING_DECIMALS = 2

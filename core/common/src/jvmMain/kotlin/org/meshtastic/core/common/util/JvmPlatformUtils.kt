@@ -37,6 +37,11 @@ actual object DateFormatter {
     private val shortDateTimeFormatter: DateTimeFormatter =
         DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM)
 
+    // A localized formatter binds the default locale of the moment it was built, and the desktop app changes the
+    // default locale after this object exists (the language preference resolves in composition), so each call
+    // rebinds to the current one; withLocale is a cheap copy.
+    private fun DateTimeFormatter.localized(): DateTimeFormatter = withLocale(Locale.getDefault())
+
     actual fun formatRelativeTime(timestampMillis: Long): String {
         val deltaMillis = nowMillis - timestampMillis
         val absDeltaMillis = abs(deltaMillis)
@@ -51,41 +56,52 @@ actual object DateFormatter {
     }
 
     actual fun formatDateTime(timestampMillis: Long): String =
-        shortDateTimeFormatter.format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+        shortDateTimeFormatter.localized().format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
 
     actual fun formatShortDate(timestampMillis: Long): String {
         val isWithin24Hours = (nowMillis - timestampMillis) <= DAY_MILLIS
         val zonedDateTime = java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId)
         return if (isWithin24Hours) {
-            shortTimeFormatter.format(zonedDateTime)
+            shortTimeFormatter.localized().format(zonedDateTime)
         } else {
-            shortDateFormatter.format(zonedDateTime)
+            shortDateFormatter.localized().format(zonedDateTime)
         }
     }
 
     actual fun formatTime(timestampMillis: Long): String =
-        shortTimeFormatter.format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+        shortTimeFormatter.localized().format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
 
     actual fun formatTimeWithSeconds(timestampMillis: Long): String =
-        mediumTimeFormatter.format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+        mediumTimeFormatter.localized().format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
 
     actual fun formatDate(timestampMillis: Long): String =
-        shortDateFormatter.format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+        shortDateFormatter.localized().format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
 
     actual fun formatDateTimeShort(timestampMillis: Long): String =
-        shortDateTimeFormatter.format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+        shortDateTimeFormatter.localized().format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
 }
 
-@Suppress("MagicNumber")
-actual fun getSystemMeasurementSystem(): MeasurementSystem =
+// No ICU measurement data on the JVM, so the region table in core:common is the source. Desktop
+// keeps the region of the system locale when the language preference carries none (see
+// LocaleResolution.kt), so a region-less preference cannot decide the units the way it once did.
+actual fun getSystemMeasurementSystem(): MeasurementSystem {
+    val locale = Locale.getDefault()
+    return measurementSystemOverride(locale.getUnicodeLocaleType(MEASUREMENT_SYSTEM_EXTENSION))
+        ?: measurementSystemForRegion(locale.country)
+}
+
+// CLDR unitPreferenceData lists these regions as defaulting to Fahrenheit; everywhere else is Celsius.
+actual fun getSystemTemperatureUnit(): TemperatureUnit =
     when (Locale.getDefault().country.uppercase(Locale.getDefault())) {
         "US",
-        "LR",
-        "MM",
-        "GB",
-        -> MeasurementSystem.IMPERIAL
+        "BS",
+        "BZ",
+        "KY",
+        "PR",
+        "PW",
+        -> TemperatureUnit.FAHRENHEIT
 
-        else -> MeasurementSystem.METRIC
+        else -> TemperatureUnit.CELSIUS
     }
 
 actual fun currentLocaleCode(): String = Locale.getDefault().language

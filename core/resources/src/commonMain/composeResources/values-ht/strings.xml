@@ -17,6 +17,7 @@
   -->
 <resources>
     <!-- A11Y -->
+    <string name="about">Sou</string>
     <string name="accept">Aksepte</string>
     <!-- ACTION -->
     <string name="action_delete_message">Efase mesaj la</string>
@@ -26,7 +27,6 @@
     <string name="administration">Administrasyon</string>
     <!-- AIR -->
     <string name="air_util_definition">Pousantaj tan lè transmisyon te itilize nan dènye èdtan an.</string>
-    <!-- ALERT -->
     <!-- APP -->
     <string name="app_too_old">Aplikasyon twò ansyen</string>
     <string name="apply">Aplike</string>
@@ -49,6 +49,7 @@
     <!-- CHIRPY -->
     <string name="choose_theme">Chwazi tèm</string>
     <!-- CLEAN -->
+    <!-- CLEAR -->
     <string name="clear">Netwaye</string>
     <string name="close">Fèmen</string>
     <!-- COMPASS -->
@@ -74,19 +75,17 @@
     <string name="disconnected">Dekonekte</string>
     <!-- DISCOVERY -->
     <string name="discovery_stat_direct">Direk</string>
-    <!-- DISPLAY -->
     <!-- DISTANCE -->
     <string name="distance">Distans</string>
     <!-- DOC -->
     <string name="edit">Modifye</string>
     <string name="eight_hours">8 Èdtan</string>
-    <!-- ENCRYPTION -->
+    <!-- EMOJI -->
     <string name="encryption_error">Pa matche kle piblik</string>
     <string name="encryption_pkc">Chifreman Kle Piblik</string>
-    <string name="encryption_psk">Kle Pataje</string>
-    <!-- ENVIRONMENT -->
     <string name="error">Erè</string>
     <string name="error_duty_cycle">Limit sik devwa rive. Pa ka voye mesaj kounye a, tanpri eseye ankò pita.</string>
+    <!-- EXPORT -->
     <string name="factory_reset">Reyajiste nan faktori</string>
     <string name="fair">Mwayen</string>
     <!-- FILTER -->
@@ -98,10 +97,8 @@
     <!-- FORMAT -->
     <!-- GEOFENCE -->
     <string name="good">Bon</string>
-    <!-- GPIO -->
     <string name="hops_away">Hops Lwen</string>
     <string name="iaq_definition">(Kalite Lèy Entèryè) echèl relatif valè IAQ jan li mezire pa Bosch BME680. Ranje valè 0–500.</string>
-    <!-- IGNORE -->
     <string name="ignore">Ignoré</string>
     <string name="ignore_add">Ajoute '%1$s' nan lis ignòre?</string>
     <string name="ignore_remove">Retire '%1$s' nan lis ignòre?</string>
@@ -111,9 +108,11 @@
     <string name="intro_show">Montre entwodiksyon</string>
     <string name="ip_address">Adrès IP:</string>
     <!-- KEY -->
-    <!-- LABEL -->
+    <!-- LAYER -->
+    <!-- LICENSED -->
     <!-- LOAD -->
     <!-- LOCAL -->
+    <!-- LOCATION -->
     <string name="location_disabled">Aksè lokasyon enfim, pa ka bay pozisyon mesh la.</string>
     <!-- LOCKDOWN -->
     <string name="locked">Loken</string>
@@ -138,6 +137,8 @@
     <string name="map_tile_source">Sous Tèk</string>
     <!-- MESH -->
     <string name="mesh_beacon_preset_none">Pa gen</string>
+    <string name="mesh_beacon_region_label">Rejyon</string>
+    <string name="mesh_beacon_target_channel_index">kanal</string>
     <!-- MESHTASTIC -->
     <string name="meshtastic_new_nodes_notifications">Notifikasyon nouvo nœud</string>
     <string name="meshtastic_service_notifications">Notifikasyon sèvis</string>
@@ -172,19 +173,22 @@
     <string name="node_sort_via_mqtt">atravè MQTT</string>
     <string name="nodedb_reset">Reyajiste NodeDB</string>
     <!-- NODES -->
+    <string name="nodes_unheard_remove">Retire</string>
     <string name="none">Okenn (enfim)</string>
     <string name="none_quality">Pa gen</string>
     <string name="not_connected">Pa konekte</string>
     <!-- NOTIFICATIONS -->
+    <!-- OFFLINE -->
     <string name="okay">Dakò</string>
     <!-- ONE -->
     <string name="one_day">24 Èdtan</string>
     <!-- OPEN -->
-    <!-- OUTPUT -->
     <!-- PACKET -->
     <!-- PAX -->
+    <!-- PERMISSION -->
+    <!-- PERMISSIONS -->
+    <!-- PM -->
     <!-- POSITION -->
-    <!-- POWER -->
     <string name="preferences_language">Lang</string>
     <string name="preferences_system_default">Sistèm default</string>
     <!-- PREVIEW -->
@@ -198,14 +202,6 @@
     <string name="quick_chat_new">Nouvo chat rapid</string>
     <string name="radio_configuration">Konfigirasyon radyo</string>
     <string name="reboot">Rekòmanse</string>
-    <!-- REBROADCAST -->
-    <string name="rebroadcast_mode_all_desc">Rebroadcast nenpòt mesaj obsève, si li te sou kanal prive nou oswa soti nan yon lòt mesh ak menm paramèt lora.</string>
-    <string name="rebroadcast_mode_all_skip_decoding_desc">Menm jan ak konpòtman kòm "ALL" men sote dekodaj pakè yo epi senpleman rebroadcast yo. Disponib sèlman nan wòl Repeater. Mete sa sou nenpòt lòt wòl ap bay konpòtman "ALL".</string>
-    <string name="rebroadcast_mode_core_portnums_only_desc">Ignoré pakè soti nan portnum ki pa estanda tankou: TAK, RangeTest, PaxCounter, elatriye. Sèlman rebroadcast pakè ak portnum estanda: NodeInfo, Tèks, Pozisyon, Telemetri, ak Routing.</string>
-    <string name="rebroadcast_mode_known_only_desc">Ignoré mesaj obsève soti nan meshes etranje tankou "LOCAL ONLY", men ale yon etap pi lwen pa tou ignorer mesaj ki soti nan nœud ki poko nan lis konnen nœud la.</string>
-    <string name="rebroadcast_mode_local_only_desc">Ignoré mesaj obsève soti nan meshes etranje ki louvri oswa sa yo li pa ka dekripte. Sèlman rebroadcast mesaj sou kanal prensipal / segondè lokal nœud.</string>
-    <string name="rebroadcast_mode_none_desc">Sèlman pèmèt pou wòl SENSOR, TRACKER ak TAK_TRACKER, sa a ap entèdi tout rebroadcasts, pa diferan de wòl CLIENT_MUTE.</string>
-    <string name="region_frequency_plan">Rejyon</string>
     <!-- REMOTE -->
     <string name="remote_admin">Administrasyon Remote</string>
     <!-- REMOVE -->
@@ -218,36 +214,12 @@
     <string name="reset">Reyajiste</string>
     <string name="reset_to_defaults">Reyajiste nan paramèt default yo</string>
     <!-- ROLE -->
-    <string name="role_client_desc">Aplikasyon konekte oswa aparèy mesaj endepandan.</string>
-    <string name="role_client_hidden_desc">Aparèy ki sèlman voye kòm sa nesesè pou kachèt oswa ekonomi pouvwa.</string>
-    <string name="role_client_mute_desc">Aparèy ki pa voye pake soti nan lòt aparèy.</string>
-    <string name="role_lost_and_found_desc">Voye pozisyon kòm mesaj nan kanal default regilyèman pou ede ak rekiperasyon aparèy.</string>
-    <string name="role_repeater_desc">Nœud enfrastrikti pou elaji kouvèti rezo pa relaye mesaj avèk ti overhead. Pa vizib nan lis nœud.</string>
-    <string name="role_router_client_desc">Kombinasyon de toude ROUTER ak CLIENT. Pa pou aparèy mobil.</string>
-    <string name="role_router_desc">Nœud enfrastrikti pou elaji kouvèti rezo pa relaye mesaj. Vizyèl nan lis nœud.</string>
-    <string name="role_sensor_desc">Voye pakè telemetri kòm priyorite.</string>
-    <string name="role_tak_desc">Optimizé pou kominikasyon sistèm ATAK, redwi emisyon regilye.</string>
-    <string name="role_tak_tracker_desc">Pèmèt emisyon TAK PLI otomatik epi redwi emisyon regilye.</string>
-    <string name="role_tracker_desc">Voye pakè pozisyon GPS kòm priyorite.</string>
     <!-- ROUTING -->
-    <string name="routing_error_admin_bad_session_key">Kle sesyon move</string>
-    <string name="routing_error_admin_public_key_unauthorized">Kle piblik pa otorize</string>
-    <string name="routing_error_bad_request">Demann move</string>
-    <string name="routing_error_duty_cycle_limit">Limite sik devwa rejyonal rive</string>
     <string name="routing_error_got_nak">Rekòmanse avèk yon refi negatif</string>
-    <string name="routing_error_max_retransmit">Limite retransmisyon maksimòm rive</string>
-    <string name="routing_error_no_channel">Pa gen kanal</string>
-    <string name="routing_error_no_interface">Pa gen entèfas</string>
-    <string name="routing_error_no_response">Pa gen repons</string>
     <string name="routing_error_no_route">Pa gen wout</string>
     <string name="routing_error_none">Rekonekte</string>
-    <string name="routing_error_not_authorized">Pa otorize</string>
-    <string name="routing_error_pki_failed">Echèk voye ankripte</string>
-    <string name="routing_error_pki_unknown_pubkey">Kle piblik enkoni</string>
     <string name="routing_error_timeout">Tan pase</string>
-    <string name="routing_error_too_large">Pake twò gwo</string>
     <string name="rssi_definition">Endikatè Fòs Siynal Resevwa, yon mezi ki itilize pou detèmine nivo pouvwa siynal ki resevwa pa antèn nan. Yon RSSI pi wo jeneralman endike yon koneksyon pi fò ak plis estab.</string>
-    <!-- SAVE -->
     <string name="save">Sove</string>
     <string name="save_changes">Sove</string>
     <!-- SCAN -->
@@ -255,7 +227,6 @@
     <!-- SECURITY -->
     <string name="select_all">Chwazi tout</string>
     <string name="send">Voye</string>
-    <!-- SERIAL -->
     <!-- SHARE -->
     <string name="share">Pataje</string>
     <!-- SHOW -->
@@ -264,6 +235,8 @@
     <string name="signal_quality">Kalite Siynal</string>
     <!-- SITE -->
     <string name="snr_definition">Rapò Siynal sou Bri, yon mezi ki itilize nan kominikasyon pou mezire nivo siynal vle a kont nivo bri ki nan anviwònman an. Nan Meshtastic ak lòt sistèm san fil, yon SNR pi wo endike yon siynal pi klè ki ka amelyore fyab ak kalite transmisyon done.</string>
+    <string name="swipe_action_delete">Efase</string>
+    <string name="swipe_action_mute">Fèmen son</string>
     <!-- TAK -->
     <string name="theme">Tèm</string>
     <string name="theme_dark">Fènwa</string>
@@ -277,11 +250,12 @@
     <!-- TRANSLATION -->
     <!-- TRANSPORT -->
     <string name="two_days">48 Èdtan</string>
+    <!-- UNITS -->
+    <string name="units_follow_system">Sistèm default</string>
     <!-- UNKNOWN -->
     <string name="unknown_username">Non itilizatè enkoni</string>
     <string name="unrecognized">Inkonu</string>
     <!-- URL -->
-    <!-- USE -->
     <!-- USER -->
     <string name="via_mqtt">atravè MQTT</string>
     <string name="waypoint_delete">Efase pwen?</string>
@@ -290,8 +264,6 @@
     <string name="waypoint_received">Pwen resevwa: %1$s</string>
     <!-- WIFI -->
     <string name="wifi_provision_success_ip_address">Adrès IP</string>
-    <string name="wifi_qr_code_error">Fòma QR Kòd Kredi WiFi Invalid</string>
-    <string name="wifi_qr_code_scan">Skan QR Kòd WiFi</string>
     <!-- WIND -->
     <!-- WRITE -->
     <string name="you">Ou</string>

@@ -16,13 +16,12 @@
  */
 package org.meshtastic.core.datastore
 
-import androidx.datastore.core.DataStore
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import okio.IOException
-import org.koin.core.annotation.Named
 import org.koin.core.annotation.Single
+import org.meshtastic.core.datastore.di.CoreLocalStatsDataStore
 import org.meshtastic.proto.LocalStats
 
 /** Interface that handles saving and retrieving [LocalStats] data. */
@@ -36,14 +35,12 @@ interface LocalStatsDataSource {
 
 /** Implementation of [LocalStatsDataSource] using DataStore. */
 @Single
-open class LocalStatsDataSourceImpl(
-    @Named("CoreLocalStatsDataStore") private val localStatsStore: DataStore<LocalStats>,
-) : LocalStatsDataSource {
+open class LocalStatsDataSourceImpl(private val localStatsStore: CoreLocalStatsDataStore) : LocalStatsDataSource {
     override val localStatsFlow: Flow<LocalStats> =
         localStatsStore.data.catch { exception ->
             if (exception is IOException) {
                 Logger.e { "Error reading LocalStats: ${exception.message}" }
-                emit(LocalStats())
+                emit(LocalStats.Builder().build())
             } else {
                 throw exception
             }
@@ -54,6 +51,6 @@ open class LocalStatsDataSourceImpl(
     }
 
     override suspend fun clearLocalStats() {
-        localStatsStore.updateData { LocalStats() }
+        localStatsStore.updateData { LocalStats.Builder().build() }
     }
 }

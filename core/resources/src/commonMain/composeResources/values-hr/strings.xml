@@ -17,6 +17,7 @@
   -->
 <resources>
     <!-- A11Y -->
+    <string name="about">O programu</string>
     <string name="accept">Prihvati</string>
     <!-- ACTION -->
     <string name="action_delete_message">Obriši poruku</string>
@@ -24,7 +25,6 @@
     <string name="add">Dodaj</string>
     <string name="add_network_device">Dodaj</string>
     <!-- AIR -->
-    <!-- ALERT -->
     <!-- APP -->
     <string name="app_too_old">Potrebna je nadogradnja aplikacije</string>
     <string name="apply">Potvrdi</string>
@@ -45,6 +45,7 @@
     <!-- CHIRPY -->
     <string name="choose_theme">Odaberi temu</string>
     <!-- CLEAN -->
+    <!-- CLEAR -->
     <string name="clear">Očisti</string>
     <string name="close">Zatvori</string>
     <!-- COMPASS -->
@@ -73,16 +74,15 @@
     <string name="direct_message">Izravna poruka</string>
     <string name="disconnected">Odspojeno</string>
     <!-- DISCOVERY -->
-    <!-- DISPLAY -->
     <!-- DISTANCE -->
     <string name="distance">Udaljenost</string>
     <!-- DOC -->
     <string name="edit">Uredi</string>
     <string name="eight_hours">8 Sati</string>
-    <!-- ENCRYPTION -->
-    <!-- ENVIRONMENT -->
+    <!-- EMOJI -->
     <string name="error">Pogreška</string>
     <string name="error_duty_cycle">Dosegnuto je ograničenje radnog ciklusa. Trenutačno nije moguće poslati poruke, pokušajte ponovno kasnije.</string>
+    <!-- EXPORT -->
     <string name="factory_reset">Vraćanje na tvorničke postavke</string>
     <!-- FILTER -->
     <string name="filter_icon">Filtriraj</string>
@@ -92,8 +92,6 @@
     <string name="firmware_update_failed">Ažuriranje neuspjelo</string>
     <!-- FORMAT -->
     <!-- GEOFENCE -->
-    <!-- GPIO -->
-    <!-- IGNORE -->
     <string name="ignore">Ignoriraj</string>
     <string name="ignore_add">Dodati '%1$s' na popis ignoriranih? Vaš radio će se ponovno pokrenuti nakon ove promjene.</string>
     <string name="ignore_remove">Ukloniti '%1$s' s popisa ignoriranih? Vaš radio će se ponovno pokrenuti nakon ove promjene.</string>
@@ -102,9 +100,11 @@
     <string name="intro_show">Prikaži uvod</string>
     <string name="ip_address">IP Adresa:</string>
     <!-- KEY -->
-    <!-- LABEL -->
+    <!-- LAYER -->
+    <!-- LICENSED -->
     <!-- LOAD -->
     <!-- LOCAL -->
+    <!-- LOCATION -->
     <string name="location_disabled">Pristup lokaciji je isključen, Vaš Android ne može pružiti lokaciju mesh mreži.</string>
     <!-- LOCKDOWN -->
     <string name="locked">Zaključano</string>
@@ -127,6 +127,9 @@
     <string name="map_tile_download_estimate">Procjena preuzimanja:</string>
     <string name="map_tile_source">Izvor karte</string>
     <!-- MESH -->
+    <string name="mesh_beacon_region_label">Regija</string>
+    <string name="mesh_beacon_target_channel_index">Kanal</string>
+    <string name="mesh_beacon_target_default">Zadano</string>
     <!-- MESHTASTIC -->
     <string name="meshtastic">Meshtastic</string>
     <string name="meshtastic_app_name">Meshtastic</string>
@@ -160,18 +163,21 @@
     <string name="node_sort_via_mqtt">putem MQTT</string>
     <string name="nodedb_reset">Resetiraj NodeDB bazu</string>
     <!-- NODES -->
+    <string name="nodes_unheard_remove">Ukloni</string>
     <string name="none">Ništa (onemogućeno)</string>
     <string name="not_connected">Nije povezano</string>
     <!-- NOTIFICATIONS -->
+    <!-- OFFLINE -->
     <string name="okay">U redu</string>
     <!-- ONE -->
     <string name="one_day">24 Sati</string>
     <!-- OPEN -->
-    <!-- OUTPUT -->
     <!-- PACKET -->
     <!-- PAX -->
+    <!-- PERMISSION -->
+    <!-- PERMISSIONS -->
+    <!-- PM -->
     <!-- POSITION -->
-    <!-- POWER -->
     <string name="preferences_language">Jezik</string>
     <string name="preferences_system_default">Zadana vrijednost sustava</string>
     <!-- PREVIEW -->
@@ -185,9 +191,6 @@
     <string name="quick_chat_new">Novi brzi razgovor</string>
     <string name="radio_configuration">Konfiguracija uređaja</string>
     <string name="reboot">Ponovno pokreni</string>
-    <!-- REBROADCAST -->
-    <string name="red">Crveno</string>
-    <string name="region_frequency_plan">Regija</string>
     <!-- REMOTE -->
     <!-- REMOVE -->
     <string name="remove">Ukloni</string>
@@ -199,10 +202,7 @@
     <string name="reset_to_defaults">Vrati na početne postavke</string>
     <!-- ROLE -->
     <!-- ROUTING -->
-    <string name="routing_error_no_response">Nema odgovora</string>
     <string name="routing_error_none">Potvrđeno</string>
-    <string name="routing_error_too_large">Paket je prevelik</string>
-    <!-- SAVE -->
     <string name="save">Spremi</string>
     <string name="save_changes">Spremi</string>
     <!-- SCAN -->
@@ -210,14 +210,14 @@
     <!-- SECURITY -->
     <string name="select_all">Označi sve</string>
     <string name="send">Potvrdi</string>
-    <!-- SERIAL -->
     <!-- SHARE -->
     <string name="share">Podijeli</string>
     <!-- SHOW -->
     <string name="shutdown">Isključi</string>
     <!-- SITE -->
+    <string name="swipe_action_delete">Obriši</string>
+    <string name="swipe_action_mute">Utišaj</string>
     <!-- TAK -->
-    <string name="tak_team_red">Crveno</string>
     <string name="theme">Tema</string>
     <string name="theme_dark">Tamna</string>
     <string name="theme_light">Svijetla</string>
@@ -229,10 +229,11 @@
     <!-- TRANSLATION -->
     <!-- TRANSPORT -->
     <string name="two_days">48 Sati</string>
+    <!-- UNITS -->
+    <string name="units_follow_system">Sistemski zadano</string>
     <!-- UNKNOWN -->
     <string name="unknown_username">Nepoznati korisnik</string>
     <!-- URL -->
-    <!-- USE -->
     <!-- USER -->
     <string name="via_mqtt">putem MQTT</string>
     <string name="waypoint_delete">Obriši putnu točku?</string>

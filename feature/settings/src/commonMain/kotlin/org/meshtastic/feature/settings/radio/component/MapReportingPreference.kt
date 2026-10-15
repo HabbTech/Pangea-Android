@@ -26,29 +26,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
-import org.meshtastic.core.model.util.DistanceUnit
+import org.koin.compose.koinInject
+import org.meshtastic.core.common.util.LocaleUnitsProvider
+import org.meshtastic.core.common.util.MeasurementSystem
+import org.meshtastic.core.model.util.precisionRadiusMetersOrNull
 import org.meshtastic.core.model.util.toDistanceString
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.i_agree
 import org.meshtastic.core.resources.i_agree_to_share_my_location
-import org.meshtastic.core.resources.map_reporting
 import org.meshtastic.core.resources.map_reporting_consent_header
 import org.meshtastic.core.resources.map_reporting_consent_text
-import org.meshtastic.core.resources.map_reporting_interval_seconds
-import org.meshtastic.core.resources.map_reporting_summary
+import org.meshtastic.core.resources.schema_mapreportsettings_publish_interval_secs
+import org.meshtastic.core.resources.schema_mapreportsettings_publish_interval_secs_description
+import org.meshtastic.core.resources.schema_mqtt_map_reporting_enabled
+import org.meshtastic.core.resources.schema_mqtt_map_reporting_enabled_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.SwitchPreference
-import org.meshtastic.core.ui.component.precisionBitsToMeters
 import org.meshtastic.feature.settings.util.FixedUpdateIntervals
 import org.meshtastic.feature.settings.util.IntervalConfiguration
 import org.meshtastic.feature.settings.util.toDisplayString
@@ -71,11 +75,12 @@ fun MapReportingPreference(
     enabled: Boolean,
 ) {
     Column {
-        var showMapReportingWarning by rememberSaveable { mutableStateOf(mapReportingEnabled) }
-        LaunchedEffect(mapReportingEnabled) { showMapReportingWarning = mapReportingEnabled }
+        // Tracks the switch locally so the consent card can show before the config round-trips; re-keyed on
+        // [mapReportingEnabled] so an externally-changed config wins over a stale local toggle.
+        var showMapReportingWarning by rememberSaveable(mapReportingEnabled) { mutableStateOf(mapReportingEnabled) }
         SwitchPreference(
-            title = stringResource(Res.string.map_reporting),
-            summary = stringResource(Res.string.map_reporting_summary),
+            title = stringResource(Res.string.schema_mqtt_map_reporting_enabled),
+            summary = stringResource(Res.string.schema_mqtt_map_reporting_enabled_description),
             checked = showMapReportingWarning,
             enabled = enabled,
             onCheckedChange = { checked ->
@@ -117,10 +122,17 @@ fun MapReportingPreference(
                         valueRange = POSITION_PRECISION_MIN.toFloat()..POSITION_PRECISION_MAX.toFloat(),
                         steps = POSITION_PRECISION_MAX - POSITION_PRECISION_MIN - 1,
                     )
-                    val precisionMeters = precisionBitsToMeters(positionPrecision).toInt()
-                    val unit = DistanceUnit.Companion.getFromLocale()
+                    val precisionMeters = precisionRadiusMetersOrNull(positionPrecision)?.toInt()
+                    val unit =
+                        if (LocalInspectionMode.current) {
+                            // Previews and screenshot tests render with no Koin application; the value itself is
+                            // arbitrary there.
+                            MeasurementSystem.METRIC
+                        } else {
+                            koinInject<LocaleUnitsProvider>().measurementSystem.collectAsStateWithLifecycle().value
+                        }
                     Text(
-                        text = "± ${precisionMeters.toDistanceString(unit)}",
+                        text = "± ${precisionMeters?.toDistanceString(unit).orEmpty()}",
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                         fontSize = MaterialTheme.typography.bodyLarge.fontSize,
                         overflow = TextOverflow.Companion.Ellipsis,
@@ -129,7 +141,8 @@ fun MapReportingPreference(
                     val publishItems = remember { IntervalConfiguration.BROADCAST_MEDIUM.allowedIntervals }
                     DropDownPreference(
                         modifier = Modifier.padding(bottom = 16.dp),
-                        title = stringResource(Res.string.map_reporting_interval_seconds),
+                        title = stringResource(Res.string.schema_mapreportsettings_publish_interval_secs),
+                        summary = stringResource(Res.string.schema_mapreportsettings_publish_interval_secs_description),
                         items = publishItems.map { it to it.toDisplayString() },
                         selectedItem =
                         FixedUpdateIntervals.fromValue(publishIntervalSecs.toLong()) ?: publishItems.first(),

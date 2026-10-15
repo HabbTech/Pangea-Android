@@ -40,6 +40,7 @@ import org.meshtastic.core.navigation.NodesRoute
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.feature.settings.AboutScreen
+import org.meshtastic.feature.settings.AcknowledgementsScreen
 import org.meshtastic.feature.settings.AdministrationScreen
 import org.meshtastic.feature.settings.DeviceConfigurationScreen
 import org.meshtastic.feature.settings.DeviceLinkDirectoryScreen
@@ -76,7 +77,6 @@ import org.meshtastic.feature.settings.radio.component.RangeTestConfigScreen
 import org.meshtastic.feature.settings.radio.component.RemoteHardwareConfigScreen
 import org.meshtastic.feature.settings.radio.component.SecurityConfigScreenCommon
 import org.meshtastic.feature.settings.radio.component.SerialConfigScreen
-import org.meshtastic.feature.settings.radio.component.StatusMessageConfigScreen
 import org.meshtastic.feature.settings.radio.component.StoreForwardConfigScreen
 import org.meshtastic.feature.settings.radio.component.TAKConfigScreen
 import org.meshtastic.feature.settings.radio.component.TakServerScreen
@@ -240,6 +240,7 @@ internal fun settingsRadioConfigSession(backStack: List<NavKey>): SettingsRadioC
 }
 
 private fun NavKey.usesRadioConfigSettingsSession(): Boolean = this is SettingsRoute.Settings ||
+    this == SettingsRoute.UserStatusMessage ||
     this == SettingsRoute.DeviceConfiguration ||
     this == SettingsRoute.ModuleConfiguration ||
     this == SettingsRoute.Administration ||
@@ -305,6 +306,19 @@ fun EntryProviderScope<NavKey>.settingsGraph(
     entry<SettingsRoute.CleanNodeDb> {
         val viewModel: CleanNodeDatabaseViewModel = koinViewModel()
         CleanNodeDatabaseScreen(viewModel = viewModel, onBack = dropUnlessResumed { backStack.removeLastOrNull() })
+    }
+
+    // The local node's context-menu shortcut: the same user screen and the same read fan-out, opened on its field.
+    configComposable(
+        SettingsRoute.UserStatusMessage::class,
+        ConfigRoute.USER,
+        radioConfigViewModelProvider,
+    ) { viewModel ->
+        UserConfigScreen(
+            viewModel,
+            onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            focusStatusMessage = true,
+        )
     }
 
     ConfigRoute.entries.forEach { routeInfo ->
@@ -388,9 +402,6 @@ fun EntryProviderScope<NavKey>.settingsGraph(
                 ModuleRoute.PAXCOUNTER ->
                     PaxcounterConfigScreen(viewModel, onBack = dropUnlessResumed { backStack.removeLastOrNull() })
 
-                ModuleRoute.STATUS_MESSAGE ->
-                    StatusMessageConfigScreen(viewModel, onBack = dropUnlessResumed { backStack.removeLastOrNull() })
-
                 ModuleRoute.TAK ->
                     TAKConfigScreen(viewModel, onBack = dropUnlessResumed { backStack.removeLastOrNull() })
 
@@ -408,7 +419,16 @@ fun EntryProviderScope<NavKey>.settingsGraph(
     }
 
     entry<SettingsRoute.About> {
+        val settingsViewModel: SettingsViewModel = koinViewModel()
         AboutScreen(
+            appVersionName = settingsViewModel.appVersionName,
+            onNavigateUp = dropUnlessResumed { backStack.removeLastOrNull() },
+            onNavigateToAcknowledgements = dropUnlessResumed { backStack.add(SettingsRoute.Acknowledgements) },
+        )
+    }
+
+    entry<SettingsRoute.Acknowledgements> {
+        AcknowledgementsScreen(
             onNavigateUp = dropUnlessResumed { backStack.removeLastOrNull() },
             jsonProvider = { getAboutLibrariesJson() },
         )

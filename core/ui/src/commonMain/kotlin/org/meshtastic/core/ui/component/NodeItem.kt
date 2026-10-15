@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
+import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.common.util.MetricFormatter
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.DeviceType
@@ -65,6 +66,7 @@ import org.meshtastic.core.resources.current
 import org.meshtastic.core.resources.elevation_suffix
 import org.meshtastic.core.resources.node_list_click_label
 import org.meshtastic.core.resources.node_list_long_click_label
+import org.meshtastic.core.resources.node_not_heard_on_current_lora
 import org.meshtastic.core.resources.signal_quality
 import org.meshtastic.core.resources.unknown_username
 import org.meshtastic.core.resources.voltage
@@ -73,9 +75,10 @@ import org.meshtastic.core.ui.icon.ChannelUtilization
 import org.meshtastic.core.ui.icon.MapCompass
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Notes
+import org.meshtastic.core.ui.icon.SignalOff
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
+import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.util.LocalModemPreset
-import org.meshtastic.proto.Config
 
 private const val GRID_COLUMNS = 3
 
@@ -84,7 +87,7 @@ private const val GRID_COLUMNS = 3
 fun NodeItem(
     thisNode: Node?,
     thatNode: Node,
-    distanceUnits: Int,
+    distanceUnits: MeasurementSystem,
     tempInFahrenheit: Boolean,
     connectionState: ConnectionState,
     modifier: Modifier = Modifier,
@@ -100,11 +103,8 @@ fun NodeItem(
     val isIgnored = thatNode.isIgnored
     val isFavorite = thatNode.isFavorite
 
-    val isThisNode = remember(thatNode) { thisNode?.num == thatNode.num }
-    val system =
-        remember(distanceUnits) {
-            Config.DisplayConfig.DisplayUnits.fromValue(distanceUnits) ?: Config.DisplayConfig.DisplayUnits.METRIC
-        }
+    val isThisNode = remember(thisNode, thatNode) { thisNode?.num == thatNode.num }
+    val system = distanceUnits
     val distance =
         remember(thisNode, thatNode, system) {
             thisNode?.distance(thatNode)?.takeIf { it > 0 }?.toDistanceString(system)
@@ -132,24 +132,27 @@ fun NodeItem(
             }
         }
 
+    // Resolved out here, not inside the remember: stringResource is composable, and the description is built in a
+    // plain lambda.
+    val roleLabel = stringResource(thatNode.user.role.label)
     val a11yStrings = rememberNodeDescriptionStrings()
     val modemPreset = LocalModemPreset.current
     val nodeDescription =
-        remember(thatNode, distance, a11yStrings, modemPreset) {
+        remember(thatNode, distance, a11yStrings, modemPreset, roleLabel) {
             buildNodeDescription(
                 name = originalLongName,
                 isOnline = thatNode.isOnline,
                 isFavorite = isFavorite,
                 lastHeard = thatNode.lastHeard,
-                role = thatNode.user.role.name,
+                role = roleLabel,
                 hopsAway = thatNode.hopsAway,
                 batteryLevel = thatNode.batteryLevel,
                 distance = distance,
-                snr = thatNode.snr,
-                rssi = thatNode.rssi,
+                snr = thatNode.snrOrNull,
                 viaMqtt = thatNode.viaMqtt,
                 strings = a11yStrings,
                 modemPreset = modemPreset,
+                isUnknownUser = thatNode.isUnknownUser,
             )
         }
 
@@ -241,7 +244,7 @@ private fun NodeBatteryPositionRow(
     thatNode: Node,
     distance: String?,
     bearingDegrees: Int?,
-    system: Config.DisplayConfig.DisplayUnits,
+    system: MeasurementSystem,
     contentColor: Color,
 ) {
     Row(
@@ -312,9 +315,9 @@ private fun NodeSignalRow(thatNode: Node, isThisNode: Boolean, contentColor: Col
                 if (thatNode.hopsAway > 0) {
                     add { HopsInfo(hops = thatNode.hopsAway, contentColor = contentColor) }
                 } else if (thatNode.hopsAway == 0 && !thatNode.viaMqtt) {
-                    val showSnr = thatNode.snr < 100f
-                    val showRssi = thatNode.rssi < 0
-                    if (showSnr || showRssi) {
+                    val snr = thatNode.snrOrNull
+                    val rssi = thatNode.rssiOrNull
+                    if (snr != null || rssi != null) {
                         signalChip = {
                             // Full-width row: SNR left, RSSI center, quality right.
                             Row(
@@ -322,10 +325,10 @@ private fun NodeSignalRow(thatNode: Node, isThisNode: Boolean, contentColor: Col
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                if (showSnr) Snr(thatNode.snr)
-                                if (showRssi) Rssi(thatNode.rssi)
-                                if (showSnr && showRssi) {
-                                    val quality = determineSignalQuality(thatNode.snr, LocalModemPreset.current)
+                                Snr(snr)
+                                Rssi(rssi)
+                                if (snr != null) {
+                                    val quality = determineSignalQuality(snr, LocalModemPreset.current)
                                     IconInfo(
                                         icon = vectorResource(quality.icon),
                                         contentDescription = stringResource(Res.string.signal_quality),
@@ -457,9 +460,37 @@ private fun MetricsGrid(items: List<@Composable () -> Unit>) {
 /**
  * [LastHeardInfo] tinted StatusGreen when [online] — the "online" affordance — rendered plain otherwise. Shared by the
  * complete and compact node rows.
+ *
+ * When [heardOnCurrentLora] is false the radio has not heard this node on the LoRa configuration it is using now, so it
+ * cannot be reached from here. That is a different claim from "offline" and takes precedence: an online node can still
+ * be unreachable, and the online tint would say the opposite. Callers pass Node.isUnheardOnCurrentLora inverted, not
+ * the raw flag, so MQTT-only nodes are not presented as unreachable.
  */
 @Composable
-internal fun StatusAwareLastHeard(lastHeard: Int, online: Boolean, contentColor: Color, relative: Boolean = true) {
+internal fun StatusAwareLastHeard(
+    lastHeard: Int,
+    online: Boolean,
+    contentColor: Color,
+    relative: Boolean = true,
+    heardOnCurrentLora: Boolean = true,
+) {
+    if (!heardOnCurrentLora) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Icon(
+                imageVector = MeshtasticIcons.SignalOff,
+                contentDescription = stringResource(Res.string.node_not_heard_on_current_lora),
+                tint = MaterialTheme.colorScheme.StatusOrange,
+                modifier = Modifier.size(14.dp),
+            )
+            LastHeardInfo(
+                lastHeard = lastHeard,
+                showLabel = false,
+                relative = relative,
+                contentColor = MaterialTheme.colorScheme.StatusOrange,
+            )
+        }
+        return
+    }
     LastHeardInfo(
         lastHeard = lastHeard,
         showLabel = false,
@@ -468,24 +499,19 @@ internal fun StatusAwareLastHeard(lastHeard: Int, online: Boolean, contentColor:
     )
 }
 
-/** Key status (always status-colored) + the signed-node shield. */
+/**
+ * The node's one security indicator (design#149) — verification state on 2.8, the PKI locks below it, always
+ * status-colored. [isThisNode] marks the connected radio, which reads as verified.
+ */
 @Composable
-fun NodeSecurityIcons(thatNode: Node, modifier: Modifier = Modifier, iconSize: Dp = 20.dp) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        if (thatNode.signsPackets) {
-            NodeSignedStatusIcon(modifier = Modifier.size(iconSize))
-        }
-        NodeKeyStatusIcon(
-            hasPKC = thatNode.hasPKC,
-            mismatchKey = thatNode.mismatchKey,
-            publicKey = thatNode.user.public_key,
-            modifier = Modifier.size(iconSize),
-        )
-    }
+fun NodeSecurityIcons(
+    thatNode: Node,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 20.dp,
+    isThisNode: Boolean = false,
+) {
+    // iconSize sizes the glyph, not the button: sizing the IconButton would shrink the touch target below 44dp.
+    NodeSecurityIcon(node = thatNode, modifier = modifier, iconSize = iconSize, isOwnNode = isThisNode)
 }
 
 @Composable
@@ -508,7 +534,7 @@ private fun NodeItemHeader(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         NodeChip(node = thatNode)
-        NodeSecurityIcons(thatNode)
+        NodeSecurityIcons(thatNode, isThisNode = isThisNode)
 
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(
@@ -535,6 +561,7 @@ private fun NodeItemHeader(
                     lastHeard = thatNode.lastHeard,
                     online = !isThisNode && thatNode.isOnline,
                     contentColor = contentColor,
+                    heardOnCurrentLora = isThisNode || !thatNode.isUnheardOnCurrentLora,
                 )
             }
         }
@@ -547,6 +574,7 @@ private fun NodeItemHeader(
             connectionState = connectionState,
             deviceType = deviceType,
             contentColor = contentColor,
+            isUnknownUser = thatNode.isUnknownUser,
         )
     }
 }

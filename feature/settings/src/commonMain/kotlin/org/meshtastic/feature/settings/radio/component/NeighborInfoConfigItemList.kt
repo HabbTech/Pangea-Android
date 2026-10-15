@@ -25,12 +25,14 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.config_device_transmitOverLora_summary
 import org.meshtastic.core.resources.neighbor_info
 import org.meshtastic.core.resources.neighbor_info_config
-import org.meshtastic.core.resources.neighbor_info_enabled
-import org.meshtastic.core.resources.transmit_over_lora
-import org.meshtastic.core.resources.update_interval_seconds
+import org.meshtastic.core.resources.schema_neighborinfo_enabled
+import org.meshtastic.core.resources.schema_neighborinfo_enabled_description
+import org.meshtastic.core.resources.schema_neighborinfo_transmit_over_lora
+import org.meshtastic.core.resources.schema_neighborinfo_transmit_over_lora_description
+import org.meshtastic.core.resources.schema_neighborinfo_update_interval
+import org.meshtastic.core.resources.schema_neighborinfo_update_interval_description
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
@@ -41,7 +43,7 @@ import org.meshtastic.proto.ModuleConfig
 @Composable
 fun NeighborInfoConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     val state by viewModel.radioConfigState.collectAsStateWithLifecycle()
-    val neighborInfoConfig = state.moduleConfig.neighbor_info ?: ModuleConfig.NeighborInfoConfig()
+    val neighborInfoConfig = state.moduleConfig.neighbor_info ?: ModuleConfig.NeighborInfoConfig.Builder().build()
     val formState = rememberConfigState(initialValue = neighborInfoConfig)
     val focusManager = LocalFocusManager.current
 
@@ -54,34 +56,42 @@ fun NeighborInfoConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
         responseState = state.responseState,
         onDismissPacketResponse = viewModel::clearPacketResponse,
         onSave = {
-            val config = ModuleConfig(neighbor_info = it)
+            val config = ModuleConfig.Builder().also { wb -> wb.neighbor_info = it }.build()
             viewModel.setModuleConfig(config)
         },
     ) {
         item {
             TitledCard(title = stringResource(Res.string.neighbor_info_config)) {
                 SwitchPreference(
-                    title = stringResource(Res.string.neighbor_info_enabled),
+                    title = stringResource(Res.string.schema_neighborinfo_enabled),
+                    summary = stringResource(Res.string.schema_neighborinfo_enabled_description),
                     checked = formState.value.enabled,
                     enabled = state.connected,
-                    onCheckedChange = { formState.value = formState.value.copy(enabled = it) },
+                    onCheckedChange = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                    },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
                 HorizontalDivider()
                 EditTextPreference(
-                    title = stringResource(Res.string.update_interval_seconds),
+                    title = stringResource(Res.string.schema_neighborinfo_update_interval),
+                    summary = stringResource(Res.string.schema_neighborinfo_update_interval_description),
                     value = formState.value.update_interval,
                     enabled = state.connected,
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = { formState.value = formState.value.copy(update_interval = it) },
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.update_interval = it }.build()
+                    },
                 )
                 HorizontalDivider()
                 SwitchPreference(
-                    title = stringResource(Res.string.transmit_over_lora),
-                    summary = stringResource(Res.string.config_device_transmitOverLora_summary),
+                    title = stringResource(Res.string.schema_neighborinfo_transmit_over_lora),
+                    summary = stringResource(Res.string.schema_neighborinfo_transmit_over_lora_description),
                     checked = formState.value.transmit_over_lora,
                     enabled = state.connected,
-                    onCheckedChange = { formState.value = formState.value.copy(transmit_over_lora = it) },
+                    onCheckedChange = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.transmit_over_lora = it }.build()
+                    },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
             }

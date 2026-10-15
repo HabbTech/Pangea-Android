@@ -28,29 +28,38 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 import org.meshtastic.core.domain.usecase.session.EnsureRemoteAdminSessionUseCase
 import org.meshtastic.core.domain.usecase.session.EnsureSessionResult
 import org.meshtastic.core.domain.usecase.session.ObserveRemoteAdminSessionStatusUseCase
+import org.meshtastic.core.model.ContactKey
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.SessionStatus
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
+import org.meshtastic.core.repository.LocalNodeUnavailableException
+import org.meshtastic.core.repository.PacketQueueRejectedException
+import org.meshtastic.core.repository.PacketRepository
 import org.meshtastic.core.repository.QueryController
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.UiText
 import org.meshtastic.core.resources.connect_radio_for_remote_admin
 import org.meshtastic.core.resources.remote_admin_unreachable
 import org.meshtastic.core.ui.util.SnackbarManager
+import org.meshtastic.core.ui.viewmodel.safeLaunch
 import org.meshtastic.core.ui.viewmodel.stateInWhileSubscribed
 import org.meshtastic.feature.node.component.NodeMenuAction
 import org.meshtastic.feature.node.domain.usecase.GetNodeDetailsUseCase
 import org.meshtastic.feature.node.metrics.EnvironmentMetricsState
 import org.meshtastic.feature.node.model.LogsType
 import org.meshtastic.feature.node.model.MetricsState
+
+private const val QUEUE_REJECTION_LOG_MESSAGE = "Node-detail request rejected by outbound packet queue"
+private const val LOCAL_NODE_UNAVAILABLE_LOG_MESSAGE =
+    "Node-detail request deferred until local node identity is available"
 
 /** UI state for the Node Details screen. */
 @androidx.compose.runtime.Stable
@@ -65,10 +74,16 @@ data class NodeDetailUiState(
     val lastRequestNeighborsTime: Long? = null,
     val sessionStatus: SessionStatus = SessionStatus.NoSession,
     val isEnsuringSession: Boolean = false,
-)
-
-internal object NodeDetailUiTextResolver {
-    var resolve: suspend (UiText) -> String = { it.resolve() }
+    /**
+     * Contact key of an existing direct-message thread with this node, or null. Held as the key rather than a flag: the
+     * computed route uses [Node.channel] when the node has no public key, which would open a different, empty
+     * conversation instead of the thread the message action was kept visible for.
+     */
+    val existingContactKey: String? = null,
+) {
+    /** True when a direct-message thread with this node already exists, keyed either legacy or PKI. */
+    val hasConversation: Boolean
+        get() = existingContactKey != null
 }
 
 /**
@@ -83,9 +98,11 @@ class NodeDetailViewModel(
     private val nodeRequestActions: NodeRequestActions,
     private val queryController: QueryController,
     private val getNodeDetailsUseCase: GetNodeDetailsUseCase,
+    private val packetRepository: PacketRepository,
     private val ensureRemoteAdminSession: EnsureRemoteAdminSessionUseCase,
     private val observeRemoteAdminSessionStatus: ObserveRemoteAdminSessionStatusUseCase,
     private val snackbarManager: SnackbarManager,
+    private val resolveUiText: suspend (UiText) -> String = { it.resolve() },
 ) : ViewModel() {
 
     private val nodeIdFromRoute: Int? = savedStateHandle.get<Int>("destNum")
@@ -106,6 +123,21 @@ class NodeDetailViewModel(
     private val _navigationEvents = Channel<Route>(capacity = Channel.BUFFERED)
     val navigationEvents: Flow<Route> = _navigationEvents.receiveAsFlow()
 
+    /**
+     * Contact key of an existing DM thread with [nodeId], or null. A conversation can be keyed the legacy way (bare
+     * node id) or with the PKI channel prefix, so match on the address rather than a single key spelling, and take the
+     * most recently used key when a node has both.
+     */
+    private fun existingContactKeyFlow(nodeId: Int): Flow<String?> {
+        val nodeIdString = NodeAddress.numToDefaultId(nodeId)
+        return packetRepository.getContacts().map { contacts ->
+            contacts.entries
+                .filter { ContactKey(it.key).addressString == nodeIdString }
+                .maxByOrNull { it.value.time }
+                ?.key
+        }
+    }
+
     /** Primary UI state stream, combining identity, metrics, and global device metadata. */
     val uiState: StateFlow<NodeDetailUiState> =
         activeNodeId
@@ -113,12 +145,17 @@ class NodeDetailViewModel(
                 if (nodeId == null) {
                     flowOf(NodeDetailUiState())
                 } else {
-                    combine(getNodeDetailsUseCase(nodeId), sessionStatusFlow, isEnsuringSession) {
-                            base,
-                            sessionStatus,
-                            ensuring,
-                        ->
-                        base.copy(sessionStatus = sessionStatus, isEnsuringSession = ensuring)
+                    combine(
+                        getNodeDetailsUseCase(nodeId),
+                        sessionStatusFlow,
+                        isEnsuringSession,
+                        existingContactKeyFlow(nodeId),
+                    ) { base, sessionStatus, ensuring, existingContactKey ->
+                        base.copy(
+                            sessionStatus = sessionStatus,
+                            isEnsuringSession = ensuring,
+                            existingContactKey = existingContactKey,
+                        )
                     }
                 }
             }
@@ -143,27 +180,27 @@ class NodeDetailViewModel(
             is NodeMenuAction.Favorite -> nodeManagementActions.requestFavoriteNode(viewModelScope, action.node)
 
             is NodeMenuAction.RequestUserInfo ->
-                viewModelScope.launch {
+                safeLaunch(tag = "requestUserInfo") {
                     nodeRequestActions.requestUserInfo(action.node.num, action.node.user.long_name)
                 }
 
             is NodeMenuAction.RequestNeighborInfo ->
-                viewModelScope.launch {
+                safeLaunch(tag = "requestNeighborInfo") {
                     nodeRequestActions.requestNeighborInfo(action.node.num, action.node.user.long_name)
                 }
 
             is NodeMenuAction.RequestPosition ->
-                viewModelScope.launch {
+                safeLaunch(tag = "requestPosition") {
                     nodeRequestActions.requestPosition(action.node.num, action.node.user.long_name)
                 }
 
             is NodeMenuAction.RequestTelemetry ->
-                viewModelScope.launch {
+                safeLaunch(tag = "requestTelemetry") {
                     nodeRequestActions.requestTelemetry(action.node.num, action.node.user.long_name, action.type)
                 }
 
             is NodeMenuAction.TraceRoute ->
-                viewModelScope.launch {
+                safeLaunch(tag = "requestTraceroute") {
                     nodeRequestActions.requestTraceroute(action.node.num, action.node.user.long_name)
                 }
 
@@ -174,7 +211,15 @@ class NodeDetailViewModel(
     /**
      * Re-fetch device metadata (firmware/edition/role) for [destNum]. Refreshes the session passkey as a side effect.
      */
-    fun refreshMetadata(destNum: Int) = viewModelScope.launch { queryController.refreshMetadata(destNum) }
+    fun refreshMetadata(destNum: Int) = safeLaunch(tag = "refreshMetadata") {
+        try {
+            queryController.refreshMetadata(destNum)
+        } catch (e: PacketQueueRejectedException) {
+            showNodeRequestFailure(e, QUEUE_REJECTION_LOG_MESSAGE, snackbarManager, resolveUiText)
+        } catch (e: LocalNodeUnavailableException) {
+            showNodeRequestFailure(e, LOCAL_NODE_UNAVAILABLE_LOG_MESSAGE, snackbarManager, resolveUiText)
+        }
+    }
 
     /**
      * Ensure a remote-admin session passkey is fresh, then request navigation to the remote-admin screen. Surfaces a
@@ -183,7 +228,7 @@ class NodeDetailViewModel(
     fun openRemoteAdmin(destNum: Int) {
         // Atomic check-and-flip prevents a double-tap from queuing two passkey exchanges + two navigation events.
         if (!isEnsuringSession.compareAndSet(expect = false, update = true)) return
-        viewModelScope.launch {
+        safeLaunch(tag = "openRemoteAdmin") {
             try {
                 when (ensureRemoteAdminSession(destNum)) {
                     EnsureSessionResult.AlreadyActive,
@@ -192,14 +237,18 @@ class NodeDetailViewModel(
 
                     EnsureSessionResult.Disconnected -> {
                         val text = Res.string.connect_radio_for_remote_admin
-                        snackbarManager.showSnackbar(NodeDetailUiTextResolver.resolve(UiText.Resource(text)))
+                        snackbarManager.showSnackbar(resolveUiText(UiText.Resource(text)))
                     }
 
                     EnsureSessionResult.Timeout ->
                         snackbarManager.showSnackbar(
-                            NodeDetailUiTextResolver.resolve(UiText.Resource(Res.string.remote_admin_unreachable)),
+                            resolveUiText(UiText.Resource(Res.string.remote_admin_unreachable)),
                         )
                 }
+            } catch (e: PacketQueueRejectedException) {
+                showNodeRequestFailure(e, QUEUE_REJECTION_LOG_MESSAGE, snackbarManager, resolveUiText)
+            } catch (e: LocalNodeUnavailableException) {
+                showNodeRequestFailure(e, LOCAL_NODE_UNAVAILABLE_LOG_MESSAGE, snackbarManager, resolveUiText)
             } finally {
                 isEnsuringSession.value = false
             }
@@ -207,7 +256,7 @@ class NodeDetailViewModel(
     }
 
     fun setNodeNotes(nodeNum: Int, notes: String) {
-        viewModelScope.launch { nodeManagementActions.setNodeNotes(nodeNum, notes) }
+        safeLaunch(tag = "setNodeNotes") { nodeManagementActions.setNodeNotes(nodeNum, notes) }
     }
 
     /** Returns the type-safe navigation route for a direct message to this node. */

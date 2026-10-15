@@ -21,9 +21,11 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.capture.capture
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode.Companion.exactly
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -31,13 +33,19 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.ByteString
 import okio.ByteString.Companion.encodeUtf8
+import org.meshtastic.core.common.di.asServiceScope
 import org.meshtastic.core.model.DataPacket
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.NodeAddress
+import org.meshtastic.core.model.Position
+import org.meshtastic.core.repository.AwaitedSendResult
+import org.meshtastic.core.repository.AwaitedSendStatus
+import org.meshtastic.core.repository.LocalNodeUnavailableException
 import org.meshtastic.core.repository.NeighborInfoHandler
 import org.meshtastic.core.repository.NodeManager
 import org.meshtastic.core.repository.PacketHandler
+import org.meshtastic.core.repository.PacketQueueRejectedException
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.SessionManager
 import org.meshtastic.core.repository.TracerouteHandler
@@ -53,6 +61,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -69,8 +78,8 @@ class CommandSenderImplTest {
 
     @BeforeTest
     fun setup() {
-        every { radioConfigRepository.localConfigFlow } returns flowOf(LocalConfig())
-        every { radioConfigRepository.channelSetFlow } returns flowOf(ChannelSet())
+        every { radioConfigRepository.localConfigFlow } returns flowOf(LocalConfig.Builder().build())
+        every { radioConfigRepository.channelSetFlow } returns flowOf(ChannelSet.Builder().build())
         every { nodeManager.myNodeNum } returns MutableStateFlow(MY_NODE_NUM)
         every { nodeManager.nodeDBbyNodeNum } returns emptyMap()
         every { sessionManager.getPasskey(any()) } returns ByteString.EMPTY
@@ -83,7 +92,7 @@ class CommandSenderImplTest {
                 tracerouteHandler = tracerouteHandler,
                 neighborInfoHandler = neighborInfoHandler,
                 sessionManager = sessionManager,
-                scope = TestScope(),
+                scope = TestScope().asServiceScope(),
             )
     }
 
@@ -132,7 +141,7 @@ class CommandSenderImplTest {
                 tracerouteHandler = tracerouteHandler,
                 neighborInfoHandler = neighborInfoHandler,
                 sessionManager = sessionManager,
-                scope = TestScope(),
+                scope = TestScope().asServiceScope(),
             )
         assertEquals(0, commandSender.resolveNodeNum(NodeAddress.Local))
     }
@@ -144,7 +153,7 @@ class CommandSenderImplTest {
 
     @Test
     fun resolveNodeNum_byId_looksUpAndReturns() {
-        val node = Node(num = 99, user = User(id = "!deadbeef"))
+        val node = Node(num = 99, user = User.Builder().also { wb -> wb.id = "!deadbeef" }.build())
         every { nodeManager.getNodeById("!deadbeef") } returns node
         assertEquals(99, commandSender.resolveNodeNum(NodeAddress.ById("!deadbeef")))
     }
@@ -161,7 +170,7 @@ class CommandSenderImplTest {
     fun sendData_setsIdWhenZero() = runTest {
         val packet = DataPacket(to = "^all", bytes = "hi".encodeUtf8(), dataType = PortNum.TEXT_MESSAGE_APP.value)
         packet.id = 0
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
         commandSender.sendData(packet)
         assertNotEquals(0, packet.id)
@@ -169,11 +178,25 @@ class CommandSenderImplTest {
 
     @Test
     fun sendData_setsStatusQueued() = runTest {
-        val packet = DataPacket(to = "^all", bytes = "hello".encodeUtf8(), dataType = PortNum.TEXT_MESSAGE_APP.value)
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        val packet =
+            DataPacket(to = "^all", bytes = "hello".encodeUtf8(), dataType = PortNum.TEXT_MESSAGE_APP.value, time = 0)
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
         commandSender.sendData(packet)
         assertEquals(MessageStatus.QUEUED, packet.status)
+        assertTrue(packet.time > 0, "an admitted packet should receive a send timestamp")
+    }
+
+    @Test
+    fun sendData_marksPacketErrorAndThrowsWhenQueueRejectsIt() = runTest {
+        val packet =
+            DataPacket(to = "^all", bytes = "hello".encodeUtf8(), dataType = PortNum.TEXT_MESSAGE_APP.value, time = 0)
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+
+        assertFailsWith<PacketQueueRejectedException> { commandSender.sendData(packet) }
+
+        assertEquals(MessageStatus.ERROR, packet.status)
+        assertEquals(0L, packet.time, "a rejected packet must not receive a send timestamp")
     }
 
     @Test
@@ -198,11 +221,103 @@ class CommandSenderImplTest {
     fun sendAdmin_injectsSessionPasskey() = runTest {
         val passkey = "secret".encodeUtf8()
         every { sessionManager.getPasskey(DEST_NODE) } returns passkey
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadio(capture(packets)) } returns true
 
-        commandSender.sendAdmin(DEST_NODE) { org.meshtastic.proto.AdminMessage(get_owner_request = true) }
+        commandSender.sendAdmin(DEST_NODE) { AdminMessage.Builder().also { wb -> wb.get_owner_request = true }.build() }
 
-        verifySuspend { packetHandler.sendToRadio(any<MeshPacket>()) }
+        val adminMessage = AdminMessage.ADAPTER.decode(requireNotNull(packets.single().decoded).payload)
+        assertEquals(passkey, adminMessage.session_passkey)
+    }
+
+    @Test
+    fun sendAdmin_generatesNonZeroIdWhenCallerSuppliesZero() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadio(capture(packets)) } returns true
+
+        commandSender.sendAdmin(DEST_NODE, requestId = 0) {
+            AdminMessage.Builder().also { wb -> wb.get_owner_request = true }.build()
+        }
+
+        assertNotEquals(0, packets.single().id)
+    }
+
+    @Test
+    fun sendAdminSurfacesQueueRejection() = runTest {
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+
+        assertFailsWith<PacketQueueRejectedException> {
+            commandSender.sendAdmin(DEST_NODE) { AdminMessage.Builder().build() }
+        }
+    }
+
+    @Test
+    fun sendAdminForConnectionForwardsLifecycleOwnershipToAdmission() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadioForConnection(capture(packets), 17L) } returns true
+
+        commandSender.sendAdminForConnection(DEST_NODE, expectedConnectionVersion = 17L) {
+            AdminMessage.Builder().build()
+        }
+
+        assertEquals(1, packets.size)
+        verifySuspend { packetHandler.sendToRadioForConnection(any<MeshPacket>(), 17L) }
+    }
+
+    @Test
+    fun sendAdminAwaitResult_generatesNonZeroIdWhenCallerSuppliesZero() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadioAndAwaitResult(capture(packets)) } returns
+            AwaitedSendResult(AwaitedSendStatus.ACCEPTED, departureEpochAtDispatch = 0)
+
+        commandSender.sendAdminAwaitResult(DEST_NODE, requestId = 0) {
+            AdminMessage.Builder().also { wb -> wb.get_owner_request = true }.build()
+        }
+
+        assertNotEquals(0, packets.single().id)
+    }
+
+    @Test
+    fun sendAdminAwaitResult_preservesNonAcceptedStatus() = runTest {
+        val expected = AwaitedSendResult(AwaitedSendStatus.REJECTED)
+        everySuspend { packetHandler.sendToRadioAndAwaitResult(any<MeshPacket>()) } returns expected
+
+        val result =
+            commandSender.sendAdminAwaitResult(DEST_NODE) {
+                AdminMessage.Builder().also { wb -> wb.get_owner_request = true }.build()
+            }
+
+        assertEquals(expected, result)
+        assertFalse(result.accepted)
+    }
+
+    // --- lockdown direct dispatch ---
+
+    @Test
+    fun sendLockdownPassphrase_returnsDirectTransportAdmission() {
+        every { packetHandler.trySendToRadio(any<ToRadio>()) } returns true
+
+        assertTrue(commandSender.sendLockdownPassphrase("secret", boots = 3, hours = 4, maxSessionSeconds = 5))
+
+        every { packetHandler.trySendToRadio(any<ToRadio>()) } returns false
+        assertFalse(commandSender.sendLockdownPassphrase("secret", boots = 3, hours = 4, maxSessionSeconds = 5))
+    }
+
+    @Test
+    fun sendLockdownPassphrase_returnsFalseWhenLocalNodeIdentityIsUnavailable() {
+        every { nodeManager.myNodeNum } returns MutableStateFlow(null)
+
+        assertFalse(commandSender.sendLockdownPassphrase("secret"))
+        verify(exactly(0)) { packetHandler.trySendToRadio(any<ToRadio>()) }
+    }
+
+    @Test
+    fun sendLockNow_returnsDirectTransportAdmission() {
+        every { packetHandler.trySendToRadio(any<ToRadio>()) } returns true
+        assertTrue(commandSender.sendLockNow())
+
+        every { packetHandler.trySendToRadio(any<ToRadio>()) } returns false
+        assertFalse(commandSender.sendLockNow())
     }
 
     // --- sendAdminImmediate ---
@@ -213,7 +328,9 @@ class CommandSenderImplTest {
         every { sessionManager.getPasskey(DEST_NODE) } returns passkey
         every { packetHandler.sendToRadio(any<ToRadio>()) } returns Unit
 
-        commandSender.sendAdminImmediate(DEST_NODE) { AdminMessage(set_time_only = 12345) }
+        commandSender.sendAdminImmediate(DEST_NODE) {
+            AdminMessage.Builder().also { wb -> wb.set_time_only = 12345 }.build()
+        }
 
         // Direct ToRadio dispatch (not the Connected-gated MeshPacket queue), correct destination,
         // no want_response, and the session passkey injected into the admin payload.
@@ -237,64 +354,272 @@ class CommandSenderImplTest {
 
     @Test
     fun requestTraceroute_recordsStartTime() = runTest {
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
         commandSender.requestTraceroute(requestId = 42, destNum = DEST_NODE)
 
         verify { tracerouteHandler.recordStartTime(42) }
     }
 
+    @Test
+    fun requestTraceroute_doesNotStartTimerWhenQueueRejectsPacket() = runTest {
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+
+        assertFailsWith<PacketQueueRejectedException> {
+            commandSender.requestTraceroute(requestId = 42, destNum = DEST_NODE)
+        }
+
+        verify(exactly(0)) { tracerouteHandler.recordStartTime(any()) }
+    }
+
+    @Test
+    fun requestTelemetry_surfacesQueueRejection() = runTest {
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+
+        assertFailsWith<PacketQueueRejectedException> {
+            commandSender.requestTelemetry(requestId = 42, destNum = DEST_NODE, typeValue = 0)
+        }
+    }
+
+    @Test
+    fun requestTelemetryForConnectionForwardsLifecycleOwnershipToAdmission() = runTest {
+        everySuspend { packetHandler.sendToRadioForConnection(any<MeshPacket>(), 23L) } returns true
+
+        commandSender.requestTelemetryForConnection(
+            requestId = 42,
+            destNum = DEST_NODE,
+            typeValue = 0,
+            expectedConnectionVersion = 23L,
+        )
+
+        verifySuspend { packetHandler.sendToRadioForConnection(any<MeshPacket>(), 23L) }
+    }
+
+    @Test
+    fun requestTraceroute_generatesNonZeroIdWhenCallerSuppliesZero() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadio(capture(packets)) } returns true
+
+        commandSender.requestTraceroute(requestId = 0, destNum = DEST_NODE)
+
+        val generatedId = packets.single().id
+        assertNotEquals(0, generatedId)
+        verify { tracerouteHandler.recordStartTime(generatedId) }
+    }
+
     // --- requestNeighborInfo ---
 
     @Test
+    fun requestNeighborInfo_generatesNonZeroIdWhenCallerSuppliesZero() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadio(capture(packets)) } returns true
+
+        commandSender.requestNeighborInfo(requestId = 0, destNum = DEST_NODE)
+
+        val generatedId = packets.single().id
+        assertNotEquals(0, generatedId)
+        verify { neighborInfoHandler.recordStartTime(generatedId) }
+    }
+
+    @Test
     fun requestNeighborInfo_localNode_usesCachedNeighborInfo() = runTest {
-        val cached = NeighborInfo(node_id = MY_NODE_NUM, last_sent_by_id = MY_NODE_NUM)
+        val cached =
+            NeighborInfo.Builder()
+                .also { wb ->
+                    wb.node_id = MY_NODE_NUM
+                    wb.last_sent_by_id = MY_NODE_NUM
+                }
+                .build()
         every { neighborInfoHandler.lastNeighborInfo } returns cached
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
         commandSender.requestNeighborInfo(requestId = 1, destNum = MY_NODE_NUM)
 
         verifySuspend { packetHandler.sendToRadio(any<MeshPacket>()) }
+        verify { neighborInfoHandler.recordStartTime(1) }
     }
 
     @Test
     fun requestNeighborInfo_localNode_generatesDummyWhenNoCached() = runTest {
         every { neighborInfoHandler.lastNeighborInfo } returns null
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
         commandSender.requestNeighborInfo(requestId = 1, destNum = MY_NODE_NUM)
 
         verifySuspend { packetHandler.sendToRadio(any<MeshPacket>()) }
+        verify { neighborInfoHandler.recordStartTime(1) }
     }
 
     @Test
     fun requestNeighborInfo_remoteNode_sendsRequest() = runTest {
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
         commandSender.requestNeighborInfo(requestId = 1, destNum = DEST_NODE)
 
         verifySuspend { packetHandler.sendToRadio(any<MeshPacket>()) }
+        verify { neighborInfoHandler.recordStartTime(1) }
+    }
+
+    @Test
+    fun requestNeighborInfo_localNode_doesNotStartTimerWhenQueueRejectsPacket() = runTest {
+        every { neighborInfoHandler.lastNeighborInfo } returns null
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+
+        assertFailsWith<PacketQueueRejectedException> {
+            commandSender.requestNeighborInfo(requestId = 1, destNum = MY_NODE_NUM)
+        }
+
+        verify(exactly(0)) { neighborInfoHandler.recordStartTime(any()) }
+    }
+
+    @Test
+    fun requestNeighborInfo_remoteNode_doesNotStartTimerWhenQueueRejectsPacket() = runTest {
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+
+        assertFailsWith<PacketQueueRejectedException> {
+            commandSender.requestNeighborInfo(requestId = 1, destNum = DEST_NODE)
+        }
+
+        verify(exactly(0)) { neighborInfoHandler.recordStartTime(any()) }
+    }
+
+    // --- requestPosition ---
+
+    @Test
+    fun requestPosition_leavesCoordinatesAbsentWhenWeHaveNoPosition() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadio(capture(packets)) } returns true
+
+        commandSender.requestPosition(DEST_NODE, Position(0.0, 0.0, 0))
+
+        val decoded = requireNotNull(packets.single().decoded)
+        assertTrue(decoded.want_response)
+        val sent = org.meshtastic.proto.Position.ADAPTER.decode(decoded.payload)
+        assertEquals(null, sent.latitude_i)
+        assertEquals(null, sent.longitude_i)
+        assertEquals(null, sent.altitude)
+        assertNotEquals(0, sent.time)
+    }
+
+    @Test
+    fun requestPosition_attachesOurCoordinatesWhenValid() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadio(capture(packets)) } returns true
+
+        commandSender.requestPosition(DEST_NODE, Position(1.0, 2.0, 30))
+
+        val sent = org.meshtastic.proto.Position.ADAPTER.decode(requireNotNull(packets.single().decoded).payload)
+        assertEquals(10_000_000, sent.latitude_i)
+        assertEquals(20_000_000, sent.longitude_i)
+        assertEquals(30, sent.altitude)
     }
 
     // --- sendPosition ---
 
     @Test
     fun sendPosition_updatesLocalPositionWhenNotFixed() = runTest {
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
-        val pos = org.meshtastic.proto.Position(latitude_i = 10000000, longitude_i = 20000000)
+        val pos =
+            org.meshtastic.proto.Position.Builder()
+                .also { wb ->
+                    wb.latitude_i = 10000000
+                    wb.longitude_i = 20000000
+                }
+                .build()
         commandSender.sendPosition(pos)
 
         verify { nodeManager.handleReceivedPosition(MY_NODE_NUM, MY_NODE_NUM, any(), any()) }
     }
 
     @Test
+    fun sendPosition_doesNotUpdateLocalPositionWhenQueueRejectsPacket() = runTest {
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+        val pos =
+            org.meshtastic.proto.Position.Builder()
+                .also { wb ->
+                    wb.latitude_i = 10000000
+                    wb.longitude_i = 20000000
+                }
+                .build()
+
+        assertFailsWith<PacketQueueRejectedException> { commandSender.sendPosition(pos) }
+
+        verify(exactly(0)) { nodeManager.handleReceivedPosition(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun sendPosition_rejectsWhenLocalNodeIdentityIsUnavailable() = runTest {
+        every { nodeManager.myNodeNum } returns MutableStateFlow(null)
+
+        assertFailsWith<LocalNodeUnavailableException> {
+            commandSender.sendPosition(org.meshtastic.proto.Position.Builder().build())
+        }
+
+        verifySuspend(exactly(0)) { packetHandler.sendToRadio(any<MeshPacket>()) }
+    }
+
+    @Test
+    fun requestUserInfo_rejectsWhenLocalNodeRecordIsUnavailable() = runTest {
+        assertFailsWith<LocalNodeUnavailableException> { commandSender.requestUserInfo(DEST_NODE) }
+
+        verifySuspend(exactly(0)) { packetHandler.sendToRadio(any<MeshPacket>()) }
+    }
+
+    @Test
+    fun setFixedPosition_rejectsBeforeDeviceMutationWhenLocalNodeIdentityIsUnavailable() = runTest {
+        every { nodeManager.myNodeNum } returns MutableStateFlow(null)
+
+        assertFailsWith<LocalNodeUnavailableException> {
+            commandSender.setFixedPosition(DEST_NODE, Position(latitude = 1.0, longitude = 2.0, altitude = 3))
+        }
+
+        verifySuspend(exactly(0)) { packetHandler.sendToRadio(any<MeshPacket>()) }
+        verify(exactly(0)) { nodeManager.handleReceivedPosition(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun setFixedPosition_doesNotUpdateLocalPositionWhenQueueRejectsPacket() = runTest {
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns false
+
+        assertFailsWith<PacketQueueRejectedException> {
+            commandSender.setFixedPosition(DEST_NODE, Position(latitude = 1.0, longitude = 2.0, altitude = 3))
+        }
+
+        verify(exactly(0)) { nodeManager.handleReceivedPosition(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun setFixedPosition_doesNotProjectZeroPositionWhenRemovingIt() = runTest {
+        val packets = mutableListOf<MeshPacket>()
+        everySuspend { packetHandler.sendToRadio(capture(packets)) } returns true
+
+        commandSender.setFixedPosition(
+            DEST_NODE,
+            Position(latitude = 0.0, longitude = 0.0, altitude = 0, time = 1, satellitesInView = 9),
+        )
+
+        val adminMessage = AdminMessage.ADAPTER.decode(requireNotNull(packets.single().decoded).payload)
+        assertEquals(true, adminMessage.remove_fixed_position)
+        verify(exactly(0)) { nodeManager.handleReceivedPosition(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun sendPosition_skipsLocalUpdateWhenFixedPosition() = runTest {
         // Use MutableStateFlow so the init launchIn picks it up immediately in TestScope
         val configFlow =
-            MutableStateFlow(LocalConfig(position = org.meshtastic.proto.Config.PositionConfig(fixed_position = true)))
+            MutableStateFlow(
+                LocalConfig.Builder()
+                    .also { wb ->
+                        wb.position =
+                            org.meshtastic.proto.Config.PositionConfig.Builder()
+                                .also { wb -> wb.fixed_position = true }
+                                .build()
+                    }
+                    .build(),
+            )
         every { radioConfigRepository.localConfigFlow } returns configFlow
-        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet())
+        every { radioConfigRepository.channelSetFlow } returns MutableStateFlow(ChannelSet.Builder().build())
         val testScope = TestScope()
         val fixedSender =
             CommandSenderImpl(
@@ -304,12 +629,18 @@ class CommandSenderImplTest {
                 tracerouteHandler = tracerouteHandler,
                 neighborInfoHandler = neighborInfoHandler,
                 sessionManager = sessionManager,
-                scope = testScope,
+                scope = testScope.asServiceScope(),
             )
         testScope.testScheduler.advanceUntilIdle()
-        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns Unit
+        everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true
 
-        val pos = org.meshtastic.proto.Position(latitude_i = 10000000, longitude_i = 20000000)
+        val pos =
+            org.meshtastic.proto.Position.Builder()
+                .also { wb ->
+                    wb.latitude_i = 10000000
+                    wb.longitude_i = 20000000
+                }
+                .build()
         fixedSender.sendPosition(pos)
 
         verify(mode = dev.mokkery.verify.VerifyMode.not) {

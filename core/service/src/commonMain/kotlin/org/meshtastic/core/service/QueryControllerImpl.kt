@@ -38,13 +38,15 @@ internal class QueryControllerImpl(
         get() = nodeManager.myNodeNum.value ?: 0
 
     override suspend fun refreshMetadata(destNum: Int) {
-        commandSender.sendAdmin(destNum, wantResponse = true) { AdminMessage(get_device_metadata_request = true) }
+        commandSender.sendAdmin(destNum, wantResponse = true) {
+            AdminMessage.Builder().also { wb -> wb.get_device_metadata_request = true }.build()
+        }
     }
 
     override suspend fun requestPosition(destNum: Int, currentPosition: Position) {
         if (destNum == nodeManager.myNodeNum.value) return
         val provideLocation = uiPrefs.shouldProvideNodeLocation(myNodeNum).value
-        // Position(0.0, 0.0, 0) is the protocol-level "no position" sentinel.
+        // Position(0.0, 0.0, 0) means "attach no coordinates"; the sender leaves them off the wire.
         val resolvedPosition =
             if (provideLocation) {
                 currentPosition.takeIf { it.isValid() }
