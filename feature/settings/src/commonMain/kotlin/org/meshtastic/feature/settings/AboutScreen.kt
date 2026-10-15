@@ -58,13 +58,13 @@ import org.meshtastic.core.resources.acknowledgements
 import org.meshtastic.core.resources.app_version
 import org.meshtastic.core.resources.apps
 import org.meshtastic.core.resources.copyright_notice
-import org.meshtastic.core.resources.pangea_copyright_notice
 import org.meshtastic.core.resources.documentation
 import org.meshtastic.core.resources.github_repository
 import org.meshtastic.core.resources.license
 import org.meshtastic.core.resources.license_notice
 import org.meshtastic.core.resources.need_hardware
 import org.meshtastic.core.resources.need_hardware_description
+import org.meshtastic.core.resources.pangea_copyright_notice
 import org.meshtastic.core.resources.project_information
 import org.meshtastic.core.resources.website
 import org.meshtastic.core.resources.what_is_meshtastic

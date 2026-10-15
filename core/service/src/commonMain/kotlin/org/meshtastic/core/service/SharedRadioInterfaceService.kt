@@ -610,7 +610,11 @@ class SharedRadioInterfaceService(
                                 // explicitly disconnected from. stopTransportLocked() below still fires on
                                 // BLE-disabled to tear down a running BLE link, but we deliberately do NOT
                                 // clear connectionRequested here — that is disconnect()'s job.
-                                if (connectionRequested && !radioOperationLock.suppressesTransport && allowsBackgroundAutoConnect()) {
+                                if (
+                                    connectionRequested &&
+                                    !radioOperationLock.suppressesTransport &&
+                                    allowsBackgroundAutoConnect()
+                                ) {
                                     startTransportLocked()
                                 }
                             } else if (runningTransportId == InterfaceId.BLUETOOTH) {
@@ -626,7 +630,11 @@ class SharedRadioInterfaceService(
                         transportMutex.withLock {
                             if (state) {
                                 // Environmental recovery only — see the BLE listener above for rationale.
-                                if (connectionRequested && !radioOperationLock.suppressesTransport && allowsBackgroundAutoConnect()) {
+                                if (
+                                    connectionRequested &&
+                                    !radioOperationLock.suppressesTransport &&
+                                    allowsBackgroundAutoConnect()
+                                ) {
                                     startTransportLocked()
                                 }
                             } else if (runningTransportId == InterfaceId.TCP) {

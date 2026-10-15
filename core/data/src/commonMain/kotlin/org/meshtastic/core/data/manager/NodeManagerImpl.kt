@@ -1136,7 +1136,8 @@ class NodeManagerImpl(
             User.Builder()
                 .also { wb ->
                     wb.id = userId
-                    wb.long_name = "$GENERATED_NODE_NAME_PREFIX ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}"
+                    wb.long_name =
+                        "$GENERATED_NODE_NAME_PREFIX ${userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)}"
                     wb.short_name = userId.takeLast(GENERATED_NODE_NAME_SUFFIX_LENGTH)
                     wb.hw_model = HardwareModel.UNSET
                 }
