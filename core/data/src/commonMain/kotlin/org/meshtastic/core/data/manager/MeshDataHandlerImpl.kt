@@ -61,6 +61,8 @@ import org.meshtastic.core.repository.Notification
 import org.meshtastic.core.repository.NotificationManager
 import org.meshtastic.core.repository.PacketHandler
 import org.meshtastic.core.repository.PacketRepository
+import org.meshtastic.core.repository.PangeaGroupChats
+import org.meshtastic.core.repository.PangeaProfileSync
 import org.meshtastic.core.repository.PlatformAnalytics
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.RadioInterfaceService
@@ -120,6 +122,9 @@ class MeshDataHandlerImpl(
     private val radioInterfaceService: RadioInterfaceService,
     private val activeConversationTracker: ActiveConversationTracker,
     private val scope: ServiceScope,
+    // Pangea: profile cards, photos and group invites ride on PRIVATE_APP. Lazy, as they send through the same stack.
+    private val pangeaProfileSync: Lazy<PangeaProfileSync>,
+    private val pangeaGroupChats: Lazy<PangeaGroupChats>,
 ) : MeshDataHandler {
 
     override fun handleReceivedData(
@@ -207,9 +212,12 @@ class MeshDataHandlerImpl(
                 neighborInfoHandler.handleNeighborInfo(packet)
             }
 
+            PortNum.PRIVATE_APP -> {
+                if (!pangeaProfileSync.value.handle(packet, myNodeNum)) pangeaGroupChats.value.handle(packet, myNodeNum)
+            }
+
             PortNum.ATAK_PLUGIN,
             PortNum.ATAK_PLUGIN_V2,
-            PortNum.PRIVATE_APP,
             -> {}
 
             PortNum.RANGE_TEST_APP,
@@ -349,6 +357,14 @@ class MeshDataHandlerImpl(
             rememberReaction(packet, dataPacket, session)
         } else {
             rememberDataPacket(dataPacket, myNodeNum, session = session)
+        }
+        if (packet.from != myNodeNum) {
+            pangeaProfileSync.value.didReceiveMessage(
+                fromNum = packet.from.toLong() and UINT32_MASK,
+                toNum = packet.to.toLong() and UINT32_MASK,
+                channel = packet.channel,
+                pkiEncrypted = packet.pki_encrypted == true,
+            )
         }
     }
 
@@ -717,6 +733,7 @@ class MeshDataHandlerImpl(
         source == other.source || (isFromLocal(myNodeNum) && other.isFromLocal(myNodeNum))
 
     companion object {
+        private const val UINT32_MASK = 0xFFFFFFFFL
         private const val HOPS_AWAY_UNAVAILABLE = -1
     }
 }

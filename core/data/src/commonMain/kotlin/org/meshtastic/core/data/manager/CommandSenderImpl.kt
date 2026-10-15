@@ -39,6 +39,7 @@ import org.meshtastic.core.repository.NeighborInfoHandler
 import org.meshtastic.core.repository.NodeManager
 import org.meshtastic.core.repository.PacketHandler
 import org.meshtastic.core.repository.PacketQueueRejectedException
+import org.meshtastic.core.repository.PangeaProfileSync
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.SessionManager
 import org.meshtastic.core.repository.TracerouteHandler
@@ -78,6 +79,8 @@ class CommandSenderImpl(
     private val neighborInfoHandler: NeighborInfoHandler,
     private val sessionManager: SessionManager,
     private val scope: ServiceScope,
+    // Pangea: my profile card follows my texts. Lazy, since profile sync sends through this class.
+    private val pangeaProfileSync: Lazy<PangeaProfileSync>,
 ) : CommandSender {
     private val currentPacketId = atomic(Random(nowMillis).nextLong().absoluteValue)
 
@@ -166,6 +169,10 @@ class CommandSenderImpl(
             throw PacketQueueRejectedException("Data packet")
         }
         p.time = nowMillis
+        if (p.dataType == PortNum.TEXT_MESSAGE_APP.value) {
+            val to = runCatching { resolveNodeNum(NodeAddress.fromString(p.to)) }.getOrNull()
+            if (to != null) pangeaProfileSync.value.didSendMessage(to.toLong() and UINT32_MASK, p.channel)
+        }
     }
 
     private suspend fun sendNow(p: DataPacket): Boolean {
@@ -629,6 +636,7 @@ class CommandSenderImpl(
         )
 
     companion object {
+        private const val UINT32_MASK = 0xFFFFFFFFL
         private const val PACKET_ID_MASK = 0xffffffffL
         private const val PACKET_ID_SHIFT_BITS = 32
 

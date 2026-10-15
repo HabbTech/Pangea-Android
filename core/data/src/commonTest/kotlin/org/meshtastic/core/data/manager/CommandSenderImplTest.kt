@@ -46,6 +46,7 @@ import org.meshtastic.core.repository.NeighborInfoHandler
 import org.meshtastic.core.repository.NodeManager
 import org.meshtastic.core.repository.PacketHandler
 import org.meshtastic.core.repository.PacketQueueRejectedException
+import org.meshtastic.core.repository.PangeaProfileSync
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.SessionManager
 import org.meshtastic.core.repository.TracerouteHandler
@@ -93,6 +94,7 @@ class CommandSenderImplTest {
                 neighborInfoHandler = neighborInfoHandler,
                 sessionManager = sessionManager,
                 scope = TestScope().asServiceScope(),
+                pangeaProfileSync = lazy { mock<PangeaProfileSync>(MockMode.autofill) },
             )
     }
 
@@ -142,6 +144,7 @@ class CommandSenderImplTest {
                 neighborInfoHandler = neighborInfoHandler,
                 sessionManager = sessionManager,
                 scope = TestScope().asServiceScope(),
+                pangeaProfileSync = lazy { mock<PangeaProfileSync>(MockMode.autofill) },
             )
         assertEquals(0, commandSender.resolveNodeNum(NodeAddress.Local))
     }
@@ -630,6 +633,7 @@ class CommandSenderImplTest {
                 neighborInfoHandler = neighborInfoHandler,
                 sessionManager = sessionManager,
                 scope = testScope.asServiceScope(),
+                pangeaProfileSync = lazy { mock<PangeaProfileSync>(MockMode.autofill) },
             )
         testScope.testScheduler.advanceUntilIdle()
         everySuspend { packetHandler.sendToRadio(any<MeshPacket>()) } returns true

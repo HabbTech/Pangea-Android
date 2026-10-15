@@ -57,6 +57,8 @@ import org.meshtastic.core.repository.NodeManager
 import org.meshtastic.core.repository.NotificationManager
 import org.meshtastic.core.repository.PacketHandler
 import org.meshtastic.core.repository.PacketRepository
+import org.meshtastic.core.repository.PangeaGroupChats
+import org.meshtastic.core.repository.PangeaProfileSync
 import org.meshtastic.core.repository.PlatformAnalytics
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.RadioInterfaceService
@@ -184,6 +186,8 @@ class MeshDataHandlerTest {
                 radioInterfaceService = radioInterfaceService,
                 activeConversationTracker = activeConversationTracker,
                 scope = testScope.asServiceScope(),
+                pangeaProfileSync = lazy { mock<PangeaProfileSync>(MockMode.autofill) },
+                pangeaGroupChats = lazy { mock<PangeaGroupChats>(MockMode.autofill) },
             )
 
         everySuspend { radioInterfaceService.runWithSessionLease(any(), any()) } calls

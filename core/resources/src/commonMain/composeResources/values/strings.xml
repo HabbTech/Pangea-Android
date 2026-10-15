@@ -1991,5 +1991,9 @@
     <string name="power_mode_trail_summary">Day-trip tuning. Position sharing slows down and background work is reduced, without noticeable feature loss.</string>
     <string name="radio">Radio</string>
     <string name="pangea_copyright_notice">Pangea® Copyright HABB</string>
+    <string name="pangea_group_invite_title">Group Invite</string>
+    <string name="pangea_group_invite_body">%1$s invited you to %2$s</string>
+    <string name="pangea_group_invites_more_title">Group Invites</string>
+    <string name="pangea_group_invites_more_body">You have new group invites.</string>
 </resources>
 
