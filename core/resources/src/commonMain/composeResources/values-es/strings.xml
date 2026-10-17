@@ -323,7 +323,7 @@ Rango de Valores 0 - 500.</string>
     <string name="learn_more">Saber más</string>
     <string name="legacy_admin_channel">Canal de administración antiguo</string>
     <!-- LICENSED -->
-    <string name="licensed_amateur_radio_text">Activando esta opción se desactiva la encriptación y deja de ser compatible con la red de Meshtastic normal.</string>
+    <string name="licensed_amateur_radio_text">Activando esta opción se desactiva la encriptación y deja de ser compatible con la red de Pangea normal.</string>
     <!-- LOAD -->
     <string name="load">Carga</string>
     <string name="load_indexed">Carga %1$d</string>
@@ -395,7 +395,7 @@ Estos datos de ubicación pueden ser utilizados para fines como aparecer en un m
     <string name="mesh_beacon_target_default">Por defecto</string>
     <string name="mesh_map_location_description">Habilita el punto de posición azul para tu teléfono en el mapa de la malla.</string>
     <!-- MESHTASTIC -->
-    <string name="meshtastic">Meshtastic</string>
+    <string name="meshtastic">Pangea</string>
     <string name="meshtastic_alerts_notifications">Notificaciones de alerta</string>
     <string name="meshtastic_app_name">Meshtastic</string>
     <string name="meshtastic_broadcast_notifications">Notificaciones de mensaje de difusión</string>
@@ -508,7 +508,7 @@ Estos datos de ubicación pueden ser utilizados para fines como aparecer en un m
     <string name="paxcounter_config">Configuración del Contador de Paquetes</string>
     <string name="periodic_position_broadcast">Transmisión periódica de posición</string>
     <!-- PERMISSION -->
-    <string name="permission_missing_31">Meshtastic necesita activar los permisos "Dispositivos cercanos" para encontrar y conectarse a dispositivos mediante Bluetooth. Puede desactivar cuando no esté en uso.</string>
+    <string name="permission_missing_31">Pangea necesita activar los permisos "Dispositivos cercanos" para encontrar y conectarse a dispositivos mediante Bluetooth. Puede desactivar cuando no esté en uso.</string>
     <!-- PERMISSIONS -->
     <string name="phone_location">Ubicación del teléfono</string>
     <string name="phone_location_description">Meshtastic utiliza la ubicación de tu teléfono para habilitar varias características. Puedes actualizar los permisos de ubicación en cualquier momento desde la configuración.</string>
@@ -666,7 +666,7 @@ Estos datos de ubicación pueden ser utilizados para fines como aparecer en un m
     <string name="skip">Saltar</string>
     <string name="slot">Ranura</string>
     <string name="snr">SNR</string>
-    <string name="snr_definition">SNR: Ratio de señal a ruido, una medida utilizada en las comunicaciones para cuantificar el nivel de una señal deseada respecto al nivel del ruido de fondo. En Meshtastic y otros sistemas inalámbricos, un mayor SNR indica una señal más clara que puede mejorar la fiabilidad y la calidad de la transmisión de datos.</string>
+    <string name="snr_definition">SNR: Ratio de señal a ruido, una medida utilizada en las comunicaciones para cuantificar el nivel de una señal deseada respecto al nivel del ruido de fondo. En Pangea y otros sistemas inalámbricos, un mayor SNR indica una señal más clara que puede mejorar la fiabilidad y la calidad de la transmisión de datos.</string>
     <string name="speed">Velocidad</string>
     <string name="stay_connected_anywhere">Manténgase conectado en cualquier lugar</string>
     <string name="super_deep_sleep_duration_seconds">Duración del sueño súper profundo</string>
