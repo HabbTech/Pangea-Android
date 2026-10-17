@@ -8,7 +8,9 @@
 $ErrorActionPreference = "Stop"
 Set-Location (Join-Path $PSScriptRoot "..")
 
-.\gradlew.bat :androidApp:assembleFdroidRelease
+# Isolated projects off: Compose Desktop's Windows-only MSI (WiX) setup reaches into the root project, which
+# isolated projects forbids. Upstream CI never builds on Windows, so it only shows here.
+.\gradlew.bat "-Dorg.gradle.isolated-projects=false" :androidApp:assembleFdroidRelease
 
 $apk = Get-ChildItem "androidApp\build\outputs\apk\fdroid\release\*universal*.apk" | Select-Object -First 1
 if ($null -eq $apk) { $apk = Get-ChildItem "androidApp\build\outputs\apk\fdroid\release\*.apk" | Select-Object -First 1 }
@@ -16,6 +18,20 @@ if ($null -eq $apk) { throw "No APK found under androidApp\build\outputs\apk\fdr
 
 # Stamp the archive copy with the APK's own version + today's date.
 $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA "Android\Sdk" }
+
+# Since upstream v2.8.2 a release build is left unsigned unless keystore.properties names a real key (a release must
+# never carry the public debug key). For sideloading, sign it with the shared checked-in debug key, the same key
+# earlier Pangea APKs used, so this installs as an update over them.
+if ($apk.Name -like "*-unsigned.apk") {
+    $apksigner = Get-ChildItem (Join-Path $sdk "build-tools\*\apksigner.bat") -ErrorAction SilentlyContinue |
+        Sort-Object FullName | Select-Object -Last 1
+    if ($null -eq $apksigner) { throw "apksigner not found under $sdk\build-tools" }
+    $signed = Join-Path $apk.DirectoryName ($apk.Name -replace "-unsigned\.apk$", "-debugsigned.apk")
+    & $apksigner.FullName sign --ks "config\debug.keystore" --ks-pass pass:android --ks-key-alias androiddebugkey `
+        --key-pass pass:android --out $signed $apk.FullName
+    if ($LASTEXITCODE -ne 0) { throw "apksigner failed" }
+    $apk = Get-Item $signed
+}
 $aapt = Get-ChildItem (Join-Path $sdk "build-tools\*\aapt2.exe") -ErrorAction SilentlyContinue |
     Sort-Object FullName | Select-Object -Last 1
 $version = "unknown"
