@@ -443,6 +443,7 @@ class SharedRadioInterfaceServiceLivenessTest {
                     transportFactory = realFactory,
                     analytics = analytics,
                     radioOperationLock = radioOperationLock,
+                    powerModeManager = fakePowerModeManager,
                 )
             try {
                 service.connect()

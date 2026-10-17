@@ -42,7 +42,14 @@ class ExpertModeGatingTest {
 
     /** Metadata that supports every route, so expert gating is the only differentiator. */
     private val fullySupportedMetadata =
-        DeviceMetadata(firmware_version = "2.8.0", hasBluetooth = true, hasWifi = true, hasEthernet = true)
+        DeviceMetadata.Builder()
+            .also {
+                it.firmware_version = "2.8.0"
+                it.hasBluetooth = true
+                it.hasWifi = true
+                it.hasEthernet = true
+            }
+            .build()
 
     @Test
     fun `every config route is classified for expert mode`() {
@@ -104,7 +111,14 @@ class ExpertModeGatingTest {
     @Test
     fun `bluetooth and network metadata exclusions apply in both modes`() {
         val noRadios =
-            DeviceMetadata(firmware_version = "2.8.0", hasBluetooth = false, hasWifi = false, hasEthernet = false)
+            DeviceMetadata.Builder()
+                .also {
+                    it.firmware_version = "2.8.0"
+                    it.hasBluetooth = false
+                    it.hasWifi = false
+                    it.hasEthernet = false
+                }
+                .build()
 
         listOf(false, true).forEach { expertMode ->
             val routes = ConfigRoute.deviceConfigRoutes(noRadios, expertMode)
@@ -116,10 +130,13 @@ class ExpertModeGatingTest {
     @Test
     fun `excluded modules bitfield applies in both modes`() {
         val metadata =
-            DeviceMetadata(
-                firmware_version = "2.8.0",
-                excluded_modules = ModuleRoute.MQTT.bitfield or ModuleRoute.AMBIENT_LIGHTING.bitfield,
-            )
+            DeviceMetadata.Builder()
+                .also {
+                    it.firmware_version = "2.8.0"
+                    it.excluded_modules =
+                        ModuleRoute.MQTT.excludedAs.value or ModuleRoute.AMBIENT_LIGHTING.excludedAs.value
+                }
+                .build()
 
         listOf(false, true).forEach { expertMode ->
             val modules = ModuleRoute.filterExcludedFrom(metadata, null, expertMode)

@@ -138,7 +138,7 @@ class UiPrefsImplTest {
         advanceUntilIdle()
 
         val dispatchers = CoroutineDispatchers(testDispatcher, testDispatcher, testDispatcher)
-        val reloaded = UiPrefsImpl(dataStore, dispatchers)
+        val reloaded = UiPrefsImpl(dataStore.asUiDataStore(), dispatchers)
         advanceUntilIdle()
         assertTrue(reloaded.expertModeEnabled.value)
     }
