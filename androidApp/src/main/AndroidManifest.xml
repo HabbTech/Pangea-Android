@@ -261,6 +261,17 @@
                 <data android:scheme="meshtastic" android:host="meshtastic" />
             </intent-filter>
 
+            <!-- Pangea: @code contact links (pangea://dm/...) and group invites (pangea://group#...). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="pangea" android:host="dm" />
+                <data android:scheme="pangea" android:host="group" />
+            </intent-filter>
+
             <intent-filter android:autoVerify="true">
                 <!--
                   The QR codes to share channel settings and contacts are shared as meshtastic URLS.

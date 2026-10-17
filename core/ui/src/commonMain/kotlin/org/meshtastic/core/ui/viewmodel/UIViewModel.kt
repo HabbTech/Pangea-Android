@@ -63,6 +63,7 @@ import org.meshtastic.core.repository.NodeRepository
 import org.meshtastic.core.repository.NodeRestartTracker
 import org.meshtastic.core.repository.NotificationManager
 import org.meshtastic.core.repository.PacketRepository
+import org.meshtastic.core.repository.PangeaLinkInbox
 import org.meshtastic.core.repository.RadioController
 import org.meshtastic.core.repository.RadioInterfaceService
 import org.meshtastic.core.repository.ServiceRepository
@@ -107,6 +108,7 @@ class UIViewModel(
     val alertManager: AlertManager,
     val snackbarManager: SnackbarManager,
     nodeRestartTracker: NodeRestartTracker,
+    private val pangeaLinks: PangeaLinkInbox,
 ) : ViewModel() {
 
     /** True while the connected node is expected to be mid-restart (reboot-applying config save or reboot command). */
@@ -149,6 +151,14 @@ class UIViewModel(
      *    [dispatchMeshtasticUri]. This triggers import dialogs for shared nodes or channel configurations.
      */
     fun handleDeepLink(uri: CommonUri, onInvalid: () -> Unit = {}) {
+        // Pangea: pangea://dm/... and pangea://group#... open in Chats, which starts the chat or offers to join.
+        if (uri.scheme.equals(PANGEA_SCHEME, ignoreCase = true)) {
+            pangeaLinks.offer(uri.toString())
+            DeepLinkRouter.route(CommonUri.parse("meshtastic://meshtastic/messages"))?.let {
+                _navigationDeepLink.tryEmit(it)
+            }
+            return
+        }
         // Try navigation routing first
         val navKeys = DeepLinkRouter.route(uri)
         if (navKeys != null) {
@@ -168,6 +178,9 @@ class UIViewModel(
     }
 
     val theme: StateFlow<Int> = uiPrefs.theme
+
+    /** Pangea: outside Expert Mode the app shows only Chats and Settings (plus Connect until a radio is paired). */
+    val expertModeEnabled: StateFlow<Boolean> = uiPrefs.expertModeEnabled
 
     /** Opt-out for applying an event edition's ambient theme (accent + typeface) app-wide. */
     val eventThemeEnabled: StateFlow<Boolean> = uiPrefs.eventThemeEnabled
@@ -391,6 +404,7 @@ class UIViewModel(
     }
 
     companion object {
+        private const val PANGEA_SCHEME = "pangea"
         private const val DEFAULT_BOOT_TTL = LockdownPassphraseStore.DEFAULT_BOOTS
     }
 }

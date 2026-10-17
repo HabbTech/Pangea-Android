@@ -119,6 +119,10 @@ fun String.clampedUtf8(limit: Int): String {
  */
 internal fun graphemeEnd(text: String, start: Int): Int {
     var index = start + CodePoints.charCountAt(text, start)
+    // A flag is two regional indicators drawn as one.
+    if (isRegionalIndicator(CodePoints.codePointAt(text, start)) && index < text.length) {
+        if (isRegionalIndicator(CodePoints.codePointAt(text, index))) index += CodePoints.charCountAt(text, index)
+    }
     while (index < text.length) {
         val cp = CodePoints.codePointAt(text, index)
         val joinsPrevious = isCombining(cp) || cp == ZWJ || isPreviousZwj(text, index)
@@ -129,6 +133,8 @@ internal fun graphemeEnd(text: String, start: Int): Int {
 }
 
 private const val ZWJ = 0x200D
+
+private fun isRegionalIndicator(cp: Int): Boolean = cp in 0x1F1E6..0x1F1FF
 
 private fun isPreviousZwj(text: String, index: Int): Boolean {
     if (index == 0) return false

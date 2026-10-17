@@ -202,7 +202,8 @@ class NodeManagerImplTest {
 
         assertNotNull(result)
         assertEquals(nodeNum, result.num)
-        assertTrue(result.user.long_name.startsWith("Pangea"))
+        // The firmware's own default, as Pangea-Apple uses, so an unnamed radio reads the same on every phone.
+        assertTrue(result.user.long_name.startsWith("Meshtastic"))
         assertEquals(NodeAddress.numToDefaultId(nodeNum), result.user.id)
     }
 

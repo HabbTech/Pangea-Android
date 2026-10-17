@@ -96,6 +96,14 @@ interface UiPrefs {
 
     fun setExpertModeEnabled(enabled: Boolean)
 
+    /**
+     * Pangea: Everyone Nearby is public and can be busy, so outside Expert Mode it doesn't notify until turned on with
+     * the bell in its chat. Off by default.
+     */
+    val everyoneNearbyNotifications: StateFlow<Boolean>
+
+    fun setEveryoneNearbyNotifications(enabled: Boolean)
+
     /** The user-selected [PowerMode]; the effective mode may be more aggressive (see PowerModeManager). */
     val powerMode: StateFlow<PowerMode>
 

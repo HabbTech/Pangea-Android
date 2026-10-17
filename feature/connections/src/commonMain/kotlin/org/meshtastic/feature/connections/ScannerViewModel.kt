@@ -52,6 +52,7 @@ import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.model.InterfaceId
+import org.meshtastic.core.model.pangea.RadioAutoConfig
 import org.meshtastic.core.model.util.anonymize
 import org.meshtastic.core.network.repository.NetworkRepository
 import org.meshtastic.core.repository.RadioController
@@ -330,7 +331,10 @@ open class ScannerViewModel(
                     }
                     .sortedBy { it.name }
 
-            bondedForUi + unbondedScanned
+            // Pangea: radios sold by Pangea advertise as PANGEA:ID:<serial> and ship pre-configured, so they're
+            // listed
+            // first (Pangea-Apple RadioAutoConfig). The sort is stable, so the order within each part is kept.
+            (bondedForUi + unbondedScanned).sortedByDescending { RadioAutoConfig.isPangeaRadio(it.name) }
         }
             .flowOn(dispatchers.default)
             .distinctUntilChanged()

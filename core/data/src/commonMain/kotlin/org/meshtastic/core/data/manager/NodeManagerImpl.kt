@@ -78,18 +78,21 @@ private const val KEY_FINGERPRINT_HEX_LENGTH = 8
 
 internal fun publicKeyLogFingerprint(key: ByteString): String = key.sha256().hex().take(KEY_FINGERPRINT_HEX_LENGTH)
 
-/** Prefix [NodeManagerImpl.createDefaultNode] gives a generated placeholder node. */
-private const val GENERATED_NODE_NAME_PREFIX = "Pangea"
+/**
+ * Prefix [NodeManagerImpl.createDefaultNode] gives a generated placeholder node: the firmware's own default, as
+ * Pangea-Apple uses again since f00303d4, so an unnamed radio reads the same on every phone.
+ */
+private const val GENERATED_NODE_NAME_PREFIX = "Meshtastic"
 
 /**
  * Matches a generated placeholder name, i.e. one this app invented rather than one the node reported.
  *
  * Derived from [GENERATED_NODE_NAME_PREFIX] so the generator and the detector cannot drift apart — when they did, no
  * generated node was recognised as a placeholder at all, which silently broke eviction ordering and let a telemetry
- * placeholder lock out a renumbering peer. The legacy "Meshtastic NNNN" form is still accepted so placeholders
- * persisted by pre-rebrand builds keep being recognised.
+ * placeholder lock out a renumbering peer. The "Pangea NNNN" form earlier Pangea builds generated is still accepted so
+ * placeholders they persisted keep being recognised.
  */
-private val DEFAULT_NODE_NAME_REGEX = Regex("^(?:$GENERATED_NODE_NAME_PREFIX|Meshtastic) [0-9a-fA-F]{4}$")
+private val DEFAULT_NODE_NAME_REGEX = Regex("^(?:$GENERATED_NODE_NAME_PREFIX|Pangea) [0-9a-fA-F]{4}$")
 
 /** Implementation of [NodeManager] that maintains an in-memory database of the mesh. */
 @Suppress("LongParameterList", "TooManyFunctions", "CyclomaticComplexMethod", "LargeClass")

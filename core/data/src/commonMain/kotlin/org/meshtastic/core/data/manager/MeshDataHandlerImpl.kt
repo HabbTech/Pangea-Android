@@ -71,6 +71,7 @@ import org.meshtastic.core.repository.ServiceStateWriter
 import org.meshtastic.core.repository.StoreForwardPacketHandler
 import org.meshtastic.core.repository.TelemetryPacketHandler
 import org.meshtastic.core.repository.TracerouteHandler
+import org.meshtastic.core.repository.UiPrefs
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.critical_alert
 import org.meshtastic.core.resources.error_duty_cycle
@@ -125,6 +126,7 @@ class MeshDataHandlerImpl(
     // Pangea: profile cards, photos and group invites ride on PRIVATE_APP. Lazy, as they send through the same stack.
     private val pangeaProfileSync: Lazy<PangeaProfileSync>,
     private val pangeaGroupChats: Lazy<PangeaGroupChats>,
+    private val uiPrefs: UiPrefs,
 ) : MeshDataHandler {
 
     override fun handleReceivedData(
@@ -564,7 +566,15 @@ class MeshDataHandlerImpl(
         val mentionsMe =
             dataPacket.dataType == PortNum.TEXT_MESSAGE_APP.value &&
                 textMentionsNode(dataPacket.text, nodeManager.getMyId())
-        val muted = nodeMuted || (conversationMuted && !mentionsMe)
+        // Pangea standard mode: Everyone Nearby only notifies once its bell is on, and an @mention only breaks
+        // through a mute in Expert Mode (anyone on the public channel can type a node's @!hex).
+        val expertMode = uiPrefs.expertModeEnabled.value
+        val everyoneSilenced =
+            !expertMode &&
+                dataPacket.channel == 0 &&
+                dataPacket.destination is NodeAddress.Broadcast &&
+                !uiPrefs.everyoneNearbyNotifications.value
+        val muted = nodeMuted || everyoneSilenced || (conversationMuted && !(mentionsMe && expertMode))
         when {
             // A critical alert is the one category that deliberately breaks through, so it is not suppressed for the
             // conversation on screen — only mute silences it.

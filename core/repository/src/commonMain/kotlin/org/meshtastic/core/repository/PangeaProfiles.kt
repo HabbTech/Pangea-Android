@@ -133,3 +133,24 @@ data class PendingGroupInvite(val invite: GroupInvite, val fromNum: Long, val re
     val id: String
         get() = invite.id
 }
+
+/** A pangea:// link opened from outside the app, waiting for the Chats screen to act on it. */
+interface PangeaLinkInbox {
+    val pending: StateFlow<String?>
+
+    fun offer(link: String)
+
+    fun consume()
+}
+
+/**
+ * Applies what a freshly paired radio needs, without the user having to understand it (Pangea-Apple
+ * RadioAutoConfig.apply). Also switches a radio to pairing without a code once it's paired (at most twice per radio).
+ */
+interface PangeaRadioSetup {
+    /** Saves [name] as the radio's owner name, with initials as its short name. True when it changed anything. */
+    suspend fun applyName(name: String): Result<Boolean>
+
+    /** Sets the LoRa region if the radio has none or another one. True when a reboot is expected. */
+    suspend fun applyRegion(region: org.meshtastic.proto.Config.LoRaConfig.RegionCode): Result<Boolean>
+}

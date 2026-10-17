@@ -96,6 +96,12 @@ class FakeUiPrefs : UiPrefs {
         expertModeEnabled.value = enabled
     }
 
+    override val everyoneNearbyNotifications = MutableStateFlow(false)
+
+    override fun setEveryoneNearbyNotifications(enabled: Boolean) {
+        everyoneNearbyNotifications.value = enabled
+    }
+
     override val powerMode = MutableStateFlow(PowerMode.STANDARD)
 
     override fun setPowerMode(mode: PowerMode) {

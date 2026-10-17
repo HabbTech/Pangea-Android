@@ -40,6 +40,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,7 @@ import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.model.ConnectionState
+import org.meshtastic.core.model.DeviceAddress
 import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.model.MeshActivity
 import org.meshtastic.core.navigation.ContactsRoute
@@ -85,11 +87,21 @@ fun MeshtasticNavigationSuite(
     val watchdogReconnectInFlight by uiViewModel.watchdogReconnectInFlight.collectAsStateWithLifecycle()
     val unreadMessageCount by uiViewModel.unreadMessageCount.collectAsStateWithLifecycle()
     val selectedDevice by uiViewModel.currentDeviceAddressFlow.collectAsStateWithLifecycle()
+    val expertModeEnabled by uiViewModel.expertModeEnabled.collectAsStateWithLifecycle()
+    val destinations = visibleDestinations(expertModeEnabled, hasRadio = DeviceAddress.parse(selectedDevice) != null)
 
     val adaptiveInfo = currentWindowAdaptiveInfoV2()
 
     val currentTabRoute = multiBackstack.currentTabRoute
     val topLevelDestination = TopLevelDestination.fromNavKey(currentTabRoute)
+
+    // Pangea: a tab hidden by standard mode lands on Chats, except Connect, which Settings → My Radio opens to pair.
+    LaunchedEffect(topLevelDestination, destinations) {
+        val current = topLevelDestination ?: return@LaunchedEffect
+        if (current !in destinations && current != TopLevelDestination.Connect) {
+            multiBackstack.navigateTopLevel(TopLevelDestination.Messages.route)
+        }
+    }
 
     val layoutType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo).coerceNavigationType()
     val showLabels = layoutType == NavigationSuiteType.NavigationRail
@@ -98,7 +110,7 @@ fun MeshtasticNavigationSuite(
         modifier = modifier,
         layoutType = layoutType,
         navigationSuiteItems = {
-            TopLevelDestination.entries.forEach { destination ->
+            destinations.forEach { destination ->
                 val isSelected = destination == topLevelDestination
                 item(
                     selected = isSelected,
@@ -265,4 +277,14 @@ private fun connectionTooltipLabel(
     connectionState == ConnectionState.Connecting -> stringResource(Res.string.connecting)
     connectionState == ConnectionState.DeviceSleep -> stringResource(Res.string.device_sleeping)
     else -> stringResource(Res.string.disconnected)
+}
+
+/**
+ * Pangea standard mode (Pangea-Apple ContentView): Chats and Settings only, with Connect kept until a radio is paired
+ * so first launch can still pair one. Expert Mode shows every tab.
+ */
+internal fun visibleDestinations(expertMode: Boolean, hasRadio: Boolean): List<TopLevelDestination> = when {
+    expertMode -> TopLevelDestination.entries
+    hasRadio -> listOf(TopLevelDestination.Messages, TopLevelDestination.Settings)
+    else -> listOf(TopLevelDestination.Messages, TopLevelDestination.Settings, TopLevelDestination.Connect)
 }

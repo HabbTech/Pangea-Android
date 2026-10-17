@@ -62,6 +62,15 @@ class UiPrefsImpl(private val dataStore: UiDataStore, dispatchers: CoroutineDisp
         scope.launch { dataStore.edit { it[KEY_EXPERT_MODE_ENABLED] = enabled } }
     }
 
+    override val everyoneNearbyNotifications: StateFlow<Boolean> =
+        dataStore.data
+            .map { it[KEY_EVERYONE_NEARBY_NOTIFICATIONS] ?: false }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+
+    override fun setEveryoneNearbyNotifications(enabled: Boolean) {
+        scope.launch { dataStore.edit { it[KEY_EVERYONE_NEARBY_NOTIFICATIONS] = enabled } }
+    }
+
     override val powerMode: StateFlow<PowerMode> =
         dataStore.data
             .map { PowerMode.fromName(it[KEY_POWER_MODE]) }
@@ -329,6 +338,7 @@ class UiPrefsImpl(private val dataStore: UiDataStore, dispatchers: CoroutineDisp
 
         val KEY_APP_INTRO_COMPLETED = booleanPreferencesKey("app_intro_completed")
         val KEY_EXPERT_MODE_ENABLED = booleanPreferencesKey("expert-mode-enabled")
+        val KEY_EVERYONE_NEARBY_NOTIFICATIONS = booleanPreferencesKey("pangea-everyone-nearby-notifications")
         val KEY_POWER_MODE = stringPreferencesKey("power_mode")
         val KEY_THEME = intPreferencesKey("theme")
         private val KEY_UNITS_OVERRIDE = intPreferencesKey("units_override")

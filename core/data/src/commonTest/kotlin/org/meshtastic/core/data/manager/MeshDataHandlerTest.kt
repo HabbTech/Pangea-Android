@@ -69,6 +69,7 @@ import org.meshtastic.core.repository.StoreForwardPacketHandler
 import org.meshtastic.core.repository.TelemetryPacketHandler
 import org.meshtastic.core.repository.TracerouteHandler
 import org.meshtastic.core.testing.FakeNotificationPrefs
+import org.meshtastic.core.testing.FakeUiPrefs
 import org.meshtastic.proto.ChannelSet
 import org.meshtastic.proto.ChannelSettings
 import org.meshtastic.proto.Config
@@ -188,6 +189,7 @@ class MeshDataHandlerTest {
                 scope = testScope.asServiceScope(),
                 pangeaProfileSync = lazy { mock<PangeaProfileSync>(MockMode.autofill) },
                 pangeaGroupChats = lazy { mock<PangeaGroupChats>(MockMode.autofill) },
+                uiPrefs = FakeUiPrefs().apply { setExpertModeEnabled(true) },
             )
 
         everySuspend { radioInterfaceService.runWithSessionLease(any(), any()) } calls
