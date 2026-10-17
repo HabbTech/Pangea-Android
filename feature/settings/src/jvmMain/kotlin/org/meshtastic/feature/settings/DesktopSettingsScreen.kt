@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.meshtastic.core.common.util.UnitsOverride
+import org.meshtastic.core.navigation.ConnectionsRoute
 import org.meshtastic.core.navigation.DiscoveryRoute
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
@@ -90,6 +92,9 @@ import org.meshtastic.feature.settings.component.UnitsOption
 import org.meshtastic.feature.settings.component.UnitsPickerDialog
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
+import org.meshtastic.feature.settings.pangea.MyProfileSection
+import org.meshtastic.feature.settings.pangea.MyRadioSection
+import org.meshtastic.feature.settings.pangea.PangeaHelpSheet
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.search.SettingsSearchBar
@@ -116,6 +121,9 @@ fun DesktopSettingsScreen(
     val homoglyphEnabled by radioConfigViewModel.homoglyphEncodingEnabledFlow.collectAsStateWithLifecycle(false)
     val hiddenFeaturesUnlocked by settingsViewModel.hiddenFeaturesUnlocked.collectAsStateWithLifecycle()
     val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
+    // Pangea: Help & Documentation opens Pangea's own guides (Pangea-Apple PangeaHelp).
+    var showPangeaHelp by rememberSaveable { mutableStateOf(false) }
+    if (showPangeaHelp) PangeaHelpSheet(expertMode = expertModeEnabled, onDismiss = { showPangeaHelp = false })
     val cacheLimit by settingsViewModel.dbCacheLimit.collectAsStateWithLifecycle()
     val isOtaCapable by settingsViewModel.isOtaCapable.collectAsStateWithLifecycle()
     val showFullMessageTimestamps by settingsViewModel.showFullMessageTimestamps.collectAsStateWithLifecycle()
@@ -175,6 +183,12 @@ fun DesktopSettingsScreen(
                 // This phone's own settings are hidden below while administering another node; search hides them too.
                 includeAppLocal = state.isLocal,
             )
+
+            // Pangea: my name, photo, emoji and @code, shared with the people and groups I talk to.
+            if (state.isLocal) {
+                MyProfileSection()
+                MyRadioSection(onPairRadio = { onNavigate(ConnectionsRoute.Connections()) })
+            }
 
             RadioConfigItemList(
                 state = state,
@@ -299,7 +313,7 @@ fun DesktopSettingsScreen(
                         text = stringResource(Res.string.help_and_documentation),
                         leadingIcon = MeshtasticIcons.HelpOutline,
                     ) {
-                        onNavigate(SettingsRoute.HelpDocs)
+                        showPangeaHelp = true
                     }
                 }
 

@@ -17,9 +17,15 @@
 package org.meshtastic.core.ui.util
 
 import androidx.compose.ui.platform.ClipEntry
+import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
+import java.awt.datatransfer.Transferable
 
 // `sensitive` has no AWT equivalent — the desktop clipboard carries no such flag — so it is accepted and ignored.
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 actual fun createClipEntry(text: String, label: String, sensitive: Boolean): ClipEntry =
     ClipEntry(StringSelection(text))
+
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+actual fun ClipEntry.readText(): String? =
+    runCatching { (nativeClipEntry as? Transferable)?.getTransferData(DataFlavor.stringFlavor) as? String }.getOrNull()

@@ -76,6 +76,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 import org.meshtastic.core.common.util.CommonUri
 import org.meshtastic.core.common.util.NumberFormatter
 import org.meshtastic.core.common.util.nowMillis
@@ -113,6 +114,8 @@ import org.meshtastic.core.resources.mute_status_muted_for_days
 import org.meshtastic.core.resources.mute_status_muted_for_hours
 import org.meshtastic.core.resources.mute_status_unmuted
 import org.meshtastic.core.resources.okay
+import org.meshtastic.core.resources.pangea_everyone_nearby
+import org.meshtastic.core.resources.pangea_new_message
 import org.meshtastic.core.resources.pin_selected
 import org.meshtastic.core.resources.select_all
 import org.meshtastic.core.resources.swipe_action_delete
@@ -130,6 +133,7 @@ import org.meshtastic.core.ui.component.ScrollToTopEvent
 import org.meshtastic.core.ui.component.smartScrollToTop
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.Delete
+import org.meshtastic.core.ui.icon.Edit
 import org.meshtastic.core.ui.icon.ExpandLess
 import org.meshtastic.core.ui.icon.ExpandMore
 import org.meshtastic.core.ui.icon.FilterList
@@ -142,10 +146,16 @@ import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.core.ui.util.rememberShowToastResource
+import org.meshtastic.feature.messaging.pangea.GroupInvitesSection
+import org.meshtastic.feature.messaging.pangea.NewGroupDialog
+import org.meshtastic.feature.messaging.pangea.NewMessageSheet
+import org.meshtastic.feature.messaging.pangea.PangeaChatsViewModel
+import org.meshtastic.feature.messaging.pangea.PendingPangeaLink
+import org.meshtastic.feature.messaging.pangea.RadioStatusPill
 import org.meshtastic.proto.ChannelSet
 import kotlin.time.Duration.Companion.days
 
-@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ViewModelForwarding", "ModifierMissing")
 @Composable
 fun ContactsScreen(
     onNavigateToShare: () -> Unit,
@@ -157,8 +167,13 @@ fun ContactsScreen(
     onNavigateToFilterSettings: () -> Unit,
     scrollToTopEvents: Flow<ScrollToTopEvent>?,
     activeContactKey: String?,
+    pangeaViewModel: PangeaChatsViewModel = koinViewModel(),
 ) {
     val showToast = rememberShowToastResource()
+    viewModel.everyoneNearby = stringResource(Res.string.pangea_everyone_nearby)
+    // Pangea: New Message (by @code, link or QR) and New Group, as on iOS.
+    var showNewMessage by rememberSaveable { mutableStateOf(false) }
+    var showNewGroup by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val connectionState by viewModel.connectionState.collectAsStateWithLifecycle()
     val ourNode by viewModel.ourNodeInfo.collectAsStateWithLifecycle()
@@ -255,6 +270,9 @@ fun ContactsScreen(
                 canNavigateUp = false,
                 onNavigateUp = {},
                 actions = {
+                    IconButton(onClick = { showNewMessage = true }) {
+                        Icon(MeshtasticIcons.Edit, contentDescription = stringResource(Res.string.pangea_new_message))
+                    }
                     IconButton(onClick = onNavigateToFilterSettings) {
                         Icon(
                             MeshtasticIcons.FilterList,
@@ -312,6 +330,12 @@ fun ContactsScreen(
                 )
             }
 
+            RadioStatusPill(
+                connectionState = connectionState,
+                expertMode = pangeaViewModel.expertModeEnabled.collectAsStateWithLifecycle().value,
+            )
+            GroupInvitesSection(viewModel = pangeaViewModel, onJoin = onNavigateToMessages)
+
             val collapsedSections by viewModel.collapsedSections.collectAsStateWithLifecycle()
 
             val mutedLabel = stringResource(Res.string.contact_muted_snackbar)
@@ -345,6 +369,37 @@ fun ContactsScreen(
                 onToggleSectionCollapse = viewModel::toggleSectionCollapse,
             )
         }
+    }
+
+    PendingPangeaLink(
+        viewModel = pangeaViewModel,
+        onStartChat = { showNewMessage = true },
+        onJoin = onNavigateToMessages,
+    )
+
+    if (showNewMessage) {
+        NewMessageSheet(
+            viewModel = pangeaViewModel,
+            onOpenChat = { key ->
+                showNewMessage = false
+                onNavigateToMessages(key)
+            },
+            onNewGroup = {
+                showNewMessage = false
+                showNewGroup = true
+            },
+            onDismiss = { showNewMessage = false },
+        )
+    }
+    if (showNewGroup) {
+        NewGroupDialog(
+            viewModel = pangeaViewModel,
+            onCreate = { key ->
+                showNewGroup = false
+                onNavigateToMessages(key)
+            },
+            onDismiss = { showNewGroup = false },
+        )
     }
 
     if (showDeleteDialog) {

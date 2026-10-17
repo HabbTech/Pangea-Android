@@ -26,3 +26,6 @@ import androidx.compose.ui.platform.ClipEntry
  * treat it as secret. Pass it for private keys and for channel URLs, which carry channel PSKs.
  */
 expect fun createClipEntry(text: String, label: String = "", sensitive: Boolean = false): ClipEntry
+
+/** The plain text a clipboard entry holds, if any. */
+expect fun ClipEntry.readText(): String?

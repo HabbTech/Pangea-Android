@@ -62,6 +62,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isShiftPressed
@@ -90,6 +91,7 @@ import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 import org.meshtastic.core.common.util.HomoglyphCharacterStringTransformer
 import org.meshtastic.core.database.entity.QuickChatAction
 import org.meshtastic.core.model.ConnectionState
@@ -123,6 +125,9 @@ import org.meshtastic.feature.messaging.component.QuickChatRow
 import org.meshtastic.feature.messaging.component.ReplySnippet
 import org.meshtastic.feature.messaging.component.ScrollToBottomFab
 import org.meshtastic.feature.messaging.component.TranslationModelDownloadDialog
+import org.meshtastic.feature.messaging.pangea.ContactProfileSheet
+import org.meshtastic.feature.messaging.pangea.GroupInfoSheet
+import org.meshtastic.feature.messaging.pangea.PangeaChatsViewModel
 
 private const val ROUNDED_CORNER_PERCENT = 100
 private const val MAX_LINES = 3
@@ -144,7 +149,7 @@ private const val COUNTER_VISIBLE_WITHIN_BYTES = 20
  * @param navigateToFilterSettings Callback to navigate to the message filter settings screen.
  * @param onNavigateBack Callback to navigate back from this screen.
  */
-@Suppress("LongMethod", "CyclomaticComplexMethod")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "ViewModelForwarding", "ModifierMissing")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageScreen(
@@ -155,8 +160,14 @@ fun MessageScreen(
     navigateToQuickChatOptions: () -> Unit,
     navigateToFilterSettings: () -> Unit,
     onNavigateBack: () -> Unit,
+    pangeaViewModel: PangeaChatsViewModel = koinViewModel(),
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val pangeaGroups by pangeaViewModel.groups.collectAsStateWithLifecycle()
+    var showGroupInfo by remember { mutableStateOf(false) }
+    var showProfile by remember { mutableStateOf(false) }
+    val pangeaExpert by pangeaViewModel.expertModeEnabled.collectAsStateWithLifecycle()
+    val everyoneBell by pangeaViewModel.everyoneNearbyNotifications.collectAsStateWithLifecycle()
     val clipboardManager = LocalClipboard.current
     val focusManager = LocalFocusManager.current
 
@@ -404,6 +415,33 @@ fun MessageScreen(
             }
         }
 
+    if (showProfile) {
+        val node = viewModel.getNode(nodeId)
+        ContactProfileSheet(
+            viewModel = pangeaViewModel,
+            num = node.num.toLong() and UINT32_MASK,
+            radioName = node.user.long_name,
+            shortName = node.user.short_name,
+            nodeColor = Color(node.colors.second),
+            onDismiss = { showProfile = false },
+        )
+    }
+    if (showGroupInfo) {
+        pangeaGroups
+            .firstOrNull { it.index == channelIndex }
+            ?.let { group ->
+                GroupInfoSheet(
+                    viewModel = pangeaViewModel,
+                    group = group,
+                    onLeave = {
+                        showGroupInfo = false
+                        onNavigateBack()
+                    },
+                    onDismiss = { showGroupInfo = false },
+                )
+            }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -473,6 +511,17 @@ fun MessageScreen(
                     onToggleShowFiltered = viewModel::toggleShowFiltered,
                     onNavigateToFilterSettings = navigateToFilterSettings,
                     onSearchClick = viewModel::toggleSearch,
+                    onGroupInfoClick =
+                    pangeaGroups
+                        .firstOrNull { it.index == channelIndex && contactKey.endsWith(NodeAddress.ID_BROADCAST) }
+                        ?.let { { showGroupInfo = true } },
+                    onProfileClick =
+                    if (channelIndex == NodeAddress.PKC_CHANNEL_INDEX) ({ showProfile = true }) else null,
+                    everyoneBellOn =
+                    everyoneBell.takeIf {
+                        !pangeaExpert && channelIndex == 0 && contactKey.endsWith(NodeAddress.ID_BROADCAST)
+                    },
+                    onToggleEveryoneBell = pangeaViewModel::toggleEveryoneNearbyNotifications,
                 )
             }
         },
@@ -1067,3 +1116,5 @@ fun MessageInputPreview() {
         }
     }
 }
+
+private const val UINT32_MASK = 0xFFFFFFFFL

@@ -52,19 +52,17 @@ class AboutScreenTest {
         // Top app bar
         onNodeWithText("About").assertIsDisplayed()
 
-        // What is Meshtastic section
-        onNodeWithText("What is Meshtastic?").assertIsDisplayed()
-        onNodeWithText(
-            "An open source, off-grid, decentralized, mesh network that runs on affordable, low-power radios.",
-        )
+        // What is Pangea section
+        onNodeWithText("What is Pangea?").assertIsDisplayed()
+        onNodeWithText("Off-grid, decentralized, mesh network that runs on affordable, low-power radios.")
             .assertIsDisplayed()
 
         // Apps section
         onNodeWithText("Apps").assertIsDisplayed()
-        onNodeWithText("Need Hardware?").assertIsDisplayed()
+        onNodeWithText("Buy Complete Radios").assertIsDisplayed()
         onNodeWithText(
-            "Meshtastic requires a compatible device. Our backers and partners offer ready-to-use hardware. " +
-                "Here are some of the most popular options.",
+            "Get custom waterproof solar and detection sensor router nodes, aluminium desktop nodes and rugged " +
+                "handsets.",
         )
             .assertIsDisplayed()
         onNodeWithText("GitHub Repository").assertIsDisplayed()
@@ -78,7 +76,8 @@ class AboutScreenTest {
         onNodeWithText("Documentation").assertIsDisplayed()
         onNodeWithText("License").performScrollTo().assertIsDisplayed()
 
-        // Copyright footer
+        // Copyright footer: Pangea's notice, and upstream's, which the GPL requires to stay
+        onNodeWithText("Pangea® Copyright HABB").performScrollTo().assertIsDisplayed()
         onNodeWithText("Meshtastic® Copyright Meshtastic LLC").performScrollTo().assertIsDisplayed()
         onNodeWithText(
             "Free software under the GNU General Public License v3, with no warranty. " +

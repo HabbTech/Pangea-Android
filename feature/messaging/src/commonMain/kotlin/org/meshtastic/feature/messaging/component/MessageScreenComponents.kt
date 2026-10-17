@@ -94,6 +94,9 @@ import org.meshtastic.core.resources.jump_to_latest_from_and_more
 import org.meshtastic.core.resources.navigate_back
 import org.meshtastic.core.resources.new_messages_below
 import org.meshtastic.core.resources.overflow_menu
+import org.meshtastic.core.resources.pangea_everyone_bell
+import org.meshtastic.core.resources.pangea_group_info
+import org.meshtastic.core.resources.pangea_profile
 import org.meshtastic.core.resources.quick_chat
 import org.meshtastic.core.resources.quick_chat_hide
 import org.meshtastic.core.resources.quick_chat_show
@@ -118,11 +121,13 @@ import org.meshtastic.core.ui.icon.Copy
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.FilterList
 import org.meshtastic.core.ui.icon.FilterListOff
+import org.meshtastic.core.ui.icon.Group
 import org.meshtastic.core.ui.icon.KeyboardArrowDown
 import org.meshtastic.core.ui.icon.KeyboardArrowUp
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.More
 import org.meshtastic.core.ui.icon.Muted
+import org.meshtastic.core.ui.icon.Person
 import org.meshtastic.core.ui.icon.Reply
 import org.meshtastic.core.ui.icon.Search
 import org.meshtastic.core.ui.icon.SelectAll
@@ -130,6 +135,8 @@ import org.meshtastic.core.ui.icon.Settings
 import org.meshtastic.core.ui.icon.Unmuted
 import org.meshtastic.core.ui.icon.Visibility
 import org.meshtastic.core.ui.icon.VisibilityOff
+import org.meshtastic.core.ui.icon.VolumeMute
+import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.feature.messaging.DeliveryInfo
 import org.meshtastic.feature.messaging.TranslationDialogState
 import org.meshtastic.proto.ChannelSet
@@ -402,48 +409,80 @@ fun MessageTopBar(
     onToggleShowFiltered: () -> Unit = {},
     onNavigateToFilterSettings: () -> Unit = {},
     onSearchClick: () -> Unit = {},
-) = TopAppBar(
-    title = {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(modifier = Modifier.width(10.dp))
+    // Pangea: group info (share, invite, leave) for a group chat; null elsewhere.
+    onGroupInfoClick: (() -> Unit)? = null,
+    // Pangea: their profile (photo, nickname, save to contacts) in a private chat; null elsewhere.
+    onProfileClick: (() -> Unit)? = null,
+    // Pangea: Everyone Nearby's bell in standard mode; null elsewhere.
+    everyoneBellOn: Boolean? = null,
+    onToggleEveryoneBell: () -> Unit = {},
+) =
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(modifier = Modifier.width(10.dp))
 
-            if (channels != null && channelIndexParam != null) {
-                SecurityIcon(channels, channelIndexParam)
+                if (channels != null && channelIndexParam != null) {
+                    SecurityIcon(channels, channelIndexParam)
+                }
             }
-        }
-    },
-    navigationIcon = {
-        IconButton(onClick = onNavigateBack) {
-            Icon(
-                imageVector = MeshtasticIcons.ArrowBack,
-                contentDescription = stringResource(Res.string.navigate_back),
+        },
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = MeshtasticIcons.ArrowBack,
+                    contentDescription = stringResource(Res.string.navigate_back),
+                )
+            }
+        },
+        actions = {
+            if (everyoneBellOn != null) {
+                IconButton(onClick = onToggleEveryoneBell) {
+                    Icon(
+                        imageVector = if (everyoneBellOn) MeshtasticIcons.VolumeUp else MeshtasticIcons.VolumeMute,
+                        contentDescription = stringResource(Res.string.pangea_everyone_bell),
+                    )
+                }
+            }
+            if (onProfileClick != null) {
+                IconButton(onClick = onProfileClick) {
+                    Icon(
+                        imageVector = MeshtasticIcons.Person,
+                        contentDescription = stringResource(Res.string.pangea_profile),
+                    )
+                }
+            }
+            if (onGroupInfoClick != null) {
+                IconButton(onClick = onGroupInfoClick) {
+                    Icon(
+                        imageVector = MeshtasticIcons.Group,
+                        contentDescription = stringResource(Res.string.pangea_group_info),
+                    )
+                }
+            }
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    imageVector = MeshtasticIcons.Search,
+                    contentDescription = stringResource(Res.string.search_messages),
+                )
+            }
+            MessageTopBarActions(
+                showQuickChat = showQuickChat,
+                onToggleQuickChat = onToggleQuickChat,
+                onNavigateToQuickChatOptions = onNavigateToQuickChatOptions,
+                channelIndex = channelIndex,
+                mismatchKey = mismatchKey,
+                showFilterToggle = showFilterToggle,
+                filteringDisabled = filteringDisabled,
+                onToggleFilteringDisabled = onToggleFilteringDisabled,
+                filteredCount = filteredCount,
+                showFiltered = showFiltered,
+                onToggleShowFiltered = onToggleShowFiltered,
+                onNavigateToFilterSettings = onNavigateToFilterSettings,
             )
-        }
-    },
-    actions = {
-        IconButton(onClick = onSearchClick) {
-            Icon(
-                imageVector = MeshtasticIcons.Search,
-                contentDescription = stringResource(Res.string.search_messages),
-            )
-        }
-        MessageTopBarActions(
-            showQuickChat = showQuickChat,
-            onToggleQuickChat = onToggleQuickChat,
-            onNavigateToQuickChatOptions = onNavigateToQuickChatOptions,
-            channelIndex = channelIndex,
-            mismatchKey = mismatchKey,
-            showFilterToggle = showFilterToggle,
-            filteringDisabled = filteringDisabled,
-            onToggleFilteringDisabled = onToggleFilteringDisabled,
-            filteredCount = filteredCount,
-            showFiltered = showFiltered,
-            onToggleShowFiltered = onToggleShowFiltered,
-            onNavigateToFilterSettings = onNavigateToFilterSettings,
-        )
-    },
-)
+        },
+    )
 
 @Composable
 private fun MessageTopBarActions(

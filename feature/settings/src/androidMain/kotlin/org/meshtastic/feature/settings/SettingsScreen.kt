@@ -47,6 +47,7 @@ import org.koin.core.qualifier.named
 import org.meshtastic.core.common.di.GOOGLE_SERVICES_AVAILABLE
 import org.meshtastic.core.common.util.UnitsOverride
 import org.meshtastic.core.common.util.nowMillis
+import org.meshtastic.core.navigation.ConnectionsRoute
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.navigation.WifiProvisionRoute
@@ -90,6 +91,9 @@ import org.meshtastic.feature.settings.component.UnitsOption
 import org.meshtastic.feature.settings.component.UnitsPickerDialog
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
+import org.meshtastic.feature.settings.pangea.MyProfileSection
+import org.meshtastic.feature.settings.pangea.MyRadioSection
+import org.meshtastic.feature.settings.pangea.PangeaHelpSheet
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.component.EditDeviceProfileDialog
@@ -113,6 +117,9 @@ fun SettingsScreen(
     val appFunctionsAvailable: Boolean = koinInject(qualifier = named(GOOGLE_SERVICES_AVAILABLE))
     val hiddenFeaturesUnlocked by settingsViewModel.hiddenFeaturesUnlocked.collectAsStateWithLifecycle()
     val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
+    // Pangea: Help & Documentation opens Pangea's own guides (Pangea-Apple PangeaHelp).
+    var showPangeaHelp by rememberSaveable { mutableStateOf(false) }
+    if (showPangeaHelp) PangeaHelpSheet(expertMode = expertModeEnabled, onDismiss = { showPangeaHelp = false })
     val localConfig by settingsViewModel.localConfig.collectAsStateWithLifecycle()
     val ourNode by settingsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
     val isConnected by settingsViewModel.isConnected.collectAsStateWithLifecycle(false)
@@ -241,6 +248,12 @@ fun SettingsScreen(
                 includeAppLocal = state.isLocal,
             )
 
+            // Pangea: my name, photo, emoji and @code, shared with the people and groups I talk to.
+            if (state.isLocal) {
+                MyProfileSection()
+                MyRadioSection(onPairRadio = { onNavigate(ConnectionsRoute.Connections()) })
+            }
+
             RadioConfigItemList(
                 state = state,
                 isManaged = localConfig.security?.is_managed ?: false,
@@ -360,7 +373,7 @@ fun SettingsScreen(
                     text = stringResource(Res.string.help_and_documentation),
                     leadingIcon = MeshtasticIcons.HelpOutline,
                 ) {
-                    onNavigate(SettingsRoute.HelpDocs)
+                    showPangeaHelp = true
                 }
                 if (state.isLocal) {
                     ListItem(text = stringResource(Res.string.device_links), leadingIcon = MeshtasticIcons.Device) {

@@ -36,6 +36,7 @@ import org.meshtastic.core.model.util.getChannel
 import org.meshtastic.core.repository.ConnectionStateProvider
 import org.meshtastic.core.repository.NodeRepository
 import org.meshtastic.core.repository.PacketRepository
+import org.meshtastic.core.repository.PangeaProfileStore
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.ui.util.SnackbarManager
 import org.meshtastic.core.ui.viewmodel.safeLaunch
@@ -51,6 +52,7 @@ class ContactsViewModel(
     private val snackbarManager: SnackbarManager,
     radioConfigRepository: RadioConfigRepository,
     connectionStateProvider: ConnectionStateProvider,
+    private val pangeaProfiles: PangeaProfileStore,
 ) : ViewModel() {
     val ourNodeInfo = nodeRepository.ourNodeInfo
 
@@ -69,6 +71,9 @@ class ContactsViewModel(
 
     val connectionState = connectionStateProvider.connectionState
 
+    /** Set by the screen from its string resource, so the list can name the primary channel. */
+    var everyoneNearby: String = "Everyone Nearby"
+
     val unreadCountTotal = packetRepository.getUnreadCountTotal().stateInWhileSubscribed(0)
 
     val channels =
@@ -76,7 +81,10 @@ class ContactsViewModel(
 
     // Combine node info and myId to reduce argument count in subsequent combines
     private val identityFlow: Flow<Pair<MyNodeInfo?, String?>> =
-        combine(nodeRepository.myNodeInfo, nodeRepository.myId) { info, id -> Pair(info, id) }
+        // Pangea: profile changes (a card, a nickname) re-run the list so rows show the new name.
+        combine(nodeRepository.myNodeInfo, nodeRepository.myId, pangeaProfiles.contacts) { info, id, _ ->
+            Pair(info, id)
+        }
 
     /**
      * Node numbers we hold a public key for. Narrowed to a set and de-duplicated on purpose: the contact list has to
@@ -130,10 +138,14 @@ class ContactsViewModel(
                     when {
                         isRetired -> settings[contactKey]?.displayName.orEmpty()
 
+                        // Pangea: the primary channel is the public mesh everyone with default settings shares.
+                        toBroadcast && packetData.channel == 0 -> everyoneNearby
+
                         toBroadcast ->
                             channelSet.getChannel(packetData.channel)?.name ?: "Channel ${packetData.channel}"
 
-                        else -> user.long_name
+                        // Pangea: nickname, then the name they chose, then their radio name.
+                        else -> pangeaProfiles.name(node.num.toLong() and UINT32_MASK, user.long_name)
                     }
 
                 Contact(
@@ -209,6 +221,7 @@ class ContactsViewModel(
     }
 
     companion object {
+        private const val UINT32_MASK = 0xFFFFFFFFL
         private const val KEY_COLLAPSED_SECTIONS = "collapsed_contact_sections"
 
         /** A retired channel has no slot number to show as an avatar, so its name is abbreviated instead. */

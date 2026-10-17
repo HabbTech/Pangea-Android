@@ -34,6 +34,7 @@ import org.meshtastic.core.repository.ConnectionStateProvider
 import org.meshtastic.core.repository.PacketRepository
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.testing.FakeNodeRepository
+import org.meshtastic.core.testing.FakePangeaProfileStore
 import org.meshtastic.core.ui.util.SnackbarManager
 import org.meshtastic.proto.ChannelSet
 import kotlin.test.AfterTest
@@ -70,6 +71,7 @@ class ContactsViewModelTest {
                 snackbarManager = SnackbarManager(),
                 radioConfigRepository = radioConfigRepository,
                 connectionStateProvider = connectionStateProvider,
+                pangeaProfiles = FakePangeaProfileStore(),
             )
     }
 
@@ -97,6 +99,7 @@ class ContactsViewModelTest {
                 SnackbarManager(),
                 radioConfigRepository,
                 connectionStateProvider,
+                FakePangeaProfileStore(),
             )
 
         viewModel.unreadCountTotal.test {
@@ -132,6 +135,7 @@ class ContactsViewModelTest {
                 SnackbarManager(),
                 radioConfigRepository,
                 connectionStateProvider,
+                FakePangeaProfileStore(),
             )
 
         viewModel.collapsedSections.test {

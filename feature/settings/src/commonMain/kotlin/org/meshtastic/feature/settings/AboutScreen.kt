@@ -62,13 +62,13 @@ import org.meshtastic.core.resources.documentation
 import org.meshtastic.core.resources.github_repository
 import org.meshtastic.core.resources.license
 import org.meshtastic.core.resources.license_notice
-import org.meshtastic.core.resources.need_hardware
-import org.meshtastic.core.resources.need_hardware_description
+import org.meshtastic.core.resources.pangea_buy_radios
+import org.meshtastic.core.resources.pangea_buy_radios_description
 import org.meshtastic.core.resources.pangea_copyright_notice
+import org.meshtastic.core.resources.pangea_what_is
+import org.meshtastic.core.resources.pangea_what_is_description
 import org.meshtastic.core.resources.project_information
 import org.meshtastic.core.resources.website
-import org.meshtastic.core.resources.what_is_meshtastic
-import org.meshtastic.core.resources.what_is_meshtastic_description
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.icon.ChevronRight
@@ -87,10 +87,12 @@ private const val CROSSFADE_DURATION_MS = 500
 private val CAROUSEL_IMAGE_WIDTH = 110.dp
 private val CAROUSEL_IMAGE_HEIGHT = 130.dp
 
-private const val HARDWARE_URL = "https://meshtastic.org/#hardware"
-private const val GITHUB_REPO_URL = "https://github.com/meshtastic/Meshtastic-Android"
-private const val WEBSITE_URL = "https://meshtastic.org"
-private const val DOCS_URL = "https://meshtastic.org/docs/getting-started"
+// Pangea (Pangea-Apple About.swift): complete radios from AlloNode, habb.tech, and Pangea's own guides. The source
+// link stays, pointed at this fork, as the GPL notice above asks.
+private const val HARDWARE_URL = "https://www.etsy.com/shop/AlloNode"
+private const val GITHUB_REPO_URL = "https://github.com/HabbTech/Pangea-Android"
+private const val WEBSITE_URL = "https://habb.tech/"
+private const val DOCS_URL = "https://github.com/HabbTech/Pangea-Documentation/tree/main"
 private const val LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 
 private data class PopularDevice(val name: String, val svgFileName: String)
@@ -160,9 +162,9 @@ fun AboutScreen(
 
 @Composable
 private fun WhatIsMeshtasticSection(modifier: Modifier = Modifier) {
-    ExpressiveSection(title = stringResource(Res.string.what_is_meshtastic), modifier = modifier) {
+    ExpressiveSection(title = stringResource(Res.string.pangea_what_is), modifier = modifier) {
         Text(
-            text = stringResource(Res.string.what_is_meshtastic_description),
+            text = stringResource(Res.string.pangea_what_is_description),
             modifier = Modifier.padding(16.dp),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
@@ -298,13 +300,13 @@ private fun NeedHardwareRow(onOpenHardwareLink: () -> Unit, modifier: Modifier =
 
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = stringResource(Res.string.need_hardware),
+                text = stringResource(Res.string.pangea_buy_radios),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = stringResource(Res.string.need_hardware_description),
+                text = stringResource(Res.string.pangea_buy_radios_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
