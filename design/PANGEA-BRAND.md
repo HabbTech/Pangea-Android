@@ -6,7 +6,11 @@
 
 ## Brand
 
-Pangea = the supercontinent; dinosaur theme. Brand colour **`#F05511` — "FOSSIL"** in leet (F-0-5-5-1-1). Defined as `PangeaFossil` in `core/ui/.../theme/CustomColors.kt`. Used as the launcher-icon background and brand marks.
+Pangea = the supercontinent; dinosaur theme. Brand colour **`#F05511` — "FOSSIL"** in leet (F-0-5-5-1-1). Defined as `PangeaFossil` in `core/ui/.../theme/CustomColors.kt`. Used for brand marks.
+
+## Logo and launcher icon
+
+Source: `design/logo/pangea-logo.webp` (2000×2000): the Fossil footprint in contour lines, with pale grey (`#DBE2D7`) contours around it, on white. The launcher icon matches the iOS app icon: white background, the grey contours running to the edges, and the footprint inside the adaptive-icon safe zone so no launcher mask crops it. The themed (monochrome) icon is the footprint alone. Rebuild every density with `scripts/make-launcher-icon.py`; never hand-crop in Android Studio's Image Asset tool.
 
 ## Palette (M3 primary family) — intentional divergence from Meshtastic green
 
@@ -24,7 +28,7 @@ Precedent: upstream darkened its own brand green (#67EA94 → #2D8F52) because b
 
 ## PangeaFossil (`#F05511`) usage rules
 
-- ✅ Launcher background, splash, hero/large graphics, decorative accents.
+- ✅ The logo's footprint, splash, hero/large graphics, decorative accents.
 - ✅ Accent (even text) on dark surfaces — 4.89.
 - ✅ Filled chip/badge with dark-rust `#3B0900` text — 4.91.
 - ❌ Never white text on it (3.49). ❌ Never as text on light surfaces (3.23). Icons/borders on light are fine (≥3.0 component bar).
