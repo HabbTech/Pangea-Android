@@ -18,6 +18,7 @@ package org.meshtastic.core.repository
 
 import kotlinx.coroutines.flow.StateFlow
 import okio.ByteString
+import org.meshtastic.core.model.pangea.ChatIcon
 import org.meshtastic.core.model.pangea.ContactProfile
 import org.meshtastic.core.model.pangea.GroupInvite
 import org.meshtastic.core.model.pangea.MyProfile
@@ -59,6 +60,14 @@ interface PangeaProfileStore {
 
     /** Saved contacts, sorted by the name each row shows. */
     fun contactNums(radioName: (Long) -> String? = { null }): List<Long>
+
+    /**
+     * Emoji-and-colour icons for group chats and Everyone Nearby, by [org.meshtastic.core.model.pangea.ChatIcons] key.
+     */
+    val chatIcons: StateFlow<Map<String, ChatIcon>>
+
+    /** Null puts the chat back to its symbol. */
+    fun setChatIcon(key: String, icon: ChatIcon?)
 
     /** Settings → Clear App Data. */
     fun eraseAll()

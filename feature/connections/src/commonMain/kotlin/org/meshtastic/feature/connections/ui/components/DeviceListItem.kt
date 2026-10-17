@@ -49,11 +49,13 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.ConnectionState
+import org.meshtastic.core.model.pangea.RadioAutoConfig
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.action_select_device
 import org.meshtastic.core.resources.add
 import org.meshtastic.core.resources.bluetooth
 import org.meshtastic.core.resources.network
+import org.meshtastic.core.resources.pangea_radio_serial
 import org.meshtastic.core.resources.serial
 import org.meshtastic.core.ui.component.NodeChip
 import org.meshtastic.core.ui.component.Rssi
@@ -186,7 +188,10 @@ private fun DeviceHeadline(device: DeviceListEntry) {
             DeviceName(text = node.user.long_name.ifBlank { device.name }, modifier = Modifier.weight(1f))
         }
     } else {
-        DeviceName(text = device.name)
+        // Pangea: a radio advertising PANGEA:ID:<serial> reads as "Pangea Radio <serial>" (Pangea-Apple
+        // MyRadioSection).
+        val serial = RadioAutoConfig.pangeaSerial(device.name)
+        DeviceName(text = serial?.let { stringResource(Res.string.pangea_radio_serial, it) } ?: device.name)
     }
 }
 

@@ -17,6 +17,7 @@
 package org.meshtastic.core.model.pangea
 
 import kotlinx.serialization.Serializable
+import okio.ByteString.Companion.toByteString
 
 /** What I share about myself. Port of Pangea-Apple `MyProfile`. */
 @Serializable
@@ -103,4 +104,21 @@ data class SavedProfiles(
     val contacts: Map<Long, ContactProfile> = emptyMap(),
     val groupSends: Map<String, GroupSend> = emptyMap(),
     val ledger: ProfileLedger = ProfileLedger(),
+    val chatIcons: Map<String, ChatIcon> = emptyMap(),
 )
+
+/** The picture a group chat or Everyone Nearby shows: an emoji and a colour, kept on this device (iOS ChatIcons). */
+@Serializable data class ChatIcon(val emoji: String, val color: Int)
+
+object ChatIcons {
+    /** Everyone Nearby is one chat whatever its slot holds. */
+    const val EVERYONE = "everyone"
+
+    /**
+     * A group is its name and key, so its icon stays with it if it moves slot, and a different group in the same slot
+     * doesn't inherit it. Same key as Pangea-Apple's ChatIconStore.
+     */
+    fun key(name: String, psk: okio.ByteString): String =
+        PangeaWire.tag(PangeaWire.concat(name.encodeToByteArray().toByteString(), byteArrayOf(0).toByteString(), psk))
+            .hex()
+}

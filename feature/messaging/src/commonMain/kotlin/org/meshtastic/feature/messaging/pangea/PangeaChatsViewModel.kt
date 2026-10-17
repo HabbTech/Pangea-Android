@@ -31,6 +31,8 @@ import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.NodeAddress
+import org.meshtastic.core.model.pangea.ChatIcon
+import org.meshtastic.core.model.pangea.ChatIcons
 import org.meshtastic.core.model.pangea.ContactProfile
 import org.meshtastic.core.model.pangea.GroupChatError
 import org.meshtastic.core.model.pangea.GroupChatException
@@ -235,6 +237,20 @@ class PangeaChatsViewModel(
         profiles.name(num, nodeRepository.nodeDBbyNum.value[num.toInt()]?.user?.long_name)
 
     fun reportShareError(error: Throwable) = reportGroupError(error)
+
+    // MARK: Chat icons
+
+    val chatIcons: StateFlow<Map<String, ChatIcon>> = profiles.chatIcons
+
+    /** The icon key for a channel: Everyone Nearby, or the group by its name and key; null for no such channel. */
+    @Suppress("ReturnCount")
+    fun chatIconKey(channelIndex: Int): String? {
+        if (channelIndex == 0) return ChatIcons.EVERYONE
+        val group = groups.value.firstOrNull { it.index == channelIndex } ?: return null
+        return ChatIcons.key(group.name, group.psk)
+    }
+
+    fun setChatIcon(key: String, icon: ChatIcon?) = profiles.setChatIcon(key, icon)
 
     // MARK: Profiles
 

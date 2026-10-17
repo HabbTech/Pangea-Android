@@ -78,6 +78,7 @@ import org.meshtastic.core.ui.icon.List
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.SettingsRemote
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.pangea.MyProfileSection
 import org.meshtastic.core.ui.util.isBluetoothSupported
 import org.meshtastic.feature.settings.component.AppInfoSection
 import org.meshtastic.feature.settings.component.AppearanceSettingsContent
@@ -91,7 +92,6 @@ import org.meshtastic.feature.settings.component.UnitsOption
 import org.meshtastic.feature.settings.component.UnitsPickerDialog
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
-import org.meshtastic.feature.settings.pangea.MyProfileSection
 import org.meshtastic.feature.settings.pangea.MyRadioSection
 import org.meshtastic.feature.settings.pangea.PangeaHelpSheet
 import org.meshtastic.feature.settings.radio.RadioConfigItemList

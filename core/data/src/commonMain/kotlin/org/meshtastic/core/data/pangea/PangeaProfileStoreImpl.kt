@@ -17,6 +17,8 @@
 package org.meshtastic.core.data.pangea
 
 import co.touchlab.kermit.Logger
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +32,7 @@ import org.meshtastic.core.common.util.nowMillis
 import org.meshtastic.core.database.getDatabaseDirectory
 import org.meshtastic.core.database.getFileSystem
 import org.meshtastic.core.model.pangea.CardSource
+import org.meshtastic.core.model.pangea.ChatIcon
 import org.meshtastic.core.model.pangea.ContactProfile
 import org.meshtastic.core.model.pangea.GroupSend
 import org.meshtastic.core.model.pangea.MyProfile
@@ -53,7 +56,7 @@ class PangeaProfileStoreImpl : PangeaProfileFiles(getFileSystem(), defaultFolder
 /** The store itself, on any file system and folder (tests use their own). */
 @Suppress("TooManyFunctions", "ReturnCount")
 open class PangeaProfileFiles(private val fileSystem: FileSystem, private val folder: Path) : PangeaProfileStore {
-    private val lock = Any()
+    private val lock = SynchronizedObject()
     private val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
@@ -68,6 +71,9 @@ open class PangeaProfileFiles(private val fileSystem: FileSystem, private val fo
 
     private val _downloads = MutableStateFlow<Map<Long, Double>>(emptyMap())
     override val downloads: StateFlow<Map<Long, Double>> = _downloads.asStateFlow()
+
+    private val _chatIcons = MutableStateFlow<Map<String, ChatIcon>>(emptyMap())
+    override val chatIcons: StateFlow<Map<String, ChatIcon>> = _chatIcons.asStateFlow()
 
     private var groupSends: Map<String, GroupSend> = emptyMap()
     private var ledger = ProfileLedger()
@@ -98,6 +104,7 @@ open class PangeaProfileFiles(private val fileSystem: FileSystem, private val fo
         _contacts.value = saved.contacts.mapValues { (_, profile) -> profile.copy(card = profile.card?.cleaned) }
         groupSends = saved.groupSends
         ledger = saved.ledger
+        _chatIcons.value = saved.chatIcons.filter { ProfileCard.cleanEmoji(it.value.emoji).isNotEmpty() }
     }
 
     private fun setAsidePath(): Path {
@@ -106,7 +113,7 @@ open class PangeaProfileFiles(private val fileSystem: FileSystem, private val fo
     }
 
     private fun save() {
-        val saved = SavedProfiles(_me.value, _contacts.value, groupSends, ledger)
+        val saved = SavedProfiles(_me.value, _contacts.value, groupSends, ledger, _chatIcons.value)
         val text = json.encodeToString(SavedProfiles.serializer(), saved)
         val temp = folder / "$FILE_NAME.tmp"
         runCatching {
@@ -278,7 +285,19 @@ open class PangeaProfileFiles(private val fileSystem: FileSystem, private val fo
         save()
     }
 
+    override fun setChatIcon(key: String, icon: ChatIcon?) = synchronized(lock) {
+        _chatIcons.update { icons ->
+            if (icon != null && ProfileCard.cleanEmoji(icon.emoji).isNotEmpty()) {
+                icons + (key to icon)
+            } else {
+                icons - key
+            }
+        }
+        save()
+    }
+
     override fun eraseAll() = synchronized(lock) {
+        _chatIcons.value = emptyMap()
         _me.value = MyProfile()
         _contacts.value = emptyMap()
         _downloads.value = emptyMap()

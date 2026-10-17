@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.meshtastic.feature.settings.pangea
+package org.meshtastic.core.ui.pangea
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -83,19 +83,11 @@ import org.meshtastic.core.resources.pangea_all_emoji
 import org.meshtastic.core.resources.pangea_choose_photo
 import org.meshtastic.core.resources.pangea_display_name
 import org.meshtastic.core.resources.pangea_edit_profile
-import org.meshtastic.core.resources.pangea_forget_radio
-import org.meshtastic.core.resources.pangea_forget_radio_message
-import org.meshtastic.core.resources.pangea_forget_radio_title
 import org.meshtastic.core.resources.pangea_my_profile
-import org.meshtastic.core.resources.pangea_my_radio
-import org.meshtastic.core.resources.pangea_no_radio_paired
-import org.meshtastic.core.resources.pangea_pair_different_radio
-import org.meshtastic.core.resources.pangea_pair_radio
 import org.meshtastic.core.resources.pangea_profile_shared_with
-import org.meshtastic.core.resources.pangea_radio_connected
-import org.meshtastic.core.resources.pangea_radio_connecting
-import org.meshtastic.core.resources.pangea_radio_not_connected
 import org.meshtastic.core.resources.pangea_remove_photo
+import org.meshtastic.core.resources.pangea_setup_profile
+import org.meshtastic.core.resources.pangea_setup_profile_hint
 import org.meshtastic.core.resources.save
 import org.meshtastic.core.ui.component.AvatarPalette
 import org.meshtastic.core.ui.component.PangeaAvatar
@@ -204,7 +196,7 @@ fun MyProfileSection(modifier: Modifier = Modifier, viewModel: MyProfileViewMode
 @Suppress("LongMethod")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileEditorSheet(
+fun ProfileEditorSheet(
     state: MyProfileState,
     onSave: (String, String, Int, PhotoChange?) -> Unit,
     onDismiss: () -> Unit,
@@ -343,74 +335,34 @@ private fun ColorDots(selected: Int, onPick: (Int) -> Unit) {
 
 private const val PICKS_PER_ROW = 8
 
-/** My radio: its name and whether it's connected, with Pair and Forget (Pangea-Apple MyRadioSection). */
+/**
+ * "Set Up Your Profile" at the top of Chats until I've named myself (Pangea-Apple's setup step after pairing), so
+ * friends see a name rather than "Meshtastic 1a2b".
+ */
 @Composable
-fun MyRadioSection(
-    onPairRadio: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: MyProfileViewModel = koinViewModel(),
-) {
+fun SetupProfilePrompt(modifier: Modifier = Modifier, viewModel: MyProfileViewModel = koinViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val connection by viewModel.connectionState.collectAsStateWithLifecycle()
-    var confirmForget by remember { mutableStateOf(false) }
-    val paired = state.code != null
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(Res.string.pangea_my_radio), style = MaterialTheme.typography.labelMedium)
-            Text(
-                state.radioName.ifEmpty { stringResource(Res.string.pangea_no_radio_paired) },
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                stringResource(
-                    when (connection) {
-                        ConnectionState.Connected -> Res.string.pangea_radio_connected
-                        ConnectionState.Connecting -> Res.string.pangea_radio_connecting
-                        else -> Res.string.pangea_radio_not_connected
-                    },
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color =
-                if (connection == ConnectionState.Connected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onPairRadio) {
+    var editing by rememberSaveable { mutableStateOf(false) }
+    val needsName =
+        state.code != null && state.profile.displayName.isEmpty() && RadioAutoConfig.hasDefaultName(state.radioName)
+    if (needsName) {
+        Card(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(Res.string.pangea_setup_profile), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        stringResource(
-                            if (paired) Res.string.pangea_pair_different_radio else Res.string.pangea_pair_radio,
-                        ),
+                        stringResource(Res.string.pangea_setup_profile_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (paired) {
-                    TextButton(onClick = { confirmForget = true }) {
-                        Text(stringResource(Res.string.pangea_forget_radio))
-                    }
-                }
+                Button(onClick = { editing = true }) { Text(stringResource(Res.string.pangea_edit_profile)) }
             }
         }
     }
-    if (confirmForget) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { confirmForget = false },
-            title = { Text(stringResource(Res.string.pangea_forget_radio_title)) },
-            text = { Text(stringResource(Res.string.pangea_forget_radio_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmForget = false
-                        viewModel.forgetRadio()
-                    },
-                ) {
-                    Text(stringResource(Res.string.pangea_forget_radio))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmForget = false }) { Text(stringResource(Res.string.cancel)) }
-            },
-        )
-    }
+    if (editing) ProfileEditorSheet(state, onSave = viewModel::save, onDismiss = { editing = false })
 }

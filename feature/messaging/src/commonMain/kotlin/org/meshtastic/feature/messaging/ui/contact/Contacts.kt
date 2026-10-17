@@ -42,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -84,6 +85,8 @@ import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.Contact
 import org.meshtastic.core.model.ContactKey
 import org.meshtastic.core.model.ContactSettings
+import org.meshtastic.core.model.NodeAddress
+import org.meshtastic.core.model.pangea.ChatIcon
 import org.meshtastic.core.model.util.TimeConstants
 import org.meshtastic.core.model.util.formatMuteRemainingTime
 import org.meshtastic.core.resources.Res
@@ -144,14 +147,18 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.SelectAll
 import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
+import org.meshtastic.core.ui.pangea.SetupProfilePrompt
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.core.ui.util.rememberShowToastResource
+import org.meshtastic.feature.messaging.pangea.AvatarVisual
 import org.meshtastic.feature.messaging.pangea.GroupInvitesSection
+import org.meshtastic.feature.messaging.pangea.LocalPangeaAvatars
 import org.meshtastic.feature.messaging.pangea.NewGroupDialog
 import org.meshtastic.feature.messaging.pangea.NewMessageSheet
 import org.meshtastic.feature.messaging.pangea.PangeaChatsViewModel
 import org.meshtastic.feature.messaging.pangea.PendingPangeaLink
 import org.meshtastic.feature.messaging.pangea.RadioStatusPill
+import org.meshtastic.feature.messaging.pangea.dmNodeNum
 import org.meshtastic.proto.ChannelSet
 import kotlin.time.Duration.Companion.days
 
@@ -261,113 +268,135 @@ fun ContactsScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            MainAppBar(
-                title = stringResource(Res.string.conversations),
-                ourNode = ourNode,
-                showNodeChip = ourNode != null && connectionState is ConnectionState.Connected,
-                canNavigateUp = false,
-                onNavigateUp = {},
-                actions = {
-                    IconButton(onClick = { showNewMessage = true }) {
-                        Icon(MeshtasticIcons.Edit, contentDescription = stringResource(Res.string.pangea_new_message))
-                    }
-                    IconButton(onClick = onNavigateToFilterSettings) {
-                        Icon(
-                            MeshtasticIcons.FilterList,
-                            contentDescription = stringResource(Res.string.filter_settings),
-                        )
-                    }
-                    val unreadCountTotal by viewModel.unreadCountTotal.collectAsStateWithLifecycle(0)
-                    if (unreadCountTotal > 0) {
-                        IconButton(onClick = { viewModel.markAllAsRead() }) {
-                            Icon(
-                                MeshtasticIcons.MarkChatRead,
-                                contentDescription = stringResource(Res.string.mark_as_read),
-                            )
+    val pangeaProfiles by pangeaViewModel.profileContacts.collectAsStateWithLifecycle()
+    val chatIcons by pangeaViewModel.chatIcons.collectAsStateWithLifecycle()
+    val pangeaGroups by pangeaViewModel.groups.collectAsStateWithLifecycle()
+    val pangeaAvatars: (String) -> AvatarVisual? =
+        remember(pangeaProfiles, chatIcons, pangeaGroups) {
+            { key ->
+                channelIconOf(key, pangeaViewModel, chatIcons)
+                    ?: dmNodeNum(key)?.let { num ->
+                        pangeaProfiles[num]?.let { profile ->
+                            val photo = if (profile.savedPhotoVersion != 0L) pangeaViewModel.photo(num) else null
+                            AvatarVisual(photo, profile.card?.emoji.orEmpty(), profile.card?.color)
                         }
                     }
-                },
-                onClickChip = { onClickNodeChip(it.num) },
-            )
-        },
-        floatingActionButton = {
-            if (connectionState is ConnectionState.Connected) {
-                MeshtasticImportFAB(
-                    onImport = { uriString ->
-                        val onInvalid: () -> Unit = { scope.launch { showToast(Res.string.channel_invalid) } }
-                        parseDeepLinkOrInvalid(uriString, onHandleDeepLink, onInvalid)
+            }
+        }
+
+    CompositionLocalProvider(LocalPangeaAvatars provides pangeaAvatars) {
+        Scaffold(
+            topBar = {
+                MainAppBar(
+                    title = stringResource(Res.string.conversations),
+                    ourNode = ourNode,
+                    showNodeChip = ourNode != null && connectionState is ConnectionState.Connected,
+                    canNavigateUp = false,
+                    onNavigateUp = {},
+                    actions = {
+                        IconButton(onClick = { showNewMessage = true }) {
+                            Icon(
+                                MeshtasticIcons.Edit,
+                                contentDescription = stringResource(Res.string.pangea_new_message),
+                            )
+                        }
+                        IconButton(onClick = onNavigateToFilterSettings) {
+                            Icon(
+                                MeshtasticIcons.FilterList,
+                                contentDescription = stringResource(Res.string.filter_settings),
+                            )
+                        }
+                        val unreadCountTotal by viewModel.unreadCountTotal.collectAsStateWithLifecycle(0)
+                        if (unreadCountTotal > 0) {
+                            IconButton(onClick = { viewModel.markAllAsRead() }) {
+                                Icon(
+                                    MeshtasticIcons.MarkChatRead,
+                                    contentDescription = stringResource(Res.string.mark_as_read),
+                                )
+                            }
+                        }
                     },
-                    onShareChannels = onNavigateToShare,
-                    isContactContext = false,
+                    onClickChip = { onClickNodeChip(it.num) },
+                )
+            },
+            floatingActionButton = {
+                if (connectionState is ConnectionState.Connected) {
+                    MeshtasticImportFAB(
+                        onImport = { uriString ->
+                            val onInvalid: () -> Unit = { scope.launch { showToast(Res.string.channel_invalid) } }
+                            parseDeepLinkOrInvalid(uriString, onHandleDeepLink, onInvalid)
+                        },
+                        onShareChannels = onNavigateToShare,
+                        isContactContext = false,
+                    )
+                }
+            },
+        ) { paddingValues ->
+            Column(modifier = Modifier.padding(paddingValues)) {
+                if (isSelectionModeActive) {
+                    // Display selection toolbar when in selection mode
+                    SelectionToolbar(
+                        selectedCount = selectedContactKeys.size,
+                        onCloseSelection = { selectedContactKeys.clear() },
+                        onMuteSelected = { showMuteDialog = true },
+                        onMarkUnread = {
+                            viewModel.markUnread(selectedContactKeys.toList())
+                            selectedContactKeys.clear()
+                        },
+                        onTogglePin = {
+                            viewModel.setPinned(selectedContactKeys.toList(), !isAllPinned)
+                            selectedContactKeys.clear()
+                        },
+                        onDeleteSelected = { showDeleteDialog = true },
+                        onSelectAll = {
+                            selectedContactKeys.clear()
+                            selectedContactKeys.addAll(contacts.map { it.contactKey })
+                        },
+                        isAllMuted = isAllMuted, // Pass the derived state
+                        isAllPinned = isAllPinned,
+                    )
+                }
+
+                RadioStatusPill(
+                    connectionState = connectionState,
+                    expertMode = pangeaViewModel.expertModeEnabled.collectAsStateWithLifecycle().value,
+                )
+                SetupProfilePrompt()
+                GroupInvitesSection(viewModel = pangeaViewModel, onJoin = onNavigateToMessages)
+
+                val collapsedSections by viewModel.collapsedSections.collectAsStateWithLifecycle()
+
+                val mutedLabel = stringResource(Res.string.contact_muted_snackbar)
+                val undoLabel = stringResource(Res.string.undo)
+
+                ContactListView(
+                    contacts = contacts,
+                    selectedList = selectedContactKeys,
+                    activeContactKey = activeContactKey,
+                    onClick = onContactClick,
+                    onLongClick = onContactLongClick,
+                    onNodeChipClick = onNodeChipClick,
+                    onSwipeMute = { contact ->
+                        val wasMuted = contact.isMuted
+                        viewModel.setMuteUntil(listOf(contact.contactKey), if (wasMuted) 0L else Long.MAX_VALUE)
+                        if (!wasMuted) {
+                            viewModel.showSnackbar(
+                                message = mutedLabel.replace("%1\$s", contact.longName),
+                                actionLabel = undoLabel,
+                                onAction = { viewModel.setMuteUntil(listOf(contact.contactKey), 0L) },
+                            )
+                        }
+                    },
+                    // Deleting a conversation drops its packets outright, so a swipe only nominates a target; the
+                    // confirmation opens once its message count has been read, so the dialog can never quote a stale
+                    // count from the previous selection.
+                    onSwipeDelete = { contact -> pendingSwipeDelete = contact },
+                    listState = contactsListState,
+                    channels = channels,
+                    collapsedSections = collapsedSections,
+                    onToggleSectionCollapse = viewModel::toggleSectionCollapse,
                 )
             }
-        },
-    ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
-            if (isSelectionModeActive) {
-                // Display selection toolbar when in selection mode
-                SelectionToolbar(
-                    selectedCount = selectedContactKeys.size,
-                    onCloseSelection = { selectedContactKeys.clear() },
-                    onMuteSelected = { showMuteDialog = true },
-                    onMarkUnread = {
-                        viewModel.markUnread(selectedContactKeys.toList())
-                        selectedContactKeys.clear()
-                    },
-                    onTogglePin = {
-                        viewModel.setPinned(selectedContactKeys.toList(), !isAllPinned)
-                        selectedContactKeys.clear()
-                    },
-                    onDeleteSelected = { showDeleteDialog = true },
-                    onSelectAll = {
-                        selectedContactKeys.clear()
-                        selectedContactKeys.addAll(contacts.map { it.contactKey })
-                    },
-                    isAllMuted = isAllMuted, // Pass the derived state
-                    isAllPinned = isAllPinned,
-                )
-            }
-
-            RadioStatusPill(
-                connectionState = connectionState,
-                expertMode = pangeaViewModel.expertModeEnabled.collectAsStateWithLifecycle().value,
-            )
-            GroupInvitesSection(viewModel = pangeaViewModel, onJoin = onNavigateToMessages)
-
-            val collapsedSections by viewModel.collapsedSections.collectAsStateWithLifecycle()
-
-            val mutedLabel = stringResource(Res.string.contact_muted_snackbar)
-            val undoLabel = stringResource(Res.string.undo)
-
-            ContactListView(
-                contacts = contacts,
-                selectedList = selectedContactKeys,
-                activeContactKey = activeContactKey,
-                onClick = onContactClick,
-                onLongClick = onContactLongClick,
-                onNodeChipClick = onNodeChipClick,
-                onSwipeMute = { contact ->
-                    val wasMuted = contact.isMuted
-                    viewModel.setMuteUntil(listOf(contact.contactKey), if (wasMuted) 0L else Long.MAX_VALUE)
-                    if (!wasMuted) {
-                        viewModel.showSnackbar(
-                            message = mutedLabel.replace("%1\$s", contact.longName),
-                            actionLabel = undoLabel,
-                            onAction = { viewModel.setMuteUntil(listOf(contact.contactKey), 0L) },
-                        )
-                    }
-                },
-                // Deleting a conversation drops its packets outright, so a swipe only nominates a target; the
-                // confirmation opens once its message count has been read, so the dialog can never quote a stale
-                // count from the previous selection.
-                onSwipeDelete = { contact -> pendingSwipeDelete = contact },
-                listState = contactsListState,
-                channels = channels,
-                collapsedSections = collapsedSections,
-                onToggleSectionCollapse = viewModel::toggleSectionCollapse,
-            )
         }
     }
 
@@ -891,4 +920,13 @@ private fun ContactSectionHeader(title: String, count: Int, collapsed: Boolean, 
             tint = MaterialTheme.colorScheme.primary,
         )
     }
+}
+
+/** A group chat's or Everyone Nearby's own icon, from its conversation key ("2^all"). */
+@Suppress("ReturnCount")
+private fun channelIconOf(key: String, viewModel: PangeaChatsViewModel, icons: Map<String, ChatIcon>): AvatarVisual? {
+    if (!key.endsWith(NodeAddress.ID_BROADCAST)) return null
+    val index = key.removeSuffix(NodeAddress.ID_BROADCAST).toIntOrNull() ?: return null
+    val icon = viewModel.chatIconKey(index)?.let(icons::get) ?: return null
+    return AvatarVisual(photo = null, emoji = icon.emoji, color = icon.color)
 }

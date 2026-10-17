@@ -48,6 +48,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
@@ -125,8 +126,10 @@ import org.meshtastic.feature.messaging.component.QuickChatRow
 import org.meshtastic.feature.messaging.component.ReplySnippet
 import org.meshtastic.feature.messaging.component.ScrollToBottomFab
 import org.meshtastic.feature.messaging.component.TranslationModelDownloadDialog
+import org.meshtastic.feature.messaging.pangea.ChatIconSheet
 import org.meshtastic.feature.messaging.pangea.ContactProfileSheet
 import org.meshtastic.feature.messaging.pangea.GroupInfoSheet
+import org.meshtastic.feature.messaging.pangea.LocalPangeaPlainWording
 import org.meshtastic.feature.messaging.pangea.PangeaChatsViewModel
 
 private const val ROUNDED_CORNER_PERCENT = 100
@@ -166,6 +169,8 @@ fun MessageScreen(
     val pangeaGroups by pangeaViewModel.groups.collectAsStateWithLifecycle()
     var showGroupInfo by remember { mutableStateOf(false) }
     var showProfile by remember { mutableStateOf(false) }
+    var showChatIcon by remember { mutableStateOf(false) }
+    val chatIcons by pangeaViewModel.chatIcons.collectAsStateWithLifecycle()
     val pangeaExpert by pangeaViewModel.expertModeEnabled.collectAsStateWithLifecycle()
     val everyoneBell by pangeaViewModel.everyoneNearbyNotifications.collectAsStateWithLifecycle()
     val clipboardManager = LocalClipboard.current
@@ -415,6 +420,19 @@ fun MessageScreen(
             }
         }
 
+    if (showChatIcon) {
+        channelIndex?.let(pangeaViewModel::chatIconKey)?.let { key ->
+            ChatIconSheet(
+                title = title,
+                current = chatIcons[key],
+                onSave = {
+                    pangeaViewModel.setChatIcon(key, it)
+                    showChatIcon = false
+                },
+                onDismiss = { showChatIcon = false },
+            )
+        }
+    }
     if (showProfile) {
         val node = viewModel.getNode(nodeId)
         ContactProfileSheet(
@@ -442,177 +460,192 @@ fun MessageScreen(
             }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            if (inSelectionMode) {
-                ActionModeTopBar(
-                    selectedCount = selectedMessageIds.value.size,
-                    onAction = { action ->
-                        when (action) {
-                            MessageMenuAction.ClipboardCopy -> {
-                                val copiedText =
-                                    (0 until pagedMessages.itemCount)
-                                        .mapNotNull { pagedMessages[it] }
-                                        .filter { it.uuid in selectedMessageIds.value }
-                                        .joinToString("\n") {
-                                            // Copy what the bubble displays (matches the sheet's Copy action)
-                                            it.displayedText(searching = isSearchActive && searchQuery.isNotEmpty())
+    CompositionLocalProvider(LocalPangeaPlainWording provides !pangeaExpert) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                if (inSelectionMode) {
+                    ActionModeTopBar(
+                        selectedCount = selectedMessageIds.value.size,
+                        onAction = { action ->
+                            when (action) {
+                                MessageMenuAction.ClipboardCopy -> {
+                                    val copiedText =
+                                        (0 until pagedMessages.itemCount)
+                                            .mapNotNull { pagedMessages[it] }
+                                            .filter { it.uuid in selectedMessageIds.value }
+                                            .joinToString("\n") {
+                                                // Copy what the bubble displays (matches the sheet's Copy action)
+                                                it.displayedText(searching = isSearchActive && searchQuery.isNotEmpty())
+                                            }
+                                    onEvent(MessageScreenEvent.CopyToClipboard(copiedText))
+                                }
+
+                                MessageMenuAction.Delete -> showDeleteDialog = true
+
+                                MessageMenuAction.Dismiss -> selectedMessageIds.value = emptySet()
+
+                                MessageMenuAction.SelectAll -> {
+                                    // Note: Select All is disabled with pagination since we don't have
+                                    // access to the full message list. This would need to be reworked
+                                    // to select all currently loaded items instead.
+                                    selectedMessageIds.value =
+                                        if (selectedMessageIds.value.size == pagedMessages.itemCount) {
+                                            emptySet()
+                                        } else {
+                                            (0 until pagedMessages.itemCount)
+                                                .mapNotNull { pagedMessages[it]?.uuid }
+                                                .toSet()
                                         }
-                                onEvent(MessageScreenEvent.CopyToClipboard(copiedText))
-                            }
-
-                            MessageMenuAction.Delete -> showDeleteDialog = true
-
-                            MessageMenuAction.Dismiss -> selectedMessageIds.value = emptySet()
-
-                            MessageMenuAction.SelectAll -> {
-                                // Note: Select All is disabled with pagination since we don't have
-                                // access to the full message list. This would need to be reworked
-                                // to select all currently loaded items instead.
-                                selectedMessageIds.value =
-                                    if (selectedMessageIds.value.size == pagedMessages.itemCount) {
-                                        emptySet()
-                                    } else {
-                                        (0 until pagedMessages.itemCount).mapNotNull { pagedMessages[it]?.uuid }.toSet()
-                                    }
-                            }
-                        }
-                    },
-                )
-            } else if (isSearchActive) {
-                MessageSearchBar(
-                    query = searchQuery,
-                    onQueryChange = viewModel::setSearchQuery,
-                    onClose = viewModel::closeSearch,
-                    resultCount = searchResults.size,
-                    currentIndex = searchResultIndex,
-                    onPrevious = viewModel::navigateToPreviousResult,
-                    onNext = viewModel::navigateToNextResult,
-                )
-            } else {
-                MessageTopBar(
-                    title = title,
-                    channelIndex = channelIndex,
-                    mismatchKey = isMismatchKey,
-                    onNavigateBack = { onEvent(MessageScreenEvent.NavigateBack) },
-                    channels = channels,
-                    channelIndexParam = channelIndex,
-                    showQuickChat = showQuickChat,
-                    onToggleQuickChat = viewModel::toggleShowQuickChat,
-                    onNavigateToQuickChatOptions = navigateToQuickChatOptions,
-                    showFilterToggle = messageFilterEnabled,
-                    filteringDisabled = filteringDisabled,
-                    onToggleFilteringDisabled = {
-                        viewModel.setContactFilteringDisabled(contactKey, !filteringDisabled)
-                    },
-                    filteredCount = filteredCount,
-                    showFiltered = showFiltered,
-                    onToggleShowFiltered = viewModel::toggleShowFiltered,
-                    onNavigateToFilterSettings = navigateToFilterSettings,
-                    onSearchClick = viewModel::toggleSearch,
-                    onGroupInfoClick =
-                    pangeaGroups
-                        .firstOrNull { it.index == channelIndex && contactKey.endsWith(NodeAddress.ID_BROADCAST) }
-                        ?.let { { showGroupInfo = true } },
-                    onProfileClick =
-                    if (channelIndex == NodeAddress.PKC_CHANNEL_INDEX) ({ showProfile = true }) else null,
-                    everyoneBellOn =
-                    everyoneBell.takeIf {
-                        !pangeaExpert && channelIndex == 0 && contactKey.endsWith(NodeAddress.ID_BROADCAST)
-                    },
-                    onToggleEveryoneBell = pangeaViewModel::toggleEveryoneNearbyNotifications,
-                )
-            }
-        },
-        bottomBar = {
-            // A retired channel is read-only: there is no slot left to send on, so the composer and the quick-chat
-            // row are replaced outright rather than merely disabled.
-            if (isRetiredChannel) {
-                RetiredChannelNotice()
-            } else {
-                Column {
-                    AnimatedVisibility(visible = showQuickChat) {
-                        QuickChatRow(
-                            enabled = connectionState is ConnectionState.Connected,
-                            actions = quickChatActions,
-                            onClick = { action ->
-                                handleQuickChatAction(
-                                    action = action,
-                                    messageInputState = messageInputState,
-                                    onSendMessage = { text -> onEvent(MessageScreenEvent.SendMessage(text)) },
-                                )
-                            },
-                        )
-                    }
-                    ReplySnippet(
-                        originalMessage = originalMessage,
-                        onClearReply = { replyingToPacketId = null },
-                        ourNode = ourNode,
-                    )
-                    MessageInput(
-                        isEnabled = connectionState is ConnectionState.Connected,
-                        isHomoglyphEncodingEnabled = homoglyphEncodingEnabled,
-                        textFieldState = messageInputState,
-                        mentionCandidates = mentionCandidates,
-                        onSendMessage = {
-                            val messageText = messageInputState.text.toString().trim { it.isWhitespace() }
-                            if (messageText.isNotEmpty()) {
-                                onEvent(MessageScreenEvent.SendMessage(messageText, replyingToPacketId))
+                                }
                             }
                         },
                     )
+                } else if (isSearchActive) {
+                    MessageSearchBar(
+                        query = searchQuery,
+                        onQueryChange = viewModel::setSearchQuery,
+                        onClose = viewModel::closeSearch,
+                        resultCount = searchResults.size,
+                        currentIndex = searchResultIndex,
+                        onPrevious = viewModel::navigateToPreviousResult,
+                        onNext = viewModel::navigateToNextResult,
+                    )
+                } else {
+                    MessageTopBar(
+                        title = title,
+                        channelIndex = channelIndex,
+                        mismatchKey = isMismatchKey,
+                        onNavigateBack = { onEvent(MessageScreenEvent.NavigateBack) },
+                        channels = channels,
+                        channelIndexParam = channelIndex,
+                        showQuickChat = showQuickChat,
+                        onToggleQuickChat = viewModel::toggleShowQuickChat,
+                        onNavigateToQuickChatOptions = navigateToQuickChatOptions,
+                        showFilterToggle = messageFilterEnabled,
+                        filteringDisabled = filteringDisabled,
+                        onToggleFilteringDisabled = {
+                            viewModel.setContactFilteringDisabled(contactKey, !filteringDisabled)
+                        },
+                        filteredCount = filteredCount,
+                        showFiltered = showFiltered,
+                        onToggleShowFiltered = viewModel::toggleShowFiltered,
+                        onNavigateToFilterSettings = navigateToFilterSettings,
+                        onSearchClick = viewModel::toggleSearch,
+                        onGroupInfoClick =
+                        pangeaGroups
+                            .firstOrNull {
+                                it.index == channelIndex && contactKey.endsWith(NodeAddress.ID_BROADCAST)
+                            }
+                            ?.let { { showGroupInfo = true } },
+                        onProfileClick =
+                        if (channelIndex == NodeAddress.PKC_CHANNEL_INDEX) ({ showProfile = true }) else null,
+                        everyoneBellOn =
+                        everyoneBell.takeIf {
+                            !pangeaExpert && channelIndex == 0 && contactKey.endsWith(NodeAddress.ID_BROADCAST)
+                        },
+                        onToggleEveryoneBell = pangeaViewModel::toggleEveryoneNearbyNotifications,
+                        onChatIconClick =
+                        if (
+                            contactKey.endsWith(NodeAddress.ID_BROADCAST) &&
+                            channelIndex?.let(pangeaViewModel::chatIconKey) != null
+                        ) {
+                            { showChatIcon = true }
+                        } else {
+                            null
+                        },
+                    )
                 }
-            }
-        },
-    ) { paddingValues ->
-        Box(Modifier.fillMaxSize().padding(paddingValues).focusable()) {
-            MessageListPaged(
-                modifier = Modifier.fillMaxSize(),
-                listState = listState,
-                state =
-                MessageListPagedState(
-                    nodes = nodes,
-                    ourNode = ourNode,
-                    messages = pagedMessages,
-                    selectedIds = selectedMessageIds,
-                    contactKey = contactKey,
-                    firstUnreadMessageUuid = firstUnreadMessageUuid,
-                    hasUnreadMessages = hasUnreadMessages == true,
-                    filteredCount = filteredCount,
-                    showFiltered = showFiltered,
-                    filteringDisabled = filteringDisabled,
-                    searchQuery = if (isSearchActive) searchQuery else "",
-                    translationAvailable = translationAvailable,
-                    showFullMessageTimestamps = showFullMessageTimestamps,
-                    canReact = !isRetiredChannel,
-                    canSend = !isRetiredChannel,
-                ),
-                handlers =
-                MessageListHandlers(
-                    onUnreadChanged = { messageUuid, timestamp ->
-                        onEvent(MessageScreenEvent.ClearUnreadCount(messageUuid, timestamp))
-                    },
-                    // A retired conversation is read-only; the send path refuses these anyway, so do not offer
-                    // them.
-                    onSendReaction =
-                    if (isRetiredChannel) {
-                        { _, _ -> }
-                    } else {
-                        { emoji, id -> onEvent(MessageScreenEvent.SendReaction(emoji, id)) }
-                    },
-                    onClickChip = { onEvent(MessageScreenEvent.NodeDetails(it)) },
-                    onDeleteMessages = { viewModel.deleteMessages(it) },
-                    onSendMessage = { text, key -> if (!isRetiredChannel) viewModel.sendMessage(text, key) },
-                    onReply = { message -> if (!isRetiredChannel) replyingToPacketId = message?.packetId },
-                    onTranslate = { onEvent(MessageScreenEvent.TranslateMessage(it)) },
-                    onToggleTranslation = { onEvent(MessageScreenEvent.ToggleShowTranslated(it)) },
-                ),
-                quickEmojis = viewModel.frequentEmojis,
-            )
-            // Show FAB if we can scroll towards the newest messages (index 0).
-            if (listState.canScrollBackward) {
-                ScrollToBottomFab(coroutineScope, listState, unreadCount, newestUnreadSender)
+            },
+            bottomBar = {
+                // A retired channel is read-only: there is no slot left to send on, so the composer and the quick-chat
+                // row are replaced outright rather than merely disabled.
+                if (isRetiredChannel) {
+                    RetiredChannelNotice()
+                } else {
+                    Column {
+                        AnimatedVisibility(visible = showQuickChat) {
+                            QuickChatRow(
+                                enabled = connectionState is ConnectionState.Connected,
+                                actions = quickChatActions,
+                                onClick = { action ->
+                                    handleQuickChatAction(
+                                        action = action,
+                                        messageInputState = messageInputState,
+                                        onSendMessage = { text -> onEvent(MessageScreenEvent.SendMessage(text)) },
+                                    )
+                                },
+                            )
+                        }
+                        ReplySnippet(
+                            originalMessage = originalMessage,
+                            onClearReply = { replyingToPacketId = null },
+                            ourNode = ourNode,
+                        )
+                        MessageInput(
+                            isEnabled = connectionState is ConnectionState.Connected,
+                            isHomoglyphEncodingEnabled = homoglyphEncodingEnabled,
+                            textFieldState = messageInputState,
+                            mentionCandidates = mentionCandidates,
+                            onSendMessage = {
+                                val messageText = messageInputState.text.toString().trim { it.isWhitespace() }
+                                if (messageText.isNotEmpty()) {
+                                    onEvent(MessageScreenEvent.SendMessage(messageText, replyingToPacketId))
+                                }
+                            },
+                        )
+                    }
+                }
+            },
+        ) { paddingValues ->
+            Box(Modifier.fillMaxSize().padding(paddingValues).focusable()) {
+                MessageListPaged(
+                    modifier = Modifier.fillMaxSize(),
+                    listState = listState,
+                    state =
+                    MessageListPagedState(
+                        nodes = nodes,
+                        ourNode = ourNode,
+                        messages = pagedMessages,
+                        selectedIds = selectedMessageIds,
+                        contactKey = contactKey,
+                        firstUnreadMessageUuid = firstUnreadMessageUuid,
+                        hasUnreadMessages = hasUnreadMessages == true,
+                        filteredCount = filteredCount,
+                        showFiltered = showFiltered,
+                        filteringDisabled = filteringDisabled,
+                        searchQuery = if (isSearchActive) searchQuery else "",
+                        translationAvailable = translationAvailable,
+                        showFullMessageTimestamps = showFullMessageTimestamps,
+                        canReact = !isRetiredChannel,
+                        canSend = !isRetiredChannel,
+                    ),
+                    handlers =
+                    MessageListHandlers(
+                        onUnreadChanged = { messageUuid, timestamp ->
+                            onEvent(MessageScreenEvent.ClearUnreadCount(messageUuid, timestamp))
+                        },
+                        // A retired conversation is read-only; the send path refuses these anyway, so do not offer
+                        // them.
+                        onSendReaction =
+                        if (isRetiredChannel) {
+                            { _, _ -> }
+                        } else {
+                            { emoji, id -> onEvent(MessageScreenEvent.SendReaction(emoji, id)) }
+                        },
+                        onClickChip = { onEvent(MessageScreenEvent.NodeDetails(it)) },
+                        onDeleteMessages = { viewModel.deleteMessages(it) },
+                        onSendMessage = { text, key -> if (!isRetiredChannel) viewModel.sendMessage(text, key) },
+                        onReply = { message -> if (!isRetiredChannel) replyingToPacketId = message?.packetId },
+                        onTranslate = { onEvent(MessageScreenEvent.TranslateMessage(it)) },
+                        onToggleTranslation = { onEvent(MessageScreenEvent.ToggleShowTranslated(it)) },
+                    ),
+                    quickEmojis = viewModel.frequentEmojis,
+                )
+                // Show FAB if we can scroll towards the newest messages (index 0).
+                if (listState.canScrollBackward) {
+                    ScrollToBottomFab(coroutineScope, listState, unreadCount, newestUnreadSender)
+                }
             }
         }
     }

@@ -18,6 +18,7 @@ package org.meshtastic.feature.messaging.ui.contact
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,12 +60,15 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.archived_channel
 import org.meshtastic.core.resources.contact_draft_prefix
 import org.meshtastic.core.resources.contact_pinned
+import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.SecurityIcon
+import org.meshtastic.core.ui.component.rememberAvatarBitmap
 import org.meshtastic.core.ui.icon.History
 import org.meshtastic.core.ui.icon.Keep
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.VolumeOff
 import org.meshtastic.core.ui.theme.AppTheme
+import org.meshtastic.feature.messaging.pangea.LocalPangeaAvatars
 import org.meshtastic.proto.ChannelSet
 
 @Suppress("LongMethod")
@@ -127,23 +131,37 @@ private fun ContactHeader(
             AssistChipDefaults.assistChipColors(labelColor = Color(it.first), containerColor = Color(it.second))
         } ?: AssistChipDefaults.assistChipColors()
 
+    // Pangea: someone who set a photo or emoji shows it instead of their short-name chip.
+    val avatar = LocalPangeaAvatars.current(contact.contactKey)?.takeIf { it.hasCustomAvatar }
     Row(modifier = modifier.padding(0.dp), verticalAlignment = Alignment.CenterVertically) {
-        AssistChip(
-            onClick = onNodeChipClick,
-            modifier =
-            Modifier.width(IntrinsicSize.Min).heightIn(min = 32.dp).semantics {
-                contentDescription = contact.shortName
-            },
-            label = {
-                Text(
-                    text = contact.shortName,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.labelLarge,
-                    textAlign = TextAlign.Center,
-                )
-            },
-            colors = colors,
-        )
+        if (avatar != null) {
+            PangeaAvatar(
+                photo = rememberAvatarBitmap(avatar.photo),
+                emoji = avatar.emoji,
+                colorIndex = avatar.color,
+                initials = contact.shortName,
+                fallbackColor = contact.nodeColors?.let { Color(it.second) } ?: Color.Gray,
+                size = 32.dp,
+                modifier = Modifier.clickable(onClick = onNodeChipClick),
+            )
+        } else {
+            AssistChip(
+                onClick = onNodeChipClick,
+                modifier =
+                Modifier.width(IntrinsicSize.Min).heightIn(min = 32.dp).semantics {
+                    contentDescription = contact.shortName
+                },
+                label = {
+                    Text(
+                        text = contact.shortName,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = MaterialTheme.typography.labelLarge,
+                        textAlign = TextAlign.Center,
+                    )
+                },
+                colors = colors,
+            )
+        }
 
         // Show unlock icon for broadcast with default PSK
         val isBroadcast = with(contact.contactKey) { getOrNull(1) == '^' || endsWith("^all") || endsWith("^broadcast") }

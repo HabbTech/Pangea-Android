@@ -19,6 +19,7 @@ package org.meshtastic.core.testing
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import okio.ByteString
+import org.meshtastic.core.model.pangea.ChatIcon
 import org.meshtastic.core.model.pangea.ContactProfile
 import org.meshtastic.core.model.pangea.MyProfile
 import org.meshtastic.core.model.pangea.PangeaCode
@@ -57,6 +58,12 @@ class FakePangeaProfileStore : PangeaProfileStore {
 
     override fun contactNums(radioName: (Long) -> String?): List<Long> =
         contacts.value.filter { it.value.isContact }.keys.sorted()
+
+    override val chatIcons = MutableStateFlow<Map<String, ChatIcon>>(emptyMap())
+
+    override fun setChatIcon(key: String, icon: ChatIcon?) {
+        chatIcons.value = if (icon == null) chatIcons.value - key else chatIcons.value + (key to icon)
+    }
 
     override fun eraseAll() {
         me.value = MyProfile()

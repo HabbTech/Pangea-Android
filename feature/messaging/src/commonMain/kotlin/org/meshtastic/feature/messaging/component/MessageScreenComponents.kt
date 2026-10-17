@@ -94,6 +94,7 @@ import org.meshtastic.core.resources.jump_to_latest_from_and_more
 import org.meshtastic.core.resources.navigate_back
 import org.meshtastic.core.resources.new_messages_below
 import org.meshtastic.core.resources.overflow_menu
+import org.meshtastic.core.resources.pangea_chat_icon
 import org.meshtastic.core.resources.pangea_everyone_bell
 import org.meshtastic.core.resources.pangea_group_info
 import org.meshtastic.core.resources.pangea_profile
@@ -121,6 +122,7 @@ import org.meshtastic.core.ui.icon.Copy
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.FilterList
 import org.meshtastic.core.ui.icon.FilterListOff
+import org.meshtastic.core.ui.icon.FormatPaint
 import org.meshtastic.core.ui.icon.Group
 import org.meshtastic.core.ui.icon.KeyboardArrowDown
 import org.meshtastic.core.ui.icon.KeyboardArrowUp
@@ -139,6 +141,8 @@ import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.feature.messaging.DeliveryInfo
 import org.meshtastic.feature.messaging.TranslationDialogState
+import org.meshtastic.feature.messaging.pangea.LocalPangeaPlainWording
+import org.meshtastic.feature.messaging.pangea.plainDeliveryStatus
 import org.meshtastic.proto.ChannelSet
 
 // region ── ScrollToBottomFab ──
@@ -415,6 +419,8 @@ fun MessageTopBar(
     onProfileClick: (() -> Unit)? = null,
     // Pangea: Everyone Nearby's bell in standard mode; null elsewhere.
     everyoneBellOn: Boolean? = null,
+    // Pangea: the emoji-and-colour icon of a group chat or Everyone Nearby; null elsewhere.
+    onChatIconClick: (() -> Unit)? = null,
     onToggleEveryoneBell: () -> Unit = {},
 ) =
     TopAppBar(
@@ -437,30 +443,13 @@ fun MessageTopBar(
             }
         },
         actions = {
-            if (everyoneBellOn != null) {
-                IconButton(onClick = onToggleEveryoneBell) {
-                    Icon(
-                        imageVector = if (everyoneBellOn) MeshtasticIcons.VolumeUp else MeshtasticIcons.VolumeMute,
-                        contentDescription = stringResource(Res.string.pangea_everyone_bell),
-                    )
-                }
-            }
-            if (onProfileClick != null) {
-                IconButton(onClick = onProfileClick) {
-                    Icon(
-                        imageVector = MeshtasticIcons.Person,
-                        contentDescription = stringResource(Res.string.pangea_profile),
-                    )
-                }
-            }
-            if (onGroupInfoClick != null) {
-                IconButton(onClick = onGroupInfoClick) {
-                    Icon(
-                        imageVector = MeshtasticIcons.Group,
-                        contentDescription = stringResource(Res.string.pangea_group_info),
-                    )
-                }
-            }
+            PangeaTopBarActions(
+                onChatIconClick = onChatIconClick,
+                everyoneBellOn = everyoneBellOn,
+                onToggleEveryoneBell = onToggleEveryoneBell,
+                onProfileClick = onProfileClick,
+                onGroupInfoClick = onGroupInfoClick,
+            )
             IconButton(onClick = onSearchClick) {
                 Icon(
                     imageVector = MeshtasticIcons.Search,
@@ -483,6 +472,51 @@ fun MessageTopBar(
             )
         },
     )
+
+/** Pangea's top-bar buttons: chat icon, Everyone Nearby's bell, a person's profile, group info. */
+@Composable
+private fun PangeaTopBarActions(
+    onChatIconClick: (() -> Unit)?,
+    everyoneBellOn: Boolean?,
+    onToggleEveryoneBell: () -> Unit,
+    onProfileClick: (() -> Unit)?,
+    onGroupInfoClick: (() -> Unit)?,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (onChatIconClick != null) {
+            IconButton(onClick = onChatIconClick) {
+                Icon(
+                    imageVector = MeshtasticIcons.FormatPaint,
+                    contentDescription = stringResource(Res.string.pangea_chat_icon),
+                )
+            }
+        }
+        if (everyoneBellOn != null) {
+            IconButton(onClick = onToggleEveryoneBell) {
+                Icon(
+                    imageVector = if (everyoneBellOn) MeshtasticIcons.VolumeUp else MeshtasticIcons.VolumeMute,
+                    contentDescription = stringResource(Res.string.pangea_everyone_bell),
+                )
+            }
+        }
+        if (onProfileClick != null) {
+            IconButton(onClick = onProfileClick) {
+                Icon(
+                    imageVector = MeshtasticIcons.Person,
+                    contentDescription = stringResource(Res.string.pangea_profile),
+                )
+            }
+        }
+        if (onGroupInfoClick != null) {
+            IconButton(onClick = onGroupInfoClick) {
+                Icon(
+                    imageVector = MeshtasticIcons.Group,
+                    contentDescription = stringResource(Res.string.pangea_group_info),
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun MessageTopBarActions(
@@ -748,12 +782,15 @@ fun MessageStatusDialog(
     onDismiss: () -> Unit,
     isDirectMessage: Boolean = false,
 ) {
-    val (title, text) = message.getStatusStringRes(isDirectMessage)
+    val (title, meshText) = message.getStatusStringRes(isDirectMessage)
+    // Pangea: plain words outside Expert Mode, the mesh terms in it (Pangea-Apple DeliveryStatus).
+    val plain = LocalPangeaPlainWording.current
+    val text = if (plain) plainDeliveryStatus(message.status, message.routingError, isDirectMessage) else meshText
     DeliveryInfo(
         title = title,
         resendOption = resendOption,
         text = text,
-        detail = message.getStatusDetailRes(),
+        detail = if (plain) null else message.getStatusDetailRes(),
         relays = message.relays,
         onConfirm = onResend,
         onDismiss = onDismiss,
