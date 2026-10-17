@@ -22,17 +22,23 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,15 +68,27 @@ import org.meshtastic.core.ui.component.PangeaEmojiPicker
  * Pick the emoji and colour a group chat or Everyone Nearby shows, kept on this device (Pangea-Apple ChatIconSheet).
  */
 @Suppress("LongMethod")
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit, onDismiss: () -> Unit) {
     var emoji by remember { mutableStateOf(current?.emoji.orEmpty()) }
     var color by remember { mutableStateOf(current?.color ?: 0) }
     var showAll by remember { mutableStateOf(false) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    // Fully open, so Save is on screen rather than under a half-height sheet.
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        ),
+    ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
+            modifier =
+            Modifier.fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -88,21 +106,20 @@ fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            EmojiCatalog.suggestedEmoji.chunked(PER_ROW).forEach { row ->
-                Row {
-                    row.forEach { item ->
-                        val ring = if (item == emoji) MaterialTheme.colorScheme.primary else Color.Transparent
-                        Text(
-                            item,
-                            fontSize = 24.sp,
-                            modifier =
-                            Modifier.padding(4.dp)
-                                .clip(CircleShape)
-                                .border(2.dp, ring, CircleShape)
-                                .clickable { emoji = item }
-                                .padding(6.dp),
-                        )
-                    }
+            // Wraps to the screen width; a fixed eight per row ran off a phone's edge.
+            FlowRow(horizontalArrangement = Arrangement.Center) {
+                EmojiCatalog.suggestedEmoji.forEach { item ->
+                    val ring = if (item == emoji) MaterialTheme.colorScheme.primary else Color.Transparent
+                    Text(
+                        item,
+                        fontSize = 24.sp,
+                        modifier =
+                        Modifier.padding(4.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, ring, CircleShape)
+                            .clickable { emoji = item }
+                            .padding(6.dp),
+                    )
                 }
             }
             TextButton(onClick = { showAll = true }) { Text(stringResource(Res.string.pangea_all_emoji)) }
@@ -141,5 +158,3 @@ fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit
         )
     }
 }
-
-private const val PER_ROW = 8

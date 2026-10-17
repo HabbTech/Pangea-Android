@@ -35,8 +35,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -113,6 +115,11 @@ fun NewMessageSheet(
             viewModel.cancelResolve()
             onDismiss()
         },
+        sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        ),
     ) {
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             item { CodeEntry(resolve = resolve, onSubmit = viewModel::resolve) }

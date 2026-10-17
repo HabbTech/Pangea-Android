@@ -103,6 +103,7 @@ import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.util.getChannel
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.archived_channel_read_only
+import org.meshtastic.core.resources.pangea_everyone_nearby
 import org.meshtastic.core.resources.send
 import org.meshtastic.core.resources.type_a_message
 import org.meshtastic.core.resources.unknown_channel
@@ -254,11 +255,14 @@ fun MessageScreen(
     // A retired channel has no slot to look a name up in — its own stored label is all that is left of it.
     val retiredName = contactSettings[contactKey]?.displayName.orEmpty()
     val channelName = rawChannelName ?: retiredName.ifEmpty { unknownChannelText }
+    // Pangea: the primary channel is "Everyone Nearby" here too, as it is in the chat list.
+    val everyoneNearby = stringResource(Res.string.pangea_everyone_nearby)
 
     val title =
-        remember(nodeId, channelName, viewModel) {
-            when (nodeId) {
-                NodeAddress.ID_BROADCAST -> channelName
+        remember(nodeId, channelName, channelIndex, everyoneNearby, viewModel) {
+            when {
+                nodeId == NodeAddress.ID_BROADCAST && channelIndex == 0 && !isRetiredChannel -> everyoneNearby
+                nodeId == NodeAddress.ID_BROADCAST -> channelName
                 else -> viewModel.getUser(nodeId).long_name
             }
         }

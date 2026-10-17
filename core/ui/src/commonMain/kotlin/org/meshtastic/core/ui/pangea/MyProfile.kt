@@ -22,6 +22,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,8 +38,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -216,7 +220,14 @@ fun ProfileEditorSheet(
             null -> state.photo
         }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        ),
+    ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -281,6 +292,7 @@ fun ProfileEditorSheet(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EmojiQuickPicks(selected: String, onPick: (String) -> Unit, onAll: () -> Unit) {
     val picks =
@@ -290,27 +302,26 @@ private fun EmojiQuickPicks(selected: String, onPick: (String) -> Unit, onAll: (
             listOf(selected) + EmojiCatalog.suggestedEmoji.dropLast(1)
         }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        picks.chunked(PICKS_PER_ROW).forEach { row ->
-            Row {
-                row.forEach { item ->
-                    val shape = CircleShape
-                    Text(
-                        item,
-                        fontSize = 24.sp,
-                        modifier =
-                        Modifier.padding(4.dp)
-                            .clip(shape)
-                            .then(
-                                if (item == selected) {
-                                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
-                                } else {
-                                    Modifier
-                                },
-                            )
-                            .clickable { onPick(item) }
-                            .padding(6.dp),
-                    )
-                }
+        // Wraps to the screen width; a fixed eight per row ran off a phone's edge.
+        FlowRow(horizontalArrangement = Arrangement.Center) {
+            picks.forEach { item ->
+                val shape = CircleShape
+                Text(
+                    item,
+                    fontSize = 24.sp,
+                    modifier =
+                    Modifier.padding(4.dp)
+                        .clip(shape)
+                        .then(
+                            if (item == selected) {
+                                Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .clickable { onPick(item) }
+                        .padding(6.dp),
+                )
             }
         }
         TextButton(onClick = onAll) { Text(stringResource(Res.string.pangea_all_emoji)) }
@@ -332,8 +343,6 @@ private fun ColorDots(selected: Int, onPick: (Int) -> Unit) {
         }
     }
 }
-
-private const val PICKS_PER_ROW = 8
 
 /**
  * "Set Up Your Profile" at the top of Chats until I've named myself (Pangea-Apple's setup step after pairing), so

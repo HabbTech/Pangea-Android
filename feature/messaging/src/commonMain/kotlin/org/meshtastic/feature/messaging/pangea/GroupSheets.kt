@@ -32,8 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -160,7 +162,14 @@ fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave:
     var showQr by remember { mutableStateOf<GroupInvite?>(null) }
     var confirmLeave by remember { mutableStateOf(false) }
     val invited = remember { mutableStateOf(setOf<Long>()) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState =
+        rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        ),
+    ) {
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             item { Text(group.name, style = MaterialTheme.typography.titleLarge) }
             item {
