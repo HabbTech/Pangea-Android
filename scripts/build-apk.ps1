@@ -20,14 +20,16 @@ if ($null -eq $apk) { throw "No APK found under androidApp\build\outputs\apk\fdr
 $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA "Android\Sdk" }
 
 # Since upstream v2.8.2 a release build is left unsigned unless keystore.properties names a real key (a release must
-# never carry the public debug key). For sideloading, sign it with the shared checked-in debug key, the same key
-# earlier Pangea APKs used, so this installs as an update over them.
+# never carry the public debug key). For sideloading, sign it with this machine's debug key, which earlier Pangea
+# APKs were signed with, so it installs as an update over them; the repo's shared debug key is the fallback.
 if ($apk.Name -like "*-unsigned.apk") {
     $apksigner = Get-ChildItem (Join-Path $sdk "build-tools\*\apksigner.bat") -ErrorAction SilentlyContinue |
         Sort-Object FullName | Select-Object -Last 1
     if ($null -eq $apksigner) { throw "apksigner not found under $sdk\build-tools" }
     $signed = Join-Path $apk.DirectoryName ($apk.Name -replace "-unsigned\.apk$", "-debugsigned.apk")
-    & $apksigner.FullName sign --ks "config\debug.keystore" --ks-pass pass:android --ks-key-alias androiddebugkey `
+    $keystore = Join-Path $env:USERPROFILE ".android\debug.keystore"
+    if (-not (Test-Path $keystore)) { $keystore = "config\debug.keystore" }
+    & $apksigner.FullName sign --ks $keystore --ks-pass pass:android --ks-key-alias androiddebugkey `
         --key-pass pass:android --out $signed $apk.FullName
     if ($LASTEXITCODE -ne 0) { throw "apksigner failed" }
     $apk = Get-Item $signed
