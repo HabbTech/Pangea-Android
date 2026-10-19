@@ -16,16 +16,17 @@
  */
 package org.meshtastic.feature.map.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
@@ -86,10 +87,11 @@ fun MapControlsOverlay(
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
 ) {
-    HorizontalFloatingToolbar(
-        expanded = true,
+    // Pangea: a row of iOS glass buttons rather than a Material toolbar.
+    Row(
         modifier = modifier,
-        colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // Compass
         CompassButton(onClick = onCompassClick, bearing = bearing, isFollowing = followPhoneBearing)

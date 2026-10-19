@@ -16,17 +16,16 @@
  */
 package org.meshtastic.feature.map.component
 
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosGlassIconButton
 
 /**
- * A compact icon button used in map control overlays. Uses [FilledIconButton] for a consistent, compact appearance
- * across both Google and F-Droid flavors.
+ * A map control, as on the Pangea iPhone app: a round glass button with the symbol in the tint (or [iconTint]). Used by
+ * both flavors' map overlays.
  */
 @Composable
 fun MapButton(
@@ -36,11 +35,11 @@ fun MapButton(
     modifier: Modifier = Modifier,
     iconTint: Color? = null,
 ) {
-    FilledIconButton(onClick = onClick, modifier = modifier) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = iconTint ?: IconButtonDefaults.filledIconButtonColors().contentColor,
-        )
-    }
+    IosGlassIconButton(
+        icon = icon,
+        contentDescription = contentDescription,
+        onClick = onClick,
+        modifier = modifier,
+        tint = iconTint ?: Ios.colors.tint,
+    )
 }

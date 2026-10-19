@@ -16,10 +16,11 @@
  */
 package org.meshtastic.feature.map.component
 
-import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.VerticalFloatingToolbar
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.zoom_in
@@ -41,11 +42,8 @@ import org.meshtastic.core.ui.icon.Remove
  */
 @Composable
 fun MapZoomControls(onZoomIn: () -> Unit, onZoomOut: () -> Unit, modifier: Modifier = Modifier) {
-    VerticalFloatingToolbar(
-        expanded = true,
-        modifier = modifier,
-        colors = FloatingToolbarDefaults.standardFloatingToolbarColors(),
-    ) {
+    // Pangea: two iOS glass buttons rather than a Material toolbar.
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         MapButton(
             icon = MeshtasticIcons.Add,
             contentDescription = stringResource(Res.string.zoom_in),

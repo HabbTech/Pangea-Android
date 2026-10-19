@@ -32,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -53,6 +54,7 @@ import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.util.KeepScreenOn
 import org.meshtastic.core.ui.util.LocalMapPlainMode
+import org.meshtastic.core.ui.util.LocalMapTopInset
 import org.meshtastic.core.ui.util.MapViewProvider
 import org.meshtastic.feature.map.SharedMapViewModel
 import org.meshtastic.feature.map.component.ClusterMemberEntry
@@ -133,6 +135,7 @@ class MapLibreMapViewProvider(
 ) : MapViewProvider {
 
     @Composable
+    @Suppress("LongMethod")
     override fun MapView(
         modifier: Modifier,
         navigateToNodeDetails: (Int) -> Unit,
@@ -145,6 +148,9 @@ class MapLibreMapViewProvider(
         val viewModel: SharedMapViewModel = koinViewModel()
         // Pangea standard mode: the radios and a "locate me" button, nothing else (no toolbar, zoom or waypoints).
         val plain = LocalMapPlainMode.current
+        // Pangea Expert Mode runs the map under the floating header and tab bar, as on iOS; its controls move clear.
+        val topInset = LocalMapTopInset.current
+        val underTabBar = LocalIosBottomInset.current > 0.dp
         // Both are null for the one frame before their stored value has been read from disk: the basemap preference
         // (see rememberBasemapSelection) and the remembered camera (see rememberRestoredCamera). The map must not
         // open on a default and then jump, nor frame the mesh over a view the user chose.
@@ -182,14 +188,23 @@ class MapLibreMapViewProvider(
                 onMapClick = waypoints.onMapTap,
                 // The plain map runs under the logo and the floating tab bar; the attribution has to stay visible.
                 cameraPadding =
-                if (plain) PaddingValues(top = 64.dp, bottom = LocalIosBottomInset.current) else PaddingValues(),
+                when {
+                    plain -> PaddingValues(top = 64.dp, bottom = LocalIosBottomInset.current)
+                    underTabBar -> PaddingValues(top = topInset, bottom = LocalIosBottomInset.current + TOOLBAR_ROW)
+                    else -> PaddingValues()
+                },
             )
 
             if (plain) {
                 PlainLocationButton(location)
             } else {
-                MapZoom(mapState = mapState, basemap = basemaps.current)
-                OfflineIndicator(viewModel)
+                // Under the floating tab bar (Expert Mode), the zoom pair sits above the bottom row of controls.
+                MapZoom(
+                    mapState = mapState,
+                    basemap = basemaps.current,
+                    bottomInset = if (underTabBar) LocalIosBottomInset.current + TOOLBAR_ROW else 0.dp,
+                )
+                OfflineIndicator(viewModel, topInset)
             }
 
             if (!plain) {
@@ -275,11 +290,11 @@ private fun rememberMapScreenMapState(
 
 /** The "you're offline" pill, top-start so it never collides with the toolbar's top-center controls. */
 @Composable
-private fun BoxScope.OfflineIndicator(viewModel: SharedMapViewModel) {
+private fun BoxScope.OfflineIndicator(viewModel: SharedMapViewModel, topInset: Dp) {
     val networkAvailable by viewModel.mapNetworkAvailable.collectAsStateWithLifecycle()
     OfflineStatusBanner(
         visible = !networkAvailable,
-        modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp, start = 8.dp),
+        modifier = Modifier.align(Alignment.TopStart).padding(top = 8.dp + topInset, start = 8.dp),
     )
 }
 
@@ -411,8 +426,15 @@ private fun BoxScope.MapToolbar(
     val filterViewModel: SharedMapViewModel = koinViewModel()
     val filterState by filterViewModel.mapFilterStateFlow.collectAsStateWithLifecycle()
 
+    // Under the floating tab bar (Expert Mode) the controls are a row of glass buttons along the bottom, as on iOS.
+    val bottomInset = LocalIosBottomInset.current
     MapControlsOverlay(
-        modifier = Modifier.align(Alignment.TopCenter).padding(top = TOOLBAR_INSET.dp),
+        modifier =
+        if (bottomInset > 0.dp) {
+            Modifier.align(Alignment.BottomCenter).padding(bottom = bottomInset + 12.dp)
+        } else {
+            Modifier.align(Alignment.TopCenter).padding(top = TOOLBAR_INSET.dp)
+        },
         onToggleFilterMenu = { filterMenuExpanded = !filterMenuExpanded },
         filtersActive = filterState.isNarrowing,
         bearing = mapState.cameraPosition.bearing.toFloat(),
@@ -562,3 +584,6 @@ private fun DefaultWaypointEditor(request: WaypointEditRequest) {
         onBeginBoxAuthoring = request.onBeginBoxAuthoring,
     )
 }
+
+/** The bottom row of glass map buttons in Expert Mode, with its gap above the tab bar. */
+private val TOOLBAR_ROW = 64.dp

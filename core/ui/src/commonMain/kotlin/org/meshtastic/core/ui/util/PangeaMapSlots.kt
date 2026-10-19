@@ -18,6 +18,7 @@ package org.meshtastic.core.ui.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.dp
 
 /**
  * Pangea standard mode's plain map (Pangea-Apple, standard Map tab): no toolbar, zoom buttons, waypoints or planner,
@@ -33,3 +34,10 @@ val LocalMapPlainMode = staticCompositionLocalOf { false }
 @Suppress("CompositionLocalAllowlist")
 val LocalNodeProfileSheet =
     staticCompositionLocalOf<(@Composable (nodeNum: Int, onDismiss: () -> Unit) -> Unit)?> { null }
+
+/**
+ * How far down the screen the map's own controls must start when it runs under floating header buttons (Pangea Expert
+ * Mode's map): the status bar plus the logo row. Zero where the map has an ordinary top bar.
+ */
+@Suppress("CompositionLocalAllowlist")
+val LocalMapTopInset = staticCompositionLocalOf { 0.dp }
