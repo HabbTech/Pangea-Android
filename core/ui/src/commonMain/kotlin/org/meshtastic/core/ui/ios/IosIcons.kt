@@ -208,6 +208,32 @@ object IosIcons {
         }
     }
 
+    /** `location`: the map's "show me" button (outline while not following). */
+    val Location: ImageVector by lazy {
+        icon("ios.location") {
+            stroked(width = 1.8f) {
+                moveTo(20.5f, 3.5f)
+                lineTo(3.5f, 10.6f)
+                lineTo(11.2f, 12.8f)
+                lineTo(13.4f, 20.5f)
+                close()
+            }
+        }
+    }
+
+    /** `location.fill`: the map is following you. */
+    val LocationFill: ImageVector by lazy {
+        icon("ios.location.fill") {
+            filled {
+                moveTo(20.5f, 3.5f)
+                lineTo(3.5f, 10.6f)
+                lineTo(11.2f, 12.8f)
+                lineTo(13.4f, 20.5f)
+                close()
+            }
+        }
+    }
+
     /** `antenna.radiowaves.left.and.right`: My Radio, and the status pill. */
     val Antenna: ImageVector by lazy {
         icon("ios.antenna") {

@@ -16,6 +16,7 @@
  */
 package org.meshtastic.feature.map.maplibre
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -215,6 +216,8 @@ fun MeshMap(
     onMapLongClick: (Position) -> Unit = {},
     /** Called with the tapped position. Used to collect the two corners of a waypoint's geofence bounding box. */
     onMapClick: (Position) -> Unit = {},
+    /** Keeps the camera centre, scale bar and attribution clear of chrome drawn over the map (Pangea's tab bar). */
+    cameraPadding: PaddingValues = PaddingValues(),
 ) {
     // No engine on this device means presenting a map is the UnsatisfiedLinkError crash in #7001. Covers the view
     // only: `rememberMapState` builds the native runtime itself, so a runtime that cannot come up at all has already
@@ -225,6 +228,7 @@ fun MeshMap(
     MaplibreMap(
         modifier = modifier,
         state = mapState,
+        cameraPadding = cameraPadding,
         // Honour what the source can actually serve, as the OSMdroid map did.
         cameraConstraints =
         CameraConstraints(minZoom = zoomRange.start.toDouble(), maxZoom = zoomRange.endInclusive.toDouble()),

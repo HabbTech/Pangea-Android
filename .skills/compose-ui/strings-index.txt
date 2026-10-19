@@ -1418,6 +1418,8 @@ pangea_join
 pangea_join_group_prompt
 pangea_leave_group
 pangea_leave_group_confirm
+pangea_map_empty_body
+pangea_map_empty_title
 pangea_match_device
 pangea_message_someone
 pangea_message_someone_title

@@ -18,6 +18,7 @@ package org.meshtastic.feature.map.maplibre
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -46,7 +47,12 @@ import org.maplibre.compose.location.rememberDefaultLocationProvider
 import org.maplibre.compose.location.rememberLocationState
 import org.maplibre.compose.location.rememberSystemSettingsLauncher
 import org.maplibre.compose.map.MapState
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.util.KeepScreenOn
+import org.meshtastic.core.ui.util.LocalMapPlainMode
 import org.meshtastic.core.ui.util.MapViewProvider
 import org.meshtastic.feature.map.SharedMapViewModel
 import org.meshtastic.feature.map.component.ClusterMemberEntry
@@ -137,6 +143,8 @@ class MapLibreMapViewProvider(
         if (!LocalMapLibreRuntimeProbe.current()) return MapEngineUnavailable(modifier)
 
         val viewModel: SharedMapViewModel = koinViewModel()
+        // Pangea standard mode: the radios and a "locate me" button, nothing else (no toolbar, zoom or waypoints).
+        val plain = LocalMapPlainMode.current
         // Both are null for the one frame before their stored value has been read from disk: the basemap preference
         // (see rememberBasemapSelection) and the remembered camera (see rememberRestoredCamera). The map must not
         // open on a default and then jump, nor frame the mesh over a view the user chose.
@@ -170,25 +178,33 @@ class MapLibreMapViewProvider(
                 mapState = mapState,
                 modifier = Modifier.fillMaxSize(),
                 basemap = basemaps.current,
-                onMapLongClick = waypoints.onLongPress,
+                onMapLongClick = if (plain) ({}) else waypoints.onLongPress,
                 onMapClick = waypoints.onMapTap,
+                // The plain map runs under the logo and the floating tab bar; the attribution has to stay visible.
+                cameraPadding =
+                if (plain) PaddingValues(top = 64.dp, bottom = LocalIosBottomInset.current) else PaddingValues(),
             )
 
-            MapZoom(mapState = mapState, basemap = basemaps.current)
+            if (plain) {
+                PlainLocationButton(location)
+            } else {
+                MapZoom(mapState = mapState, basemap = basemaps.current)
+                OfflineIndicator(viewModel)
+            }
 
-            OfflineIndicator(viewModel)
-
-            MapToolbar(
-                basemaps = basemaps,
-                location = location,
-                mapState = mapState,
-                overlays = screen.overlays,
-                onOverlaysChange = { screen.overlays = it },
-                basemapMenuExtra = basemapMenuExtra,
-                layersSheetExtra = layersSheetExtra,
-                offlineMapsSupported = offlineMapsSupported,
-                onSitePlannerClick = sitePlanner?.let { { screen.plannerOpen = true } },
-            )
+            if (!plain) {
+                MapToolbar(
+                    basemaps = basemaps,
+                    location = location,
+                    mapState = mapState,
+                    overlays = screen.overlays,
+                    onOverlaysChange = { screen.overlays = it },
+                    basemapMenuExtra = basemapMenuExtra,
+                    layersSheetExtra = layersSheetExtra,
+                    offlineMapsSupported = offlineMapsSupported,
+                    onSitePlannerClick = sitePlanner?.let { { screen.plannerOpen = true } },
+                )
+            }
 
             ClusterMembersSlot(screen.clusterMembers, navigateToNodeDetails) { screen.clusterMembers = emptyList() }
 
@@ -211,6 +227,19 @@ class MapLibreMapViewProvider(
             )
         }
     }
+}
+
+/** The plain map's one control, as on iOS: a glass "locate me" button at the bottom right, above the tab bar. */
+@Composable
+private fun BoxScope.PlainLocationButton(location: LocationControls) {
+    IosGlassIconButton(
+        icon = if (location.following) IosIcons.LocationFill else IosIcons.Location,
+        contentDescription = null,
+        onClick = location.onToggleFollow,
+        tint = Ios.colors.tint,
+        modifier =
+        Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalIosBottomInset.current + 64.dp),
+    )
 }
 
 /** The mesh map's state, wired to everything this screen feeds into it. */

@@ -51,6 +51,7 @@ import org.meshtastic.core.ui.component.MeshtasticAppShell
 import org.meshtastic.core.ui.component.MeshtasticNavDisplay
 import org.meshtastic.core.ui.component.MeshtasticNavigationSuite
 import org.meshtastic.core.ui.ios.LocalIosUnderTabBar
+import org.meshtastic.core.ui.util.LocalNodeProfileSheet
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
 import org.meshtastic.core.ui.util.PowerModeMenuState
 import org.meshtastic.core.ui.viewmodel.UIViewModel
@@ -60,6 +61,7 @@ import org.meshtastic.feature.docs.navigation.docsEntries
 import org.meshtastic.feature.firmware.navigation.firmwareGraph
 import org.meshtastic.feature.map.navigation.mapGraph
 import org.meshtastic.feature.messaging.navigation.contactsGraph
+import org.meshtastic.feature.messaging.pangea.nodeProfileSheetSlot
 import org.meshtastic.feature.node.navigation.nodesGraph
 import org.meshtastic.feature.settings.lockdown.LockdownDialog
 import org.meshtastic.feature.settings.navigation.rememberSettingsRadioConfigViewModelProvider
@@ -93,7 +95,10 @@ fun MainScreen() {
         }
     }
 
-    CompositionLocalProvider(LocalPowerModeMenu provides rememberPowerModeMenu(multiBackstack)) {
+    CompositionLocalProvider(
+        LocalPowerModeMenu provides rememberPowerModeMenu(multiBackstack),
+        LocalNodeProfileSheet provides nodeProfileSheetSlot(multiBackstack),
+    ) {
         MeshtasticAppShell(multiBackstack = multiBackstack, uiViewModel = viewModel, hostModifier = Modifier) {
             MeshtasticNavigationSuite(
                 multiBackstack = multiBackstack,

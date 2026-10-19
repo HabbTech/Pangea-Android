@@ -101,6 +101,7 @@ import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalInlineMapProvider
 import org.meshtastic.core.ui.util.LocalMapMainScreenProvider
 import org.meshtastic.core.ui.util.LocalMapViewProvider
+import org.meshtastic.core.ui.util.LocalNodeProfileSheet
 import org.meshtastic.core.ui.util.LocalNodeTrackMapProvider
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
 import org.meshtastic.core.ui.util.LocalSitePlannerAvailable
@@ -119,6 +120,7 @@ import org.meshtastic.feature.map.SharedMapViewModel
 import org.meshtastic.feature.map.maplibre.MapLibreDiscoveryMap
 import org.meshtastic.feature.map.maplibre.MapLibreInlineMap
 import org.meshtastic.feature.map.maplibre.MapLibreNodeTrackMap
+import org.meshtastic.feature.messaging.pangea.nodeProfileSheetSlot
 import java.awt.Desktop
 import java.util.Locale
 import kotlin.system.exitProcess
@@ -422,6 +424,7 @@ private fun ApplicationScope.MeshtasticWindow(
             CompositionLocalProvider(
                 LocalEventBranding provides eventEdition,
                 LocalPowerModeMenu provides powerModeMenu,
+                LocalNodeProfileSheet provides nodeProfileSheetSlot(multiBackstack),
                 LocalMapViewProvider provides desktopMapViewProvider(),
                 // The planner runs in the browser here rather than in the app; the button is still offered.
                 LocalSitePlannerAvailable provides true,

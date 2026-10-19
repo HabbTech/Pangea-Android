@@ -1454,6 +1454,8 @@
     <string name="pangea_join_group_prompt">Join the group %1$s? Everyone in it can read what you send there.</string>
     <string name="pangea_leave_group">Leave Group</string>
     <string name="pangea_leave_group_confirm">Leave %1$s? Its messages will be removed from this phone.</string>
+    <string name="pangea_map_empty_body">Radios appear here once someone shares where they are. Yours shows when your phone or radio has a location.</string>
+    <string name="pangea_map_empty_title">No Locations Yet</string>
     <string name="pangea_match_device">Match Device</string>
     <string name="pangea_message_someone">Message Someone</string>
     <string name="pangea_message_someone_title">Message someone</string>
