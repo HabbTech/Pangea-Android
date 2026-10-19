@@ -34,13 +34,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.database.entity.FirmwareRelease
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.navigation.Route
-import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.details
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.SharedContactDialog
 import org.meshtastic.core.ui.util.ActiveWhileStarted
@@ -106,8 +103,9 @@ private fun NodeDetailScaffold(
         modifier = modifier,
         topBar = {
             MainAppBar(
-                title = stringResource(Res.string.details),
-                subtitle = uiState.nodeName.asString(),
+                // As on iOS: the radio's name, inline.
+                title = uiState.nodeName.asString(),
+                inlineTitle = true,
                 ourNode = uiState.ourNode,
                 showNodeChip = false,
                 canNavigateUp = true,

@@ -102,6 +102,8 @@ fun MainAppBar(
     onClickChip: (Node) -> Unit,
     // The screen's own background: white over iOS's plain lists, grey (the default) over grouped ones.
     background: Color = MaterialTheme.colorScheme.background,
+    // iOS's inline title (navigationBarTitleDisplayMode(.inline)): the title small and centred in the top row.
+    inlineTitle: Boolean = false,
     // Trailing slot: a @Composable content lambda, not an event handler (detekt LambdaParameterEventTrailing).
     actions: @Composable () -> Unit,
 ) {
@@ -117,31 +119,58 @@ fun MainAppBar(
             .background(accent?.copy(alpha = EVENT_ACCENT_ALPHA)?.compositeOver(background) ?: background)
             .windowInsetsPadding(WindowInsets.statusBars),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(TOP_ROW_HEIGHT).padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (canNavigateUp) {
-                IosGlassIconButton(
-                    IosIcons.ChevronLeft,
-                    contentDescription = stringResource(Res.string.navigate_back),
-                    onClick = onNavigateUp,
+        Box(Modifier.fillMaxWidth().height(TOP_ROW_HEIGHT), contentAlignment = Alignment.Center) {
+            if (inlineTitle) {
+                Text(
+                    text = title,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = Ios.type.headline,
+                    color = c.label,
+                    modifier = Modifier.padding(horizontal = 72.dp),
                 )
-            } else {
-                PangeaLogoButton()
             }
-            Spacer(Modifier.weight(1f))
-            IosActionCapsule {
-                CompositionLocalProvider(LocalContentColor provides c.label) {
-                    AnimatedVisibility(visible = showNodeChip, enter = fadeIn(), exit = fadeOut()) {
-                        ourNode?.let { node ->
-                            NodeChip(modifier = Modifier.padding(horizontal = 8.dp), node = node, onClick = onClickChip)
+            Row(
+                modifier = Modifier.fillMaxWidth().height(TOP_ROW_HEIGHT).padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (canNavigateUp) {
+                    IosGlassIconButton(
+                        IosIcons.ChevronLeft,
+                        contentDescription = stringResource(Res.string.navigate_back),
+                        onClick = onNavigateUp,
+                    )
+                } else {
+                    PangeaLogoButton()
+                }
+                Spacer(Modifier.weight(1f))
+                IosActionCapsule {
+                    CompositionLocalProvider(LocalContentColor provides c.label) {
+                        AnimatedVisibility(visible = showNodeChip, enter = fadeIn(), exit = fadeOut()) {
+                            ourNode?.let { node ->
+                                NodeChip(
+                                    modifier = Modifier.padding(horizontal = 8.dp),
+                                    node = node,
+                                    onClick = onClickChip,
+                                )
+                            }
                         }
+                        actions()
                     }
-                    actions()
                 }
             }
         }
+        if (!inlineTitle) LargeTitle(title, subtitle)
+        Spacer(Modifier.height(8.dp))
+        EventPaletteStrip(palette = eventTheme?.palette.orEmpty(), height = EVENT_BRAND_RULE_HEIGHT)
+    }
+}
+
+/** The large title under the top row, with an optional [subtitle]. */
+@Composable
+private fun LargeTitle(title: String, subtitle: String?) {
+    val c = Ios.colors
+    Column {
         Text(
             text = title,
             maxLines = 1,
@@ -160,8 +189,6 @@ fun MainAppBar(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
-        Spacer(Modifier.height(8.dp))
-        EventPaletteStrip(palette = eventTheme?.palette.orEmpty(), height = EVENT_BRAND_RULE_HEIGHT)
     }
 }
 

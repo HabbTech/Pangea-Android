@@ -212,18 +212,18 @@ private fun MainNodeDetails(node: Node, isLocal: Boolean, onRequestUserInfo: (()
 
 @Composable
 private fun NameAndRoleRow(node: Node) {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         InfoItem(
             label = stringResource(Res.string.short_name),
             value = node.user.short_name.ifEmpty { "???" },
             icon = MeshtasticIcons.Person,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
         InfoItem(
             label = stringResource(Res.string.role),
             value = stringResource(node.user.role.label),
             icon = MeshtasticIcons.role(node.user.role),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -240,70 +240,66 @@ private fun StatusMessageRow(status: String) {
 
 @Composable
 private fun NodeIdentificationRow(node: Node) {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         InfoItem(
             label = stringResource(Res.string.node_id),
             value = NodeAddress.numToDefaultId(node.num),
             icon = MeshtasticIcons.DeviceNumbers,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
         InfoItem(
             label = stringResource(Res.string.node_number),
             value = node.num.toUInt().toString(),
             icon = MeshtasticIcons.DeviceNumbers,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
 
 @Composable
 private fun HearsAndHopsRow(node: Node) {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         InfoItem(
             label = stringResource(Res.string.node_sort_last_heard),
             value = formatAgo(node.lastHeard),
             icon = MeshtasticIcons.History,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
         if (node.hopsAway >= 0) {
             InfoItem(
                 label = stringResource(Res.string.hops_away),
                 value = node.hopsAway.toString(),
                 icon = MeshtasticIcons.HopCount,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
-        } else {
-            Spacer(Modifier.weight(1f))
         }
     }
 }
 
 @Composable
 private fun UserAndUptimeRow(node: Node) {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         val uptimeSeconds = node.deviceMetrics.uptime_seconds
         InfoItem(
             label = stringResource(Res.string.user_id),
             value = node.user.id,
             icon = MeshtasticIcons.Person,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
         if (uptimeSeconds != null && uptimeSeconds > 0) {
             InfoItem(
                 label = stringResource(Res.string.uptime),
                 value = formatUptime(uptimeSeconds),
                 icon = MeshtasticIcons.ArrowCircleUp,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
-        } else {
-            Spacer(Modifier.weight(1f))
         }
     }
 }
 
 @Composable
 private fun SignalRow(node: Node) {
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         val snr = node.snrOrNull
         val rssi = node.rssiOrNull
         if (snr != null) {
@@ -314,10 +310,8 @@ private fun SignalRow(node: Node) {
                 value = "${MetricFormatter.snr(snr)} · ${stringResource(quality.nameRes)}",
                 valueColor = quality.color(),
                 icon = MeshtasticIcons.Snr,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
-        } else {
-            Spacer(Modifier.weight(1f))
         }
         if (rssi != null) {
             // No quality word here: RSSI alone can't be rated without the noise floor - see determineSignalQuality.
@@ -325,10 +319,8 @@ private fun SignalRow(node: Node) {
                 label = stringResource(Res.string.rssi),
                 value = MetricFormatter.rssi(rssi),
                 icon = MeshtasticIcons.Rssi,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
             )
-        } else {
-            Spacer(Modifier.weight(1f))
         }
     }
 }
@@ -337,14 +329,13 @@ private fun SignalRow(node: Node) {
 @Composable
 private fun TransportRow(node: Node) {
     val (icon, label) = transportInfo(node.lastTransport, node.viaMqtt) ?: return
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         InfoItem(
             label = stringResource(Res.string.transport),
             value = label,
             icon = icon,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(Modifier.weight(1f))
     }
 }
 
@@ -363,16 +354,15 @@ private fun SecurityRow(node: Node, isLocal: Boolean) {
             onDismiss = { showDialog = false },
         )
     }
-    Row(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         InfoItem(
             label = stringResource(Res.string.security),
             value = stringResource(indicator.title),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             onClick = { showDialog = true },
         ) {
             indicator.Glyph(Modifier.size(20.dp))
         }
-        Spacer(Modifier.weight(1f))
     }
 }
 
