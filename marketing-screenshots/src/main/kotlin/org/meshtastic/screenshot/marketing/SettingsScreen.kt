@@ -62,6 +62,7 @@ internal fun SettingsScreen() {
                     RadioConfigItemList(
                         state = RadioConfigState(isLocal = true, connected = true),
                         isManaged = false,
+                        expertModeEnabled = true,
                         isOtaCapable = false,
                         onNavigate = {},
                     )

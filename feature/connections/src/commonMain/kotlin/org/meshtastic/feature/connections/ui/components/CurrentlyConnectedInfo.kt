@@ -16,12 +16,19 @@
  */
 package org.meshtastic.feature.connections.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -32,6 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -45,14 +56,21 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withTimeout
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.ble.BleConnectionState
+import org.meshtastic.core.model.DeviceType
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.disconnect
+import org.meshtastic.core.resources.pangea_connection_name
 import org.meshtastic.core.resources.rssi
 import org.meshtastic.core.resources.unknown
 import org.meshtastic.core.ui.component.MaterialBatteryInfo
-import org.meshtastic.core.ui.component.NodeChip
 import org.meshtastic.core.ui.component.Rssi
+import org.meshtastic.core.ui.icon.Bluetooth
+import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.icon.Usb
+import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.feature.connections.model.DeviceListEntry
 import org.meshtastic.proto.EnvironmentMetrics
@@ -86,6 +104,7 @@ fun CurrentlyConnectedInfo(
     onClickDisconnect: () -> Unit,
     modifier: Modifier = Modifier,
     bleDevice: DeviceListEntry.Ble? = null,
+    transport: DeviceType? = null,
 ) {
     // Null until the first successful read: 0 dBm is the strongest value on this scale, not "unknown".
     var rssi by remember(bleDevice?.device?.address) { mutableStateOf<Int?>(null) }
@@ -114,37 +133,89 @@ fun CurrentlyConnectedInfo(
             }
         }
     }
+    // Pangea: the iPhone app's connected-radio card (its avatar, "Connection Name" and the transport). Android keeps
+    // the battery, signal and firmware under them, and a visible Disconnect where iOS uses a swipe.
+    val c = Ios.colors
     Column(modifier = modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(96.dp).clip(CircleShape).background(Color(node.colors.second)).clickable {
+                    onNavigateToNodeDetails(node.num)
+                },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(node.user.short_name, style = Ios.type.title1, color = Color(node.colors.first))
+            }
+            Spacer(Modifier.width(20.dp))
+            ConnectionFacts(
+                node = node,
+                text = text,
+                transport = transport,
+                rssi = rssi,
+                showRssi = bleDevice != null,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Text(
+            text = text.disconnectLabel,
+            style = Ios.type.body,
+            color = c.systemRed,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().iosPressable(onClick = onClickDisconnect).padding(vertical = 8.dp),
+        )
+    }
+}
+
+/** What's known about the connected radio: its name, how it's connected, its battery and signal, and its firmware. */
+@Composable
+private fun ConnectionFacts(
+    node: Node,
+    text: CurrentlyConnectedText,
+    transport: DeviceType?,
+    rssi: Int?,
+    showRssi: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val c = Ios.colors
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            stringResource(Res.string.pangea_connection_name, node.user.long_name),
+            style = Ios.type.body,
+            color = c.secondaryLabel,
+        )
+        transport?.let { type ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(type.icon, contentDescription = null, tint = c.tint, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(type.name, style = Ios.type.title2, color = c.secondaryLabel)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             MaterialBatteryInfo(level = node.batteryLevel, voltage = node.voltage, unknownLabel = text.unknownLabel)
-            if (bleDevice != null) {
+            if (showRssi) {
                 Rssi(rssi = rssi, label = text.rssiLabel)
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NodeChip(node = node, onClick = { onNavigateToNodeDetails(it.num) })
-
-            Column(modifier = Modifier.weight(1f, fill = true)) {
-                Text(text = node.user.long_name, style = MaterialTheme.typography.titleMediumEmphasized)
-
-                text.firmwareVersion?.let { firmwareVersion ->
-                    Text(
-                        text = firmwareVersion,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+        text.firmwareVersion?.let { firmwareVersion ->
+            Text(
+                text = firmwareVersion,
+                style = Ios.type.footnote,
+                color = c.secondaryLabel,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
-
-        DisconnectButton(onClick = onClickDisconnect, label = text.disconnectLabel)
     }
 }
+
+private val DeviceType.icon: ImageVector
+    @Composable
+    get() =
+        when (this) {
+            DeviceType.BLE -> MeshtasticIcons.Bluetooth
+            DeviceType.TCP -> MeshtasticIcons.Wifi
+            DeviceType.USB -> MeshtasticIcons.Usb
+        }
 
 @Suppress("MagicNumber", "UnusedPrivateMember")
 @Composable

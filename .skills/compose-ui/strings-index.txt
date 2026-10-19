@@ -1346,6 +1346,7 @@ pangea_code_placeholder
 pangea_configuration_for
 pangea_configure
 pangea_connected_node
+pangea_connection_name
 pangea_contacts
 pangea_contacts_count
 pangea_contacts_empty

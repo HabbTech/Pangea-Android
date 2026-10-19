@@ -21,6 +21,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -115,6 +117,8 @@ import org.meshtastic.core.ui.icon.Language
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.SystemUpdate
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.PermissionGateAction
 import org.meshtastic.core.ui.util.PermissionStatus
@@ -459,7 +463,14 @@ fun ConnectionsScreen(
                         // A single Card shell hosts all three states. `animateContentSize` smooths any
                         // height changes, while `heightIn(min = CardMinHeight)` reserves a stable floor so
                         // the card never collapses between states.
-                        Card(modifier = Modifier.fillMaxWidth().animateContentSize()) {
+                        // Pangea: an iOS card (white, 26 dp corners) rather than a Material one.
+                        Column(
+                            modifier =
+                            Modifier.fillMaxWidth()
+                                .clip(IosCardShape)
+                                .background(Ios.colors.groupedRow)
+                                .animateContentSize(),
+                        ) {
                             AnimatedContent(
                                 targetState = uiState,
                                 label = "connection_state",
@@ -870,6 +881,7 @@ private fun ConnectedDeviceContent(
             node = node,
             text = text,
             bleDevice = bleDevices.find { it.fullAddress == selectedDevice } as DeviceListEntry.Ble?,
+            transport = DeviceType.fromAddress(selectedDevice),
             onNavigateToNodeDetails = onNavigateToNodeDetails,
             onClickDisconnect = onClickDisconnect,
         )
