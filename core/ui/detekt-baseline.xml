@@ -9,7 +9,7 @@
     <ID>ComposableParamOrder:EditTextPreference.kt:@Composable fun EditTextPreference</ID>
     <ID>ComposableParamOrder:ElevationInfo.kt:@Composable fun ElevationInfo</ID>
     <ID>ComposableParamOrder:LastHeardInfo.kt:@Composable fun LastHeardInfo</ID>
-    <ID>ComposableParamOrder:MainAppBar.kt:@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class) @Composable fun MainAppBar</ID>
+    <ID>ComposableParamOrder:MainAppBar.kt:@Composable fun MainAppBar</ID>
     <ID>ComposableParamOrder:MaterialBatteryInfo.kt:@Suppress("MagicNumber", "LongMethod") @Composable fun MaterialBatteryInfo</ID>
     <ID>ComposableParamOrder:NodeChip.kt:@Composable fun NodeChip</ID>
     <ID>ComposableParamOrder:NodeKeyStatusIcon.kt:@Composable fun NodeKeyStatusIcon</ID>

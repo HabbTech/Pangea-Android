@@ -74,7 +74,7 @@ import org.meshtastic.core.resources.bluetooth_permission_rationale
 import org.meshtastic.core.resources.bluetooth_permission_rationale_pre31
 import org.meshtastic.core.resources.bonding_failed_permissions
 import org.meshtastic.core.resources.close
-import org.meshtastic.core.resources.connections
+import org.meshtastic.core.resources.connect
 import org.meshtastic.core.resources.disconnect
 import org.meshtastic.core.resources.firmware_event_ended_banner
 import org.meshtastic.core.resources.firmware_event_ended_button
@@ -220,6 +220,7 @@ fun ConnectionsScreen(
     onClickNodeChip: (Int) -> Unit,
     onNavigateToNodeDetails: (Int) -> Unit,
     onConfigNavigate: (Route) -> Unit,
+    onNavigateUp: (() -> Unit)? = null,
 ) {
     val connectionProgress by scanModel.connectionProgressText.collectAsStateWithLifecycle()
     val connectionStatus by connectionsViewModel.connectionStatus.collectAsStateWithLifecycle()
@@ -423,11 +424,11 @@ fun ConnectionsScreen(
     Scaffold(
         topBar = {
             MainAppBar(
-                title = stringResource(Res.string.connections),
+                title = stringResource(Res.string.connect),
                 ourNode = ourNode,
                 showNodeChip = ourNode != null && connectionState is ConnectionState.Connected,
-                canNavigateUp = false,
-                onNavigateUp = {},
+                canNavigateUp = onNavigateUp != null,
+                onNavigateUp = { onNavigateUp?.invoke() },
                 actions = {},
                 onClickChip = { onClickNodeChip(it.num) },
             )

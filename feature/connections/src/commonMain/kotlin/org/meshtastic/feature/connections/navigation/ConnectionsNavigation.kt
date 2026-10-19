@@ -76,6 +76,8 @@ fun EntryProviderScope<NavKey>.connectionsGraph(backStack: NavBackStack<NavKey>)
             onClickNodeChip = { id -> backStack.add(NodesRoute.NodeDetail(id)) },
             onNavigateToNodeDetails = { id -> backStack.add(NodesRoute.NodeDetail(id)) },
             onConfigNavigate = { route -> backStack.add(route) },
+            // A back button when Connect was pushed (Settings → Pair a Radio), not when it is the Connect tab itself.
+            onNavigateUp = if (backStack.firstOrNull() != key) ({ backStack.removeLastOrNull() }) else null,
         )
     }
 }

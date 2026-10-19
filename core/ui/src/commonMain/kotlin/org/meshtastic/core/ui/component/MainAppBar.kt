@@ -20,28 +20,33 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.compositeOver
@@ -49,22 +54,23 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.model.PowerMode
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.about_pangea
 import org.meshtastic.core.resources.event_info
-import org.meshtastic.core.resources.ic_meshtastic
 import org.meshtastic.core.resources.navigate_back
 import org.meshtastic.core.resources.pangea_logo
 import org.meshtastic.core.resources.power_mode_quick_access
-import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.CalendarMonth
 import org.meshtastic.core.ui.icon.Check
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActionCapsule
 import org.meshtastic.core.ui.ios.IosGlassButton
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.LocalEventTheme
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
@@ -78,7 +84,11 @@ private const val EVENT_ACCENT_ALPHA = 0.12f
 /** Height of the event brand rule under the app bar. A hairline: brand presence without stealing vertical space. */
 private val EVENT_BRAND_RULE_HEIGHT = 3.dp
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+/**
+ * The top of a screen, drawn like the Pangea iPhone app (design/PANGEA-BRAND.md v2): a glass back button on pushed
+ * screens or the round logo button (Power Mode menu) on a tab, the screen's actions grouped in a glass capsule at the
+ * right (with our radio's chip), then the large title and an optional subtitle.
+ */
 @Composable
 fun MainAppBar(
     modifier: Modifier = Modifier,
@@ -96,102 +106,64 @@ fun MainAppBar(
     // the edition's accent color. Gated with the app-wide fonts via LocalEventTheme / the "Use event theme" toggle.
     val eventTheme = LocalEventTheme.current
     val accent = eventTheme?.accent
-    val colors =
-        if (accent != null) {
-            TopAppBarDefaults.topAppBarColors(
-                containerColor =
-                accent.copy(alpha = EVENT_ACCENT_ALPHA).compositeOver(MaterialTheme.colorScheme.surface),
-            )
-        } else {
-            TopAppBarDefaults.topAppBarColors()
-        }
-    Column(modifier = modifier) {
-        TopAppBar(
-            colors = colors,
-            title = {
-                Text(
-                    text = title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleLargeEmphasized,
-                )
-            },
-            subtitle = {
-                subtitle?.let {
-                    Text(
-                        text = it,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            },
-            navigationIcon =
+    val background = MaterialTheme.colorScheme.background
+    val c = Ios.colors
+    Column(
+        modifier =
+        modifier
+            .fillMaxWidth()
+            .background(accent?.copy(alpha = EVENT_ACCENT_ALPHA)?.compositeOver(background) ?: background)
+            .windowInsetsPadding(WindowInsets.statusBars),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(TOP_ROW_HEIGHT).padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (canNavigateUp) {
-                {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(
-                            imageVector = MeshtasticIcons.ArrowBack,
-                            contentDescription = stringResource(Res.string.navigate_back),
-                        )
-                    }
-                }
-            } else {
-                // The Meshtastic logo is never swapped for event branding — the app's identity stays put. Event
-                // firmware is surfaced on the Connections screen instead (EventFirmwareCard).
-                { Icon(imageVector = vectorResource(Res.drawable.ic_meshtastic), contentDescription = null) }
-            },
-            actions = {
-                TopBarActions(
-                    ourNode = ourNode,
-                    showNodeChip = showNodeChip,
-                    actions = actions,
-                    onClickChip = onClickChip,
+                IosGlassIconButton(
+                    IosIcons.ChevronLeft,
+                    contentDescription = stringResource(Res.string.navigate_back),
+                    onClick = onNavigateUp,
                 )
-            },
+            } else {
+                PangeaLogoButton()
+            }
+            Spacer(Modifier.weight(1f))
+            IosActionCapsule {
+                CompositionLocalProvider(LocalContentColor provides c.label) {
+                    AnimatedVisibility(visible = showNodeChip, enter = fadeIn(), exit = fadeOut()) {
+                        ourNode?.let { node ->
+                            NodeChip(modifier = Modifier.padding(horizontal = 8.dp), node = node, onClick = onClickChip)
+                        }
+                    }
+                    actions()
+                }
+            }
+        }
+        Text(
+            text = title,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = Ios.type.largeTitle,
+            color = c.label,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp),
         )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = Ios.type.subheadline,
+                color = c.secondaryLabel,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
         EventPaletteStrip(palette = eventTheme?.palette.orEmpty(), height = EVENT_BRAND_RULE_HEIGHT)
     }
 }
 
-/**
- * Top-bar quick access for Power Mode (P8): shows the currently-selected mode's icon at a glance; tapping opens the
- * Power Mode menu. Rendered only when [LocalPowerModeMenu] is provided, i.e. on top-level screens.
- */
-@Composable
-private fun PowerModeQuickAccess() {
-    val state = LocalPowerModeMenu.current ?: return
-    val eventEdition = LocalEventBranding.current
-    var showMenu by remember { mutableStateOf(false) }
-    var showSheet by remember { mutableStateOf(false) }
-
-    Box {
-        IconButton(onClick = { showMenu = true }) {
-            Icon(
-                imageVector = state.currentMode.icon,
-                contentDescription =
-                stringResource(Res.string.power_mode_quick_access, stringResource(state.currentMode.labelRes)),
-            )
-        }
-        PowerModeMenu(
-            expanded = showMenu,
-            state = state,
-            onDismiss = { showMenu = false },
-            onShowEventInfo =
-            if (eventEdition != null) {
-                fun() {
-                    showSheet = true
-                }
-            } else {
-                null
-            },
-        )
-    }
-    if (showSheet && eventEdition != null) {
-        EventInfoSheet(edition = eventEdition, onDismiss = { showSheet = false })
-    }
-}
+private val TOP_ROW_HEIGHT = 60.dp
 
 /**
  * The round logo button at the top left of Chats and Settings, as on the Pangea iPhone app: the full-colour logo in a
@@ -285,22 +257,4 @@ private fun PowerModeMenu(
             )
         }
     }
-}
-
-@Composable
-private fun TopBarActions(
-    ourNode: Node?,
-    showNodeChip: Boolean,
-    actions: @Composable () -> Unit,
-    onClickChip: (Node) -> Unit,
-) {
-    AnimatedVisibility(visible = showNodeChip, enter = fadeIn(), exit = fadeOut()) {
-        ourNode?.let { node ->
-            NodeChip(modifier = Modifier.padding(horizontal = 16.dp), node = node, onClick = onClickChip)
-        }
-    }
-
-    PowerModeQuickAccess()
-
-    actions()
 }

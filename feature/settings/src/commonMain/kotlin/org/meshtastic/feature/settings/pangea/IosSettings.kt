@@ -78,6 +78,7 @@ import org.meshtastic.core.resources.pangea_profile_row_subtitle
 import org.meshtastic.core.resources.pangea_radio_connected
 import org.meshtastic.core.resources.pangea_radio_connecting
 import org.meshtastic.core.resources.pangea_radio_not_connected
+import org.meshtastic.core.resources.pangea_setup_profile
 import org.meshtastic.core.resources.pangea_you
 import org.meshtastic.core.resources.pangea_you_footer
 import org.meshtastic.core.resources.power_mode
@@ -144,7 +145,7 @@ fun IosSettingsScreen(
                 footer = stringResource(Res.string.pangea_you_footer),
             ) {
                 IosRow(
-                    title = name,
+                    title = name.ifEmpty { stringResource(Res.string.pangea_setup_profile) },
                     subtitle = stringResource(Res.string.pangea_profile_row_subtitle),
                     subtitleColor = c.tint.copy(alpha = 0.7f),
                     titleStyle = Ios.type.title3.copy(fontWeight = FontWeight.SemiBold),
