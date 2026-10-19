@@ -22,14 +22,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import org.meshtastic.core.repository.NodeRepository
-import org.meshtastic.core.navigation.TopLevelDestination
-import org.meshtastic.core.navigation.MultiBackstack
 import org.meshtastic.core.navigation.ContactsRoute
+import org.meshtastic.core.navigation.MultiBackstack
+import org.meshtastic.core.navigation.TopLevelDestination
+import org.meshtastic.core.repository.NodeRepository
 
 /**
  * A radio's Profile sheet opened by its node number — from the map, where a tap on a radio shows the person
- * (Pangea-Apple standard Map tab), as [org.meshtastic.core.ui.util.LocalNodeProfileSheet]. **Send Message** hands the private chat's key to [onOpenChat].
+ * (Pangea-Apple standard Map tab), as [org.meshtastic.core.ui.util.LocalNodeProfileSheet]. **Send Message** hands the
+ * private chat's key to [onOpenChat].
  */
 @Suppress("ViewModelForwarding")
 @Composable
