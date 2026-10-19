@@ -93,6 +93,7 @@ import org.meshtastic.feature.settings.component.UnitsOption
 import org.meshtastic.feature.settings.component.UnitsPickerDialog
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
+import org.meshtastic.feature.settings.pangea.IosSettingsScreen
 import org.meshtastic.feature.settings.pangea.MyRadioSection
 import org.meshtastic.feature.settings.pangea.PangeaHelpSheet
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
@@ -127,6 +128,8 @@ fun DesktopSettingsScreen(
     val cacheLimit by settingsViewModel.dbCacheLimit.collectAsStateWithLifecycle()
     val isOtaCapable by settingsViewModel.isOtaCapable.collectAsStateWithLifecycle()
     val showFullMessageTimestamps by settingsViewModel.showFullMessageTimestamps.collectAsStateWithLifecycle()
+    val ourNode by settingsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
+    val isConnected by settingsViewModel.isConnected.collectAsStateWithLifecycle(false)
 
     var showThemePickerDialog by remember { mutableStateOf(false) }
     var showLanguagePickerDialog by remember { mutableStateOf(false) }
@@ -151,6 +154,24 @@ fun DesktopSettingsScreen(
             onSelectLanguage = { tag -> settingsViewModel.setLocale(tag) },
             onDismiss = { showLanguagePickerDialog = false },
         )
+    }
+
+    // Pangea standard mode: Settings as on the iPhone app. Expert Mode (and remote admin) keeps the full screen.
+    if (!expertModeEnabled && state.isLocal) {
+        IosSettingsScreen(
+            connectedNodeName = ourNode?.user?.long_name?.takeIf { isConnected },
+            showAmbientLighting =
+            ModuleRoute.filterExcludedFrom(
+                state.metadata,
+                state.radioConfig.device?.role,
+                expertModeEnabled = false,
+            )
+                .contains(ModuleRoute.AMBIENT_LIGHTING),
+            expertModeEnabled = expertModeEnabled,
+            onExpertModeChange = settingsViewModel::setExpertModeEnabled,
+            onNavigate = onNavigate,
+        )
+        return
     }
 
     Scaffold(

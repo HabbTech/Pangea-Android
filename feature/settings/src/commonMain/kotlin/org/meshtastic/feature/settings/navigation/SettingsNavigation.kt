@@ -53,6 +53,7 @@ import org.meshtastic.feature.settings.debugging.DebugScreen
 import org.meshtastic.feature.settings.debugging.DebugViewModel
 import org.meshtastic.feature.settings.filter.FilterSettingsScreen
 import org.meshtastic.feature.settings.filter.FilterSettingsViewModel
+import org.meshtastic.feature.settings.pangea.IosAppSettingsScreen
 import org.meshtastic.feature.settings.radio.CleanNodeDatabaseScreen
 import org.meshtastic.feature.settings.radio.CleanNodeDatabaseViewModel
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -424,6 +425,19 @@ fun EntryProviderScope<NavKey>.settingsGraph(
             appVersionName = settingsViewModel.appVersionName,
             onNavigateUp = dropUnlessResumed { backStack.removeLastOrNull() },
             onNavigateToAcknowledgements = dropUnlessResumed { backStack.add(SettingsRoute.Acknowledgements) },
+        )
+    }
+
+    entry<SettingsRoute.AppSettings> {
+        val settingsViewModel: SettingsViewModel = koinViewModel()
+        val theme by settingsViewModel.theme.collectAsStateWithLifecycle()
+        val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
+        IosAppSettingsScreen(
+            theme = theme,
+            onThemeChange = settingsViewModel::setTheme,
+            expertModeEnabled = expertModeEnabled,
+            onExpertModeChange = settingsViewModel::setExpertModeEnabled,
+            onBack = dropUnlessResumed { backStack.removeLastOrNull() },
         )
     }
 

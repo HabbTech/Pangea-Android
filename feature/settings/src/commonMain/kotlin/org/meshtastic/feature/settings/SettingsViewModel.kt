@@ -158,6 +158,8 @@ class SettingsViewModel(
         myNodeNum?.let { uiPrefs.setShouldProvideNodeLocation(it, value) }
     }
 
+    val theme: StateFlow<Int> = uiPrefs.theme
+
     fun setTheme(theme: Int) {
         uiPrefs.setTheme(theme)
     }

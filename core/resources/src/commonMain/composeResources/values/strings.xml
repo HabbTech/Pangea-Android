@@ -1366,12 +1366,18 @@
     <string name="pangea_add_nickname">Add a nickname</string>
     <string name="pangea_add_to_contacts">Add to Contacts</string>
     <string name="pangea_all_emoji">All Emoji</string>
+    <string name="pangea_app_settings">App Settings</string>
+    <string name="pangea_appearance">Appearance</string>
+    <string name="pangea_appearance_footer">Match Device follows your device's Light or Dark setting.</string>
+    <string name="pangea_battery">Battery</string>
     <string name="pangea_buy_radios">Buy Complete Radios</string>
     <string name="pangea_buy_radios_description">Get custom waterproof solar and detection sensor router nodes, aluminium desktop nodes and rugged handsets.</string>
     <string name="pangea_chat_icon">Chat Icon</string>
     <string name="pangea_chat_icon_hint">Only you see this icon.</string>
     <string name="pangea_choose_photo">Choose Photo</string>
     <string name="pangea_code_placeholder">@code</string>
+    <string name="pangea_configure">Configure</string>
+    <string name="pangea_connected_node">Connected Node %1$s</string>
     <string name="pangea_contacts">Contacts</string>
     <string name="pangea_contacts_empty">Save people from their profile to see them here.</string>
     <string name="pangea_copy_code">Copy code</string>
@@ -1379,6 +1385,7 @@
     <string name="pangea_create">Create</string>
     <string name="pangea_create_group">Create Group</string>
     <string name="pangea_decline">Decline</string>
+    <string name="pangea_device_section">Device</string>
     <string name="pangea_display_name">Your name</string>
     <string name="pangea_edit_profile">Edit</string>
     <string name="pangea_error_invalid">That doesn't look like a Pangea code or link.</string>
@@ -1387,7 +1394,9 @@
     <string name="pangea_error_send_failed">Couldn't send through your radio. Make sure it's connected.</string>
     <string name="pangea_everyone_bell">Notifications for Everyone Nearby</string>
     <string name="pangea_everyone_nearby">Everyone Nearby</string>
+    <string name="pangea_expert_mode_footer">Looking for the node list, mesh map, or radio settings? Turn on Expert Mode to see them.</string>
     <string name="pangea_find_in_conversation">Find in conversation</string>
+    <string name="pangea_firmware_updates">Firmware Updates</string>
     <string name="pangea_forget_radio">Forget This Radio</string>
     <string name="pangea_forget_radio_message">This disconnects the radio. You can pair it again anytime.</string>
     <string name="pangea_forget_radio_title">Forget this radio?</string>
@@ -1443,6 +1452,7 @@
     <string name="pangea_join_group_prompt">Join the group %1$s? Everyone in it can read what you send there.</string>
     <string name="pangea_leave_group">Leave Group</string>
     <string name="pangea_leave_group_confirm">Leave %1$s? Its messages will be removed from this phone.</string>
+    <string name="pangea_match_device">Match Device</string>
     <string name="pangea_message_someone">Message Someone</string>
     <string name="pangea_message_someone_title">Message someone</string>
     <string name="pangea_mute">Mute</string>
@@ -1465,6 +1475,7 @@
     <string name="pangea_photo_waiting_radio">Waiting for your radioâ€¦</string>
     <string name="pangea_pin">Pin</string>
     <string name="pangea_profile">Profile</string>
+    <string name="pangea_profile_row_subtitle">Photo, name and emoji</string>
     <string name="pangea_profile_save_restarts_radio">Saving restarts your radio so it can use your new name. It reconnects on its own.</string>
     <string name="pangea_profile_shared_with">Your name, photo and emoji are shared with people you message, your saved contacts and your groups. Never with Everyone Nearby.</string>
     <string name="pangea_radio_connected">Connected</string>
@@ -1513,6 +1524,8 @@
     <string name="pangea_use_symbol">Use Symbol</string>
     <string name="pangea_what_is">What is Pangea?</string>
     <string name="pangea_what_is_description">Off-grid, decentralized, mesh network that runs on affordable, low-power radios.</string>
+    <string name="pangea_you">You</string>
+    <string name="pangea_you_footer">Friends using Pangea see your photo and name. Everyone else sees your name.</string>
     <string name="pangea_your_code">Your code</string>
     <string name="pangea_your_code_subtitle">Friends can type this, or scan your QR code, to message you.</string>
     <string name="password">Password</string>

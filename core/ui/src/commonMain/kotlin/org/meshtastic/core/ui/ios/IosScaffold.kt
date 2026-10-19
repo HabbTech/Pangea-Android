@@ -198,13 +198,7 @@ fun IosTopBar(
     Box(
         modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    0f to background,
-                    0.75f to background.copy(alpha = 0.92f),
-                    1f to background.copy(alpha = 0f),
-                ),
-            )
+            .background(Brush.verticalGradient(0f to background, 0.8f to background, 1f to background.copy(alpha = 0f)))
             .windowInsetsPadding(WindowInsets.statusBars)
             .height(TopBarHeight)
             .padding(horizontal = IosInset),

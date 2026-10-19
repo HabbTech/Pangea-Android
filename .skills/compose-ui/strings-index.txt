@@ -1330,12 +1330,18 @@ packet_authenticity_unsupported
 pangea_add_nickname
 pangea_add_to_contacts
 pangea_all_emoji
+pangea_app_settings
+pangea_appearance
+pangea_appearance_footer
+pangea_battery
 pangea_buy_radios
 pangea_buy_radios_description
 pangea_chat_icon
 pangea_chat_icon_hint
 pangea_choose_photo
 pangea_code_placeholder
+pangea_configure
+pangea_connected_node
 pangea_contacts
 pangea_contacts_empty
 pangea_copy_code
@@ -1343,6 +1349,7 @@ pangea_copyright_notice
 pangea_create
 pangea_create_group
 pangea_decline
+pangea_device_section
 pangea_display_name
 pangea_edit_profile
 pangea_error_invalid
@@ -1351,7 +1358,9 @@ pangea_error_own_code
 pangea_error_send_failed
 pangea_everyone_bell
 pangea_everyone_nearby
+pangea_expert_mode_footer
 pangea_find_in_conversation
+pangea_firmware_updates
 pangea_forget_radio
 pangea_forget_radio_message
 pangea_forget_radio_title
@@ -1407,6 +1416,7 @@ pangea_join
 pangea_join_group_prompt
 pangea_leave_group
 pangea_leave_group_confirm
+pangea_match_device
 pangea_message_someone
 pangea_message_someone_title
 pangea_mute
@@ -1429,6 +1439,7 @@ pangea_photo_offer
 pangea_photo_waiting_radio
 pangea_pin
 pangea_profile
+pangea_profile_row_subtitle
 pangea_profile_save_restarts_radio
 pangea_profile_shared_with
 pangea_radio_connected
@@ -1477,6 +1488,8 @@ pangea_unreachable
 pangea_use_symbol
 pangea_what_is
 pangea_what_is_description
+pangea_you
+pangea_you_footer
 pangea_your_code
 pangea_your_code_subtitle
 password

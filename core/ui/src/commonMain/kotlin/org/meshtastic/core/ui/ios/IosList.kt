@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -162,16 +163,19 @@ fun IosRow(
     iconTint: Color = Ios.colors.tint,
     leading: (@Composable () -> Unit)? = null,
     subtitle: String? = null,
+    subtitleColor: Color = Ios.colors.secondaryLabel,
+    titleStyle: TextStyle = Ios.type.body,
     value: String? = null,
     titleColor: Color = Ios.colors.label,
     accessory: IosAccessory = IosAccessory.None,
     showSeparator: Boolean = true,
+    leadingWidth: Dp? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val c = Ios.colors
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
-    val textStart: Dp = if (icon != null || leading != null) IconTextStart else IosInset
+    val textStart: Dp = leadingWidth ?: if (icon != null || leading != null) IconTextStart else IosInset
     val clickModifier =
         when {
             accessory is IosAccessory.Switch ->
@@ -200,9 +204,9 @@ fun IosRow(
             }
         }
         Column(Modifier.weight(1f).padding(vertical = 11.dp)) {
-            Text(title, style = Ios.type.body, color = titleColor)
+            Text(title, style = titleStyle, color = titleColor)
             if (subtitle != null) {
-                Text(subtitle, style = Ios.type.subheadline, color = c.secondaryLabel)
+                Text(subtitle, style = Ios.type.subheadline, color = subtitleColor)
             }
         }
         if (value != null) {
