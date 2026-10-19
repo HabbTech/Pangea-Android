@@ -1382,6 +1382,7 @@
     <string name="pangea_configure">Configure</string>
     <string name="pangea_connected_node">Connected Node %1$s</string>
     <string name="pangea_contacts">Contacts</string>
+    <string name="pangea_contacts_count">Contacts (%1$d)</string>
     <string name="pangea_contacts_empty">Save people from their profile to see them here.</string>
     <string name="pangea_copy_code">Copy code</string>
     <string name="pangea_copyright_notice">Pangea® Copyright HABB</string>
@@ -1398,6 +1399,7 @@
     <string name="pangea_everyone_bell">Notifications for Everyone Nearby</string>
     <string name="pangea_everyone_nearby">Everyone Nearby</string>
     <string name="pangea_expert_mode_footer">Looking for the node list, mesh map, or radio settings? Turn on Expert Mode to see them.</string>
+    <string name="pangea_find_contact">Find a contact</string>
     <string name="pangea_find_in_conversation">Find in conversation</string>
     <string name="pangea_firmware_updates">Firmware Updates</string>
     <string name="pangea_forget_radio">Forget This Radio</string>
@@ -1460,6 +1462,7 @@
     <string name="pangea_match_device">Match Device</string>
     <string name="pangea_message_someone">Message Someone</string>
     <string name="pangea_message_someone_title">Message someone</string>
+    <string name="pangea_more">More</string>
     <string name="pangea_mute">Mute</string>
     <string name="pangea_my_profile">My Profile</string>
     <string name="pangea_my_radio">My Radio</string>

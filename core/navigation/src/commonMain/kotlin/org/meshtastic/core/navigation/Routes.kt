@@ -50,6 +50,12 @@ sealed interface ContactsRoute : Route {
     @Serializable data class Share(val message: String) : ContactsRoute
 
     @Serializable data object QuickChat : ContactsRoute
+
+    /** Pangea Expert Mode: the channel chats, a level under Messages as on the iPhone app. */
+    @Serializable data object Channels : ContactsRoute
+
+    /** Pangea Expert Mode: the direct chats. */
+    @Serializable data object DirectMessages : ContactsRoute
 }
 
 @Serializable

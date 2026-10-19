@@ -27,12 +27,14 @@ import org.meshtastic.core.navigation.ContactsRoute
 import org.meshtastic.core.navigation.NodesRoute
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.ui.component.ScrollToTopEvent
+import org.meshtastic.feature.messaging.pangea.ExpertChatSection
 
 @Composable
 fun AdaptiveContactsScreen(
     backStack: NavBackStack<NavKey>,
     scrollToTopEvents: Flow<ScrollToTopEvent>,
     onHandleDeepLink: (CommonUri, onInvalid: () -> Unit) -> Unit,
+    section: ExpertChatSection? = null,
 ) {
     val contactsViewModel = koinViewModel<ContactsViewModel>()
 
@@ -40,11 +42,19 @@ fun AdaptiveContactsScreen(
         onNavigateToShare = { backStack.add(ChannelsRoute.Channels) },
         onHandleDeepLink = onHandleDeepLink,
         viewModel = contactsViewModel,
-        onClickNodeChip = { backStack.add(NodesRoute.NodeDetail(it)) },
         onNavigateToMessages = { contactKey -> backStack.add(ContactsRoute.Messages(contactKey)) },
         onNavigateToNodeDetails = { backStack.add(NodesRoute.NodeDetail(it)) },
         onNavigateToFilterSettings = { backStack.add(SettingsRoute.FilterSettings) },
         scrollToTopEvents = scrollToTopEvents,
-        activeContactKey = null,
+        section = section,
+        onOpenSection = {
+            backStack.add(
+                when (it) {
+                    ExpertChatSection.CHANNELS -> ContactsRoute.Channels
+                    ExpertChatSection.DIRECT -> ContactsRoute.DirectMessages
+                },
+            )
+        },
+        onBack = if (section != null) ({ backStack.removeLastOrNull() }) else null,
     )
 }

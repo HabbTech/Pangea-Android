@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,6 +65,7 @@ import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.contact_draft_prefix
 import org.meshtastic.core.resources.delete
+import org.meshtastic.core.resources.navigate_back
 import org.meshtastic.core.resources.pangea_message_someone
 import org.meshtastic.core.resources.pangea_mute
 import org.meshtastic.core.resources.pangea_new_group
@@ -76,6 +79,7 @@ import org.meshtastic.core.resources.unmute
 import org.meshtastic.core.ui.component.AvatarPalette
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.PangeaLogoButton
+import org.meshtastic.core.ui.component.SecurityIcon
 import org.meshtastic.core.ui.component.rememberAvatarBitmap
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
@@ -84,7 +88,9 @@ import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosLargeTitleScreen
+import org.meshtastic.core.ui.ios.IosSearchField
 import org.meshtastic.feature.messaging.ui.contact.SwipeableContactRow
+import org.meshtastic.proto.ChannelSet
 
 /** Where a chat row's text starts: 16 margin + 46 avatar + 12 gap, as measured on the iPhone app. */
 private val RowTextStart = 74.dp
@@ -107,56 +113,50 @@ internal fun IosChatsScreen(
     onTogglePin: (Contact) -> Unit,
     onDelete: (Contact) -> Unit,
     modifier: Modifier = Modifier,
+    title: String? = null,
+    onBack: (() -> Unit)? = null,
+    showCompose: Boolean = true,
+    expert: Boolean = false,
+    channels: ChannelSet? = null,
+    searchPlaceholder: String? = null,
     header: @Composable () -> Unit = {},
 ) {
-    val ordered =
-        remember(contacts) {
-            val (nearby, rest) = contacts.partition { it.isEveryoneNearby() }
-            nearby +
-                rest.sortedWith(
-                    compareByDescending<Contact> { it.isPinned }.thenByDescending { it.lastMessageTime ?: 0L },
-                )
-        }
+    var query by rememberSaveable { mutableStateOf("") }
+    val ordered = remember(contacts, expert, query) { orderChats(contacts, expert, query) }
     IosLargeTitleScreen(
-        title = stringResource(Res.string.pangea_tab_chats),
+        title = title ?: stringResource(Res.string.pangea_tab_chats),
         grouped = false,
         listState = listState,
         modifier = modifier,
-        leading = { PangeaLogoButton() },
-        trailing = {
-            // The compose button offers a new message or a new group, as on iOS.
-            var composeMenu by remember { mutableStateOf(false) }
-            Box {
+        leading = {
+            if (onBack != null) {
                 IosGlassIconButton(
-                    icon = IosIcons.Compose,
-                    contentDescription = stringResource(Res.string.pangea_new_message),
-                    onClick = { composeMenu = true },
-                    tint = Ios.colors.tint,
+                    icon = IosIcons.ChevronLeft,
+                    contentDescription = stringResource(Res.string.navigate_back),
+                    onClick = onBack,
                 )
-                DropdownMenu(expanded = composeMenu, onDismissRequest = { composeMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.pangea_new_message)) },
-                        onClick = {
-                            composeMenu = false
-                            onCompose()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.pangea_new_group)) },
-                        onClick = {
-                            composeMenu = false
-                            onComposeGroup()
-                        },
-                    )
-                }
+            } else {
+                PangeaLogoButton()
             }
         },
+        trailing = if (showCompose) composeButton(onCompose, onComposeGroup) else null,
     ) {
         item(key = "chats-header") { header() }
+        if (searchPlaceholder != null) {
+            item(key = "chats-search") {
+                IosSearchField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = searchPlaceholder,
+                    glass = false,
+                    modifier = Modifier.padding(start = IosInset, end = IosInset, bottom = 16.dp),
+                )
+            }
+        }
         if (ordered.isEmpty()) {
-            item(key = "chats-empty") { NoChatsYet(onCompose = onCompose, onNewGroup = onNewGroup) }
+            if (!expert) item(key = "chats-empty") { NoChatsYet(onCompose = onCompose, onNewGroup = onNewGroup) }
         } else {
-            item(key = "chats-top-rule") { Rule(start = RowTextStart) }
+            item(key = "chats-top-rule") { Rule(start = if (expert) IosInset else RowTextStart) }
             items(ordered, key = { it.contactKey }) { contact ->
                 SwipeableContactRow(
                     contact = contact,
@@ -166,6 +166,8 @@ internal fun IosChatsScreen(
                 ) {
                     IosChatRow(
                         contact = contact,
+                        expert = expert,
+                        channels = channels,
                         onClick = { onOpen(contact) },
                         onToggleMute = { onToggleMute(contact) },
                         onTogglePin = { onTogglePin(contact) },
@@ -176,6 +178,52 @@ internal fun IosChatsScreen(
             item(key = "chats-bottom-rule") { Rule(start = IosInset) }
         }
     }
+}
+
+/** The compose button, which offers a new message or a new group, as on iOS. */
+private fun composeButton(onCompose: () -> Unit, onComposeGroup: () -> Unit): @Composable RowScope.() -> Unit = {
+    var composeMenu by remember { mutableStateOf(false) }
+    Box {
+        IosGlassIconButton(
+            icon = IosIcons.Compose,
+            contentDescription = stringResource(Res.string.pangea_new_message),
+            onClick = { composeMenu = true },
+            tint = Ios.colors.tint,
+        )
+        DropdownMenu(expanded = composeMenu, onDismissRequest = { composeMenu = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.pangea_new_message)) },
+                onClick = {
+                    composeMenu = false
+                    onCompose()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.pangea_new_group)) },
+                onClick = {
+                    composeMenu = false
+                    onComposeGroup()
+                },
+            )
+        }
+    }
+}
+
+/**
+ * The chats to show, matching [query]: Everyone Nearby first, then pinned, then by latest message. Expert Mode's
+ * Channels list keeps the radio's slot order instead, as iOS does.
+ */
+private fun orderChats(contacts: List<Contact>, expert: Boolean, query: String): List<Contact> {
+    val matching =
+        contacts.filter {
+            query.isBlank() || it.longName.contains(query, ignoreCase = true) || it.shortName.contains(query, true)
+        }
+    if (expert && matching.all { it.contactKey.endsWith(NodeAddress.ID_BROADCAST) }) {
+        return matching.sortedBy { ContactKey(it.contactKey).channelOrNull ?: Int.MAX_VALUE }
+    }
+    val (nearby, rest) = matching.partition { it.isEveryoneNearby() }
+    return nearby +
+        rest.sortedWith(compareByDescending<Contact> { it.isPinned }.thenByDescending { it.lastMessageTime ?: 0L })
 }
 
 @Composable
@@ -189,6 +237,8 @@ private fun Rule(start: Dp) {
 @Composable
 private fun IosChatRow(
     contact: Contact,
+    expert: Boolean,
+    channels: ChannelSet?,
     onClick: () -> Unit,
     onToggleMute: () -> Unit,
     onTogglePin: () -> Unit,
@@ -209,14 +259,33 @@ private fun IosChatRow(
                     onLongClick = { menu = true },
                 ),
         ) {
+            val channelIndex = ContactKey(contact.contactKey).channelOrNull
+            val isChannel = contact.contactKey.endsWith(NodeAddress.ID_BROADCAST)
+            // Expert Mode shows a channel's key state before its name; a retired channel has none left.
+            val lockChannels = channels?.takeIf { expert && isChannel && !contact.isRetired }
             Row(
-                Modifier.fillMaxWidth().padding(start = IosInset, end = IosInset, top = 17.dp, bottom = 17.dp),
+                Modifier.fillMaxWidth()
+                    .padding(start = if (expert) 4.dp else IosInset, end = IosInset, top = 17.dp, bottom = 17.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                ChatAvatar(contact)
+                if (expert) {
+                    // Expert Mode marks unread chats with a dot before the avatar, as iOS does.
+                    Box(Modifier.width(32.dp), contentAlignment = Alignment.Center) {
+                        if (contact.unreadCount > 0) Box(Modifier.size(10.dp).clip(CircleShape).background(c.tint))
+                    }
+                }
+                if (expert && isChannel && channelIndex != null) {
+                    ChannelNumberAvatar(channelIndex)
+                } else {
+                    ChatAvatar(contact)
+                }
                 Spacer(Modifier.width(RowTextStart - IosInset - AvatarSize))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (lockChannels != null && channelIndex != null) {
+                            SecurityIcon(channels, channelIndex)
+                            Spacer(Modifier.width(6.dp))
+                        }
                         Text(
                             contact.longName,
                             style = Ios.type.headline,
@@ -242,11 +311,11 @@ private fun IosChatRow(
                             },
                             style = Ios.type.subheadline,
                             color = c.secondaryLabel,
-                            maxLines = 2,
+                            maxLines = if (expert) 1 else 2,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f).semantics { isSensitiveData = true },
                         )
-                        if (contact.unreadCount > 0) {
+                        if (contact.unreadCount > 0 && !expert) {
                             Box(
                                 Modifier.padding(start = 8.dp)
                                     .clip(CircleShape)
@@ -271,7 +340,7 @@ private fun IosChatRow(
                     modifier = Modifier.padding(start = 10.dp).size(14.dp),
                 )
             }
-            Rule(start = RowTextStart)
+            Rule(start = if (expert) IosInset else RowTextStart)
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(
@@ -337,6 +406,17 @@ internal fun IosChatAvatar(
         size = size,
         modifier = modifier,
     )
+}
+
+/** A channel in Expert Mode: its slot number on an orange circle, as on the iPhone app. */
+@Composable
+private fun ChannelNumberAvatar(index: Int) {
+    Box(
+        Modifier.size(AvatarSize).clip(CircleShape).background(Ios.colors.tint.copy(alpha = 0.78f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(index.toString(), style = Ios.type.title1, color = Color.White)
+    }
 }
 
 @Composable

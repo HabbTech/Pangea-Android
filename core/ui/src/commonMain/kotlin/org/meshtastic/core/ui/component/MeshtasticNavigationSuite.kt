@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -44,13 +43,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.DeviceAddress
-import org.meshtastic.core.model.DeviceType
-import org.meshtastic.core.model.MeshActivity
 import org.meshtastic.core.navigation.ContactsRoute
 import org.meshtastic.core.navigation.MultiBackstack
 import org.meshtastic.core.navigation.NodesRoute
@@ -139,15 +134,7 @@ fun MeshtasticNavigationSuite(
                 label = label,
                 badge = if (destination == TopLevelDestination.Messages) unreadMessageCount else 0,
             ) { tint ->
-                TabIcon(
-                    destination = destination,
-                    tint = tint,
-                    connectionState = connectionState,
-                    restarting = restarting,
-                    reconnecting = watchdogReconnectInFlight && !restarting,
-                    selectedDevice = selectedDevice,
-                    meshActivityFlow = uiViewModel.meshActivity,
-                )
+                TabIcon(destination = destination, tint = tint)
             }
         }
 
@@ -215,47 +202,21 @@ private fun RadioStatusPill(pill: RadioPill, onPair: () -> Unit) {
     }
 }
 
-/** The tab icons: iOS-style Map, Chats and Settings; Nodes and Connect keep their own (Connect animates). */
+/**
+ * The tab icons, as on the Pangea iPhone app. The Connect tab is a plain link: the connection itself shows in the radio
+ * chip at the top of each screen in Expert Mode, as on iOS, and in the status pill in standard mode.
+ */
 @Composable
-private fun TabIcon(
-    destination: TopLevelDestination,
-    tint: Color,
-    connectionState: ConnectionState,
-    restarting: Boolean,
-    reconnecting: Boolean,
-    selectedDevice: String?,
-    meshActivityFlow: Flow<MeshActivity>,
-) {
-    val iconModifier = Modifier.size(26.dp)
-    when (destination) {
-        TopLevelDestination.Map -> Icon(IosIcons.Map, contentDescription = null, tint = tint, modifier = iconModifier)
-
-        TopLevelDestination.Messages ->
-            Icon(IosIcons.Bubble, contentDescription = null, tint = tint, modifier = iconModifier)
-
-        TopLevelDestination.Settings ->
-            Icon(IosIcons.Gear, contentDescription = null, tint = tint, modifier = iconModifier)
-
-        TopLevelDestination.Connect -> {
-            // An expected restart or a watchdog recovery shows as "connecting", not a scary disconnect.
-            val presented =
-                if ((restarting || reconnecting) && connectionState == ConnectionState.Disconnected) {
-                    ConnectionState.Connecting
-                } else {
-                    connectionState
-                }
-            CompositionLocalProvider(LocalContentColor provides tint) {
-                AnimatedConnectionsNavIcon(
-                    connectionState = presented,
-                    deviceType = DeviceType.fromAddress(selectedDevice ?: "NoDevice"),
-                    meshActivityFlow = meshActivityFlow,
-                )
-            }
+private fun TabIcon(destination: TopLevelDestination, tint: Color) {
+    val icon =
+        when (destination) {
+            TopLevelDestination.Map -> IosIcons.Map
+            TopLevelDestination.Messages -> IosIcons.Bubble
+            TopLevelDestination.Settings -> IosIcons.Gear
+            TopLevelDestination.Connect -> IosIcons.Link
+            TopLevelDestination.Nodes -> IosIcons.Radio
         }
-
-        TopLevelDestination.Nodes ->
-            Icon(vectorResource(destination.icon), contentDescription = null, tint = tint, modifier = iconModifier)
-    }
+    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
 }
 
 private fun handleNavigation(

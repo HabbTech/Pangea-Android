@@ -114,6 +114,82 @@ object IosIcons {
         }
     }
 
+    /** `person`: Direct Messages in Expert Mode. */
+    val Person: ImageVector by lazy {
+        icon("ios.person") {
+            stroked(width = 1.6f) {
+                circle(12f, 7.8f, 3.6f)
+                moveTo(5f, 20f)
+                curveTo(5f, 16.1f, 8.1f, 13.6f, 12f, 13.6f)
+                curveTo(15.9f, 13.6f, 19f, 16.1f, 19f, 20f)
+                close()
+            }
+        }
+    }
+
+    /** `person.2`: Channels in Expert Mode; the person behind is drawn lighter, as the hierarchical symbol is. */
+    val People: ImageVector by lazy {
+        icon("ios.people") {
+            path(
+                fill = null,
+                stroke = SolidColor(Color.Black),
+                strokeAlpha = 0.5f,
+                strokeLineWidth = 1.5f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+            ) {
+                circle(7.6f, 8.4f, 2.8f)
+                moveTo(2f, 18.5f)
+                curveTo(2f, 15.4f, 4.4f, 13.4f, 7.6f, 13.4f)
+                curveTo(8.6f, 13.4f, 9.5f, 13.6f, 10.2f, 14f)
+            }
+            stroked(width = 1.6f) {
+                circle(15.2f, 7.6f, 3.3f)
+                moveTo(8.8f, 19.5f)
+                curveTo(8.8f, 15.9f, 11.6f, 13.6f, 15.2f, 13.6f)
+                curveTo(18.8f, 13.6f, 21.6f, 15.9f, 21.6f, 19.5f)
+                close()
+            }
+        }
+    }
+
+    /** `ellipsis`: a top bar's More menu. */
+    val Ellipsis: ImageVector by lazy {
+        icon("ios.ellipsis") {
+            filled {
+                circle(5.5f, 12f, 1.7f)
+                circle(12f, 12f, 1.7f)
+                circle(18.5f, 12f, 1.7f)
+            }
+        }
+    }
+
+    /** Pangea-Apple's `custom.mesh.radio`: the Nodes tab, a handheld radio with its screen and keypad dots. */
+    val Radio: ImageVector by lazy {
+        icon("ios.radio") {
+            filled {
+                roundRect(7.4f, 1.6f, 9.6f, 4.6f, 0.8f)
+                roundRect(14.4f, 1.6f, 16.6f, 4.6f, 0.8f)
+                roundRect(7.6f, 6.3f, 16.4f, 12.6f, 1.2f)
+                circle(8.9f, 17.6f, 0.85f)
+                circle(11.1f, 17.6f, 0.85f)
+                circle(13.3f, 17.6f, 0.85f)
+                circle(15.5f, 17.6f, 0.85f)
+            }
+            stroked(width = 1.8f) { roundRect(5f, 3.8f, 19f, 21.6f, 3f) }
+        }
+    }
+
+    /** `link`: the Connect tab, two chain links. */
+    val Link: ImageVector by lazy {
+        icon("ios.link") {
+            stroked(width = 2f) {
+                capsule(6.3f, 17.7f, 10.6f, 13.4f, 3f)
+                capsule(13.4f, 10.6f, 17.7f, 6.3f, 3f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {
@@ -357,6 +433,32 @@ object IosIcons {
         strokeLineJoin = StrokeJoin.Round,
         pathBuilder = build,
     )
+
+    private fun PathBuilder.roundRect(left: Float, top: Float, right: Float, bottom: Float, r: Float) {
+        moveTo(left + r, top)
+        lineTo(right - r, top)
+        arcTo(r, r, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = right, y1 = top + r)
+        lineTo(right, bottom - r)
+        arcTo(r, r, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = right - r, y1 = bottom)
+        lineTo(left + r, bottom)
+        arcTo(r, r, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = left, y1 = bottom - r)
+        lineTo(left, top + r)
+        arcTo(r, r, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = left + r, y1 = top)
+        close()
+    }
+
+    /** A rounded bar of radius [r] around the line from ([x1], [y1]) to ([x2], [y2]). */
+    private fun PathBuilder.capsule(x1: Float, y1: Float, x2: Float, y2: Float, r: Float) {
+        val length = kotlin.math.hypot(x2 - x1, y2 - y1)
+        val nx = -(y2 - y1) / length * r
+        val ny = (x2 - x1) / length * r
+        moveTo(x1 + nx, y1 + ny)
+        lineTo(x2 + nx, y2 + ny)
+        arcTo(r, r, 0f, isMoreThanHalf = false, isPositiveArc = false, x1 = x2 - nx, y1 = y2 - ny)
+        lineTo(x1 - nx, y1 - ny)
+        arcTo(r, r, 0f, isMoreThanHalf = false, isPositiveArc = false, x1 = x1 + nx, y1 = y1 + ny)
+        close()
+    }
 
     private fun PathBuilder.circle(cx: Float, cy: Float, r: Float) {
         moveTo(cx + r, cy)

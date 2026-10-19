@@ -34,6 +34,7 @@ import org.meshtastic.core.navigation.replaceLast
 import org.meshtastic.core.ui.component.ScrollToTopEvent
 import org.meshtastic.feature.messaging.QuickChatScreen
 import org.meshtastic.feature.messaging.QuickChatViewModel
+import org.meshtastic.feature.messaging.pangea.ExpertChatSection
 import org.meshtastic.feature.messaging.ui.contact.AdaptiveContactsScreen
 import org.meshtastic.feature.messaging.ui.contact.ContactsViewModel
 import org.meshtastic.feature.messaging.ui.sharing.ShareScreen
@@ -56,6 +57,25 @@ fun EntryProviderScope<NavKey>.contactsGraph(
             backStack = backStack,
             scrollToTopEvents = scrollToTopEvents,
             onHandleDeepLink = onHandleDeepLink,
+        )
+    }
+
+    // Pangea Expert Mode: the lists under Messages.
+    entry<ContactsRoute.Channels>(metadata = { ListDetailSceneStrategy.listPane() }) {
+        AdaptiveContactsScreen(
+            backStack = backStack,
+            scrollToTopEvents = scrollToTopEvents,
+            onHandleDeepLink = onHandleDeepLink,
+            section = ExpertChatSection.CHANNELS,
+        )
+    }
+
+    entry<ContactsRoute.DirectMessages>(metadata = { ListDetailSceneStrategy.listPane() }) {
+        AdaptiveContactsScreen(
+            backStack = backStack,
+            scrollToTopEvents = scrollToTopEvents,
+            onHandleDeepLink = onHandleDeepLink,
+            section = ExpertChatSection.DIRECT,
         )
     }
 

@@ -17,29 +17,21 @@
 package org.meshtastic.feature.messaging.ui.contact
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -58,15 +50,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CancellationException
@@ -94,72 +82,49 @@ import org.meshtastic.core.resources.are_you_sure
 import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.channel_invalid
 import org.meshtastic.core.resources.channels
-import org.meshtastic.core.resources.close_selection
-import org.meshtastic.core.resources.collapsed
 import org.meshtastic.core.resources.contact_muted_snackbar
-import org.meshtastic.core.resources.conversations
 import org.meshtastic.core.resources.currently
 import org.meshtastic.core.resources.delete
 import org.meshtastic.core.resources.delete_messages
-import org.meshtastic.core.resources.delete_selection
-import org.meshtastic.core.resources.direct_messages
-import org.meshtastic.core.resources.expanded
-import org.meshtastic.core.resources.filter_settings
-import org.meshtastic.core.resources.mark_as_read
-import org.meshtastic.core.resources.mark_unread_selected
 import org.meshtastic.core.resources.mute_1_week
 import org.meshtastic.core.resources.mute_8_hours
 import org.meshtastic.core.resources.mute_always
 import org.meshtastic.core.resources.mute_notifications
-import org.meshtastic.core.resources.mute_selected
 import org.meshtastic.core.resources.mute_status_always
 import org.meshtastic.core.resources.mute_status_muted_for_days
 import org.meshtastic.core.resources.mute_status_muted_for_hours
 import org.meshtastic.core.resources.mute_status_unmuted
 import org.meshtastic.core.resources.okay
+import org.meshtastic.core.resources.pangea_contacts_count
 import org.meshtastic.core.resources.pangea_everyone_nearby
-import org.meshtastic.core.resources.pangea_new_message
-import org.meshtastic.core.resources.pin_selected
-import org.meshtastic.core.resources.select_all
+import org.meshtastic.core.resources.pangea_find_contact
 import org.meshtastic.core.resources.swipe_action_delete
 import org.meshtastic.core.resources.swipe_action_mute
 import org.meshtastic.core.resources.swipe_action_unmute
 import org.meshtastic.core.resources.undo
 import org.meshtastic.core.resources.unmute
-import org.meshtastic.core.resources.unmute_selected
-import org.meshtastic.core.resources.unpin_selected
-import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.component.MeshtasticImportFAB
 import org.meshtastic.core.ui.component.MeshtasticTextDialog
 import org.meshtastic.core.ui.component.ScrollToTopEvent
 import org.meshtastic.core.ui.component.smartScrollToTop
-import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.Delete
-import org.meshtastic.core.ui.icon.Edit
-import org.meshtastic.core.ui.icon.ExpandLess
-import org.meshtastic.core.ui.icon.ExpandMore
-import org.meshtastic.core.ui.icon.FilterList
-import org.meshtastic.core.ui.icon.Keep
-import org.meshtastic.core.ui.icon.MarkChatRead
-import org.meshtastic.core.ui.icon.MarkChatUnread
 import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.SelectAll
 import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.core.ui.pangea.SetupProfilePrompt
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.core.ui.util.rememberShowToastResource
 import org.meshtastic.feature.messaging.pangea.AvatarVisual
+import org.meshtastic.feature.messaging.pangea.ExpertChatSection
 import org.meshtastic.feature.messaging.pangea.GroupInvitesSection
 import org.meshtastic.feature.messaging.pangea.IosChatsScreen
+import org.meshtastic.feature.messaging.pangea.IosExpertMessagesScreen
 import org.meshtastic.feature.messaging.pangea.LocalPangeaAvatars
 import org.meshtastic.feature.messaging.pangea.NewGroupDialog
 import org.meshtastic.feature.messaging.pangea.NewMessageSheet
 import org.meshtastic.feature.messaging.pangea.PangeaChatsViewModel
 import org.meshtastic.feature.messaging.pangea.PendingPangeaLink
 import org.meshtastic.feature.messaging.pangea.dmNodeNum
-import org.meshtastic.proto.ChannelSet
 import kotlin.time.Duration.Companion.days
 
 @Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList", "ViewModelForwarding", "ModifierMissing")
@@ -168,13 +133,14 @@ fun ContactsScreen(
     onNavigateToShare: () -> Unit,
     onHandleDeepLink: (CommonUri, onInvalid: () -> Unit) -> Unit,
     viewModel: ContactsViewModel,
-    onClickNodeChip: (Int) -> Unit,
     onNavigateToMessages: (String) -> Unit,
     onNavigateToNodeDetails: (Int) -> Unit,
     onNavigateToFilterSettings: () -> Unit,
     scrollToTopEvents: Flow<ScrollToTopEvent>?,
-    activeContactKey: String?,
     pangeaViewModel: PangeaChatsViewModel = koinViewModel(),
+    section: ExpertChatSection? = null,
+    onOpenSection: (ExpertChatSection) -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val showToast = rememberShowToastResource()
     viewModel.everyoneNearby = stringResource(Res.string.pangea_everyone_nearby)
@@ -319,100 +285,56 @@ fun ContactsScreen(
                 },
             )
         } else {
-            Scaffold(
-                topBar = {
-                    MainAppBar(
-                        title = stringResource(Res.string.conversations),
-                        ourNode = ourNode,
-                        showNodeChip = ourNode != null && connectionState is ConnectionState.Connected,
-                        canNavigateUp = false,
-                        onNavigateUp = {},
-                        actions = {
-                            IconButton(onClick = { showNewMessage = true }) {
-                                Icon(
-                                    MeshtasticIcons.Edit,
-                                    contentDescription = stringResource(Res.string.pangea_new_message),
-                                )
-                            }
-                            IconButton(onClick = onNavigateToFilterSettings) {
-                                Icon(
-                                    MeshtasticIcons.FilterList,
-                                    contentDescription = stringResource(Res.string.filter_settings),
-                                )
-                            }
-                            val unreadCountTotal by viewModel.unreadCountTotal.collectAsStateWithLifecycle(0)
-                            if (unreadCountTotal > 0) {
-                                IconButton(onClick = { viewModel.markAllAsRead() }) {
-                                    Icon(
-                                        MeshtasticIcons.MarkChatRead,
-                                        contentDescription = stringResource(Res.string.mark_as_read),
-                                    )
-                                }
-                            }
+            // Pangea Expert Mode: Messages -> Channels / Direct Messages, as on the iPhone app.
+            val (channelChats, directChats) =
+                remember(contacts) { contacts.partition { it.contactKey.endsWith(NodeAddress.ID_BROADCAST) } }
+            val unreadCountTotal by viewModel.unreadCountTotal.collectAsStateWithLifecycle(0)
+            when (section) {
+                null ->
+                    IosExpertMessagesScreen(
+                        channelCount = channelChats.size,
+                        unreadCount = unreadCountTotal,
+                        connected = connectionState is ConnectionState.Connected,
+                        onOpen = onOpenSection,
+                        onCompose = { showNewMessage = true },
+                        onMarkAllRead = viewModel::markAllAsRead,
+                        onFilterSettings = onNavigateToFilterSettings,
+                        onImport = { uriString ->
+                            val onInvalid: () -> Unit = { scope.launch { showToast(Res.string.channel_invalid) } }
+                            parseDeepLinkOrInvalid(uriString, onHandleDeepLink, onInvalid)
                         },
-                        onClickChip = { onClickNodeChip(it.num) },
+                        onShareChannels = onNavigateToShare,
+                        header = {
+                            SetupProfilePrompt()
+                            GroupInvitesSection(viewModel = pangeaViewModel, onJoin = onNavigateToMessages)
+                        },
                     )
-                },
-                floatingActionButton = {
-                    if (connectionState is ConnectionState.Connected) {
-                        MeshtasticImportFAB(
-                            onImport = { uriString ->
-                                val onInvalid: () -> Unit = { scope.launch { showToast(Res.string.channel_invalid) } }
-                                parseDeepLinkOrInvalid(uriString, onHandleDeepLink, onInvalid)
-                            },
-                            onShareChannels = onNavigateToShare,
-                            isContactContext = false,
-                        )
-                    }
-                },
-            ) { paddingValues ->
-                Column(modifier = Modifier.padding(paddingValues)) {
-                    if (isSelectionModeActive) {
-                        // Display selection toolbar when in selection mode
-                        SelectionToolbar(
-                            selectedCount = selectedContactKeys.size,
-                            onCloseSelection = { selectedContactKeys.clear() },
-                            onMuteSelected = { showMuteDialog = true },
-                            onMarkUnread = {
-                                viewModel.markUnread(selectedContactKeys.toList())
-                                selectedContactKeys.clear()
-                            },
-                            onTogglePin = {
-                                viewModel.setPinned(selectedContactKeys.toList(), !isAllPinned)
-                                selectedContactKeys.clear()
-                            },
-                            onDeleteSelected = { showDeleteDialog = true },
-                            onSelectAll = {
-                                selectedContactKeys.clear()
-                                selectedContactKeys.addAll(contacts.map { it.contactKey })
-                            },
-                            isAllMuted = isAllMuted, // Pass the derived state
-                            isAllPinned = isAllPinned,
-                        )
-                    }
 
-                    SetupProfilePrompt()
-                    GroupInvitesSection(viewModel = pangeaViewModel, onJoin = onNavigateToMessages)
-
-                    val collapsedSections by viewModel.collapsedSections.collectAsStateWithLifecycle()
-
-                    ContactListView(
-                        contacts = contacts,
-                        selectedList = selectedContactKeys,
-                        activeContactKey = activeContactKey,
-                        onClick = onContactClick,
-                        onLongClick = onContactLongClick,
-                        onNodeChipClick = onNodeChipClick,
-                        onSwipeMute = toggleMute,
-                        // Deleting a conversation drops its packets outright, so a swipe only nominates a target; the
-                        // confirmation opens once its message count has been read, so the dialog can never quote a
-                        // stale
-                        // count from the previous selection.
-                        onSwipeDelete = { contact -> pendingSwipeDelete = contact },
+                ExpertChatSection.CHANNELS,
+                ExpertChatSection.DIRECT,
+                -> {
+                    val isChannels = section == ExpertChatSection.CHANNELS
+                    IosChatsScreen(
+                        contacts = if (isChannels) channelChats else directChats,
                         listState = contactsListState,
+                        onOpen = { onNavigateToMessages(it.contactKey) },
+                        onCompose = { showNewMessage = true },
+                        onComposeGroup = { showNewGroup = true },
+                        onNewGroup = { showNewGroup = true },
+                        onToggleMute = toggleMute,
+                        onTogglePin = { viewModel.setPinned(listOf(it.contactKey), !it.isPinned) },
+                        onDelete = { pendingSwipeDelete = it },
+                        title =
+                        if (isChannels) {
+                            stringResource(Res.string.channels)
+                        } else {
+                            stringResource(Res.string.pangea_contacts_count, directChats.size)
+                        },
+                        onBack = onBack,
+                        showCompose = false,
+                        expert = true,
                         channels = channels,
-                        collapsedSections = collapsedSections,
-                        onToggleSectionCollapse = viewModel::toggleSectionCollapse,
+                        searchPlaceholder = if (isChannels) null else stringResource(Res.string.pangea_find_contact),
                     )
                 }
             }
@@ -584,197 +506,6 @@ private fun DeleteConfirmationDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SelectionToolbar(
-    selectedCount: Int,
-    onCloseSelection: () -> Unit,
-    onMuteSelected: () -> Unit,
-    onDeleteSelected: () -> Unit,
-    onSelectAll: () -> Unit,
-    onMarkUnread: () -> Unit,
-    onTogglePin: () -> Unit,
-    isAllMuted: Boolean,
-    isAllPinned: Boolean,
-) {
-    TopAppBar(
-        title = { Text(text = "$selectedCount") },
-        navigationIcon = {
-            IconButton(onClick = onCloseSelection) {
-                Icon(MeshtasticIcons.Close, contentDescription = stringResource(Res.string.close_selection))
-            }
-        },
-        actions = {
-            IconButton(onClick = onMuteSelected) {
-                Icon(
-                    imageVector =
-                    if (isAllMuted) {
-                        MeshtasticIcons.VolumeUp
-                    } else {
-                        MeshtasticIcons.VolumeMute
-                    },
-                    contentDescription =
-                    stringResource(
-                        if (isAllMuted) {
-                            Res.string.unmute_selected
-                        } else {
-                            Res.string.mute_selected
-                        },
-                    ),
-                )
-            }
-            IconButton(onClick = onTogglePin) {
-                Icon(
-                    imageVector = MeshtasticIcons.Keep,
-                    contentDescription =
-                    stringResource(if (isAllPinned) Res.string.unpin_selected else Res.string.pin_selected),
-                    tint =
-                    if (isAllPinned) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        LocalContentColor.current
-                    },
-                )
-            }
-            IconButton(onClick = onMarkUnread) {
-                Icon(
-                    MeshtasticIcons.MarkChatUnread,
-                    contentDescription = stringResource(Res.string.mark_unread_selected),
-                )
-            }
-            IconButton(onClick = onDeleteSelected) {
-                Icon(MeshtasticIcons.Delete, contentDescription = stringResource(Res.string.delete_selection))
-            }
-            IconButton(onClick = onSelectAll) {
-                Icon(MeshtasticIcons.SelectAll, contentDescription = stringResource(Res.string.select_all))
-            }
-        },
-    )
-}
-
-@Composable
-private fun ContactListView(
-    contacts: List<Contact>,
-    selectedList: List<String>,
-    activeContactKey: String?,
-    onClick: (Contact) -> Unit,
-    onLongClick: (Contact) -> Unit,
-    onNodeChipClick: (Contact) -> Unit,
-    onSwipeMute: (Contact) -> Unit,
-    onSwipeDelete: (Contact) -> Unit,
-    listState: LazyListState,
-    collapsedSections: Set<String>,
-    onToggleSectionCollapse: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    channels: ChannelSet? = null,
-) {
-    val haptic = LocalHapticFeedback.current
-    val (channelContacts, dmContacts) =
-        remember(contacts) {
-            val (channelPart, dmPart) = contacts.partition { it.section() == ContactSection.CHANNELS }
-            // Channels keep a fixed slot order (channel index); DMs stay in the query's recency order. Pinned rows
-            // rise to the top of their own section — Kotlin's sort is stable, so the order below is preserved within
-            // each group. Pinning matters most for DMs, where an active conversation otherwise pushes others down;
-            // channels already have a deterministic order, so pinning one just reorders that.
-            // A retired channel has no slot, so it sorts after every live one rather than ahead of the primary.
-            channelPart
-                .sortedBy { ContactKey(it.contactKey).channelOrNull ?: Int.MAX_VALUE }
-                .sortedByDescending { it.isPinned } to dmPart.sortedByDescending { it.isPinned }
-        }
-    val channelsTitle = stringResource(Res.string.channels)
-    val dmTitle = stringResource(Res.string.direct_messages)
-
-    LazyColumn(state = listState, modifier = modifier.fillMaxSize()) {
-        contactSection(
-            section = ContactSection.CHANNELS,
-            title = channelsTitle,
-            sectionContacts = channelContacts,
-            collapsed = ContactSection.CHANNELS.key in collapsedSections,
-            onToggleCollapse = onToggleSectionCollapse,
-            selectedList = selectedList,
-            activeContactKey = activeContactKey,
-            onClick = onClick,
-            onLongClick = onLongClick,
-            onNodeChipClick = onNodeChipClick,
-            onSwipeMute = onSwipeMute,
-            onSwipeDelete = onSwipeDelete,
-            channels = channels,
-            haptic = haptic,
-        )
-
-        contactSection(
-            section = ContactSection.DIRECT_MESSAGES,
-            title = dmTitle,
-            sectionContacts = dmContacts,
-            collapsed = ContactSection.DIRECT_MESSAGES.key in collapsedSections,
-            onToggleCollapse = onToggleSectionCollapse,
-            selectedList = selectedList,
-            activeContactKey = activeContactKey,
-            onClick = onClick,
-            onLongClick = onLongClick,
-            onNodeChipClick = onNodeChipClick,
-            onSwipeMute = onSwipeMute,
-            onSwipeDelete = onSwipeDelete,
-            channels = channels,
-            haptic = haptic,
-        )
-    }
-}
-
-private fun LazyListScope.contactSection(
-    section: ContactSection,
-    title: String,
-    sectionContacts: List<Contact>,
-    collapsed: Boolean,
-    onToggleCollapse: (String) -> Unit,
-    selectedList: List<String>,
-    activeContactKey: String?,
-    onClick: (Contact) -> Unit,
-    onLongClick: (Contact) -> Unit,
-    onNodeChipClick: (Contact) -> Unit,
-    onSwipeMute: (Contact) -> Unit,
-    onSwipeDelete: (Contact) -> Unit,
-    channels: ChannelSet?,
-    haptic: HapticFeedback,
-) {
-    if (sectionContacts.isEmpty()) return
-
-    stickyHeader(key = "${section.key}_header") {
-        ContactSectionHeader(
-            title = title,
-            count = sectionContacts.size,
-            collapsed = collapsed,
-            onClick = { onToggleCollapse(section.key) },
-        )
-    }
-
-    if (!collapsed) {
-        items(count = sectionContacts.size, key = { index -> sectionContacts[index].contactKey }) { index ->
-            val contact = sectionContacts[index]
-            SwipeableContactRow(
-                contact = contact,
-                // Selection mode owns the row's gestures; a swipe there would fight multi-select.
-                enabled = selectedList.isEmpty(),
-                onMute = { onSwipeMute(contact) },
-                onDelete = { onSwipeDelete(contact) },
-            ) {
-                ContactItem(
-                    contact = contact,
-                    selected = selectedList.contains(contact.contactKey),
-                    isActive = contact.contactKey == activeContactKey,
-                    onClick = { onClick(contact) },
-                    onLongClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onLongClick(contact)
-                    },
-                    onNodeChipClick = { onNodeChipClick(contact) },
-                    channels = channels,
-                )
-            }
-        }
-    }
-}
-
 /**
  * One-handed row actions: swipe toward the reading direction to mute, away from it to delete.
  *
@@ -907,32 +638,6 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue, isMuted: Boolean)
             },
             contentDescription = label,
             tint = contentColor,
-        )
-    }
-}
-
-@Composable
-private fun ContactSectionHeader(title: String, count: Int, collapsed: Boolean, onClick: () -> Unit) {
-    val expandStateDescription = stringResource(if (collapsed) Res.string.collapsed else Res.string.expanded)
-    Row(
-        modifier =
-        Modifier.fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { stateDescription = expandStateDescription }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "$title ($count)",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.weight(1f).semantics { heading() },
-        )
-        Icon(
-            imageVector = if (collapsed) MeshtasticIcons.ExpandMore else MeshtasticIcons.ExpandLess,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
         )
     }
 }

@@ -1346,6 +1346,7 @@ pangea_configuration_for
 pangea_configure
 pangea_connected_node
 pangea_contacts
+pangea_contacts_count
 pangea_contacts_empty
 pangea_copy_code
 pangea_copyright_notice
@@ -1362,6 +1363,7 @@ pangea_error_send_failed
 pangea_everyone_bell
 pangea_everyone_nearby
 pangea_expert_mode_footer
+pangea_find_contact
 pangea_find_in_conversation
 pangea_firmware_updates
 pangea_forget_radio
@@ -1424,6 +1426,7 @@ pangea_map_empty_title
 pangea_match_device
 pangea_message_someone
 pangea_message_someone_title
+pangea_more
 pangea_mute
 pangea_my_profile
 pangea_my_radio
