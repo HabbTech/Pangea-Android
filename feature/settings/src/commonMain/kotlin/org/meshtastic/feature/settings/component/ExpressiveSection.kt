@@ -16,41 +16,54 @@
  */
 package org.meshtastic.feature.settings.component
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.LocalIosSectionRows
 
-/** A styled section container for settings screens. */
+/**
+ * A settings section, as on the Pangea iPhone app: a grey [title] (none when blank) over a white rounded card. Rows in
+ * it draw iOS's hairlines between them ([LocalIosSectionRows]); the card covers the one above its first row.
+ */
 @Composable
 fun ExpressiveSection(
     title: String,
     modifier: Modifier = Modifier,
-    titleColor: Color = MaterialTheme.colorScheme.primary,
+    titleColor: Color = Ios.colors.secondaryLabel,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-            style = MaterialTheme.typography.titleMediumEmphasized,
-            fontWeight = FontWeight.Bold,
-            color = titleColor,
-        )
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            content = content,
-        )
+    val card = Ios.colors.groupedRow
+    Column(modifier = modifier) {
+        if (title.isNotBlank()) {
+            Text(
+                text = title,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp).fillMaxWidth(),
+                style = Ios.type.headline,
+                color = titleColor,
+            )
+        }
+        CompositionLocalProvider(LocalIosSectionRows provides true) {
+            Column(
+                modifier =
+                Modifier.fillMaxWidth().clip(IosCardShape).background(card).drawWithContent {
+                    drawContent()
+                    drawRect(card, size = Size(size.width, 1.dp.toPx()))
+                },
+                content = content,
+            )
+        }
     }
 }

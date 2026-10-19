@@ -59,6 +59,7 @@ import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Search
+import org.meshtastic.core.ui.ios.Ios
 
 /** Appended to the caller's tag for the field the expanded overlay shows, so a test can target one of the two. */
 const val SEARCH_BAR_EXPANDED_TAG_SUFFIX = "Expanded"
@@ -135,7 +136,13 @@ fun MeshtasticSearchBar(
         modifier.fillMaxWidth().let { base ->
             scrollBehavior?.let { behavior -> with(behavior) { base.searchBarScrollBehavior() } } ?: base
         }
-    SearchBar(state = searchBarState, inputField = { inputField(inputFieldTag) }, modifier = barModifier)
+    // Pangea: iOS's search field, a translucent grey capsule (design/PANGEA-BRAND.md v2).
+    SearchBar(
+        state = searchBarState,
+        inputField = { inputField(inputFieldTag) },
+        modifier = barModifier,
+        colors = SearchBarDefaults.colors(containerColor = Ios.colors.searchFill),
+    )
 
     val expandedTag = inputFieldTag + SEARCH_BAR_EXPANDED_TAG_SUFFIX
     // Material docks the expanded bar on medium and larger windows and only goes full-screen on compact ones. The

@@ -38,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,6 +69,13 @@ data class IosSeparatorInset(val start: Dp)
 
 /** For custom children of an [IosSection]: draw the separator above this child from [start]. */
 fun Modifier.iosRowSeparator(start: Dp = IosInset): Modifier = layoutId(IosSeparatorInset(start))
+
+/**
+ * True inside a settings section card: [org.meshtastic.core.ui.component.BasicListItem] rows then draw iOS's hairline
+ * above themselves (the section hides the first one), since a `ColumnScope` section can't draw between its rows.
+ */
+@Suppress("CompositionLocalAllowlist")
+val LocalIosSectionRows = staticCompositionLocalOf { false }
 
 /**
  * An inset-grouped section (`List` with `.insetGrouped`): an optional grey [header], a white card of [content] rows

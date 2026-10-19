@@ -292,7 +292,7 @@ fun IosSearchField(
                 },
             )
             .clip(CircleShape)
-            .background(if (glass) c.chrome else c.fieldFill)
+            .background(if (glass) c.chrome else c.searchFill)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

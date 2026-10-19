@@ -190,6 +190,35 @@ object IosIcons {
         }
     }
 
+    /** `questionmark.app`: About Pangea. */
+    val QuestionSquare: ImageVector by lazy {
+        icon("ios.questionSquare") {
+            stroked(width = 1.6f) {
+                roundRect(3.5f, 3.5f, 20.5f, 20.5f, 4.5f)
+                moveTo(9.4f, 9.6f)
+                curveTo(9.4f, 8f, 10.6f, 7f, 12f, 7f)
+                curveTo(13.5f, 7f, 14.6f, 8f, 14.6f, 9.4f)
+                curveTo(14.6f, 11.4f, 12f, 11.6f, 12f, 13.8f)
+            }
+            filled { circle(12f, 16.8f, 1.05f) }
+        }
+    }
+
+    /** `doc.text`: Help & Documentation. */
+    val DocText: ImageVector by lazy {
+        icon("ios.docText") {
+            stroked(width = 1.6f) {
+                roundRect(5f, 2.8f, 19f, 21.2f, 2.6f)
+                moveTo(8.5f, 8f)
+                lineTo(15.5f, 8f)
+                moveTo(8.5f, 11.5f)
+                lineTo(15.5f, 11.5f)
+                moveTo(8.5f, 15f)
+                lineTo(13f, 15f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

@@ -1389,6 +1389,7 @@
     <string name="pangea_create">Create</string>
     <string name="pangea_create_group">Create Group</string>
     <string name="pangea_decline">Decline</string>
+    <string name="pangea_developers">Developers</string>
     <string name="pangea_device_section">Device</string>
     <string name="pangea_display_name">Your name</string>
     <string name="pangea_edit_profile">Edit</string>

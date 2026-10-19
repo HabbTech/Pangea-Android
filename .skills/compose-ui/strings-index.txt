@@ -1353,6 +1353,7 @@ pangea_copyright_notice
 pangea_create
 pangea_create_group
 pangea_decline
+pangea_developers
 pangea_device_section
 pangea_display_name
 pangea_edit_profile

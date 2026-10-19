@@ -47,53 +47,58 @@ import org.koin.core.qualifier.named
 import org.meshtastic.core.common.di.GOOGLE_SERVICES_AVAILABLE
 import org.meshtastic.core.common.util.UnitsOverride
 import org.meshtastic.core.common.util.nowMillis
-import org.meshtastic.core.navigation.ConnectionsRoute
+import org.meshtastic.core.navigation.FirmwareRoute
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.navigation.WifiProvisionRoute
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.about_pangea
 import org.meshtastic.core.resources.app_functions_settings
 import org.meshtastic.core.resources.app_functions_settings_summary
 import org.meshtastic.core.resources.app_settings
 import org.meshtastic.core.resources.bottom_nav_settings
 import org.meshtastic.core.resources.device_links
 import org.meshtastic.core.resources.expert_mode
-import org.meshtastic.core.resources.expert_mode_summary
 import org.meshtastic.core.resources.export_configuration
 import org.meshtastic.core.resources.filter_settings
 import org.meshtastic.core.resources.help_and_documentation
 import org.meshtastic.core.resources.import_configuration
 import org.meshtastic.core.resources.node_layout_section_title
+import org.meshtastic.core.resources.pangea_app_settings
+import org.meshtastic.core.resources.pangea_configure
+import org.meshtastic.core.resources.pangea_connected_node
+import org.meshtastic.core.resources.pangea_developers
+import org.meshtastic.core.resources.pangea_firmware_updates
 import org.meshtastic.core.resources.preferences_language
 import org.meshtastic.core.resources.remotely_administrating
 import org.meshtastic.core.resources.wifi_devices
+import org.meshtastic.core.ui.component.BasicListItem
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.icon.Device
 import org.meshtastic.core.ui.icon.FilterList
-import org.meshtastic.core.ui.icon.HelpOutline
 import org.meshtastic.core.ui.icon.List
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.icon.Settings
 import org.meshtastic.core.ui.icon.SettingsRemote
+import org.meshtastic.core.ui.icon.SystemUpdate
 import org.meshtastic.core.ui.icon.Wifi
-import org.meshtastic.core.ui.pangea.MyProfileSection
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.util.isBluetoothSupported
 import org.meshtastic.feature.settings.component.AppInfoSection
 import org.meshtastic.feature.settings.component.AppearanceSettingsContent
 import org.meshtastic.feature.settings.component.ExpressiveSection
 import org.meshtastic.feature.settings.component.PermissionsSettingsContent
 import org.meshtastic.feature.settings.component.PersistenceSettingsContent
-import org.meshtastic.feature.settings.component.PowerModeSection
 import org.meshtastic.feature.settings.component.PrivacySettingsContent
 import org.meshtastic.feature.settings.component.ThemePickerDialog
 import org.meshtastic.feature.settings.component.UnitsOption
 import org.meshtastic.feature.settings.component.UnitsPickerDialog
+import org.meshtastic.feature.settings.component.expertModeCaptionColor
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
 import org.meshtastic.feature.settings.pangea.IosSettingsScreen
-import org.meshtastic.feature.settings.pangea.MyRadioSection
 import org.meshtastic.feature.settings.pangea.PangeaHelpSheet
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -240,9 +245,10 @@ fun SettingsScreen(
             val showBack = onBack != null && !state.isLocal
             MainAppBar(
                 title = stringResource(Res.string.bottom_nav_settings),
+                // As on iOS, the local radio is named under Configure rather than under the title.
                 subtitle =
                 if (state.isLocal) {
-                    ourNode?.user?.long_name
+                    null
                 } else {
                     val remoteName = destNode?.user?.long_name ?: ""
                     stringResource(Res.string.remotely_administrating, remoteName)
@@ -267,10 +273,44 @@ fun SettingsScreen(
                 includeAppLocal = state.isLocal,
             )
 
-            // Pangea: my name, photo, emoji and @code, shared with the people and groups I talk to.
+            // Pangea Expert Mode opens as the iPhone app's does: About, Help, App Settings and Firmware Updates, then
+            // the
+            // connected radio under Configure. My Profile and My Radio are standard mode's (Connect does pairing here).
             if (state.isLocal) {
-                MyProfileSection()
-                MyRadioSection(onPairRadio = { onNavigate(ConnectionsRoute.Connections()) })
+                ExpressiveSection(title = "") {
+                    ListItem(text = stringResource(Res.string.about_pangea), leadingIcon = IosIcons.QuestionSquare) {
+                        onNavigate(SettingsRoute.About)
+                    }
+                    ListItem(
+                        text = stringResource(Res.string.help_and_documentation),
+                        supportingText = stringResource(Res.string.expert_mode),
+                        supportingTextColor = expertModeCaptionColor(),
+                        leadingIcon = IosIcons.DocText,
+                    ) {
+                        showPangeaHelp = true
+                    }
+                    ListItem(
+                        text = stringResource(Res.string.pangea_app_settings),
+                        leadingIcon = MeshtasticIcons.Settings,
+                    ) {
+                        onNavigate(SettingsRoute.AppSettings)
+                    }
+                    ListItem(
+                        text = stringResource(Res.string.pangea_firmware_updates),
+                        leadingIcon = MeshtasticIcons.SystemUpdate,
+                    ) {
+                        onNavigate(FirmwareRoute.FirmwareGraph)
+                    }
+                }
+                ourNode
+                    ?.user
+                    ?.long_name
+                    ?.takeIf { isConnected }
+                    ?.let { name ->
+                        ExpressiveSection(title = stringResource(Res.string.pangea_configure)) {
+                            BasicListItem(text = stringResource(Res.string.pangea_connected_node, name))
+                        }
+                    }
             }
 
             RadioConfigItemList(
@@ -303,12 +343,6 @@ fun SettingsScreen(
                     showEditDeviceProfileDialog = true
                 },
                 onNavigate = onNavigate,
-                expertModeToggle = {
-                    ExpertModeSection(
-                        expertModeEnabled = expertModeEnabled,
-                        onExpertModeChange = { settingsViewModel.setExpertModeEnabled(it) },
-                    )
-                },
             )
 
             // App-local settings are only relevant when configuring the local node
@@ -316,9 +350,6 @@ fun SettingsScreen(
                 // Ahead of the app settings block: onboarding runs once, so this is the only place a user who skipped
                 // or declined a permission can find their way back to it.
                 PermissionsSettingsContent()
-                // Power Mode renders its own ExpressiveSection, so it sits as a sibling above App
-                // Settings rather than nested inside it.
-                PowerModeSection()
 
                 ExpressiveSection(title = stringResource(Res.string.app_settings)) {
                     PrivacySettingsContent(
@@ -387,33 +418,14 @@ fun SettingsScreen(
                 )
             }
 
-            ExpressiveSection(title = stringResource(Res.string.help_and_documentation)) {
-                ListItem(
-                    text = stringResource(Res.string.help_and_documentation),
-                    leadingIcon = MeshtasticIcons.HelpOutline,
-                ) {
-                    showPangeaHelp = true
-                }
-                if (state.isLocal) {
+            if (state.isLocal) {
+                ExpressiveSection(title = stringResource(Res.string.pangea_developers)) {
                     ListItem(text = stringResource(Res.string.device_links), leadingIcon = MeshtasticIcons.Device) {
                         onNavigate(SettingsRoute.DeviceLinks)
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ExpertModeSection(expertModeEnabled: Boolean, onExpertModeChange: (Boolean) -> Unit) {
-    ExpressiveSection(title = stringResource(Res.string.expert_mode)) {
-        SwitchPreference(
-            title = stringResource(Res.string.expert_mode),
-            summary = stringResource(Res.string.expert_mode_summary),
-            checked = expertModeEnabled,
-            enabled = true,
-            onCheckedChange = onExpertModeChange,
-        )
     }
 }
 

@@ -54,6 +54,8 @@ data class IosColors(
     val groupedRow: Color,
     /** Fields inside a card, and sheets' fields — `tertiarySystemFill` over the row. */
     val fieldFill: Color,
+    /** `.tertiarySystemFill`: search fields, translucent so they darken whatever they sit on. */
+    val searchFill: Color,
     val label: Color,
     val secondaryLabel: Color,
     val tertiaryLabel: Color,
@@ -89,6 +91,7 @@ val LightIosColors =
         groupedBackground = Color(0xFFF2F2F7),
         groupedRow = Color.White,
         fieldFill = Color(0xFFEEEEEF),
+        searchFill = Color(0x24767680),
         label = Color.Black,
         secondaryLabel = Color(0x993C3C43),
         tertiaryLabel = Color(0x4D3C3C43),
@@ -119,6 +122,7 @@ val DarkIosColors =
         groupedBackground = Color.Black,
         groupedRow = Color(0xFF1C1C1E),
         fieldFill = Color(0xFF2C2C2E),
+        searchFill = Color(0x3D767680),
         label = Color.White,
         secondaryLabel = Color(0x99EBEBF5),
         tertiaryLabel = Color(0x4DEBEBF5),
