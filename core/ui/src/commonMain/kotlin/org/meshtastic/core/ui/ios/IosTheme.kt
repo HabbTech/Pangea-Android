@@ -69,6 +69,10 @@ data class IosColors(
     val systemRed: Color,
     val systemGreen: Color,
     val systemBlue: Color,
+    /** `.orange`: warnings that aren't errors. */
+    val systemOrange: Color,
+    /** `.background.secondary` inside a sheet: cards and fields on the setup pages. */
+    val secondaryFill: Color,
     /** The globe circle for Everyone Nearby. */
     val everyoneNearby: Color,
     val isDark: Boolean,
@@ -98,6 +102,8 @@ val LightIosColors =
         systemRed = Color(0xFFFF3B30),
         systemGreen = Color(0xFF34C759),
         systemBlue = Color(0xFF007AFF),
+        systemOrange = Color(0xFFFF9500),
+        secondaryFill = Color(0xFFF2F2F7),
         everyoneNearby = Color(0xFF3355A6),
         isDark = false,
     )
@@ -126,6 +132,8 @@ val DarkIosColors =
         systemRed = Color(0xFFFF453A),
         systemGreen = Color(0xFF30D158),
         systemBlue = Color(0xFF0A84FF),
+        systemOrange = Color(0xFFFF9F0A),
+        secondaryFill = Color(0xFF2C2C2E),
         everyoneNearby = Color(0xFF3355A6),
         isDark = true,
     )

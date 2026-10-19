@@ -30,6 +30,7 @@ internal fun EntryProviderScope<NavKey>.introGraph(
     backStack: NavBackStack<NavKey>,
     viewModel: IntroViewModel,
     onDone: () -> Unit,
+    pairRadio: (@Composable (onPair: () -> Unit) -> Unit)? = null,
 ) {
     fun navigateToNext(
         current: NavKey,
@@ -37,7 +38,14 @@ internal fun EntryProviderScope<NavKey>.introGraph(
         bluetoothRequiresLocation: Boolean = false,
         bluetoothSupported: Boolean = true,
     ) {
-        val next = viewModel.getNextKey(current, permissionsGranted, bluetoothRequiresLocation, bluetoothSupported)
+        val next =
+            viewModel.getNextKey(
+                current,
+                permissionsGranted,
+                bluetoothRequiresLocation,
+                bluetoothSupported,
+                canPairRadio = pairRadio != null,
+            )
         if (next != null) {
             backStack.add(next)
         } else {
@@ -128,7 +136,14 @@ internal fun EntryProviderScope<NavKey>.introGraph(
 
     entry<ExpertMode> { WithBack(backStack) { ExpertModeScreen(onContinue = { navigateToNext(ExpertMode) }) } }
 
-    entry<AllSet> { WithBack(backStack) { AllSetScreen(onStart = onDone) } }
+    // As on iOS, the last three pages have no back button: pairing and naming the radio aren't undone by going back.
+    entry<PairRadio> {
+        pairRadio?.let { PairRadioScreen(pairRadio = it, onPair = { navigateToNext(PairRadio) }, onNoRadio = onDone) }
+    }
+
+    entry<SetupProfile> { SetupProfileScreen(onFinish = { navigateToNext(SetupProfile) }) }
+
+    entry<AllSet> { AllSetScreen(onStart = onDone) }
 }
 
 /** Gives a setup page its back button (every page after Welcome). */

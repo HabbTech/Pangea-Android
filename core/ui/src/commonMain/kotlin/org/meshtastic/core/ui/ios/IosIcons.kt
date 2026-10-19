@@ -253,6 +253,82 @@ object IosIcons {
         }
     }
 
+    /** `person.crop.circle.fill`: the setup name page. The figure is cut out of the disc, as SF Symbols draws it. */
+    val PersonCircleFill: ImageVector by lazy {
+        icon("ios.personCircleFill") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                circle(12f, 12f, 10f)
+                circle(12f, 9.3f, 3.7f)
+                moveTo(5.6f, 18.1f)
+                curveTo(7.1f, 15.8f, 9.4f, 14.7f, 12f, 14.7f)
+                curveTo(14.6f, 14.7f, 16.9f, 15.8f, 18.4f, 18.1f)
+                curveTo(16.8f, 19.9f, 14.5f, 20.9f, 12f, 20.9f)
+                curveTo(9.5f, 20.9f, 7.2f, 19.9f, 5.6f, 18.1f)
+                close()
+            }
+        }
+    }
+
+    /** `checkmark.seal.fill`: a Pangea radio in the pairing list. */
+    val CheckSeal: ImageVector by lazy {
+        icon("ios.checkSeal") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                val points = 16
+                for (i in 0 until points) {
+                    val angle = PI * 2 * i / points - PI / 2
+                    val r = if (i % 2 == 0) 10.6 else 8.9
+                    val x = (12 + r * cos(angle)).toFloat()
+                    val y = (12 + r * sin(angle)).toFloat()
+                    if (i == 0) moveTo(x, y) else lineTo(x, y)
+                }
+                close()
+                moveTo(7.3f, 12.4f)
+                lineTo(8.8f, 10.9f)
+                lineTo(10.8f, 12.9f)
+                lineTo(15.2f, 8.5f)
+                lineTo(16.7f, 10f)
+                lineTo(10.8f, 15.9f)
+                close()
+            }
+        }
+    }
+
+    /** `dot.radiowaves.up.forward`: any other radio in the pairing list. */
+    val RadioWaves: ImageVector by lazy {
+        icon("ios.radioWaves") {
+            filled { circle(6f, 18f, 2.2f) }
+            stroked(width = 2f) {
+                moveTo(6f, 12f)
+                arcTo(6f, 6f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 12f, y1 = 18f)
+                moveTo(6f, 8f)
+                arcTo(10f, 10f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 16f, y1 = 18f)
+                moveTo(6f, 4f)
+                arcTo(14f, 14f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 20f, y1 = 18f)
+            }
+        }
+    }
+
+    /** `exclamationmark.triangle.fill`: a pairing or saving problem. */
+    val WarningFill: ImageVector by lazy {
+        icon("ios.warningFill") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                moveTo(10.3f, 3.9f)
+                curveTo(11.1f, 2.6f, 12.9f, 2.6f, 13.7f, 3.9f)
+                lineTo(21.7f, 17.9f)
+                curveTo(22.5f, 19.2f, 21.5f, 20.9f, 20f, 20.9f)
+                lineTo(4f, 20.9f)
+                curveTo(2.5f, 20.9f, 1.5f, 19.2f, 2.3f, 17.9f)
+                close()
+                moveTo(11f, 8.5f)
+                lineTo(13f, 8.5f)
+                lineTo(12.7f, 14.5f)
+                lineTo(11.3f, 14.5f)
+                close()
+                circle(12f, 17.3f, 1.2f)
+            }
+        }
+    }
+
     private fun icon(name: String, size: Float = 24f, viewport: Float = 24f, block: ImageVector.Builder.() -> Unit) =
         ImageVector.Builder(name, size.dp, size.dp, viewport, viewport).apply(block).build()
 

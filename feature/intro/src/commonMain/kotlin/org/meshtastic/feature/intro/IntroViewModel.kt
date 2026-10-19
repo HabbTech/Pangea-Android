@@ -26,7 +26,8 @@ class IntroViewModel : ViewModel() {
 
     /**
      * Determines the next navigation key based on the current key and the state of permissions. The flow hierarchy is:
-     * Core Connection -> Shared Location -> Notifications -> Critical Alerts -> Expert Mode -> Done.
+     * Core Connection -> Shared Location -> Notifications -> Critical Alerts -> Expert Mode -> Pair Your Radio -> Your
+     * Name -> All Set.
      *
      * Every path ends on [ExpertMode] (informational, no permission ask) so that no skip shortcut bypasses it; see
      * porting/notes/onboarding-routing.md in the project folder for the rationale.
@@ -38,19 +39,24 @@ class IntroViewModel : ViewModel() {
      *   landing on USER_FIXED with no dialog available again. The Bluetooth screen covers both uses on those releases,
      *   so the second ask is dropped rather than duplicated.
      * @param bluetoothSupported false on hardware with no Bluetooth LE, where the Bluetooth screen is skipped.
+     * @param canPairRadio true where the app supplies the Pair Your Radio page; then setup pairs a radio and asks for
+     *   the user's name before "You're All Set", as on the iPhone app.
      */
     fun getNextKey(
         currentKey: NavKey,
         allPermissionsGranted: Boolean,
         bluetoothRequiresLocation: Boolean = false,
         bluetoothSupported: Boolean = true,
+        canPairRadio: Boolean = false,
     ): NavKey? = when (currentKey) {
         is Welcome -> if (bluetoothSupported) Bluetooth else Location
         is Bluetooth -> if (bluetoothRequiresLocation) Notifications else Location
         is Location -> Notifications
         is Notifications -> if (allPermissionsGranted) CriticalAlerts else ExpertMode
         is CriticalAlerts -> ExpertMode
-        is ExpertMode -> AllSet
+        is ExpertMode -> if (canPairRadio) PairRadio else AllSet
+        is PairRadio -> SetupProfile
+        is SetupProfile -> AllSet
         is AllSet -> null
         else -> null
     }

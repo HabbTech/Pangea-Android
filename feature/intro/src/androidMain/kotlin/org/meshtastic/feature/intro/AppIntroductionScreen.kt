@@ -34,9 +34,15 @@ import org.meshtastic.core.ui.util.rememberNotificationPermissionState
  *
  * @param onDone Callback invoked when the introduction flow is completed.
  * @param viewModel ViewModel for tracking the introduction flow state.
+ * @param pairRadio The Pair Your Radio page's content, from the connections feature; without it setup ends after Expert
+ *   Mode.
  */
 @Composable
-fun AppIntroductionScreen(onDone: () -> Unit, viewModel: IntroViewModel) {
+fun AppIntroductionScreen(
+    onDone: () -> Unit,
+    viewModel: IntroViewModel,
+    pairRadio: (@Composable (onPair: () -> Unit) -> Unit)? = null,
+) {
     val context = LocalContext.current
 
     // Pre-Android 13 has no runtime notification permission, so there is nothing to configure — keep it null so the
@@ -71,7 +77,10 @@ fun AppIntroductionScreen(onDone: () -> Unit, viewModel: IntroViewModel) {
     ) {
         MeshtasticNavDisplay(
             backStack = backStack,
-            entryProvider = entryProvider { introGraph(backStack = backStack, viewModel = viewModel, onDone = onDone) },
+            entryProvider =
+            entryProvider {
+                introGraph(backStack = backStack, viewModel = viewModel, onDone = onDone, pairRadio = pairRadio)
+            },
         )
     }
 }

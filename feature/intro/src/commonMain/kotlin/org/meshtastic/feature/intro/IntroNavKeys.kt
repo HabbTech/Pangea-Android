@@ -32,5 +32,11 @@ import kotlinx.serialization.Serializable
 /** Informational screen describing Expert Mode; final step of the intro flow. */
 @Serializable data object ExpertMode : NavKey
 
+/** Pangea: Pair Your Radio, after Expert Mode (Pangea-Apple PairRadioView). */
+@Serializable data object PairRadio : NavKey
+
+/** Pangea: "What should people call you?", once a radio is paired (Pangea-Apple SetupProfileView). */
+@Serializable data object SetupProfile : NavKey
+
 /** Pangea: "You're All Set", the last page, as on the iPhone app. */
 @Serializable data object AllSet : NavKey

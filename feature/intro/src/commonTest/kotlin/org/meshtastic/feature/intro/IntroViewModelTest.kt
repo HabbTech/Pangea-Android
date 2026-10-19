@@ -108,4 +108,11 @@ class IntroViewModelTest {
             assertEquals(ExpertMode, seen[seen.size - 2], "Expert Mode must come just before All Set")
         }
     }
+
+    @Test
+    fun testWithPairingSetupPairsThenAsksForTheName() {
+        assertEquals(PairRadio, viewModel.getNextKey(ExpertMode, allPermissionsGranted = true, canPairRadio = true))
+        assertEquals(SetupProfile, viewModel.getNextKey(PairRadio, allPermissionsGranted = true, canPairRadio = true))
+        assertEquals(AllSet, viewModel.getNextKey(SetupProfile, allPermissionsGranted = true, canPairRadio = true))
+    }
 }

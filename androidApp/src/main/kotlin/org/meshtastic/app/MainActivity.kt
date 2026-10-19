@@ -102,6 +102,7 @@ import org.meshtastic.core.ui.util.brandHighlightOrNull
 import org.meshtastic.core.ui.util.brandPalette
 import org.meshtastic.core.ui.util.showToast
 import org.meshtastic.core.ui.viewmodel.UIViewModel
+import org.meshtastic.feature.connections.pangea.PairRadioContent
 import org.meshtastic.feature.intro.AppIntroductionScreen
 import org.meshtastic.feature.intro.IntroViewModel
 import org.meshtastic.feature.map.MapScreen
@@ -170,7 +171,11 @@ class MainActivity : AppCompatActivity() {
                         MainScreen()
                     } else {
                         val introViewModel = koinViewModel<IntroViewModel>()
-                        AppIntroductionScreen(onDone = { model.onAppIntroCompleted() }, viewModel = introViewModel)
+                        AppIntroductionScreen(
+                            onDone = { model.onAppIntroCompleted() },
+                            viewModel = introViewModel,
+                            pairRadio = { onPair -> PairRadioContent(onPair = onPair) },
+                        )
                     }
                 }
             }

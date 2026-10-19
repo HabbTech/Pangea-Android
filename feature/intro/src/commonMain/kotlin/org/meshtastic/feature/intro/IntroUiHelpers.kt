@@ -17,6 +17,7 @@
 package org.meshtastic.feature.intro
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,24 +61,19 @@ private val SheetBackdrop = Color(0xFFCFCFD4)
 internal val LocalIntroBack = staticCompositionLocalOf<(() -> Unit)?> { null }
 
 /**
- * One setup page, as on the Pangea iPhone app: a glass back button, a large centred title, an explanation, an icon-led
- * list of what the step is for, and one full-width orange button pinned at the bottom (with an optional Skip link under
- * it).
+ * The sheet every setup page sits on, as on the Pangea iPhone app: rounded top corners over grey, a glass back button
+ * when [onBack] is set, scrolling [content] and a [bottom] pinned under it. With [centered] the content doesn't scroll
+ * and sits in the middle of the page, as on "You're All Set".
  */
 @Composable
-internal fun IosSetupPage(
-    title: String,
-    primaryLabel: String,
-    onPrimary: () -> Unit,
+internal fun IosSetupSheet(
     modifier: Modifier = Modifier,
-    description: String? = null,
-    skipLabel: String? = null,
-    onSkip: () -> Unit = {},
-    header: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit = {},
+    onBack: (() -> Unit)? = LocalIntroBack.current,
+    bottom: @Composable () -> Unit = {},
+    centered: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Ios.colors
-    val onBack = LocalIntroBack.current
     // Setup shows as a sheet over grey, as on iOS: rounded top corners a little below the status bar.
     val sheet = if (c.isDark) c.groupedRow else c.background
     val behind = if (c.isDark) Color.Black else SheetBackdrop
@@ -87,10 +84,12 @@ internal fun IosSetupPage(
             .statusBarsPadding()
             .padding(top = 10.dp)
             .clip(RoundedCornerShape(topStart = 38.dp, topEnd = 38.dp))
-            .background(sheet),
+            .background(sheet)
+            .imePadding(),
     ) {
-        Box(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = IosInset)) {
-            if (onBack != null) {
+        // Pages without a back button hide the bar altogether, as iOS does (navigationBarBackButtonHidden).
+        if (onBack != null) {
+            Box(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = IosInset)) {
                 IosGlassIconButton(
                     IosIcons.ChevronLeft,
                     contentDescription = stringResource(Res.string.navigate_back),
@@ -98,38 +97,74 @@ internal fun IosSetupPage(
                     modifier = Modifier.align(Alignment.CenterStart),
                 )
             }
+        } else {
+            Spacer(Modifier.height(16.dp))
         }
         Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = IosInset),
+            Modifier.weight(1f)
+                .fillMaxWidth()
+                .then(if (centered) Modifier else Modifier.verticalScroll(rememberScrollState()))
+                .padding(horizontal = IosInset),
             horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            header?.invoke()
-            Text(
-                text = title,
-                style = Ios.type.title1.copy(fontWeight = FontWeight.Bold),
-                color = c.label,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-            if (description != null) {
-                Text(
-                    text = description,
-                    style = Ios.type.headline,
-                    color = c.label,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 14.dp),
-                )
-            }
-            Spacer(Modifier.height(20.dp))
-            content()
-        }
-        IntroBottomBar(
-            onSkip = onSkip,
-            onConfigure = onPrimary,
-            skipButtonText = skipLabel.orEmpty(),
-            configureButtonText = primaryLabel,
-            showSkipButton = skipLabel != null,
+            verticalArrangement = if (centered) Arrangement.Center else Arrangement.Top,
+            content = content,
         )
+        bottom()
+    }
+}
+
+/**
+ * One setup page, as on the Pangea iPhone app: a glass back button, a large centred title, an explanation, an icon-led
+ * list of what the step is for, and one full-width orange button pinned at the bottom (with an optional Skip link under
+ * it). [plainDescription] draws the explanation in grey body text, as the pairing and name pages do.
+ */
+@Composable
+internal fun IosSetupPage(
+    title: String,
+    primaryLabel: String,
+    onPrimary: () -> Unit,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+    plainDescription: Boolean = false,
+    primaryEnabled: Boolean = true,
+    skipLabel: String? = null,
+    onSkip: () -> Unit = {},
+    header: (@Composable () -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit = {},
+) {
+    val c = Ios.colors
+    IosSetupSheet(
+        modifier = modifier,
+        bottom = {
+            IntroBottomBar(
+                onSkip = onSkip,
+                onConfigure = onPrimary,
+                skipButtonText = skipLabel.orEmpty(),
+                configureButtonText = primaryLabel,
+                showSkipButton = skipLabel != null,
+                configureEnabled = primaryEnabled,
+            )
+        },
+    ) {
+        header?.invoke()
+        Text(
+            text = title,
+            style = Ios.type.title1.copy(fontWeight = FontWeight.Bold),
+            color = c.label,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        if (description != null) {
+            Text(
+                text = description,
+                style = if (plainDescription) Ios.type.body else Ios.type.headline,
+                color = if (plainDescription) c.secondaryLabel else c.label,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 14.dp),
+            )
+        }
+        Spacer(Modifier.height(20.dp))
+        content()
     }
 }
 

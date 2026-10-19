@@ -36,6 +36,7 @@ import org.meshtastic.core.ui.ios.IosButtonStyle
  * @param skipButtonText Text for the skip link.
  * @param configureButtonText Text for the main button.
  * @param showSkipButton Whether to show the skip link. Defaults to true.
+ * @param configureEnabled Whether the main button can be pressed yet.
  */
 @Composable
 internal fun IntroBottomBar(
@@ -44,12 +45,13 @@ internal fun IntroBottomBar(
     skipButtonText: String,
     configureButtonText: String,
     showSkipButton: Boolean = true,
+    configureEnabled: Boolean = true,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        IosButton(text = configureButtonText, onClick = onConfigure, large = true)
+        IosButton(text = configureButtonText, onClick = onConfigure, large = true, enabled = configureEnabled)
         if (showSkipButton) {
             IosButton(
                 text = skipButtonText,
