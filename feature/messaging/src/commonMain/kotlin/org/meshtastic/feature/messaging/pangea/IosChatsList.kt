@@ -53,6 +53,7 @@ import androidx.compose.ui.semantics.isSensitiveData
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.common.util.DateFormatter
@@ -156,7 +157,7 @@ internal fun IosChatsScreen(
 }
 
 @Composable
-private fun Rule(start: androidx.compose.ui.unit.Dp) {
+private fun Rule(start: Dp) {
     Box(Modifier.fillMaxWidth().padding(start = start, end = IosInset).height(0.5.dp).background(Ios.colors.separator))
 }
 
@@ -279,39 +280,59 @@ private fun IosChatRow(
 }
 
 /**
- * The chat's picture: Everyone Nearby is a white globe on blue; a group or person shows their photo or emoji and colour
- * when set, otherwise their short name (a person) or first letter (a group) on their colour.
+ * A chat's picture: Everyone Nearby is a white globe on blue; a group or person shows their photo or emoji and colour
+ * when set, otherwise their short name (a person) or first letter (a group) on their colour. Used by the chat list, the
+ * chat header and the bubbles.
  */
 @Composable
-private fun ChatAvatar(contact: Contact) {
-    val c = Ios.colors
-    if (contact.isEveryoneNearby()) {
+internal fun IosChatAvatar(
+    contactKey: String,
+    shortName: String,
+    longName: String,
+    nodeColor: Color?,
+    modifier: Modifier = Modifier,
+    isRetired: Boolean = false,
+    size: Dp = AvatarSize,
+) {
+    if (isEveryoneNearbyKey(contactKey, isRetired)) {
         Box(
-            Modifier.size(AvatarSize).clip(CircleShape).background(c.everyoneNearby),
+            modifier.size(size).clip(CircleShape).background(Ios.colors.everyoneNearby),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(IosIcons.Globe, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+            Icon(IosIcons.Globe, contentDescription = null, tint = Color.White, modifier = Modifier.size(size * 0.56f))
         }
         return
     }
-    val custom = LocalPangeaAvatars.current(contact.contactKey)
-    val isChannel = contact.contactKey.endsWith(NodeAddress.ID_BROADCAST)
-    val fallback =
-        contact.nodeColors?.let { Color(it.second) }
-            ?: AvatarPalette.color((contact.longName.hashCode() and Int.MAX_VALUE) % AvatarPalette.colors.size)
+    val custom = LocalPangeaAvatars.current(contactKey)
+    val isChannel = contactKey.endsWith(NodeAddress.ID_BROADCAST)
+    val fallback = nodeColor ?: AvatarPalette.color((longName.hashCode() and Int.MAX_VALUE) % AvatarPalette.colors.size)
     PangeaAvatar(
         photo = rememberAvatarBitmap(custom?.photo),
         emoji = custom?.emoji.orEmpty(),
         colorIndex = custom?.color,
-        initials = if (isChannel) contact.longName.take(1).uppercase() else contact.shortName,
+        initials = if (isChannel) longName.take(1).uppercase() else shortName,
         fallbackColor = fallback,
-        size = AvatarSize,
+        size = size,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun ChatAvatar(contact: Contact) {
+    IosChatAvatar(
+        contactKey = contact.contactKey,
+        shortName = contact.shortName,
+        longName = contact.longName,
+        nodeColor = contact.nodeColors?.let { Color(it.second) },
+        isRetired = contact.isRetired,
     )
 }
 
 /** Channel 0's group chat: a broadcast key (a direct chat on channel 0 has a node address instead). */
-private fun Contact.isEveryoneNearby(): Boolean =
+internal fun isEveryoneNearbyKey(contactKey: String, isRetired: Boolean = false): Boolean =
     !isRetired && contactKey.endsWith(NodeAddress.ID_BROADCAST) && ContactKey(contactKey).channelOrNull == 0
+
+private fun Contact.isEveryoneNearby(): Boolean = isEveryoneNearbyKey(contactKey, isRetired)
 
 /** "No Chats Yet", with **Message Someone** (filled) and **Start a Group** (soft), as on iOS. */
 @Composable

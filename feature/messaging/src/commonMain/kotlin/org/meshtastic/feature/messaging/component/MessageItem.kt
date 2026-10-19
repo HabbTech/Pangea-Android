@@ -18,6 +18,7 @@ package org.meshtastic.feature.messaging.component
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -28,8 +29,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -79,6 +80,7 @@ import org.meshtastic.core.common.util.DateFormatter
 import org.meshtastic.core.model.Message
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.Node
+import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.Reaction
 import org.meshtastic.core.model.isAckProofForged
 import org.meshtastic.core.resources.Res
@@ -91,13 +93,9 @@ import org.meshtastic.core.resources.security_signed_verified
 import org.meshtastic.core.ui.component.AutoLinkText
 import org.meshtastic.core.ui.component.HighlightedText
 import org.meshtastic.core.ui.component.NODE_TINT_EMPHASIZED
-import org.meshtastic.core.ui.component.NODE_TINT_MUTED
-import org.meshtastic.core.ui.component.NODE_TINT_NORMAL
-import org.meshtastic.core.ui.component.NodeChip
 import org.meshtastic.core.ui.component.Rssi
 import org.meshtastic.core.ui.component.Snr
 import org.meshtastic.core.ui.component.TransportIcon
-import org.meshtastic.core.ui.component.nodeBorderStroke
 import org.meshtastic.core.ui.component.nodeTintedContainer
 import org.meshtastic.core.ui.emoji.EmojiPickerDialog
 import org.meshtastic.core.ui.icon.FormatQuote
@@ -105,9 +103,12 @@ import org.meshtastic.core.ui.icon.HopCount
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Reply
 import org.meshtastic.core.ui.icon.ShieldCheck
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.MessageItemColors
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.util.createClipEntry
+import org.meshtastic.feature.messaging.pangea.IosChatAvatar
+import org.meshtastic.feature.messaging.pangea.LocalPangeaPlainWording
 
 internal const val MESSAGE_STATUS_LABEL_TEST_TAG = "message_status_label"
 
@@ -173,9 +174,9 @@ fun MessageItem(
         .padding(
             top =
             if (hasSamePrev) {
-                2.dp
+                4.dp
             } else {
-                10.dp
+                14.dp
             },
         ),
 ) {
@@ -268,71 +269,51 @@ fun MessageItem(
 
     val containsBel = message.text.contains('\u0007')
 
-    val nodeColor = Color(if (message.fromLocal) ourNode.colors.second else node.colors.second)
-    // Match the node card: a faint node wash over the neutral surface + a node outline (more AA than a saturated
-    // fill).
-    val tintFraction =
+    // Pangea: bubbles as on the iPhone app — theirs grey on the left beside their avatar with their name above,
+    // yours orange on the right with white text and the delivery line under it. Expert Mode adds the mesh details.
+    val ios = Ios.colors
+    val plainWording = LocalPangeaPlainWording.current
+    val containerColor = if (message.fromLocal) ios.tint else ios.incomingBubble
+    val contentColor = if (message.fromLocal) ios.onTint else ios.label
+    val metadataStyle = Ios.type.caption1
+    val metadataColor = if (message.fromLocal) ios.onTint.copy(alpha = 0.8f) else ios.secondaryLabel
+    val messageShape = RoundedCornerShape(BUBBLE_CORNER)
+    val cardBorder =
         when {
-            inSelectionMode && selected -> NODE_TINT_EMPHASIZED
-            message.filtered || (inSelectionMode && !selected) -> NODE_TINT_MUTED
-            else -> NODE_TINT_NORMAL
+            selected -> BorderStroke(2.dp, ios.systemBlue)
+            containsBel -> BorderStroke(2.dp, MessageItemColors.Red)
+            else -> null
         }
-    val containerColor = nodeTintedContainer(nodeColor, fraction = tintFraction)
-    val cardBorder = nodeBorderStroke(nodeColor, active = selected)
-    val contentColor = MaterialTheme.colorScheme.onSurface
-    val metadataStyle = MaterialTheme.typography.labelSmall
-    val messageShape =
-        getMessageBubbleShape(
-            cornerRadius = 18.dp,
-            isSender = message.fromLocal,
-            hasSamePrev = hasSamePrev,
-            hasSameNext = hasSameNext,
-        )
-    val messageModifier =
-        Modifier.padding(horizontal = 12.dp)
-            .then(
-                if (containsBel) {
-                    Modifier.border(2.dp, color = MessageItemColors.Red, shape = messageShape)
-                } else {
-                    Modifier
-                },
-            )
+    val dimmed = message.filtered || (inSelectionMode && !selected)
     val senderName = if (message.fromLocal) ourNode.user.long_name else node.user.long_name
     val messageA11yText = stringResource(Res.string.a11y_message_from, senderName, bodyText)
-    // Timestamp lives in the group header (Google Chat pattern) rather than inside every bubble; grouping is
-    // time-windowed upstream, so the header time is always close to every message in the run.
-    if (showUserName) {
-        if (message.fromLocal) {
+    if (showUserName && !message.fromLocal) {
+        Row(
+            modifier = Modifier.padding(start = BUBBLE_TEXT_START, end = 16.dp, bottom = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             Text(
-                text = timestamp,
-                modifier = Modifier.align(Alignment.End).padding(end = 12.dp, bottom = 2.dp),
-                style = metadataStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = node.user.long_name,
+                modifier = Modifier.weight(1f, fill = false),
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                style = Ios.type.footnote,
+                color = ios.secondaryLabel,
             )
-        } else {
-            Row(
-                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                NodeChip(node = node, onClick = onClickChip, modifier = Modifier.heightIn(min = 28.dp))
-                Text(
-                    text = node.user.long_name,
-                    modifier = Modifier.weight(1f, fill = false),
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(text = timestamp, style = metadataStyle, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            if (!plainWording) Text(text = timestamp, style = Ios.type.footnote, color = ios.secondaryLabel)
         }
+    } else if (showUserName && !plainWording) {
+        Text(
+            text = timestamp,
+            modifier = Modifier.align(Alignment.End).padding(end = 16.dp, bottom = 3.dp),
+            style = Ios.type.footnote,
+            color = ios.secondaryLabel,
+        )
     }
     // Reactions live on the bubble, where the eye already is, instead of behind a modal that covers the
-    // conversation.
-    // Reached by long press or double tap; neither sends anything on its own, because a reaction is a real packet
-    // on a
-    // duty-cycled radio. The overflow button keeps the full actions sheet one tap away.
+    // conversation. Reached by long press or double tap; neither sends anything on its own, because a reaction is a
+    // real packet on a duty-cycled radio. The overflow button keeps the full actions sheet one tap away.
     AnimatedVisibility(
         // Stays available on an archived conversation even though its emoji are gone: this bar carries the only
         // route to the actions sheet, and copy, select, delete and status all still apply to archived messages.
@@ -340,10 +321,16 @@ fun MessageItem(
         modifier = Modifier.align(if (message.fromLocal) Alignment.End else Alignment.Start),
     ) {
         Surface(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+            modifier =
+            Modifier.padding(
+                start = if (message.fromLocal) 16.dp else BUBBLE_TEXT_START,
+                end = 16.dp,
+                top = 2.dp,
+                bottom = 2.dp,
+            ),
             shape = RoundedCornerShape(QUICK_REACTION_BAR_CORNER),
-            tonalElevation = 3.dp,
-            shadowElevation = 2.dp,
+            color = ios.groupedRow,
+            shadowElevation = 4.dp,
         ) {
             QuickEmojiRow(
                 quickEmojis = quickEmojis,
@@ -379,11 +366,38 @@ fun MessageItem(
                 modifier = Modifier.align(if (message.fromLocal) Alignment.CenterEnd else Alignment.CenterStart),
             )
         }
-        Surface(
+        Row(
             modifier =
             Modifier.align(if (message.fromLocal) Alignment.CenterEnd else Alignment.CenterStart)
-                .graphicsLayer { translationX = swipeOffset.value }
-                .pointerInput(message.uuid, inSelectionMode, canReply) {
+                .graphicsLayer {
+                    translationX = swipeOffset.value
+                    alpha = if (dimmed) DIMMED_ALPHA else 1f
+                }
+                .padding(
+                    start = if (message.fromLocal) BUBBLE_FAR_SIDE else 16.dp,
+                    end = if (message.fromLocal) 16.dp else BUBBLE_FAR_SIDE_INCOMING,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (!message.fromLocal) {
+                // The avatar sits beside the last bubble of a run, as on iOS; earlier bubbles keep its space.
+                if (hasSameNext) {
+                    Spacer(Modifier.size(AVATAR_SIZE))
+                } else {
+                    IosChatAvatar(
+                        contactKey = "${NodeAddress.PKC_CHANNEL_INDEX}${node.user.id}",
+                        shortName = node.user.short_name,
+                        longName = node.user.long_name,
+                        nodeColor = Color(node.colors.second),
+                        size = AVATAR_SIZE,
+                        modifier = Modifier.clickable { onClickChip(node) },
+                    )
+                }
+                Spacer(Modifier.width(AVATAR_GAP))
+            }
+            Surface(
+                modifier =
+                Modifier.pointerInput(message.uuid, inSelectionMode, canReply) {
                     if (inSelectionMode || !canReply) return@pointerInput
                     detectHorizontalDragGestures(
                         onDragEnd = {
@@ -402,7 +416,8 @@ fun MessageItem(
                     ) { change, dragAmount ->
                         // detectHorizontalDragGestures already applies horizontal touch slop, so this tests
                         // direction, not axis: claim the gesture only while dragging toward reply, so a
-                        // back-swipe still reaches whatever is behind.
+                        // back-swipe
+                        // still reaches whatever is behind.
                         val next = (swipeOffset.value + dragAmount) * swipeSign
                         if (next > 0f) change.consume()
                         val clamped = next.coerceIn(0f, swipeThresholdPx * REPLY_SWIPE_OVERDRAG) * swipeSign
@@ -414,141 +429,143 @@ fun MessageItem(
                         }
                     }
                 }
-                // Reserve space on the opposite side and cap the width so bubbles never span the
-                // whole screen (keeps sender sides scannable on phones and wide layouts alike).
-                .padding(
-                    start = if (!message.fromLocal) 0.dp else 36.dp,
-                    end = if (message.fromLocal) 0.dp else 36.dp,
-                )
-                .widthIn(max = 480.dp)
-                .combinedClickable(
-                    onClick = { if (quickReactionsOpen) onQuickReactionsOpenChange(false) else onClick() },
-                    onLongClick = {
-                        onLongClick()
-                        if (!inSelectionMode) {
-                            onQuickReactionsOpenChange(true)
-                        }
-                    },
-                    onDoubleClick = {
-                        onDoubleClick()
-                        if (!inSelectionMode) onQuickReactionsOpenChange(!quickReactionsOpen)
-                    },
-                )
-                .then(messageModifier)
-                .semantics(mergeDescendants = true) {
-                    contentDescription = messageA11yText
-                    role = Role.Button
-                    isSensitiveData = true
-                },
-            color = containerColor,
-            contentColor = contentColor,
-            shape = messageShape,
-            border = cardBorder,
-        ) {
-            Column(modifier = Modifier.width(IntrinsicSize.Max)) {
-                OriginalMessageSnippet(
-                    modifier = Modifier.fillMaxWidth(),
-                    message = message,
-                    ourNode = ourNode,
-                    onNavigateToOriginalMessage = onNavigateToOriginalMessage,
-                )
-
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                    if (searchQuery.isNotEmpty()) {
-                        HighlightedText(
-                            text = message.text,
-                            query = searchQuery,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = contentColor,
-                        )
-                    } else {
-                        val mentionDisplayName =
-                            remember(resolveMention) {
-                                { id: String ->
-                                    resolveMention(id)?.let { it.user.long_name.ifEmpty { it.user.short_name } }
-                                }
+                    .widthIn(max = 480.dp)
+                    .combinedClickable(
+                        onClick = { if (quickReactionsOpen) onQuickReactionsOpenChange(false) else onClick() },
+                        onLongClick = {
+                            onLongClick()
+                            if (!inSelectionMode) {
+                                onQuickReactionsOpenChange(true)
                             }
-                        AutoLinkText(
-                            text = bodyText,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = contentColor,
-                            mentionName = mentionDisplayName,
-                            onMentionClick = { id -> resolveMention(id)?.let(onClickChip) },
-                        )
-                    }
+                        },
+                        onDoubleClick = {
+                            onDoubleClick()
+                            if (!inSelectionMode) onQuickReactionsOpenChange(!quickReactionsOpen)
+                        },
+                    )
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = messageA11yText
+                        role = Role.Button
+                        isSensitiveData = true
+                    },
+                color = containerColor,
+                contentColor = contentColor,
+                shape = messageShape,
+                border = cardBorder,
+            ) {
+                Column(modifier = Modifier.width(IntrinsicSize.Max)) {
+                    OriginalMessageSnippet(
+                        modifier = Modifier.fillMaxWidth(),
+                        message = message,
+                        ourNode = ourNode,
+                        onNavigateToOriginalMessage = onNavigateToOriginalMessage,
+                    )
 
-                    Row(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        if (!message.fromLocal) {
-                            // All mesh diagnostics (signature, signal or hops, transport) grouped in one compact
-                            // run.
-                            DiagnosticsRow {
-                                // XEdDSA is only set on verified broadcasts, never DMs — so this never shows on a
-                                // DM.
-                                if (message.xeddsaSigned) {
-                                    Icon(
-                                        imageVector = MeshtasticIcons.ShieldCheck,
-                                        contentDescription = stringResource(Res.string.security_signed_verified),
-                                        modifier = Modifier.size(14.dp),
-                                        tint = MaterialTheme.colorScheme.StatusGreen,
-                                    )
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        if (searchQuery.isNotEmpty()) {
+                            HighlightedText(
+                                text = message.text,
+                                query = searchQuery,
+                                style = Ios.type.body,
+                                color = contentColor,
+                            )
+                        } else {
+                            val mentionDisplayName =
+                                remember(resolveMention) {
+                                    { id: String ->
+                                        resolveMention(id)?.let { it.user.long_name.ifEmpty { it.user.short_name } }
+                                    }
                                 }
-                                TransportIcon(
-                                    transport = message.transportMechanism,
-                                    viaMqtt = message.viaMqtt,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                if (message.hopsAway == 0 && !message.viaMqtt) {
-                                    Snr(message.snr)
-                                    Rssi(message.rssi)
-                                } else {
-                                    Icon(
-                                        imageVector = MeshtasticIcons.HopCount,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                            AutoLinkText(
+                                text = bodyText,
+                                style = Ios.type.body,
+                                color = contentColor,
+                                mentionName = mentionDisplayName,
+                                onMentionClick = { id -> resolveMention(id)?.let(onClickChip) },
+                            )
+                        }
+
+                        val showDiagnostics = !message.fromLocal && !plainWording
+                        if (showDiagnostics || containsBel || message.filtered || showsTranslation) {
+                            Row(
+                                modifier = Modifier.padding(top = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                if (showDiagnostics) {
+                                    // All mesh diagnostics (signature, signal or hops, transport) grouped in one
+                                    // compact run.
+                                    DiagnosticsRow {
+                                        // XEdDSA is only set on verified broadcasts, never DMs.
+                                        if (message.xeddsaSigned) {
+                                            Icon(
+                                                imageVector = MeshtasticIcons.ShieldCheck,
+                                                contentDescription =
+                                                stringResource(Res.string.security_signed_verified),
+                                                modifier = Modifier.size(14.dp),
+                                                tint = MaterialTheme.colorScheme.StatusGreen,
+                                            )
+                                        }
+                                        TransportIcon(
+                                            transport = message.transportMechanism,
+                                            viaMqtt = message.viaMqtt,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = metadataColor,
+                                        )
+                                        if (message.hopsAway == 0 && !message.viaMqtt) {
+                                            Snr(message.snr)
+                                            Rssi(message.rssi)
+                                        } else {
+                                            Icon(
+                                                imageVector = MeshtasticIcons.HopCount,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                                tint = metadataColor,
+                                            )
+                                            Text(
+                                                text =
+                                                if (message.hopsAway >= 0) message.hopsAway.toString() else "?",
+                                                style = metadataStyle,
+                                                color = metadataColor,
+                                            )
+                                        }
+                                    }
+                                }
+                                if (containsBel) {
+                                    Text(text = "🔔")
+                                }
+                                if (message.filtered) {
                                     Text(
-                                        text = if (message.hopsAway >= 0) message.hopsAway.toString() else "?",
+                                        text = stringResource(Res.string.filter_message_label),
                                         style = metadataStyle,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = metadataColor,
+                                    )
+                                }
+                                if (showsTranslation) {
+                                    Text(
+                                        text = stringResource(Res.string.message_translated_label),
+                                        style = metadataStyle,
+                                        color = metadataColor,
                                     )
                                 }
                             }
-                        }
-                        if (containsBel) {
-                            Text(text = "\uD83D\uDD14")
-                        }
-                        if (message.filtered) {
-                            Text(
-                                text = stringResource(Res.string.filter_message_label),
-                                style = metadataStyle,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (showsTranslation) {
-                            Text(
-                                text = stringResource(Res.string.message_translated_label),
-                                style = metadataStyle,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (message.fromLocal) {
-                            MessageStatusLabel(
-                                status = message.status ?: MessageStatus.UNKNOWN,
-                                text = stringResource(statusString.second),
-                                metadataStyle = metadataStyle,
-                                isWarning = isDirectImplicitAck || isRetryableFailure || isForgedAck,
-                                onStatusClick = onStatusClick,
-                            )
                         }
                     }
                 }
             }
+        }
+    }
+
+    if (message.fromLocal) {
+        // The delivery line sits under your bubble, in plain words, as on iOS.
+        Box(Modifier.align(Alignment.End).padding(end = 16.dp, top = 4.dp)) {
+            MessageStatusLabel(
+                status = message.status ?: MessageStatus.UNKNOWN,
+                text = stringResource(statusString.second),
+                metadataStyle = Ios.type.footnote,
+                isWarning = isDirectImplicitAck || isRetryableFailure || isForgedAck,
+                onStatusClick = onStatusClick,
+            )
         }
     }
 
@@ -557,8 +574,8 @@ fun MessageItem(
         Modifier.align(if (message.fromLocal) Alignment.End else Alignment.Start)
             .padding(
                 top = 2.dp,
-                start = if (!message.fromLocal) 12.dp else 48.dp,
-                end = if (message.fromLocal) 12.dp else 48.dp,
+                start = if (!message.fromLocal) BUBBLE_TEXT_START else BUBBLE_FAR_SIDE,
+                end = 16.dp,
             ),
         reactions = if (message.fromLocal) emojis.reversed() else emojis,
         myId = ourNode.user.id,
@@ -567,6 +584,21 @@ fun MessageItem(
         onShowReactions = onShowReactions,
     )
 }
+
+/** iOS bubble geometry, measured on the Pangea iPhone app. */
+private val BUBBLE_CORNER = 20.dp
+private val AVATAR_SIZE = 46.dp
+private val AVATAR_GAP = 8.dp
+
+/** Where incoming bubbles (and the sender's name above them) start: margin + avatar + gap. */
+private val BUBBLE_TEXT_START = 16.dp + AVATAR_SIZE + AVATAR_GAP
+
+/** Space kept free on the far side of a bubble, so a long message never spans the screen. */
+private val BUBBLE_FAR_SIDE = 56.dp
+private val BUBBLE_FAR_SIDE_INCOMING = 40.dp
+
+/** Filtered messages, and unselected ones while selecting, fade back. */
+private const val DIMMED_ALPHA = 0.5f
 
 /** Drag distance at which a horizontal swipe on a bubble commits to a reply. */
 private val REPLY_SWIPE_THRESHOLD = 64.dp

@@ -27,11 +27,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.OutputTransformation
@@ -44,6 +48,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -113,6 +118,10 @@ import org.meshtastic.core.ui.component.smartScrollToIndex
 import org.meshtastic.core.ui.icon.History
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Send
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosDrawsUnderTabBar
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.createClipEntry
 import org.meshtastic.core.ui.util.isFromSoftKeyboard
@@ -127,11 +136,15 @@ import org.meshtastic.feature.messaging.component.QuickChatRow
 import org.meshtastic.feature.messaging.component.ReplySnippet
 import org.meshtastic.feature.messaging.component.ScrollToBottomFab
 import org.meshtastic.feature.messaging.component.TranslationModelDownloadDialog
+import org.meshtastic.feature.messaging.pangea.AvatarVisual
 import org.meshtastic.feature.messaging.pangea.ChatIconSheet
 import org.meshtastic.feature.messaging.pangea.ContactProfileSheet
 import org.meshtastic.feature.messaging.pangea.GroupInfoSheet
+import org.meshtastic.feature.messaging.pangea.IosChatHeader
+import org.meshtastic.feature.messaging.pangea.LocalPangeaAvatars
 import org.meshtastic.feature.messaging.pangea.LocalPangeaPlainWording
 import org.meshtastic.feature.messaging.pangea.PangeaChatsViewModel
+import org.meshtastic.feature.messaging.pangea.dmNodeNum
 
 private const val ROUNDED_CORNER_PERCENT = 100
 private const val MAX_LINES = 3
@@ -174,6 +187,10 @@ fun MessageScreen(
     val chatIcons by pangeaViewModel.chatIcons.collectAsStateWithLifecycle()
     val pangeaExpert by pangeaViewModel.expertModeEnabled.collectAsStateWithLifecycle()
     val everyoneBell by pangeaViewModel.everyoneNearbyNotifications.collectAsStateWithLifecycle()
+    // Pangea: drawn like the iPhone app's chat, which runs under the status bar and keeps its input above the
+    // floating tab bar (or the keyboard).
+    IosDrawsUnderTabBar()
+    val pangeaProfiles by pangeaViewModel.profileContacts.collectAsStateWithLifecycle()
     val clipboardManager = LocalClipboard.current
     val focusManager = LocalFocusManager.current
 
@@ -464,9 +481,33 @@ fun MessageScreen(
             }
     }
 
-    CompositionLocalProvider(LocalPangeaPlainWording provides !pangeaExpert) {
+    val pangeaAvatars: (String) -> AvatarVisual? =
+        remember(pangeaProfiles, chatIcons) {
+            { key ->
+                if (key.endsWith(NodeAddress.ID_BROADCAST)) {
+                    ContactKey(key).channelOrNull?.let(pangeaViewModel::chatIconKey)?.let(chatIcons::get)?.let {
+                        AvatarVisual(null, it.emoji, it.color)
+                    }
+                } else {
+                    dmNodeNum(key)?.let { num ->
+                        pangeaProfiles[num]?.let { profile ->
+                            val photo = if (profile.savedPhotoVersion != 0L) pangeaViewModel.photo(num) else null
+                            AvatarVisual(photo, profile.card?.emoji.orEmpty(), profile.card?.color)
+                        }
+                    }
+                }
+            }
+        }
+    val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
+    val composerBottom = maxOf(imeBottom, LocalIosBottomInset.current)
+
+    CompositionLocalProvider(
+        LocalPangeaPlainWording provides !pangeaExpert,
+        LocalPangeaAvatars provides pangeaAvatars,
+    ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
+            containerColor = Ios.colors.background,
             topBar = {
                 if (inSelectionMode) {
                     ActionModeTopBar(
@@ -504,6 +545,39 @@ fun MessageScreen(
                                 }
                             }
                         },
+                    )
+                } else if (!pangeaExpert) {
+                    val dmNode = if (nodeId == NodeAddress.ID_BROADCAST) null else viewModel.getNode(nodeId)
+                    val isEveryoneNearby =
+                        channelIndex == 0 && contactKey.endsWith(NodeAddress.ID_BROADCAST) && !isRetiredChannel
+                    val groupOfChat =
+                        pangeaGroups.firstOrNull {
+                            it.index == channelIndex && contactKey.endsWith(NodeAddress.ID_BROADCAST)
+                        }
+                    IosChatHeader(
+                        title = title,
+                        contactKey = contactKey,
+                        shortName = dmNode?.user?.short_name.orEmpty(),
+                        nodeColor = dmNode?.let { Color(it.colors.second) },
+                        onBack = { onEvent(MessageScreenEvent.NavigateBack) },
+                        searchQuery = if (isSearchActive) searchQuery else "",
+                        onSearchChange = { query ->
+                            if (query.isEmpty()) {
+                                viewModel.closeSearch()
+                            } else {
+                                if (!isSearchActive) viewModel.toggleSearch()
+                                viewModel.setSearchQuery(query)
+                            }
+                        },
+                        onTitleClick =
+                        when {
+                            channelIndex == NodeAddress.PKC_CHANNEL_INDEX -> ({ showProfile = true })
+                            groupOfChat != null -> ({ showGroupInfo = true })
+                            isEveryoneNearby && pangeaViewModel.chatIconKey(0) != null -> ({ showChatIcon = true })
+                            else -> null
+                        },
+                        bellOn = everyoneBell.takeIf { isEveryoneNearby },
+                        onToggleBell = pangeaViewModel::toggleEveryoneNearbyNotifications,
                     )
                 } else if (isSearchActive) {
                     MessageSearchBar(
@@ -565,9 +639,9 @@ fun MessageScreen(
                 // A retired channel is read-only: there is no slot left to send on, so the composer and the quick-chat
                 // row are replaced outright rather than merely disabled.
                 if (isRetiredChannel) {
-                    RetiredChannelNotice()
+                    RetiredChannelNotice(modifier = Modifier.padding(bottom = composerBottom))
                 } else {
-                    Column {
+                    Column(Modifier.padding(bottom = composerBottom)) {
                         AnimatedVisibility(visible = showQuickChat) {
                             QuickChatRow(
                                 enabled = connectionState is ConnectionState.Connected,
@@ -970,7 +1044,7 @@ internal fun MessageInput(
         OutlinedTextField(
             modifier =
             Modifier.fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp)
                 .onFocusChanged { isFocused = it.isFocused }
                 // Tunnel phase, not bubble: a multi-line field consumes Enter to insert its newline, so an
                 // Enter-to-send shortcut has to claim the event before the field ever sees it.
@@ -990,7 +1064,18 @@ internal fun MessageInput(
             outputTransformation = mentionOutput,
             lineLimits = TextFieldLineLimits.MultiLine(1, MAX_LINES),
             enabled = isEnabled,
-            shape = RoundedCornerShape(ROUNDED_CORNER_PERCENT.toFloat()),
+            shape = CircleShape,
+            textStyle = Ios.type.body,
+            colors =
+            OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Ios.colors.separator,
+                unfocusedBorderColor = Ios.colors.separator,
+                disabledBorderColor = Ios.colors.separator,
+                focusedContainerColor = Ios.colors.background,
+                unfocusedContainerColor = Ios.colors.background,
+                disabledContainerColor = Ios.colors.background,
+                cursorColor = Ios.colors.tint,
+            ),
             isError = isOverLimit,
             placeholder = { Text(stringResource(Res.string.type_a_message)) },
             // A multi-line field must keep its Enter key: Compose only sets IME_FLAG_NO_ENTER_ACTION for
@@ -1025,14 +1110,10 @@ internal fun MessageInput(
                 val sendEnabled = isEnabled && (canSend || mentionActive)
                 IconButton(onClick = onSendAction, enabled = sendEnabled) {
                     Icon(
-                        imageVector = MeshtasticIcons.Send,
+                        imageVector = IosIcons.Send,
                         contentDescription = stringResource(Res.string.send),
-                        tint =
-                        if (sendEnabled) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+                        modifier = Modifier.size(30.dp),
+                        tint = if (sendEnabled) Ios.colors.tint else Ios.colors.systemGray4,
                     )
                 }
             },

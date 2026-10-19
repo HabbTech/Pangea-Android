@@ -1381,6 +1381,7 @@
     <string name="pangea_error_send_failed">Couldn't send through your radio. Make sure it's connected.</string>
     <string name="pangea_everyone_bell">Notifications for Everyone Nearby</string>
     <string name="pangea_everyone_nearby">Everyone Nearby</string>
+    <string name="pangea_find_in_conversation">Find in conversation</string>
     <string name="pangea_forget_radio">Forget This Radio</string>
     <string name="pangea_forget_radio_message">This disconnects the radio. You can pair it again anytime.</string>
     <string name="pangea_forget_radio_title">Forget this radio?</string>

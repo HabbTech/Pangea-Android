@@ -79,7 +79,8 @@ fun PangeaAvatar(
                     initials.ifEmpty { "?" },
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = (size.value * INITIALS_SCALE).sp,
+                    // Short names run to four letters; those get smaller type so they fit the circle, as on iOS.
+                    fontSize = (size.value * if (initials.length > 2) LONG_INITIALS_SCALE else INITIALS_SCALE).sp,
                     maxLines = 1,
                     overflow = TextOverflow.Clip,
                 )
@@ -88,4 +89,5 @@ fun PangeaAvatar(
 }
 
 private const val EMOJI_SCALE = 0.5f
+private const val LONG_INITIALS_SCALE = 0.28f
 private const val INITIALS_SCALE = 0.34f

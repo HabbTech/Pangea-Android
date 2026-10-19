@@ -175,6 +175,39 @@ object IosIcons {
         }
     }
 
+    /** `bell`: notifications on (Everyone Nearby's bell). */
+    val Bell: ImageVector by lazy { icon("ios.bell") { stroked(width = 1.8f) { bellOutline() } } }
+
+    /** `bell.slash`: notifications off. */
+    val BellSlash: ImageVector by lazy {
+        icon("ios.bell.slash") {
+            stroked(width = 1.8f) {
+                bellOutline()
+                moveTo(3.5f, 3.5f)
+                lineTo(20.5f, 20.5f)
+            }
+        }
+    }
+
+    /** `arrow.up.circle.fill`: send. A white arrow cut out of a filled circle. */
+    val Send: ImageVector by lazy {
+        icon("ios.send") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                circle(12f, 12f, 11f)
+                moveTo(12f, 5.6f)
+                lineTo(17.2f, 10.8f)
+                lineTo(15.8f, 12.2f)
+                lineTo(13f, 9.4f)
+                lineTo(13f, 18f)
+                lineTo(11f, 18f)
+                lineTo(11f, 9.4f)
+                lineTo(8.2f, 12.2f)
+                lineTo(6.8f, 10.8f)
+                close()
+            }
+        }
+    }
+
     /** `antenna.radiowaves.left.and.right`: My Radio, and the status pill. */
     val Antenna: ImageVector by lazy {
         icon("ios.antenna") {
@@ -214,6 +247,21 @@ object IosIcons {
         arcTo(r, r, 0f, isMoreThanHalf = true, isPositiveArc = true, x1 = cx - r, y1 = cy)
         arcTo(r, r, 0f, isMoreThanHalf = true, isPositiveArc = true, x1 = cx + r, y1 = cy)
         close()
+    }
+
+    private fun PathBuilder.bellOutline() {
+        moveTo(12f, 3.2f)
+        curveTo(8.7f, 3.2f, 6.4f, 5.7f, 6.4f, 9.2f)
+        lineTo(6.4f, 13.6f)
+        lineTo(4.4f, 16.6f)
+        lineTo(19.6f, 16.6f)
+        lineTo(17.6f, 13.6f)
+        lineTo(17.6f, 9.2f)
+        curveTo(17.6f, 5.7f, 15.3f, 3.2f, 12f, 3.2f)
+        close()
+        moveTo(9.8f, 19.2f)
+        curveTo(10.3f, 20.3f, 11.1f, 20.8f, 12f, 20.8f)
+        curveTo(12.9f, 20.8f, 13.7f, 20.3f, 14.2f, 19.2f)
     }
 
     private fun PathBuilder.spoke(cx: Float, cy: Float, from: Float, to: Float, degrees: Float) {

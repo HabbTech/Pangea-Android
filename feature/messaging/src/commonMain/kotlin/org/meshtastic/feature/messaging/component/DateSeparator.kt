@@ -19,12 +19,11 @@ package org.meshtastic.feature.messaging.component
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -34,6 +33,7 @@ import org.meshtastic.core.common.util.relativeDayOf
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.date_separator_today
 import org.meshtastic.core.resources.date_separator_yesterday
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 /**
@@ -50,17 +50,13 @@ internal fun DateSeparator(timestampMillis: Long, modifier: Modifier = Modifier)
             RelativeDay.Yesterday -> stringResource(Res.string.date_separator_yesterday)
             RelativeDay.Older -> DateFormatter.formatDate(timestampMillis)
         }
+    // Pangea: plain grey text between runs, as iOS Messages shows the day.
     Box(modifier = modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-        // A pill rather than the unread divider's rules, so the two never read as the same marker when both land
-        // between the same pair of messages.
-        Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceVariant) {
-            Text(
-                text = label,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            text = label,
+            style = Ios.type.footnote.copy(fontWeight = FontWeight.SemiBold),
+            color = Ios.colors.secondaryLabel,
+        )
     }
 }
 

@@ -1345,6 +1345,7 @@ pangea_error_own_code
 pangea_error_send_failed
 pangea_everyone_bell
 pangea_everyone_nearby
+pangea_find_in_conversation
 pangea_forget_radio
 pangea_forget_radio_message
 pangea_forget_radio_title
