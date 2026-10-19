@@ -571,7 +571,7 @@ fun MessageScreen(
                         },
                         onTitleClick =
                         when {
-                            channelIndex == NodeAddress.PKC_CHANNEL_INDEX -> ({ showProfile = true })
+                            dmNode != null -> ({ showProfile = true })
                             groupOfChat != null -> ({ showGroupInfo = true })
                             isEveryoneNearby && pangeaViewModel.chatIconKey(0) != null -> ({ showChatIcon = true })
                             else -> null

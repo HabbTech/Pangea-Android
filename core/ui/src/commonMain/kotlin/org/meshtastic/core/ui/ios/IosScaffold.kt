@@ -236,13 +236,13 @@ fun IosTopBar(
 }
 
 /**
- * The top of an iOS sheet: **Cancel** at the left, the [title] centred, and an optional emphasized action at the right
- * ([actionLabel], e.g. **Done**).
+ * The top of an iOS sheet: **Cancel** at the left (when [cancelLabel] is set), the [title] centred, and an optional
+ * emphasized action at the right ([actionLabel], e.g. **Done**).
  */
 @Composable
 fun IosSheetHeader(
     title: String,
-    cancelLabel: String,
+    cancelLabel: String?,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
@@ -251,7 +251,9 @@ fun IosSheetHeader(
     horizontalPadding: Dp = IosInset,
 ) {
     Box(modifier.fillMaxWidth().height(64.dp).padding(horizontal = horizontalPadding)) {
-        IosGlassTextButton(cancelLabel, onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart))
+        if (cancelLabel != null) {
+            IosGlassTextButton(cancelLabel, onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart))
+        }
         Text(title, style = Ios.type.headline, color = Ios.colors.label, modifier = Modifier.align(Alignment.Center))
         if (actionLabel != null) {
             IosGlassTextButton(

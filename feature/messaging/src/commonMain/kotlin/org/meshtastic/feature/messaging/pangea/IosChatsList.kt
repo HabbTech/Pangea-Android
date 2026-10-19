@@ -65,6 +65,7 @@ import org.meshtastic.core.resources.contact_draft_prefix
 import org.meshtastic.core.resources.delete
 import org.meshtastic.core.resources.pangea_message_someone
 import org.meshtastic.core.resources.pangea_mute
+import org.meshtastic.core.resources.pangea_new_group
 import org.meshtastic.core.resources.pangea_new_message
 import org.meshtastic.core.resources.pangea_no_chats_yet
 import org.meshtastic.core.resources.pangea_pin
@@ -100,6 +101,7 @@ internal fun IosChatsScreen(
     listState: LazyListState,
     onOpen: (Contact) -> Unit,
     onCompose: () -> Unit,
+    onComposeGroup: () -> Unit,
     onNewGroup: () -> Unit,
     onToggleMute: (Contact) -> Unit,
     onTogglePin: (Contact) -> Unit,
@@ -122,12 +124,32 @@ internal fun IosChatsScreen(
         modifier = modifier,
         leading = { PangeaLogoButton() },
         trailing = {
-            IosGlassIconButton(
-                icon = IosIcons.Compose,
-                contentDescription = stringResource(Res.string.pangea_new_message),
-                onClick = onCompose,
-                tint = Ios.colors.tint,
-            )
+            // The compose button offers a new message or a new group, as on iOS.
+            var composeMenu by remember { mutableStateOf(false) }
+            Box {
+                IosGlassIconButton(
+                    icon = IosIcons.Compose,
+                    contentDescription = stringResource(Res.string.pangea_new_message),
+                    onClick = { composeMenu = true },
+                    tint = Ios.colors.tint,
+                )
+                DropdownMenu(expanded = composeMenu, onDismissRequest = { composeMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.pangea_new_message)) },
+                        onClick = {
+                            composeMenu = false
+                            onCompose()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.pangea_new_group)) },
+                        onClick = {
+                            composeMenu = false
+                            onComposeGroup()
+                        },
+                    )
+                }
+            }
         },
     ) {
         item(key = "chats-header") { header() }

@@ -1327,15 +1327,21 @@ packet_authenticity_strict_summary
 packet_authenticity_strict_title
 packet_authenticity_unsupported
 ### PANGEA ###
+pangea_add_nickname
+pangea_add_to_contacts
 pangea_all_emoji
 pangea_buy_radios
 pangea_buy_radios_description
 pangea_chat_icon
 pangea_chat_icon_hint
 pangea_choose_photo
+pangea_code_placeholder
 pangea_contacts
+pangea_contacts_empty
+pangea_copy_code
 pangea_copyright_notice
 pangea_create
+pangea_create_group
 pangea_decline
 pangea_display_name
 pangea_edit_profile
@@ -1366,6 +1372,7 @@ pangea_group_invites
 pangea_group_invites_more_body
 pangea_group_invites_more_title
 pangea_group_name
+pangea_group_name_rules
 pangea_help_apple_watch
 pangea_help_connecting_radios
 pangea_help_contacts_profiles
@@ -1401,6 +1408,7 @@ pangea_join_group_prompt
 pangea_leave_group
 pangea_leave_group_confirm
 pangea_message_someone
+pangea_message_someone_title
 pangea_mute
 pangea_my_profile
 pangea_my_radio
@@ -1430,13 +1438,18 @@ pangea_radio_not_connected
 pangea_radio_serial
 pangea_radio_status_not_connected
 pangea_reaching
+pangea_remove_from_contacts
 pangea_remove_photo
 pangea_save_contact
+pangea_scan_qr
+pangea_send_message
 pangea_setup_profile
 pangea_setup_profile_hint
+pangea_share
 pangea_share_group
 pangea_share_group_subtitle
 pangea_show_qr
+pangea_start_chat
 pangea_start_group
 pangea_status_connecting
 pangea_status_couldnt_send_privately

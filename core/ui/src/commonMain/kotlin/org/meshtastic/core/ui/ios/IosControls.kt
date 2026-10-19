@@ -321,6 +321,8 @@ fun IosTextField(
     modifier: Modifier = Modifier,
     textStyle: TextStyle = Ios.type.body,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    textAlign: TextAlign = TextAlign.Start,
+    containerColor: Color = Ios.colors.fieldFill,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val c = Ios.colors
@@ -328,19 +330,27 @@ fun IosTextField(
         modifier =
         modifier
             .fillMaxWidth()
-            .height(48.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(c.fieldFill)
+            .height(50.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(containerColor)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) Text(placeholder, style = textStyle, color = c.tertiaryLabel)
+            if (value.isEmpty()) {
+                Text(
+                    placeholder,
+                    style = textStyle,
+                    color = c.tertiaryLabel,
+                    textAlign = textAlign,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
                 singleLine = true,
-                textStyle = textStyle.copy(color = c.label),
+                textStyle = textStyle.copy(color = c.label, textAlign = textAlign),
                 cursorBrush = SolidColor(c.tint),
                 keyboardOptions = keyboardOptions,
                 modifier = Modifier.fillMaxWidth(),

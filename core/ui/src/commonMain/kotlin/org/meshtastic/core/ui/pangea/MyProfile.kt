@@ -25,7 +25,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -35,13 +37,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,6 +87,7 @@ import org.meshtastic.core.resources.pangea_choose_photo
 import org.meshtastic.core.resources.pangea_display_name
 import org.meshtastic.core.resources.pangea_edit_profile
 import org.meshtastic.core.resources.pangea_my_profile
+import org.meshtastic.core.resources.pangea_profile
 import org.meshtastic.core.resources.pangea_profile_save_restarts_radio
 import org.meshtastic.core.resources.pangea_profile_shared_with
 import org.meshtastic.core.resources.pangea_remove_photo
@@ -98,6 +98,7 @@ import org.meshtastic.core.ui.component.AvatarPalette
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.PangeaEmojiPicker
 import org.meshtastic.core.ui.component.rememberAvatarBitmap
+import org.meshtastic.core.ui.ios.IosSheet
 import org.meshtastic.core.ui.util.rememberAvatarPhotoPicker
 
 /** What the profile screens show about me. */
@@ -198,7 +199,7 @@ fun MyProfileSection(modifier: Modifier = Modifier, viewModel: MyProfileViewMode
 }
 
 /** Name, emoji, colour and photo, with a live preview (Pangea-Apple ProfileEditorSheet). */
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ModifierMissing")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileEditorSheet(
@@ -221,13 +222,16 @@ fun ProfileEditorSheet(
             null -> state.photo
         }
 
-    ModalBottomSheet(
+    IosSheet(
+        title = stringResource(Res.string.pangea_profile),
         onDismissRequest = onDismiss,
-        sheetState =
-        rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        ),
+        cancelLabel = stringResource(Res.string.cancel),
+        actionLabel = stringResource(Res.string.save),
+        actionEnabled = ProfileCard.cleanName(name).isNotEmpty(),
+        onAction = {
+            onSave(name, emoji, color, photoChange)
+            onDismiss()
+        },
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
@@ -277,18 +281,7 @@ fun ProfileEditorSheet(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 16.dp)) {
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-                Button(
-                    onClick = {
-                        onSave(name, emoji, color, photoChange)
-                        onDismiss()
-                    },
-                    enabled = ProfileCard.cleanName(name).isNotEmpty(),
-                ) {
-                    Text(stringResource(Res.string.save))
-                }
-            }
+            Spacer(Modifier.height(24.dp))
         }
     }
     if (showAllEmoji) {

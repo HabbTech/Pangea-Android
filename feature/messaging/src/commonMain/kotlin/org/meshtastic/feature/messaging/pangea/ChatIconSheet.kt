@@ -31,14 +31,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,25 +59,27 @@ import org.meshtastic.core.resources.save
 import org.meshtastic.core.ui.component.AvatarPalette
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.PangeaEmojiPicker
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosSheet
 
 /**
  * Pick the emoji and colour a group chat or Everyone Nearby shows, kept on this device (Pangea-Apple ChatIconSheet).
  */
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ModifierMissing")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit, onDismiss: () -> Unit) {
     var emoji by remember { mutableStateOf(current?.emoji.orEmpty()) }
     var color by remember { mutableStateOf(current?.color ?: 0) }
     var showAll by remember { mutableStateOf(false) }
-    // Fully open, so Save is on screen rather than under a half-height sheet.
-    ModalBottomSheet(
+    IosSheet(
+        title = stringResource(Res.string.pangea_chat_icon),
         onDismissRequest = onDismiss,
-        sheetState =
-        rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        ),
+        cancelLabel = stringResource(Res.string.cancel),
+        actionLabel = stringResource(Res.string.save),
+        actionEnabled = emoji.isNotEmpty(),
+        onAction = { onSave(ChatIcon(emoji, color)) },
     ) {
         Column(
             modifier =
@@ -92,7 +90,6 @@ fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(Res.string.pangea_chat_icon), style = MaterialTheme.typography.titleLarge)
             PangeaAvatar(
                 photo = null,
                 emoji = emoji,
@@ -137,14 +134,12 @@ fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit
                     }
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (current != null) {
-                    TextButton(onClick = { onSave(null) }) { Text(stringResource(Res.string.pangea_use_symbol)) }
-                }
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-                Button(onClick = { onSave(ChatIcon(emoji, color)) }, enabled = emoji.isNotEmpty()) {
-                    Text(stringResource(Res.string.save))
-                }
+            if (current != null) {
+                IosButton(
+                    text = stringResource(Res.string.pangea_use_symbol),
+                    onClick = { onSave(null) },
+                    style = IosButtonStyle.Plain,
+                )
             }
         }
     }

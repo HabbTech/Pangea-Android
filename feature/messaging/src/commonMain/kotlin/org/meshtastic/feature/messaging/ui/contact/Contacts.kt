@@ -307,6 +307,7 @@ fun ContactsScreen(
                 listState = contactsListState,
                 onOpen = { onNavigateToMessages(it.contactKey) },
                 onCompose = { showNewMessage = true },
+                onComposeGroup = { showNewGroup = true },
                 onNewGroup = { showNewGroup = true },
                 onToggleMute = toggleMute,
                 onTogglePin = { viewModel.setPinned(listOf(it.contactKey), !it.isPinned) },
@@ -430,10 +431,6 @@ fun ContactsScreen(
             onOpenChat = { key ->
                 showNewMessage = false
                 onNavigateToMessages(key)
-            },
-            onNewGroup = {
-                showNewMessage = false
-                showNewGroup = true
             },
             onDismiss = { showNewMessage = false },
         )

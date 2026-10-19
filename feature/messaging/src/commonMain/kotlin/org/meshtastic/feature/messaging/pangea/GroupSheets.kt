@@ -20,22 +20,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,7 +43,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.StringResource
@@ -57,8 +58,9 @@ import org.meshtastic.core.repository.PangeaGroup
 import org.meshtastic.core.repository.PendingGroupInvite
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.cancel
+import org.meshtastic.core.resources.done
 import org.meshtastic.core.resources.okay
-import org.meshtastic.core.resources.pangea_create
+import org.meshtastic.core.resources.pangea_create_group
 import org.meshtastic.core.resources.pangea_decline
 import org.meshtastic.core.resources.pangea_error_not_connected
 import org.meshtastic.core.resources.pangea_group_error_blank
@@ -71,6 +73,7 @@ import org.meshtastic.core.resources.pangea_group_error_reserved
 import org.meshtastic.core.resources.pangea_group_error_too_long
 import org.meshtastic.core.resources.pangea_group_invites
 import org.meshtastic.core.resources.pangea_group_name
+import org.meshtastic.core.resources.pangea_group_name_rules
 import org.meshtastic.core.resources.pangea_invite_from
 import org.meshtastic.core.resources.pangea_invite_people
 import org.meshtastic.core.resources.pangea_invite_sent
@@ -82,6 +85,13 @@ import org.meshtastic.core.resources.pangea_new_group
 import org.meshtastic.core.resources.pangea_share_group
 import org.meshtastic.core.resources.pangea_share_group_subtitle
 import org.meshtastic.core.ui.component.QrDialog
+import org.meshtastic.core.ui.icon.Group
+import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosSheet
+import org.meshtastic.core.ui.ios.IosTextField
 
 /** Invites waiting in Chats, each with Join and Decline (Pangea-Apple ChatsView invite rows). */
 @Suppress("ViewModelForwarding")
@@ -122,36 +132,55 @@ private fun InviteCard(item: PendingGroupInvite, sender: String, onJoin: () -> U
 }
 
 /** Name a new group; it gets a fresh private key and the first free slot. */
-@Suppress("ViewModelForwarding")
+@Suppress("ViewModelForwarding", "ModifierMissing")
 @Composable
 fun NewGroupDialog(viewModel: PangeaChatsViewModel, onCreate: (String) -> Unit, onDismiss: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
-    AlertDialog(
+    val c = Ios.colors
+    IosSheet(
+        title = stringResource(Res.string.pangea_new_group),
+        cancelLabel = stringResource(Res.string.cancel),
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(Res.string.pangea_new_group)) },
-        text = {
-            OutlinedTextField(
+    ) {
+        Column(
+            Modifier.fillMaxWidth().weight(1f).padding(horizontal = IosInset),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Icon(
+                MeshtasticIcons.Group,
+                contentDescription = null,
+                tint = c.tint,
+                modifier = Modifier.padding(top = 12.dp).size(64.dp),
+            )
+            IosTextField(
                 value = name,
                 onValueChange = { name = it.clampedUtf8(GroupInvite.MAX_NAME_BYTES) },
-                label = { Text(stringResource(Res.string.pangea_group_name)) },
-                singleLine = true,
+                placeholder = stringResource(Res.string.pangea_group_name),
+                textAlign = TextAlign.Center,
+                textStyle = Ios.type.title3,
+                modifier = Modifier.height(56.dp),
             )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { viewModel.createGroup(name) { index -> onCreate(viewModel.groupContactKey(index)) } },
-                enabled = name.isNotBlank(),
-            ) {
-                Text(stringResource(Res.string.pangea_create))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
-    )
+            Text(
+                stringResource(Res.string.pangea_group_name_rules),
+                style = Ios.type.footnote,
+                color = c.secondaryLabel,
+                textAlign = TextAlign.Center,
+            )
+        }
+        IosButton(
+            text = stringResource(Res.string.pangea_create_group),
+            onClick = { viewModel.createGroup(name) { index -> onCreate(viewModel.groupContactKey(index)) } },
+            enabled = name.isNotBlank(),
+            large = true,
+            modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp),
+        )
+    }
     GroupErrorDialog(viewModel)
 }
 
 /** Share a group by link or QR, invite people privately, or leave it (Pangea-Apple GroupSheets). */
-@Suppress("ViewModelForwarding", "LongMethod")
+@Suppress("ViewModelForwarding", "LongMethod", "ModifierMissing")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave: () -> Unit, onDismiss: () -> Unit) {
@@ -159,16 +188,13 @@ fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave:
     var showQr by remember { mutableStateOf<GroupInvite?>(null) }
     var confirmLeave by remember { mutableStateOf(false) }
     val invited = remember { mutableStateOf(setOf<Long>()) }
-    ModalBottomSheet(
+    IosSheet(
+        title = group.name,
         onDismissRequest = onDismiss,
-        sheetState =
-        rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        ),
+        actionLabel = stringResource(Res.string.done),
+        onAction = onDismiss,
     ) {
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            item { Text(group.name, style = MaterialTheme.typography.titleLarge) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
                     Button(
