@@ -81,10 +81,11 @@ import org.meshtastic.core.resources.nodes_unheard_banner
 import org.meshtastic.core.resources.nodes_unheard_banner_one
 import org.meshtastic.core.resources.nodes_unheard_keep
 import org.meshtastic.core.resources.nodes_unheard_remove
+import org.meshtastic.core.resources.pangea_nodes_count
 import org.meshtastic.core.resources.set_up_connection
+import org.meshtastic.core.ui.component.IosNodeRow
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticImportFAB
-import org.meshtastic.core.ui.component.NodeItem
 import org.meshtastic.core.ui.component.NodeItemCompact
 import org.meshtastic.core.ui.component.ScrollToTopEvent
 import org.meshtastic.core.ui.component.SharedContactDialog
@@ -95,6 +96,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.Nodes
 import org.meshtastic.core.ui.icon.SignalOff
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.feature.node.component.LocalNodeContextMenu
@@ -203,7 +205,14 @@ fun NodeListScreen(
     val nodeRow: @Composable LazyItemScope.(Node) -> Unit = { node ->
         var expanded by remember { mutableStateOf(false) }
 
-        Box(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+        Box(
+            modifier =
+            if (density == NodeListDensity.COMPLETE) {
+                Modifier
+            } else {
+                Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            },
+        ) {
             val isThisNode = node.num == ourNode?.num
             val canEditStatus = canEditStatusMessage(node, ourNode, connectionState)
             // Our own node only earns a long press while it has something to offer, or it opens an empty menu.
@@ -217,20 +226,16 @@ fun NodeListScreen(
             val isActive = remember(activeNodeId, node.num) { activeNodeId == node.num }
 
             when (density) {
+                // Pangea: the iPhone app's node row (the compact layout stays an Android option).
                 NodeListDensity.COMPLETE ->
-                    NodeItem(
+                    IosNodeRow(
                         modifier = Modifier.animateItem(),
                         thisNode = ourNode,
                         thatNode = node,
                         distanceUnits = state.distanceUnits,
-                        tempInFahrenheit = state.tempInFahrenheit,
+                        connectionState = connectionState,
                         onClick = { navigateToNodeDetails(node.num) },
                         onLongClick = longClick,
-                        connectionState = connectionState,
-                        deviceType = deviceType,
-                        isActive = isActive,
-                        showTelemetry = showTelemetry,
-                        deviceImageUrl = deviceImageUrls[node.user.hw_model.value],
                     )
 
                 NodeListDensity.COMPACT ->
@@ -282,9 +287,11 @@ fun NodeListScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = Ios.colors.background,
         topBar = {
             MainAppBar(
-                title = stringResource(Res.string.nodes),
+                // iOS puts the count in the title: "Nodes (144)".
+                title = stringResource(Res.string.pangea_nodes_count, nodes.size),
                 // Node counts deliberately live in the list header (NodeCountSummary), not here: the app bar's
                 // title/subtitle slot competes for width with the node chip + action icons and is clipped to a
                 // single line, which truncated the counts (issue #6268).
@@ -292,6 +299,7 @@ fun NodeListScreen(
                 showNodeChip = ourNode != null && connectionState is ConnectionState.Connected,
                 canNavigateUp = false,
                 onNavigateUp = {},
+                background = Ios.colors.background,
                 actions = {
                     IconButton(onClick = { showHopHistogram = true }) {
                         Icon(
@@ -335,16 +343,10 @@ fun NodeListScreen(
                         modifier =
                         Modifier.fillMaxWidth()
                             .graphicsLayer(alpha = animatedAlpha)
-                            .background(MaterialTheme.colorScheme.surfaceDim)
-                            .padding(8.dp),
+                            .background(Ios.colors.background)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        NodeCountSummary(
-                            onlineCount = onlineNodeCount,
-                            shownCount = nodes.size,
-                            totalCount = totalNodeCount,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                        )
                         UnheardNodesBanner(
                             unheardNodes = unheardNodes,
                             onRemoveAll = { unheardNodes.forEach(viewModel::removeNode) },

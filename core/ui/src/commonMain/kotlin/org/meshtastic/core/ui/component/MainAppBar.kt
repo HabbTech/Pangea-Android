@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -99,6 +100,8 @@ fun MainAppBar(
     canNavigateUp: Boolean,
     onNavigateUp: () -> Unit,
     onClickChip: (Node) -> Unit,
+    // The screen's own background: white over iOS's plain lists, grey (the default) over grouped ones.
+    background: Color = MaterialTheme.colorScheme.background,
     // Trailing slot: a @Composable content lambda, not an event handler (detekt LambdaParameterEventTrailing).
     actions: @Composable () -> Unit,
 ) {
@@ -106,7 +109,6 @@ fun MainAppBar(
     // the edition's accent color. Gated with the app-wide fonts via LocalEventTheme / the "Use event theme" toggle.
     val eventTheme = LocalEventTheme.current
     val accent = eventTheme?.accent
-    val background = MaterialTheme.colorScheme.background
     val c = Ios.colors
     Column(
         modifier =

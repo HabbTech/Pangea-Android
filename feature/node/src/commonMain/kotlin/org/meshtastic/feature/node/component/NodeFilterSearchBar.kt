@@ -60,11 +60,11 @@ import org.meshtastic.core.resources.node_filter_only_direct
 import org.meshtastic.core.resources.node_filter_only_encrypted
 import org.meshtastic.core.resources.node_filter_only_online
 import org.meshtastic.core.resources.node_filter_only_signed
-import org.meshtastic.core.resources.node_filter_placeholder
 import org.meshtastic.core.resources.node_filter_show_ignored
 import org.meshtastic.core.resources.node_filter_title
 import org.meshtastic.core.resources.node_sort_button
 import org.meshtastic.core.resources.node_sort_title
+import org.meshtastic.core.resources.pangea_find_node
 import org.meshtastic.core.ui.component.MeshtasticSearchBar
 import org.meshtastic.core.ui.component.SignedNodeIcon
 import org.meshtastic.core.ui.icon.Lock
@@ -94,7 +94,7 @@ fun NodeFilterSearchBar(
         MeshtasticSearchBar(
             query = filterText,
             onQueryChange = onTextChange,
-            placeholder = stringResource(Res.string.node_filter_placeholder),
+            placeholder = stringResource(Res.string.pangea_find_node),
             inputFieldTag = NODE_FILTER_SEARCH_BAR_INPUT_FIELD_TAG,
             trailingActions = {
                 NodeSortButton(currentSortOption = currentSortOption, onSortSelect = onSortSelect, toggles = toggles)

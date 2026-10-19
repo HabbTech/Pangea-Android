@@ -219,6 +219,18 @@ object IosIcons {
         }
     }
 
+    /** `checkmark.circle`: a radio heard recently. */
+    val CheckCircle: ImageVector by lazy {
+        icon("ios.checkCircle") {
+            stroked(width = 1.6f) {
+                circle(12f, 12f, 9f)
+                moveTo(8f, 12.4f)
+                lineTo(10.8f, 15f)
+                lineTo(16f, 9.2f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

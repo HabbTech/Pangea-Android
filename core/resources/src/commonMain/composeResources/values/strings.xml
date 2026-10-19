@@ -1372,6 +1372,7 @@
     <string name="pangea_appearance">Appearance</string>
     <string name="pangea_appearance_footer">Match Device follows your device's Light or Dark setting.</string>
     <string name="pangea_battery">Battery</string>
+    <string name="pangea_battery_charging">CHG</string>
     <string name="pangea_buy_radios">Buy Complete Radios</string>
     <string name="pangea_buy_radios_description">Get custom waterproof solar and detection sensor router nodes, aluminium desktop nodes and rugged handsets.</string>
     <string name="pangea_chat_icon">Chat Icon</string>
@@ -1402,6 +1403,7 @@
     <string name="pangea_expert_mode_footer">Looking for the node list, mesh map, or radio settings? Turn on Expert Mode to see them.</string>
     <string name="pangea_find_contact">Find a contact</string>
     <string name="pangea_find_in_conversation">Find in conversation</string>
+    <string name="pangea_find_node">Find a node</string>
     <string name="pangea_firmware_updates">Firmware Updates</string>
     <string name="pangea_forget_radio">Forget This Radio</string>
     <string name="pangea_forget_radio_message">This disconnects the radio. You can pair it again anytime.</string>
@@ -1451,6 +1453,7 @@
     <string name="pangea_help_troubleshooting">Troubleshooting</string>
     <string name="pangea_help_units_locale">Units &amp; Language</string>
     <string name="pangea_help_whats_new">What's New</string>
+    <string name="pangea_hops_away">Hops Away:</string>
     <string name="pangea_invite_from">%1$s invited you</string>
     <string name="pangea_invite_people">Invite</string>
     <string name="pangea_invite_sent">Invited</string>
@@ -1474,6 +1477,7 @@
     <string name="pangea_nickname_hint">Only you can see this.</string>
     <string name="pangea_no_chats_yet">No Chats Yet</string>
     <string name="pangea_no_radio_paired">No radio paired</string>
+    <string name="pangea_nodes_count">Nodes (%1$d)</string>
     <string name="pangea_open_chat">Message</string>
     <string name="pangea_pair_code_hint">The first time, your phone may ask for a pairing code: enter the number shown on your radio's screen, or 123456 if it doesn't have one. After that it won't ask again.</string>
     <string name="pangea_pair_connecting">Connecting to your radio…</string>
@@ -1511,6 +1515,7 @@
     <string name="pangea_region_label">Where you'll use it</string>
     <string name="pangea_remove_from_contacts">Remove from Contacts</string>
     <string name="pangea_remove_photo">Remove Photo</string>
+    <string name="pangea_role_value">Role: %1$s</string>
     <string name="pangea_save_contact">Save to Contacts</string>
     <string name="pangea_save_to_radio_failed">Couldn't save to your radio. Make sure it's still on and nearby, then try again.</string>
     <string name="pangea_saving_to_radio">Saving to your radio…</string>

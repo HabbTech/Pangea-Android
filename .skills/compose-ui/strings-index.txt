@@ -1336,6 +1336,7 @@ pangea_app_settings
 pangea_appearance
 pangea_appearance_footer
 pangea_battery
+pangea_battery_charging
 pangea_buy_radios
 pangea_buy_radios_description
 pangea_chat_icon
@@ -1366,6 +1367,7 @@ pangea_everyone_nearby
 pangea_expert_mode_footer
 pangea_find_contact
 pangea_find_in_conversation
+pangea_find_node
 pangea_firmware_updates
 pangea_forget_radio
 pangea_forget_radio_message
@@ -1415,6 +1417,7 @@ pangea_help_telemetry
 pangea_help_troubleshooting
 pangea_help_units_locale
 pangea_help_whats_new
+pangea_hops_away
 pangea_invite_from
 pangea_invite_people
 pangea_invite_sent
@@ -1438,6 +1441,7 @@ pangea_nickname
 pangea_nickname_hint
 pangea_no_chats_yet
 pangea_no_radio_paired
+pangea_nodes_count
 pangea_open_chat
 pangea_pair_code_hint
 pangea_pair_connecting
@@ -1475,6 +1479,7 @@ pangea_region_footer
 pangea_region_label
 pangea_remove_from_contacts
 pangea_remove_photo
+pangea_role_value
 pangea_save_contact
 pangea_save_to_radio_failed
 pangea_saving_to_radio
