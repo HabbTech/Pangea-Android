@@ -18,7 +18,6 @@ package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalFocusManager
@@ -37,6 +36,7 @@ import org.meshtastic.core.resources.schema_storeforward_records
 import org.meshtastic.core.resources.store_forward
 import org.meshtastic.core.resources.store_forward_config
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -53,6 +53,7 @@ fun StoreForwardConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.store_forward),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -75,7 +76,7 @@ fun StoreForwardConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_storeforward_heartbeat),
                     summary = stringResource(Res.string.schema_storeforward_heartbeat_description),
@@ -86,7 +87,7 @@ fun StoreForwardConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_storeforward_records),
                     value = formState.value.records,
@@ -96,7 +97,7 @@ fun StoreForwardConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
                         formState.value = formState.value.newBuilder().also { wb -> wb.records = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_storeforward_history_return_max),
                     value = formState.value.history_return_max,
@@ -106,7 +107,7 @@ fun StoreForwardConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
                         formState.value = formState.value.newBuilder().also { wb -> wb.history_return_max = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_storeforward_history_return_window),
                     value = formState.value.history_return_window,
@@ -117,7 +118,7 @@ fun StoreForwardConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
                             formState.value.newBuilder().also { wb -> wb.history_return_window = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_storeforward_is_server),
                     summary = stringResource(Res.string.schema_storeforward_is_server_description),

@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -61,6 +60,7 @@ import org.meshtastic.core.resources.unmonitored_or_infrastructure
 import org.meshtastic.core.resources.user
 import org.meshtastic.core.resources.user_config
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.RegularPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
@@ -141,7 +141,7 @@ fun UserConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, focusS
                     subtitle = formState.value.id,
                     onClick = {},
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 UserNameFields(
                     formState = formState,
                     hamMode = hamMode,
@@ -150,7 +150,7 @@ fun UserConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, focusS
                     isShortNameError = !validShortName,
                 )
                 if (offersStatusMessage) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     StatusMessageField(
                         value = statusMessageInput,
                         enabled = state.connected,
@@ -158,13 +158,13 @@ fun UserConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, focusS
                         onValueChange = { statusMessageInput = it },
                     )
                 }
-                HorizontalDivider()
+                PreferenceDivider()
                 RegularPreference(
                     title = stringResource(Res.string.hardware_model),
                     subtitle = formState.value.hw_model.name,
                     onClick = {},
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.unmessageable),
                     summary = stringResource(Res.string.unmonitored_or_infrastructure),
@@ -177,7 +177,7 @@ fun UserConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, focusS
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 LicensedModeSetting(
                     checked = formState.value.is_licensed,
                     enabled = state.connected,
@@ -340,7 +340,7 @@ internal fun UserNameFields(
             },
         )
         if (hamMode) {
-            HorizontalDivider()
+            PreferenceDivider()
             // Optional: firmware appends it to the callsign, so an empty field names the node after the callsign.
             EditTextPreference(
                 title = stringResource(Res.string.long_name),
@@ -358,7 +358,7 @@ internal fun UserNameFields(
                 },
             )
         }
-        HorizontalDivider()
+        PreferenceDivider()
         EditTextPreference(
             title = stringResource(Res.string.short_name),
             value = formState.value.short_name,

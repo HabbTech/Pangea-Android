@@ -89,6 +89,7 @@ import org.meshtastic.core.resources.triple_click_adhoc_ping
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.InsetDivider
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.core.ui.icon.Close
@@ -127,6 +128,7 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
     val focusManager = LocalFocusManager.current
     RadioConfigScreenList(
         title = stringResource(Res.string.device),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -149,7 +151,7 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
                     itemIcon = { MeshtasticIcons.role(it) },
                 )
 
-                HorizontalDivider()
+                PreferenceDivider()
 
                 val currentRebroadcastMode = formState.value.rebroadcast_mode
                 DropDownPreference(
@@ -162,7 +164,7 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
                     summary = currentRebroadcastMode.schemaDescriptionRes()?.let { stringResource(it) },
                 )
 
-                HorizontalDivider()
+                PreferenceDivider()
 
                 val nodeInfoBroadcastIntervals = remember { IntervalConfiguration.NODE_INFO_BROADCAST.allowedIntervals }
                 DropDownPreference(
@@ -253,7 +255,7 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
                     },
                 )
 
-                HorizontalDivider()
+                PreferenceDivider()
 
                 TextButton(
                     modifier = Modifier.fillMaxWidth(),
@@ -289,7 +291,7 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
                     },
                 )
 
-                HorizontalDivider()
+                PreferenceDivider()
 
                 EditTextPreference(
                     title = stringResource(Res.string.schema_device_buzzer_gpio),

@@ -19,7 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +39,7 @@ import org.meshtastic.core.resources.schema_bluetooth_mode
 import org.meshtastic.core.resources.schema_bluetooth_mode_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -58,6 +58,7 @@ fun BluetoothConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.bluetooth),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -80,7 +81,7 @@ fun BluetoothConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_bluetooth_mode),
                     summary = stringResource(Res.string.schema_bluetooth_mode_description),
@@ -96,7 +97,7 @@ fun BluetoothConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.mode = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 FixedPinPreference(
                     pinValue = formState.value.fixed_pin,
                     enabled = state.connected,

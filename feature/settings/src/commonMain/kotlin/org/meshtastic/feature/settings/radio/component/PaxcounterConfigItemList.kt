@@ -18,7 +18,6 @@ package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -37,6 +36,7 @@ import org.meshtastic.core.resources.schema_paxcounter_paxcounter_update_interva
 import org.meshtastic.core.resources.schema_paxcounter_wifi_threshold
 import org.meshtastic.core.resources.schema_paxcounter_wifi_threshold_description
 import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SignedIntegerEditTextPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
@@ -58,6 +58,7 @@ fun PaxcounterConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) 
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.paxcounter),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -84,7 +85,7 @@ private fun PaxcounterSettings(formState: ConfigState<ModuleConfig.PaxcounterCon
             onCheckedChange = { formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build() },
             containerColor = CardDefaults.cardColors().containerColor,
         )
-        HorizontalDivider()
+        PreferenceDivider()
         val items = remember { IntervalConfiguration.PAX_COUNTER.allowedIntervals }
         DropDownPreference(
             title = stringResource(Res.string.schema_paxcounter_paxcounter_update_interval),
@@ -97,7 +98,7 @@ private fun PaxcounterSettings(formState: ConfigState<ModuleConfig.PaxcounterCon
                     formState.value.newBuilder().also { wb -> wb.paxcounter_update_interval = it.toInt() }.build()
             },
         )
-        HorizontalDivider()
+        PreferenceDivider()
         SignedIntegerEditTextPreference(
             title =
             fieldTitle(Res.string.schema_paxcounter_wifi_threshold, ModuleConfig.PaxcounterConfig.wifi_threshold),
@@ -109,7 +110,7 @@ private fun PaxcounterSettings(formState: ConfigState<ModuleConfig.PaxcounterCon
                 formState.value = formState.value.newBuilder().also { wb -> wb.wifi_threshold = it }.build()
             },
         )
-        HorizontalDivider()
+        PreferenceDivider()
         SignedIntegerEditTextPreference(
             title = fieldTitle(Res.string.schema_paxcounter_ble_threshold, ModuleConfig.PaxcounterConfig.ble_threshold),
             summary = stringResource(Res.string.schema_paxcounter_ble_threshold_description),

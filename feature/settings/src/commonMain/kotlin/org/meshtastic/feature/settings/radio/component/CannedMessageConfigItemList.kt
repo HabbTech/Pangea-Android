@@ -19,7 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +57,7 @@ import org.meshtastic.core.resources.schema_cannedmessage_updown1_enabled
 import org.meshtastic.core.resources.schema_cannedmessage_updown1_enabled_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -81,6 +81,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.canned_message),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -110,7 +111,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                 }
                 SwitchPreference(
                     title = stringResource(Res.string.schema_cannedmessage_rotary1_enabled),
@@ -122,7 +123,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_a),
                     summary = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_a_description),
@@ -164,7 +165,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                             formState.value.newBuilder().also { wb -> wb.inputbroker_event_press = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_cannedmessage_inputbroker_event_cw),
                     summary = stringResource(Res.string.schema_cannedmessage_inputbroker_event_cw_description),
@@ -175,7 +176,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                             formState.value.newBuilder().also { wb -> wb.inputbroker_event_cw = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_cannedmessage_inputbroker_event_ccw),
                     summary = stringResource(Res.string.schema_cannedmessage_inputbroker_event_ccw_description),
@@ -186,7 +187,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                             formState.value.newBuilder().also { wb -> wb.inputbroker_event_ccw = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_cannedmessage_updown1_enabled),
                     summary = stringResource(Res.string.schema_cannedmessage_updown1_enabled_description),
@@ -197,7 +198,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 if (
                     capabilities.offers(
                         ModuleConfig.CannedMessageConfig.allow_input_source,
@@ -229,7 +230,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.messages),
                     value = messagesInput,

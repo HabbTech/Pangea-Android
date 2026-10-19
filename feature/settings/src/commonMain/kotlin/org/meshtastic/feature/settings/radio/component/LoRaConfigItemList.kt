@@ -18,7 +18,6 @@ package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +72,7 @@ import org.meshtastic.core.resources.schema_lora_use_preset_description
 import org.meshtastic.core.ui.component.DropDownItem
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SignedIntegerEditTextPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
@@ -134,6 +134,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     if (primarySettings == null) {
         RadioConfigScreenList(
             title = stringResource(Res.string.lora),
+            configFor = state.userConfig.long_name,
             onBack = onBack,
             configState = rememberConfigState(initialValue = loraConfig),
             enabled = false,
@@ -159,6 +160,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
 
     RadioConfigScreenList(
         title = stringResource(Res.string.lora),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -216,7 +218,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                                 .build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_lora_use_preset),
                     summary = stringResource(Res.string.schema_lora_use_preset_description),
@@ -227,7 +229,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 if (formState.value.use_preset) {
                     // Restrict the preset list to those legal in the selected region (R7); a null constraint means
                     // unconstrained, so show every preset. Licensed-only regions disable their presets unless the
@@ -276,7 +278,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_lora_config_ok_to_mqtt),
                     checked = formState.value.config_ok_to_mqtt,
@@ -286,7 +288,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_lora_tx_enabled),
                     summary = stringResource(Res.string.schema_lora_tx_enabled_description),
@@ -297,7 +299,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_lora_override_duty_cycle),
                     checked = formState.value.override_duty_cycle,
@@ -308,7 +310,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 // The schema declares this bound; a pin that drops it must fail here rather than unbound the picker.
                 val hopLimitItems = remember {
                     requireNotNull(Config.LoRaConfig.hop_limit.intRange).map { it to it.toString() }
@@ -323,7 +325,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     enabled = state.connected,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 var isFocusedSlot by remember { mutableStateOf(false) }
                 EditTextPreference(
                     title = stringResource(Res.string.schema_lora_channel_num),
@@ -343,7 +345,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         }
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_lora_sx126x_rx_boosted_gain),
                     summary = stringResource(Res.string.schema_lora_sx126x_rx_boosted_gain_description),
@@ -355,7 +357,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 var isFocusedOverride by remember { mutableStateOf(false) }
                 EditTextPreference(
                     title = stringResource(Res.string.schema_lora_override_frequency),
@@ -372,7 +374,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.override_frequency = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SignedIntegerEditTextPreference(
                     title = fieldTitle(Res.string.schema_lora_tx_power, Config.LoRaConfig.tx_power),
                     summary = stringResource(Res.string.schema_lora_tx_power_description),
@@ -384,7 +386,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                 )
                 if (viewModel.hasPaFan) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     SwitchPreference(
                         title = stringResource(Res.string.schema_lora_pa_fan_disabled),
                         checked = formState.value.pa_fan_disabled,
@@ -417,7 +419,7 @@ private fun ManualModemSettings(
             focusManager = focusManager,
             onConfigChange = onConfigChange,
         )
-        HorizontalDivider()
+        PreferenceDivider()
         EditTextPreference(
             title = stringResource(Res.string.schema_lora_spread_factor),
             summary = stringResource(Res.string.schema_lora_spread_factor_description),
@@ -431,7 +433,7 @@ private fun ManualModemSettings(
                 }
             },
         )
-        HorizontalDivider()
+        PreferenceDivider()
         EditTextPreference(
             title = stringResource(Res.string.schema_lora_coding_rate),
             value = config.coding_rate,

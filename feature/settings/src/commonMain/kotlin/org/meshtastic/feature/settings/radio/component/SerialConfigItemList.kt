@@ -18,7 +18,6 @@ package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalFocusManager
@@ -44,6 +43,7 @@ import org.meshtastic.core.resources.serial
 import org.meshtastic.core.resources.serial_config
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -60,6 +60,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.serial),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -82,7 +83,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_serial_echo),
                     summary = stringResource(Res.string.schema_serial_echo_description),
@@ -93,7 +94,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_serial_rxd),
                     summary = stringResource(Res.string.schema_serial_rxd_description),
@@ -104,7 +105,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.rxd = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_serial_txd),
                     summary = stringResource(Res.string.schema_serial_txd_description),
@@ -115,7 +116,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.txd = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_serial_baud),
                     summary = stringResource(Res.string.schema_serial_baud_description),
@@ -125,7 +126,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.baud = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_serial_timeout),
                     summary = stringResource(Res.string.schema_serial_timeout_description),
@@ -136,7 +137,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.timeout = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_serial_mode),
                     summary = stringResource(Res.string.schema_serial_mode_description),
@@ -146,7 +147,7 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.mode = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.override_console_serial_port),
                     checked = formState.value.override_console_serial_port,

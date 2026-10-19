@@ -100,6 +100,20 @@ object IosIcons {
         }
     }
 
+    /** `chevron.up.chevron.down`: the end of a menu picker row. */
+    val ChevronUpDown: ImageVector by lazy {
+        icon("ios.chevron.updown", size = 16f, viewport = 16f) {
+            stroked(width = 1.6f) {
+                moveTo(4.8f, 6.2f)
+                lineTo(8f, 3f)
+                lineTo(11.2f, 6.2f)
+                moveTo(4.8f, 9.8f)
+                lineTo(8f, 13f)
+                lineTo(11.2f, 9.8f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

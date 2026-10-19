@@ -19,24 +19,19 @@
 package org.meshtastic.core.ui.component
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.core.ui.theme.AppTheme
 
 @Composable
@@ -73,29 +68,26 @@ fun RegularPreference(
     trailingIcon: ImageVector? = null,
     dropdownMenu: @Composable () -> Unit = {},
 ) {
-    ListItem(
-        onClick = onClick,
-        modifier = modifier,
+    val c = Ios.colors
+    PreferenceRow(
+        title = title,
+        summary = summary,
         enabled = enabled,
-        shapes = ListItemDefaults.shapes(shape = RectangleShape),
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        trailingContent = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = subtitle, style = MaterialTheme.typography.bodyLarge)
-                if (trailingIcon != null) {
-                    Box {
-                        Icon(
-                            imageVector = trailingIcon,
-                            contentDescription = null,
-                            modifier = Modifier.padding(start = 8.dp).wrapContentWidth(Alignment.End),
-                        )
-                        dropdownMenu()
-                    }
+        modifier = modifier.iosPressable(enabled = enabled, onClick = onClick),
+        trailing = {
+            Text(text = subtitle, style = Ios.type.body, color = c.secondaryLabel)
+            if (trailingIcon != null) {
+                Box {
+                    Icon(
+                        imageVector = trailingIcon,
+                        contentDescription = null,
+                        tint = c.tertiaryLabel,
+                        modifier = Modifier.padding(start = 6.dp).size(20.dp),
+                    )
+                    dropdownMenu()
                 }
             }
         },
-        supportingContent = summary?.let { { Text(text = it, style = MaterialTheme.typography.bodyMedium) } },
-        content = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
     )
 }
 

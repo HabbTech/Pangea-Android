@@ -31,7 +31,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -96,6 +95,7 @@ import org.meshtastic.core.resources.schema_mqtt_username_description
 import org.meshtastic.core.resources.tls_enabled_public_broker_summary
 import org.meshtastic.core.ui.component.EditPasswordPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -142,6 +142,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.mqtt),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected && consentValid,
@@ -186,7 +187,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 MqttAddressAndProbe(
                     enabled = state.connected,
                     formState = formState,
@@ -195,7 +196,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     onProbe = viewModel::probeMqttConnection,
                     onClearProbe = viewModel::clearMqttProbeStatus,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_mqtt_username),
                     summary = stringResource(Res.string.schema_mqtt_username_description),
@@ -210,7 +211,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.username = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditPasswordPreference(
                     title = stringResource(Res.string.schema_mqtt_password),
                     value = formState.value.password,
@@ -221,7 +222,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.password = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_mqtt_encryption_enabled),
                     summary = stringResource(Res.string.schema_mqtt_encryption_enabled_description),
@@ -232,7 +233,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 if (capabilities.offers(ModuleConfig.MQTTConfig.json_enabled, isSet = formState.value.json_enabled)) {
                     SwitchPreference(
                         title = stringResource(Res.string.json_output_enabled),
@@ -243,7 +244,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                 }
                 MqttTlsPreference(
                     enabled = state.connected,
@@ -253,7 +254,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.tls_enabled = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_mqtt_root),
                     summary = stringResource(Res.string.schema_mqtt_root_description),
@@ -268,7 +269,7 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.root = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_mqtt_proxy_to_client_enabled),
                     summary = stringResource(Res.string.schema_mqtt_proxy_to_client_enabled_description),
@@ -431,7 +432,7 @@ private fun MqttAddressAndProbe(
             onClearProbe()
         },
     )
-    HorizontalDivider()
+    PreferenceDivider()
     MqttProbeRow(
         enabled = enabled && formState.value.address.isNotBlank(),
         status = probeStatus,

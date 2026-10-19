@@ -19,7 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,6 +48,7 @@ import org.meshtastic.core.resources.schema_detectionsensor_use_pullup
 import org.meshtastic.core.resources.schema_detectionsensor_use_pullup_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -69,6 +69,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.detection_sensor),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -91,7 +92,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val minimumBroadcastIntervals = remember {
                     IntervalConfiguration.DETECTION_SENSOR_MINIMUM.allowedIntervals
                 }
@@ -119,7 +120,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
                             formState.value.newBuilder().also { wb -> wb.state_broadcast_secs = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_detectionsensor_send_bell),
                     summary = stringResource(Res.string.schema_detectionsensor_send_bell_description),
@@ -130,7 +131,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_detectionsensor_name),
                     summary = stringResource(Res.string.schema_detectionsensor_name_description),
@@ -145,7 +146,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
                         formState.value = formState.value.newBuilder().also { wb -> wb.name = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val pins = remember { gpioPins }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_detectionsensor_monitor_pin),
@@ -157,7 +158,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
                         formState.value = formState.value.newBuilder().also { wb -> wb.monitor_pin = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_detectionsensor_detection_trigger_type),
                     summary = stringResource(Res.string.schema_detectionsensor_detection_trigger_type_description),
@@ -168,7 +169,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
                             formState.value.newBuilder().also { wb -> wb.detection_trigger_type = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_detectionsensor_use_pullup),
                     summary = stringResource(Res.string.schema_detectionsensor_use_pullup_description),
@@ -179,7 +180,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
             }
         }
     }

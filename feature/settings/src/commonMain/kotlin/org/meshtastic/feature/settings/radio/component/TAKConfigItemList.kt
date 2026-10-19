@@ -30,7 +30,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +101,7 @@ import org.meshtastic.core.takserver.TakMeshTestRunner
 import org.meshtastic.core.takserver.TakProtocol
 import org.meshtastic.core.takserver.TakTestResult
 import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.core.ui.icon.ArrowBack
@@ -137,6 +137,7 @@ fun TAKConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.tak),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -176,7 +177,7 @@ internal fun TakConfigCard(
             itemColor = { Color(getColorFrom(it)) },
             onItemSelected = onTeamSelected,
         )
-        HorizontalDivider()
+        PreferenceDivider()
         DropDownPreference(
             title = stringResource(Res.string.schema_tak_role),
             enabled = enabled,
@@ -323,10 +324,10 @@ internal fun TakServerSection(
             enabled = true,
             onCheckedChange = onEnabledChange,
         )
-        HorizontalDivider()
+        PreferenceDivider()
         TakServerStatusRow(status = status, clientCount = clientCount)
         if (isTakServerEnabled) {
-            HorizontalDivider()
+            PreferenceDivider()
             SwitchPreference(
                 title = stringResource(Res.string.tak_server_mesh_to_cot),
                 summary = stringResource(Res.string.tak_server_mesh_to_cot_desc),
@@ -335,10 +336,10 @@ internal fun TakServerSection(
                 onCheckedChange = onMeshToCotChange,
             )
             if (isMeshToCotEnabled && !supportsTakV2) {
-                HorizontalDivider()
+                PreferenceDivider()
                 TakV1FallbackNotice()
             }
-            HorizontalDivider()
+            PreferenceDivider()
             DropDownPreference(
                 title = stringResource(Res.string.tak_server_channel),
                 summary = stringResource(Res.string.tak_server_channel_desc),
@@ -347,7 +348,7 @@ internal fun TakServerSection(
                 selectedItem = takServerChannel,
                 onItemSelected = onChannelSelected,
             )
-            HorizontalDivider()
+            PreferenceDivider()
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -557,7 +558,7 @@ private fun TakProtocolResultsSection(titleRes: StringResource, results: List<Ta
     val unexpectedFailed = results.count { !it.passed && !it.expectedDrop }
 
     Column {
-        HorizontalDivider()
+        PreferenceDivider()
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
             Text(text = stringResource(titleRes), style = MaterialTheme.typography.titleSmall)
             Text(
@@ -581,7 +582,7 @@ private fun TakProtocolResultsSection(titleRes: StringResource, results: List<Ta
         }
 
         for (result in results) {
-            HorizontalDivider()
+            PreferenceDivider()
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,

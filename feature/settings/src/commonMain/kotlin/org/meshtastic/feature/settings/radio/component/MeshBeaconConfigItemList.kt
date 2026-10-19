@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -64,6 +63,7 @@ import org.meshtastic.core.resources.schema_meshbeacon_broadcast_message
 import org.meshtastic.core.ui.component.DropDownItem
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.RegularPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
@@ -116,6 +116,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
         RadioConfigScreenList(
             modifier = modifier,
             title = stringResource(Res.string.mesh_beacon),
+            configFor = state.userConfig.long_name,
             onBack = onBack,
             configState = rememberConfigState(initialValue = meshBeaconConfig),
             enabled = false,
@@ -173,6 +174,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
     RadioConfigScreenList(
         modifier = modifier,
         title = stringResource(Res.string.mesh_beacon),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -198,7 +200,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                     onClick = {},
                     enabled = false,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.mesh_beacon_listen),
                     summary = stringResource(Res.string.mesh_beacon_listen_summary),
@@ -213,7 +215,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.mesh_beacon_broadcast),
                     summary = stringResource(Res.string.mesh_beacon_broadcast_summary),
@@ -229,7 +231,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
                 if (!radioLora.use_preset) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     Text(
                         text = stringResource(Res.string.mesh_beacon_broadcast_requires_preset),
                         modifier = Modifier.padding(16.dp),
@@ -237,7 +239,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                     )
                 }
                 if (broadcastGate.sectionsVisible) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditTextPreference(
                         title = stringResource(Res.string.schema_meshbeacon_broadcast_message),
                         value = formState.value.broadcast_message,
@@ -251,7 +253,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                                 formState.value.newBuilder().also { wb -> wb.broadcast_message = it }.build()
                         },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     val intervalOptions = remember { IntervalConfiguration.MESH_BEACON_BROADCAST.allowedIntervals }
                     val storedIntervalSecs = formState.value.broadcast_interval_secs.toLong()
                     val intervalFallback =
@@ -404,7 +406,7 @@ internal fun BroadcastTargetsCard(
 ) {
     TitledCard(title = stringResource(Res.string.mesh_beacon_targets)) {
         targets.forEachIndexed { index, target ->
-            if (index > 0) HorizontalDivider()
+            if (index > 0) PreferenceDivider()
             BroadcastTargetRow(
                 index = index,
                 target = target,
@@ -418,7 +420,7 @@ internal fun BroadcastTargetsCard(
                 onRemove = { onChange(removeBeaconTarget(targets, index)) },
             )
         }
-        HorizontalDivider()
+        PreferenceDivider()
         TextButton(
             onClick = { onChange(targets + MeshBeaconConfig.BroadcastTarget.Builder().build()) },
             enabled = enabled,

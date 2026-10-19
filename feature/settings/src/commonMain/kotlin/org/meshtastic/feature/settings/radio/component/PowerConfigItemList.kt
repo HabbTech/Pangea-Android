@@ -18,7 +18,6 @@ package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -40,6 +39,7 @@ import org.meshtastic.core.resources.schema_power_wait_bluetooth_secs
 import org.meshtastic.core.resources.super_deep_sleep_duration_seconds
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -56,6 +56,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
 
     RadioConfigScreenList(
         title = stringResource(Res.string.power),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -78,7 +79,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val items = remember { IntervalConfiguration.ALL.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_power_on_battery_shutdown_after_secs),
@@ -94,7 +95,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                                 .build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.adc_multiplier_override),
                     checked = formState.value.adc_multiplier_override > 0f,
@@ -109,7 +110,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
                 if (formState.value.adc_multiplier_override > 0f) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditTextPreference(
                         title = stringResource(Res.string.schema_power_adc_multiplier_override),
                         value = formState.value.adc_multiplier_override,
@@ -121,7 +122,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         },
                     )
                 }
-                HorizontalDivider()
+                PreferenceDivider()
                 val waitBluetoothItems = remember { IntervalConfiguration.NAG_TIMEOUT.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_power_wait_bluetooth_secs),
@@ -133,7 +134,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                             formState.value.newBuilder().also { wb -> wb.wait_bluetooth_secs = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val sdsSecsItems = remember { IntervalConfiguration.ALL.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.super_deep_sleep_duration_seconds),
@@ -144,7 +145,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     enabled = state.connected,
                     items = sdsSecsItems.map { it.value to it.toDisplayString() },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val minWakeItems = remember { IntervalConfiguration.NAG_TIMEOUT.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.minimum_wake_time_seconds),
@@ -156,7 +157,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                             formState.value.newBuilder().also { wb -> wb.min_wake_secs = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.battery_ina_2xx_i2c_address),
                     value = formState.value.device_battery_ina_address,

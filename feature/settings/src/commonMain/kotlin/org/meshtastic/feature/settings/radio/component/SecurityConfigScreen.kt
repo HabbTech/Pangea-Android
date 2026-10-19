@@ -19,7 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +62,7 @@ import org.meshtastic.core.ui.component.CopyIconButton
 import org.meshtastic.core.ui.component.EditBase64Preference
 import org.meshtastic.core.ui.component.EditListPreference
 import org.meshtastic.core.ui.component.MeshtasticResourceDialog
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.core.ui.icon.MeshtasticIcons
@@ -104,6 +104,7 @@ fun SecurityConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.security),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -132,14 +133,14 @@ fun SecurityConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                     formState = formState,
                     enabled = state.connected,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SecurityPrivateKeyPreference(
                     securityConfig = securityConfig,
                     formState = formState,
                     enabled = state.connected,
                     isLocal = state.isLocal,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 NodeActionButton(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     title = stringResource(Res.string.regenerate_private_key),
@@ -185,7 +186,7 @@ fun SecurityConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_security_debug_log_api_enabled),
                     summary = stringResource(Res.string.schema_security_debug_log_api_enabled_description),
@@ -211,7 +212,7 @@ fun SecurityConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val lockdownState by viewModel.lockdownState.collectAsStateWithLifecycle()
                 val tokenInfo by viewModel.lockdownTokenInfo.collectAsStateWithLifecycle()
                 LockdownModeSetting(

@@ -21,8 +21,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.Ios
 
+/** The hairline between two rows of a [TitledCard], inset 16 dp at both ends as iOS draws it. */
 @Composable
 fun PreferenceDivider() {
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Ios.colors.separator)
 }

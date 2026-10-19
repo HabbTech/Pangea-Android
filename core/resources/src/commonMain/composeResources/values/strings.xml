@@ -1378,6 +1378,7 @@
     <string name="pangea_chat_icon_hint">Only you see this icon.</string>
     <string name="pangea_choose_photo">Choose Photo</string>
     <string name="pangea_code_placeholder">@code</string>
+    <string name="pangea_configuration_for">Configuration for: %1$s</string>
     <string name="pangea_configure">Configure</string>
     <string name="pangea_connected_node">Connected Node %1$s</string>
     <string name="pangea_contacts">Contacts</string>

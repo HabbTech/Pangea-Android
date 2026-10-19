@@ -21,6 +21,7 @@ import androidx.compose.animation.expandIn
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,18 +31,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.squareup.wire.Message
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.discard_changes
+import org.meshtastic.core.resources.pangea_configuration_for
 import org.meshtastic.core.resources.save_and_restart
 import org.meshtastic.core.resources.save_changes
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.PreferenceFooter
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.radio.ResponseState
 
@@ -61,6 +67,7 @@ fun <T : Message<T, *>> RadioConfigScreenList(
     actions: @Composable () -> Unit = {},
     additionalDirtyCheck: () -> Boolean = { false },
     onDiscard: () -> Unit = {},
+    configFor: String? = null,
     content: LazyListScope.() -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
@@ -86,6 +93,21 @@ fun <T : Message<T, *>> RadioConfigScreenList(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                // iOS heads each radio settings form with whose radio it is.
+                if (!configFor.isNullOrEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(Res.string.pangea_configuration_for, configFor),
+                            style = Ios.type.body,
+                            color = Ios.colors.label,
+                            modifier =
+                            Modifier.fillMaxWidth()
+                                .clip(IosCardShape)
+                                .background(Ios.colors.groupedRow)
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                        )
+                    }
+                }
                 content()
 
                 item {

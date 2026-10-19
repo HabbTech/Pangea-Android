@@ -17,7 +17,6 @@
 package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -36,6 +35,7 @@ import org.meshtastic.core.resources.delete_key_backup_confirmation
 import org.meshtastic.core.resources.restore_keys
 import org.meshtastic.core.resources.restore_keys_confirmation
 import org.meshtastic.core.ui.component.MeshtasticResourceDialog
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
@@ -90,7 +90,7 @@ actual fun SecurityKeyBackupActions(
         )
     }
 
-    HorizontalDivider()
+    PreferenceDivider()
     NodeActionButton(
         modifier = Modifier.padding(horizontal = 8.dp),
         title = stringResource(Res.string.backup_keys),
@@ -98,7 +98,7 @@ actual fun SecurityKeyBackupActions(
         icon = MeshtasticIcons.Save,
         onClick = { showBackupDialog = true },
     )
-    HorizontalDivider()
+    PreferenceDivider()
     NodeActionButton(
         modifier = Modifier.padding(horizontal = 8.dp),
         title = stringResource(Res.string.restore_keys),
@@ -106,7 +106,7 @@ actual fun SecurityKeyBackupActions(
         icon = MeshtasticIcons.Refresh,
         onClick = { showRestoreDialog = true },
     )
-    HorizontalDivider()
+    PreferenceDivider()
     NodeActionButton(
         modifier = Modifier.padding(horizontal = 8.dp),
         title = stringResource(Res.string.delete_key_backup),

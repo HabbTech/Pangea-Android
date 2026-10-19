@@ -23,7 +23,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -80,6 +79,7 @@ import org.meshtastic.core.ui.component.EditPasswordPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.core.ui.util.LocalBarcodeScannerProvider
@@ -166,6 +166,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.network),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -218,7 +219,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                     enabled = state.connected,
                 )
                 if (formState.value.wifi_enabled) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditTextPreference(
                         title = stringResource(Res.string.schema_network_wifi_ssid),
                         summary = stringResource(Res.string.schema_network_wifi_ssid_description),
@@ -233,7 +234,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                             formState.value = formState.value.newBuilder().also { wb -> wb.wifi_ssid = it }.build()
                         },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditPasswordPreference(
                         title = stringResource(Res.string.schema_network_wifi_psk),
                         value = formState.value.wifi_psk,
@@ -244,7 +245,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                             formState.value = formState.value.newBuilder().also { wb -> wb.wifi_psk = it }.build()
                         },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     val mediumHeight = ButtonDefaults.MediumContainerHeight
                     Button(
                         onClick = { barcodeScanner.startScan() },
@@ -291,7 +292,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                         formState.value = formState.value.newBuilder().also { wb -> wb.ntp_server = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.schema_network_rsyslog_server),
                     value = formState.value.rsyslog_server,
@@ -305,7 +306,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                         formState.value = formState.value.newBuilder().also { wb -> wb.rsyslog_server = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 if (capabilities.offers(Config.NetworkConfig.enabled_protocols)) {
                     SwitchPreference(
                         title = stringResource(Res.string.udp_enabled),
@@ -327,7 +328,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                         },
                         enabled = state.connected,
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                 }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_network_address_mode),
@@ -338,7 +339,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                     },
                 )
                 if (formState.value.address_mode == Config.NetworkConfig.AddressMode.STATIC) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     val ipv4 = formState.value.ipv4_config ?: Config.NetworkConfig.IpV4Config.Builder().build()
                     EditIPv4Preference(
                         title = stringResource(Res.string.schema_network_ipv4_ip),
@@ -353,7 +354,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                         },
                         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditIPv4Preference(
                         title = stringResource(Res.string.schema_network_ipv4_gateway),
                         value = ipv4.gateway,
@@ -369,7 +370,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                         },
                         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditIPv4Preference(
                         title = stringResource(Res.string.schema_network_ipv4_subnet),
                         value = ipv4.subnet,
@@ -385,7 +386,7 @@ fun NetworkConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, onO
                         },
                         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditIPv4Preference(
                         title = stringResource(Res.string.schema_network_ipv4_dns),
                         value = ipv4.dns,

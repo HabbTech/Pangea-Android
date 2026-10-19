@@ -20,11 +20,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +38,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
@@ -48,6 +51,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.error
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 @Composable
@@ -222,64 +226,120 @@ fun EditTextPreference(
     multiline: Boolean = false,
 ) {
     var isFocused by remember { mutableStateOf(false) }
+    val c = Ios.colors
 
-    Column(modifier = modifier.fillMaxWidth().padding(8.dp)) {
-        OutlinedTextField(
-            modifier =
-            Modifier.fillMaxWidth()
-                .then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier)
-                .onFocusEvent {
-                    isFocused = it.isFocused
-                    onFocusChanged(it)
-                },
-            value = value,
-            singleLine = !multiline,
-            maxLines = if (multiline) 5 else 1,
-            enabled = enabled,
-            isError = isError,
-            onValueChange = {
-                if (maxSize > 0) {
-                    if (it.encodeToByteArray().size <= maxSize) {
-                        onValueChanged(it)
-                    }
-                } else {
-                    onValueChanged(it)
-                }
-            },
-            label = { Text(title) },
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            visualTransformation = visualTransformation,
-            trailingIcon =
-            if (trailingIcon != null) {
-                { trailingIcon() }
-            } else if (isError) {
-                {
+    val fieldModifier =
+        Modifier.then(focusRequester?.let { Modifier.focusRequester(it) } ?: Modifier).onFocusEvent {
+            isFocused = it.isFocused
+            onFocusChanged(it)
+        }
+    val onFieldChange: (String) -> Unit = {
+        if (maxSize <= 0 || it.encodeToByteArray().size <= maxSize) onValueChanged(it)
+    }
+
+    PreferenceRow(
+        title = title,
+        summary = summary,
+        enabled = enabled,
+        fillTitle = multiline,
+        modifier = modifier,
+        trailing = {
+            if (!multiline) {
+                InlineTextField(
+                    value = value,
+                    onValueChange = onFieldChange,
+                    placeholder = title,
+                    enabled = enabled,
+                    multiline = multiline,
+                    isError = isError,
+                    keyboardOptions = keyboardOptions,
+                    keyboardActions = keyboardActions,
+                    visualTransformation = visualTransformation,
+                    modifier = Modifier.weight(1f).then(fieldModifier),
+                )
+            }
+            when {
+                trailingIcon != null -> trailingIcon()
+
+                isError ->
                     Icon(
                         imageVector = MeshtasticIcons.Info,
                         contentDescription = stringResource(Res.string.error),
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = c.systemRed,
+                        modifier = Modifier.padding(start = 6.dp).size(20.dp),
+                    )
+            }
+        },
+        below = {
+            if (multiline) {
+                InlineTextField(
+                    value = value,
+                    onValueChange = onFieldChange,
+                    placeholder = title,
+                    enabled = enabled,
+                    multiline = multiline,
+                    isError = isError,
+                    keyboardOptions = keyboardOptions,
+                    keyboardActions = keyboardActions,
+                    visualTransformation = visualTransformation,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp).then(fieldModifier),
+                )
+            }
+            val valueBytes = value.encodeToByteArray().size
+            if (showByteCounter(valueBytes, maxSize, counterVisibleWithinBytes, isFocused)) {
+                ByteCounter(valueBytes = valueBytes, maxSize = maxSize, isError = isError)
+            }
+        },
+    )
+}
+
+/** The text field inside an [EditTextPreference] row: plain text on the card, its [placeholder] in grey when empty. */
+@Composable
+private fun InlineTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    enabled: Boolean,
+    multiline: Boolean,
+    isError: Boolean,
+    keyboardOptions: KeyboardOptions,
+    keyboardActions: KeyboardActions,
+    visualTransformation: VisualTransformation,
+    modifier: Modifier = Modifier,
+) {
+    val c = Ios.colors
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        enabled = enabled,
+        singleLine = !multiline,
+        maxLines = if (multiline) MULTILINE_MAX_LINES else 1,
+        textStyle = Ios.type.body.copy(color = if (isError) c.systemRed else c.label),
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        visualTransformation = visualTransformation,
+        cursorBrush = SolidColor(c.tint),
+        decorationBox = { inner ->
+            Box(Modifier.fillMaxWidth()) {
+                // iOS shows the field's name as its placeholder; the row's title already names it for screen readers.
+                if (value.isEmpty()) {
+                    Text(
+                        placeholder,
+                        style = Ios.type.body,
+                        color = c.tertiaryLabel,
+                        maxLines = 1,
+                        modifier = Modifier.clearAndSetSemantics {},
                     )
                 }
-            } else {
-                null
-            },
-        )
-        if (summary != null) {
-            Text(
-                text = summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 8.dp),
-            )
-        }
-
-        val valueBytes = value.encodeToByteArray().size
-        if (showByteCounter(valueBytes, maxSize, counterVisibleWithinBytes, isFocused)) {
-            ByteCounter(valueBytes = valueBytes, maxSize = maxSize, isError = isError)
-        }
-    }
+                inner()
+            }
+        },
+    )
 }
+
+/** A multi-line field grows to this many lines before it scrolls. */
+private const val MULTILINE_MAX_LINES = 5
 
 /** The `n/max` byte budget shown under a size-capped field. */
 @Composable

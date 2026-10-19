@@ -19,7 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
@@ -39,6 +38,7 @@ import org.meshtastic.core.resources.save
 import org.meshtastic.core.resources.short_name
 import org.meshtastic.core.resources.unmessageable
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.proto.DeviceProfile
 
@@ -120,7 +120,7 @@ fun EditDeviceProfileDialog(
         modifier = modifier,
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                HorizontalDivider()
+                PreferenceDivider()
                 ProfileField.entries.forEach { field ->
                     val isAvailable =
                         when (field) {
@@ -141,7 +141,7 @@ fun EditDeviceProfileDialog(
                         padding = PaddingValues(0.dp),
                     )
                 }
-                HorizontalDivider()
+                PreferenceDivider()
             }
         },
     )

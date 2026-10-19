@@ -18,7 +18,6 @@ package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +60,7 @@ import org.meshtastic.core.resources.schema_position_tx_gpio_description
 import org.meshtastic.core.ui.component.BitwisePreference
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -159,6 +159,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.position),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -200,7 +201,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                                 .build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_position_position_broadcast_smart_enabled),
                     checked = formState.value.position_broadcast_smart_enabled,
@@ -212,7 +213,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
                 if (formState.value.position_broadcast_smart_enabled) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     val smartItems = remember { IntervalConfiguration.SMART_BROADCAST_MINIMUM.allowedIntervals }
                     DropDownPreference(
                         title = stringResource(Res.string.schema_position_broadcast_smart_minimum_interval_secs),
@@ -234,7 +235,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                                     .build()
                         },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditTextPreference(
                         title =
                         fieldTitle(
@@ -270,7 +271,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
                 if (formState.value.fixed_position) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditTextPreference(
                         title = stringResource(Res.string.latitude),
                         value = locationInput.latitude,
@@ -282,7 +283,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                             }
                         },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditTextPreference(
                         title = stringResource(Res.string.longitude),
                         value = locationInput.longitude,
@@ -294,7 +295,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                             }
                         },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     EditTextPreference(
                         title = stringResource(Res.string.altitude),
                         value = locationInput.altitude,
@@ -302,14 +303,14 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                         onValueChanged = { alt: Int -> locationInput = locationInput.copy(altitude = alt) },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     DeviceLocationButton(
                         viewModel = viewModel,
                         enabled = state.connected,
                         onLocationReceived = { locationInput = it },
                     )
                 } else {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     DropDownPreference(
                         title = stringResource(Res.string.schema_position_gps_mode),
                         enabled = state.connected,
@@ -318,7 +319,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                             formState.value = formState.value.newBuilder().also { wb -> wb.gps_mode = it }.build()
                         },
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                     val items = remember { IntervalConfiguration.GPS_UPDATE.allowedIntervals }
                     DropDownPreference(
                         title = stringResource(Res.string.schema_position_gps_update_interval),
@@ -369,7 +370,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                         formState.value = formState.value.newBuilder().also { wb -> wb.rx_gpio = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_position_tx_gpio),
                     summary = stringResource(Res.string.schema_position_tx_gpio_description),
@@ -380,7 +381,7 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                         formState.value = formState.value.newBuilder().also { wb -> wb.tx_gpio = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_position_gps_en_gpio),
                     summary = stringResource(Res.string.schema_position_gps_en_gpio_description),

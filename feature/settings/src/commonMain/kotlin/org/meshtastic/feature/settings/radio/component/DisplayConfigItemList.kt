@@ -17,7 +17,6 @@
 package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -51,6 +50,7 @@ import org.meshtastic.core.resources.schema_display_use_12h_clock_description
 import org.meshtastic.core.resources.schema_display_wake_on_tap_or_motion
 import org.meshtastic.core.resources.schema_display_wake_on_tap_or_motion_description
 import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -71,6 +71,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
 
     RadioConfigScreenList(
         title = stringResource(Res.string.display),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -100,7 +101,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                 }
                 if (capabilities.offers(Config.DisplayConfig.use_12h_clock)) {
                     SwitchPreference(
@@ -113,7 +114,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                 }
                 SwitchPreference(
                     title = stringResource(Res.string.schema_display_heading_bold),
@@ -125,7 +126,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_display_units),
                     summary = stringResource(Res.string.schema_display_units_description),
@@ -154,7 +155,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                             formState.value.newBuilder().also { wb -> wb.screen_on_secs = it.value.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_display_auto_screen_carousel_secs),
                     summary = stringResource(Res.string.schema_display_auto_screen_carousel_secs_description),
@@ -171,7 +172,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                                 .build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_display_wake_on_tap_or_motion),
                     summary = stringResource(Res.string.schema_display_wake_on_tap_or_motion_description),
@@ -183,7 +184,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_display_flip_screen),
                     summary = stringResource(Res.string.schema_display_flip_screen_description),
@@ -194,7 +195,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_display_displaymode),
                     summary = stringResource(Res.string.schema_display_displaymode_description),
@@ -204,7 +205,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.displaymode = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_display_oled),
                     summary = stringResource(Res.string.schema_display_oled_description),
@@ -214,7 +215,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.oled = it }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_display_compass_orientation),
                     summary = stringResource(Res.string.schema_display_compass_orientation_description),

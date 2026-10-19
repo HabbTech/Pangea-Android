@@ -19,7 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,6 +70,7 @@ import org.meshtastic.core.resources.schema_externalnotification_use_pwm
 import org.meshtastic.core.resources.schema_externalnotification_use_pwm_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -102,6 +102,7 @@ fun ExternalNotificationConfigScreenCommon(
     RadioConfigScreenList(
         modifier = modifier,
         title = stringResource(Res.string.external_notification),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -146,7 +147,7 @@ fun ExternalNotificationConfigScreenCommon(
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_externalnotification_alert_message_buzzer),
                     summary = stringResource(Res.string.schema_externalnotification_alert_message_buzzer_description),
@@ -158,7 +159,7 @@ fun ExternalNotificationConfigScreenCommon(
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_externalnotification_alert_message_vibra),
                     summary = stringResource(Res.string.schema_externalnotification_alert_message_vibra_description),
@@ -185,7 +186,7 @@ fun ExternalNotificationConfigScreenCommon(
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_externalnotification_alert_bell_buzzer),
                     summary = stringResource(Res.string.schema_externalnotification_alert_bell_buzzer_description),
@@ -196,7 +197,7 @@ fun ExternalNotificationConfigScreenCommon(
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_externalnotification_alert_bell_vibra),
                     summary = stringResource(Res.string.schema_externalnotification_alert_bell_vibra_description),
@@ -224,7 +225,7 @@ fun ExternalNotificationConfigScreenCommon(
                     },
                 )
                 if (formState.value.output != 0) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     SwitchPreference(
                         title = stringResource(Res.string.schema_externalnotification_active),
                         summary = stringResource(Res.string.schema_externalnotification_active_description),
@@ -236,7 +237,7 @@ fun ExternalNotificationConfigScreenCommon(
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
                 }
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_externalnotification_output_buzzer),
                     summary = stringResource(Res.string.schema_externalnotification_output_buzzer_description),
@@ -249,7 +250,7 @@ fun ExternalNotificationConfigScreenCommon(
                     },
                 )
                 if (formState.value.output_buzzer != 0) {
-                    HorizontalDivider()
+                    PreferenceDivider()
                     SwitchPreference(
                         title = stringResource(Res.string.schema_externalnotification_use_pwm),
                         summary = stringResource(Res.string.schema_externalnotification_use_pwm_description),
@@ -261,7 +262,7 @@ fun ExternalNotificationConfigScreenCommon(
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
                 }
-                HorizontalDivider()
+                PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_externalnotification_output_vibra),
                     summary = stringResource(Res.string.schema_externalnotification_output_vibra_description),
@@ -273,7 +274,7 @@ fun ExternalNotificationConfigScreenCommon(
                             formState.value.newBuilder().also { wb -> wb.output_vibra = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val outputItems = remember { FixedOutputDurations.allowed }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_externalnotification_output_ms),
@@ -285,7 +286,7 @@ fun ExternalNotificationConfigScreenCommon(
                         formState.value = formState.value.newBuilder().also { wb -> wb.output_ms = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val nagItems = remember { IntervalConfiguration.NAG_TIMEOUT.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_externalnotification_nag_timeout),
@@ -298,7 +299,7 @@ fun ExternalNotificationConfigScreenCommon(
                             formState.value.newBuilder().also { wb -> wb.nag_timeout = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 EditTextPreference(
                     title = stringResource(Res.string.ringtone),
                     value = ringtoneInput,
@@ -317,7 +318,7 @@ fun ExternalNotificationConfigScreenCommon(
                         )
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_externalnotification_use_i2s_as_buzzer),
                     summary = stringResource(Res.string.schema_externalnotification_use_i2s_as_buzzer_description),

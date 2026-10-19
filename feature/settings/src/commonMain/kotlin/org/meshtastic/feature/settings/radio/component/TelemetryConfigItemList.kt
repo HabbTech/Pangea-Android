@@ -17,7 +17,6 @@
 package org.meshtastic.feature.settings.radio.component
 
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -50,6 +49,7 @@ import org.meshtastic.core.resources.schema_telemetry_power_update_interval_desc
 import org.meshtastic.core.resources.telemetry
 import org.meshtastic.core.resources.telemetry_config
 import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -71,6 +71,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.telemetry),
+        configFor = state.userConfig.long_name,
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -95,7 +96,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    HorizontalDivider()
+                    PreferenceDivider()
                 }
                 val items = remember { IntervalConfiguration.BROADCAST_SHORT.allowedIntervals }
                 DropDownPreference(
@@ -109,7 +110,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                             formState.value.newBuilder().also { wb -> wb.device_update_interval = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_telemetry_environment_measurement_enabled),
                     summary = stringResource(Res.string.schema_telemetry_environment_measurement_enabled_description),
@@ -121,7 +122,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val envItems = remember { IntervalConfiguration.BROADCAST_SHORT.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_telemetry_environment_update_interval),
@@ -137,7 +138,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                                 .build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_telemetry_environment_screen_enabled),
                     summary = stringResource(Res.string.schema_telemetry_environment_screen_enabled_description),
@@ -149,7 +150,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_telemetry_environment_display_fahrenheit),
                     summary = stringResource(Res.string.schema_telemetry_environment_display_fahrenheit_description),
@@ -161,7 +162,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_telemetry_air_quality_enabled),
                     summary = stringResource(Res.string.schema_telemetry_air_quality_enabled_description),
@@ -173,7 +174,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val airItems = remember { IntervalConfiguration.BROADCAST_SHORT.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_telemetry_air_quality_interval),
@@ -186,7 +187,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                             formState.value.newBuilder().also { wb -> wb.air_quality_interval = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_telemetry_power_measurement_enabled),
                     summary = stringResource(Res.string.schema_telemetry_power_measurement_enabled_description),
@@ -198,7 +199,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     containerColor = CardDefaults.cardColors().containerColor,
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 val powerItems = remember { IntervalConfiguration.BROADCAST_SHORT.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.schema_telemetry_power_update_interval),
@@ -211,7 +212,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                             formState.value.newBuilder().also { wb -> wb.power_update_interval = it.toInt() }.build()
                     },
                 )
-                HorizontalDivider()
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_telemetry_power_screen_enabled),
                     summary = stringResource(Res.string.schema_telemetry_power_screen_enabled_description),

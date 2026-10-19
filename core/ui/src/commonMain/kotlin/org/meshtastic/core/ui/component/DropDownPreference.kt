@@ -16,20 +16,17 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,14 +35,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.schemaLabelRes
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.core.ui.theme.AppTheme
 import kotlin.jvm.JvmName
 
@@ -122,7 +125,6 @@ fun <T> DropDownPreference(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("LongMethod")
 fun <T> DropDownPreference(
@@ -135,89 +137,91 @@ fun <T> DropDownPreference(
     summary: String? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val c = Ios.colors
+    val currentItem = items.firstOrNull { it.value == selectedItem }
 
-    Column(modifier = modifier.fillMaxWidth().padding(8.dp)) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = {
-                if (enabled) {
-                    expanded = !expanded
-                }
-            },
-        ) {
-            val currentItem = items.firstOrNull { it.value == selectedItem }
-            OutlinedTextField(
-                label = { Text(text = title) },
-                modifier =
-                Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled),
-                readOnly = true,
-                value = currentItem?.label ?: "",
-                onValueChange = {},
-                leadingIcon =
-                currentItem?.icon?.let {
-                    {
+    // iOS's menu picker: the value in grey with up/down chevrons at the end of the row; tapping opens the choices.
+    PreferenceRow(
+        title = title,
+        summary = summary,
+        enabled = enabled,
+        modifier = modifier.iosPressable(enabled = enabled) { expanded = true },
+        trailing = {
+            Box {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 220.dp)) {
+                    if (currentItem?.icon != null) {
                         Icon(
-                            imageVector = it,
-                            contentDescription = currentItem.label,
-                            modifier = Modifier.size(24.dp),
+                            imageVector = currentItem.icon,
+                            contentDescription = null,
+                            tint = c.secondaryLabel,
+                            modifier = Modifier.padding(end = 6.dp).size(20.dp),
+                        )
+                    } else if (currentItem?.color != null) {
+                        Icon(
+                            painter = ColorPainter(currentItem.color),
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 6.dp).size(16.dp).clip(CircleShape),
+                            tint = Color.Unspecified,
+                        )
+                    }
+                    Text(
+                        text = currentItem?.label.orEmpty(),
+                        style = Ios.type.body,
+                        color = c.secondaryLabel,
+                        textAlign = TextAlign.End,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Icon(
+                        IosIcons.ChevronUpDown,
+                        contentDescription = null,
+                        tint = c.secondaryLabel,
+                        modifier = Modifier.padding(start = 4.dp).size(16.dp),
+                    )
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    items.forEach { selectionOption ->
+                        DropdownMenuItem(
+                            modifier = selectionOption.testTag?.let { Modifier.testTag(it) } ?: Modifier,
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (selectionOption.icon != null) {
+                                        Icon(
+                                            imageVector = selectionOption.icon,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                    } else if (selectionOption.color != null) {
+                                        Icon(
+                                            painter = ColorPainter(selectionOption.color),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                            tint = Color.Unspecified,
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                    }
+                                    Text(selectionOption.label)
+                                }
+                            },
+                            trailingIcon =
+                            if (selectionOption.value == selectedItem) {
+                                { Icon(IosIcons.Checkmark, contentDescription = null, tint = c.tint) }
+                            } else {
+                                null
+                            },
+                            enabled = selectionOption.enabled,
+                            onClick = {
+                                onItemSelected(selectionOption.value)
+                                expanded = false
+                            },
                         )
                     }
                 }
-                    ?: currentItem?.color?.let {
-                        {
-                            Icon(
-                                painter = ColorPainter(it),
-                                contentDescription = currentItem.label,
-                                modifier = Modifier.size(24.dp),
-                                tint = Color.Unspecified,
-                            )
-                        }
-                    },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                colors = ExposedDropdownMenuDefaults.textFieldColors(),
-                enabled = enabled,
-                supportingText =
-                if (summary != null) {
-                    { Text(text = summary) }
-                } else {
-                    null
-                },
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                items.forEach { selectionOption ->
-                    DropdownMenuItem(
-                        modifier = selectionOption.testTag?.let { Modifier.testTag(it) } ?: Modifier,
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (selectionOption.icon != null) {
-                                    Icon(
-                                        imageVector = selectionOption.icon,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                } else if (selectionOption.color != null) {
-                                    Icon(
-                                        painter = ColorPainter(selectionOption.color),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                        tint = Color.Unspecified,
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                }
-                                Text(selectionOption.label)
-                            }
-                        },
-                        enabled = selectionOption.enabled,
-                        onClick = {
-                            onItemSelected(selectionOption.value)
-                            expanded = false
-                        },
-                    )
-                }
             }
-        }
-    }
+        },
+    )
 }
 
 internal expect fun <T : Enum<T>> enumEntriesOf(selectedItem: T): List<T>

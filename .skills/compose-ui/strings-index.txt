@@ -1342,6 +1342,7 @@ pangea_chat_icon
 pangea_chat_icon_hint
 pangea_choose_photo
 pangea_code_placeholder
+pangea_configuration_for
 pangea_configure
 pangea_connected_node
 pangea_contacts

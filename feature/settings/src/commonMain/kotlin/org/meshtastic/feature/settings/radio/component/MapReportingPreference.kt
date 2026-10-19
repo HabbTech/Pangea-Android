@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -52,6 +51,7 @@ import org.meshtastic.core.resources.schema_mapreportsettings_publish_interval_s
 import org.meshtastic.core.resources.schema_mqtt_map_reporting_enabled
 import org.meshtastic.core.resources.schema_mqtt_map_reporting_enabled_description
 import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.feature.settings.util.FixedUpdateIntervals
 import org.meshtastic.feature.settings.util.IntervalConfiguration
@@ -95,7 +95,7 @@ fun MapReportingPreference(
         AnimatedVisibility(showMapReportingWarning) {
             Card(modifier = Modifier.padding(16.dp)) {
                 Text(text = stringResource(Res.string.map_reporting_consent_header), modifier = Modifier.padding(16.dp))
-                HorizontalDivider()
+                PreferenceDivider()
                 Text(stringResource(Res.string.map_reporting_consent_text), modifier = Modifier.padding(16.dp))
 
                 SwitchPreference(
