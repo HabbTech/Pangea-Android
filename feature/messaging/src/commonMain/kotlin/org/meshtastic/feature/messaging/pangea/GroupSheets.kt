@@ -49,7 +49,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.pangea.GroupChatError
 import org.meshtastic.core.model.pangea.GroupInvite
 import org.meshtastic.core.model.pangea.PangeaCode
@@ -80,8 +79,6 @@ import org.meshtastic.core.resources.pangea_join_group_prompt
 import org.meshtastic.core.resources.pangea_leave_group
 import org.meshtastic.core.resources.pangea_leave_group_confirm
 import org.meshtastic.core.resources.pangea_new_group
-import org.meshtastic.core.resources.pangea_radio_connecting
-import org.meshtastic.core.resources.pangea_radio_status_not_connected
 import org.meshtastic.core.resources.pangea_share_group
 import org.meshtastic.core.resources.pangea_share_group_subtitle
 import org.meshtastic.core.ui.component.QrDialog
@@ -299,23 +296,4 @@ fun PendingPangeaLink(viewModel: PangeaChatsViewModel, onStartChat: () -> Unit, 
         },
         dismissButton = { TextButton(onClick = viewModel::consumeLink) { Text(stringResource(Res.string.cancel)) } },
     )
-}
-
-/** "Your radio isn't connected", shown above Chats in standard mode (Pangea-Apple RadioStatusBanner). */
-@Composable
-fun RadioStatusPill(connectionState: ConnectionState, expertMode: Boolean, modifier: Modifier = Modifier) {
-    if (expertMode || connectionState == ConnectionState.Connected) return
-    val text =
-        if (connectionState == ConnectionState.Connecting) {
-            Res.string.pangea_radio_connecting
-        } else {
-            Res.string.pangea_radio_status_not_connected
-        }
-    Card(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-        Text(
-            stringResource(text),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-        )
-    }
 }

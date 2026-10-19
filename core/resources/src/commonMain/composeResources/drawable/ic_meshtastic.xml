@@ -16,62 +16,15 @@
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 -->
 
-<!-- PANGEA BRAND MARK: solid-silhouette dinosaur footprint, derived from the
-     launcher art's innermost topo contour (design/PANGEA-BRAND.md). Solid form
-     rather than the contour-line rendering so it stays legible at nav-bar
-     sizes. Resource keeps the upstream name for merge-friendliness; fill is
-     tint-overridden by Icon(), so light/dark theming works unchanged. -->
+<!-- PANGEA BRAND MARK: the footprint's outer outline, traced from design/logo/pangea-logo.webp by
+     scripts/make-logo-assets.py (don't hand-edit; rerun the script). Solid so it stays legible at
+     nav-bar sizes. Keeps the upstream resource name for merge-friendliness; Icon() tints the fill. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-
-  <!-- central toe: teardrop whose base sinks into the pad (connected silhouette) -->
   <path
       android:fillColor="#FF000000"
-      android:pathData="M12,2.2 C13.6,3.1 14.15,5.1 14,7.2 C13.85,9.4 13.2,11.4 12,12.8 C10.8,11.4 10.15,9.4 10,7.2 C9.85,5.1 10.4,3.1 12,2.2 Z" />
-
-  <!-- left toe: swung out around a pivot inside the pad so the base stays merged -->
-  <group
-      android:rotation="-40"
-      android:pivotX="12"
-      android:pivotY="14.5">
-    <path
-        android:fillColor="#FF000000"
-        android:pathData="M12,4.2 C13.4,5.0 13.85,6.7 13.72,8.5 C13.6,10.4 13.0,11.9 12,13.1 C11.0,11.9 10.4,10.4 10.28,8.5 C10.15,6.7 10.6,5.0 12,4.2 Z" />
-  </group>
-
-  <!-- right toe -->
-  <group
-      android:rotation="40"
-      android:pivotX="12"
-      android:pivotY="14.5">
-    <path
-        android:fillColor="#FF000000"
-        android:pathData="M12,4.2 C13.4,5.0 13.85,6.7 13.72,8.5 C13.6,10.4 13.0,11.9 12,13.1 C11.0,11.9 10.4,10.4 10.28,8.5 C10.15,6.7 10.6,5.0 12,4.2 Z" />
-  </group>
-
-  <!-- pad: larger, rounded, top overlapping all three toe bases -->
-  <path
-      android:fillColor="#FF000000"
-      android:pathData="M12,11.2 C14.7,11.2 16.3,13.0 16.3,15.3 C16.3,17.9 14.55,19.7 12,19.9 C9.45,19.7 7.7,17.9 7.7,15.3 C7.7,13.0 9.3,11.2 12,11.2 Z" />
-
-  <!-- lateral spurs (dew claws), tucked against the pad so they merge into the print -->
-  <group
-      android:rotation="-58"
-      android:pivotX="7.4"
-      android:pivotY="14.6">
-    <path
-        android:fillColor="#FF000000"
-        android:pathData="M7.4,12.7 C8.3,13.15 8.6,14.05 8.5,15.0 C8.42,15.9 8.05,16.6 7.4,16.8 C6.75,16.6 6.38,15.9 6.3,15.0 C6.2,14.05 6.5,13.15 7.4,12.7 Z" />
-  </group>
-  <group
-      android:rotation="58"
-      android:pivotX="16.6"
-      android:pivotY="14.6">
-    <path
-        android:fillColor="#FF000000"
-        android:pathData="M16.6,12.7 C17.5,13.15 17.8,14.05 17.7,15.0 C17.62,15.9 17.25,16.6 16.6,16.8 C15.95,16.6 15.58,15.9 15.5,15.0 C15.4,14.05 15.7,13.15 16.6,12.7 Z" />
-  </group>
+      android:pathData="M12.32,23.00 L11.65,23.00 L11.15,22.92 L10.66,22.75 L10.13,22.47 L9.50,21.97 L8.23,20.65 L6.76,19.63 L6.17,19.05 L5.80,18.32 L5.53,16.85 L5.18,15.90 L4.80,15.25 L3.31,13.16 L2.81,12.18 L2.61,11.26 L2.58,10.24 L2.51,9.91 L2.28,9.25 L2.14,8.50 L2.18,8.00 L2.32,7.88 L2.45,7.88 L2.87,8.11 L3.40,8.59 L3.75,8.81 L4.82,9.06 L5.94,9.50 L6.41,9.80 L7.10,10.42 L8.04,11.64 L8.64,12.30 L8.90,12.40 L9.03,12.38 L9.15,12.21 L9.25,11.61 L9.22,10.56 L8.89,7.67 L8.92,6.53 L9.09,5.75 L9.27,5.23 L9.65,4.56 L10.14,3.96 L10.94,3.14 L11.31,2.36 L11.59,1.53 L11.82,1.11 L11.97,1.00 L12.08,1.03 L12.26,1.26 L13.03,3.09 L13.99,4.10 L14.41,4.63 L14.70,5.16 L14.96,5.92 L15.10,6.85 L15.11,7.72 L15.06,8.49 L14.75,10.97 L14.80,12.06 L14.85,12.24 L14.95,12.38 L15.14,12.40 L15.37,12.27 L15.81,11.79 L16.83,10.47 L17.32,10.00 L17.83,9.63 L18.79,9.20 L20.31,8.80 L21.46,7.91 L21.75,7.91 L21.86,8.12 L21.81,8.87 L21.44,10.07 L21.37,11.46 L21.19,12.19 L20.67,13.18 L19.25,15.18 L18.67,16.20 L18.45,16.90 L18.23,18.18 L17.98,18.80 L17.72,19.17 L17.39,19.49 L15.81,20.63 L14.75,21.71 L13.99,22.38 L13.08,22.85 L12.32,23.00 Z" />
 </vector>

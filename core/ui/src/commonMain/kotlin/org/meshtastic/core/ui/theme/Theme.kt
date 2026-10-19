@@ -24,12 +24,19 @@ import androidx.compose.material3.MotionScheme.Companion.expressive
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import co.touchlab.kermit.Logger
+import org.meshtastic.core.ui.ios.DarkIosColors
+import org.meshtastic.core.ui.ios.LightIosColors
+import org.meshtastic.core.ui.ios.LocalIosColors
+import org.meshtastic.core.ui.ios.LocalIosTypography
+import org.meshtastic.core.ui.ios.interFontFamily
+import org.meshtastic.core.ui.ios.iosTypography
 import kotlin.coroutines.cancellation.CancellationException
 
 private val lightScheme =
@@ -133,7 +140,13 @@ fun AppTheme(
     // When a device is on event firmware (and the event theme isn't opted out), swap the whole typescale to the event
     // typeface. Null everywhere else (desktop, F-Droid, non-event, opted out) → default typography.
     val eventFonts = LocalEventTheme.current?.fonts
-    val typography = remember(eventFonts) { eventFonts?.let { AppTypography.withEventFonts(it) } ?: AppTypography }
+    // Pangea: the iPhone app's look — iOS colours and the iOS type scale in Inter (design/PANGEA-BRAND.md v2).
+    val inter = interFontFamily()
+    val iosType = remember(inter) { iosTypography(inter) }
+    val iosColors = if (darkTheme) DarkIosColors else LightIosColors
+    val baseTypography = remember(iosType) { materialTypography(iosType) }
+    val typography =
+        remember(eventFonts, baseTypography) { eventFonts?.let { baseTypography.withEventFonts(it) } ?: baseTypography }
 
     // Downloadable (Google) fonts referenced only through the theme's Typography are NOT auto-fetched during text
     // layout — Compose silently renders the fallback. Preloading them into the font cache is the documented way to make
@@ -154,7 +167,7 @@ fun AppTheme(
     }
 
     MaterialExpressiveTheme(colorScheme = colorScheme, typography = typography, motionScheme = expressive()) {
-        content()
+        CompositionLocalProvider(LocalIosColors provides iosColors, LocalIosTypography provides iosType) { content() }
     }
 }
 

@@ -19,84 +19,85 @@ package org.meshtastic.core.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ─── Meshtastic Design Standards v1.3 ───
-// Primary: Pangea Fossil (brand #F05511; text roles use darkened #C4430D / light #FF9F6B)
-// Secondary: Neutral 600 #555668
-// Tertiary: Blue 700 #2855A8 | Neutral: #2C2D3C | Neutral Variant: #303245
+// Primary: Pangea Fossil #F05511 in light and dark, with white text, matching the Pangea iPhone app
+// Surfaces, text and separators: iOS system colours (systemGroupedBackground, secondaryLabel, separator...)
+// Secondary: iOS systemGray #8E8E93
+// Tertiary: Blue 700 #2855A8 (the Expert Mode caption, as on iOS)
 // See: standards/meshtastic_design_standards_v1_3.md §8
 
 // ─── Light Scheme (§8.2) ───
-// PANGEA BRAND: darkened Fossil (#F05511 -> AA 4.68 on light) — intentional divergence from Meshtastic
+// PANGEA BRAND v2: Fossil tint as on iOS (Ben, 2026-10-18) — intentional divergence from Meshtastic
 // green; see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
-val primaryLight = Color(0xFFC4430D)
-val onPrimaryLight = Color(0xFFFFFFFF) // 5.05 on primary
-val primaryContainerLight = Color(0xFFFFDBCB) // Fossil 90
-val onPrimaryContainerLight = Color(0xFF3B0900) // Fossil 10 (13.26 on container)
-val secondaryLight = Color(0xFF555668) // Neutral 600
+val primaryLight = Color(0xFFF05511)
+val onPrimaryLight = Color(0xFFFFFFFF)
+val primaryContainerLight = Color(0xFFFFDBCB)
+val onPrimaryContainerLight = Color(0xFF3B0900)
+val secondaryLight = Color(0xFF8E8E93)
 val onSecondaryLight = Color(0xFFFFFFFF)
-val secondaryContainerLight = Color(0xFFD5D6E0) // Neutral 200
-val onSecondaryContainerLight = Color(0xFF2C2D3C) // Neutral 800
+val secondaryContainerLight = Color(0xFFE5E5EA)
+val onSecondaryContainerLight = Color(0xFF000000)
 val tertiaryLight = Color(0xFF2855A8) // Blue 700
 val onTertiaryLight = Color(0xFFFFFFFF)
 val tertiaryContainerLight = Color(0xFFE8EAF6) // Blue 50
 val onTertiaryContainerLight = Color(0xFF001849) // Blue 950
-val errorLight = Color(0xFFBA1A1A) // Error 600 (WCAG-safe on white)
+val errorLight = Color(0xFFFF3B30)
 val onErrorLight = Color(0xFFFFFFFF)
-val errorContainerLight = Color(0xFFFDEAEA) // Error 100
-val onErrorContainerLight = Color(0xFF410002) // Error 900
-val backgroundLight = Color(0xFFF5F6FA) // Neutral 50
-val onBackgroundLight = Color(0xFF2C2D3C) // Neutral 800
-val surfaceLight = Color(0xFFF5F6FA) // Neutral 50
-val onSurfaceLight = Color(0xFF2C2D3C) // Neutral 800
-val surfaceVariantLight = Color(0xFFDADBE7) // NV 200
-val onSurfaceVariantLight = Color(0xFF5C5E78) // NV 600
-val outlineLight = Color(0xFF767892) // NV 500
-val outlineVariantLight = Color(0xFFBDBFCF) // NV 300
+val errorContainerLight = Color(0xFFFFE5E3)
+val onErrorContainerLight = Color(0xFF410002)
+val backgroundLight = Color(0xFFF2F2F7)
+val onBackgroundLight = Color(0xFF000000)
+val surfaceLight = Color(0xFFF2F2F7)
+val onSurfaceLight = Color(0xFF000000)
+val surfaceVariantLight = Color(0xFFE5E5EA)
+val onSurfaceVariantLight = Color(0xFF8A8A8E)
+val outlineLight = Color(0xFFC6C6C8)
+val outlineVariantLight = Color(0xFFC6C6C8)
 val scrimLight = Color(0xFF000000)
-val inverseSurfaceLight = Color(0xFF3D3E50) // Neutral 700
-val inverseOnSurfaceLight = Color(0xFFECEDF3) // Neutral 100
-val inversePrimaryLight = Color(0xFFFF9F6B) // Fossil 70 (6.53 on inverseSurface)
-val surfaceDimLight = Color(0xFFD5D6E0) // Neutral 200
-val surfaceBrightLight = Color(0xFFF5F6FA) // Neutral 50
+val inverseSurfaceLight = Color(0xFF1C1C1E)
+val inverseOnSurfaceLight = Color(0xFFFFFFFF)
+val inversePrimaryLight = Color(0xFFF05511)
+val surfaceDimLight = Color(0xFFE5E5EA)
+val surfaceBrightLight = Color(0xFFFFFFFF)
 val surfaceContainerLowestLight = Color(0xFFFFFFFF)
-val surfaceContainerLowLight = Color(0xFFF5F6FA) // Neutral 50
-val surfaceContainerLight = Color(0xFFECEDF3) // Neutral 100
-val surfaceContainerHighLight = Color(0xFFE0E1EB) // Interpolated 100↔200
-val surfaceContainerHighestLight = Color(0xFFD5D6E0) // Neutral 200
+val surfaceContainerLowLight = Color(0xFFFFFFFF)
+val surfaceContainerLight = Color(0xFFFFFFFF)
+val surfaceContainerHighLight = Color(0xFFFFFFFF)
+val surfaceContainerHighestLight = Color(0xFFFFFFFF)
 
 // ─── Dark Scheme (§8.3) ───
-// PANGEA BRAND: light Fossil (8.48 on dark surface) — see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
-val primaryDark = Color(0xFFFF9F6B)
-val onPrimaryDark = Color(0xFF4A1A00) // Fossil 15 (7.24 on primary)
-val primaryContainerDark = Color(0xFF7A2E04) // Fossil 30
-val onPrimaryContainerDark = Color(0xFFFFDBCB) // Fossil 90 (7.32 on container)
-val secondaryDark = Color(0xFFB8BAC8) // Neutral 300
-val onSecondaryDark = Color(0xFF1A1B26) // Neutral 900
-val secondaryContainerDark = Color(0xFF3D3E50) // Neutral 700
-val onSecondaryContainerDark = Color(0xFFD5D6E0) // Neutral 200
+// PANGEA BRAND v2: Fossil tint as on iOS — see design/PANGEA-BRAND.md; canary: PangeaPaletteTest
+val primaryDark = Color(0xFFF05511)
+val onPrimaryDark = Color(0xFFFFFFFF)
+val primaryContainerDark = Color(0xFF7A2E04)
+val onPrimaryContainerDark = Color(0xFFFFDBCB)
+val secondaryDark = Color(0xFF8E8E93)
+val onSecondaryDark = Color(0xFF000000)
+val secondaryContainerDark = Color(0xFF2C2C2E)
+val onSecondaryContainerDark = Color(0xFFFFFFFF)
 val tertiaryDark = Color(0xFFB0BFF0) // Blue 300
 val onTertiaryDark = Color(0xFF001849) // Blue 950
 val tertiaryContainerDark = Color(0xFF2855A8) // Blue 700
 val onTertiaryContainerDark = Color(0xFFE8EAF6) // Blue 50
-val errorDark = Color(0xFFFFB4AB) // Error 300
-val onErrorDark = Color(0xFF690005) // Error 800
-val errorContainerDark = Color(0xFF93000A) // Error 700
-val onErrorContainerDark = Color(0xFFFDEAEA) // Error 100
-val backgroundDark = Color(0xFF1A1B26) // Neutral 900
-val onBackgroundDark = Color(0xFFECEDF3) // Neutral 100
-val surfaceDark = Color(0xFF1A1B26) // Neutral 900
-val onSurfaceDark = Color(0xFFECEDF3) // Neutral 100
-val surfaceVariantDark = Color(0xFF444660) // NV 700
-val onSurfaceVariantDark = Color(0xFFBDBFCF) // NV 300
-val outlineDark = Color(0xFF767892) // NV 500
-val outlineVariantDark = Color(0xFF444660) // NV 700
+val errorDark = Color(0xFFFF453A)
+val onErrorDark = Color(0xFFFFFFFF)
+val errorContainerDark = Color(0xFF3B0B08)
+val onErrorContainerDark = Color(0xFFFFDAD6)
+val backgroundDark = Color(0xFF000000)
+val onBackgroundDark = Color(0xFFFFFFFF)
+val surfaceDark = Color(0xFF000000)
+val onSurfaceDark = Color(0xFFFFFFFF)
+val surfaceVariantDark = Color(0xFF2C2C2E)
+val onSurfaceVariantDark = Color(0xFF8D8D93)
+val outlineDark = Color(0xFF38383A)
+val outlineVariantDark = Color(0xFF38383A)
 val scrimDark = Color(0xFF000000)
-val inverseSurfaceDark = Color(0xFFECEDF3) // Neutral 100
-val inverseOnSurfaceDark = Color(0xFF2C2D3C) // Neutral 800
-val inversePrimaryDark = Color(0xFFC4430D) // = light-mode primary
-val surfaceDimDark = Color(0xFF0F1017) // Neutral 950
-val surfaceBrightDark = Color(0xFF3D3E50) // Neutral 700
-val surfaceContainerLowestDark = Color(0xFF0F1017) // Neutral 950
-val surfaceContainerLowDark = Color(0xFF1A1B26) // Neutral 900
-val surfaceContainerDark = Color(0xFF242533) // Interpolated 900↔800
-val surfaceContainerHighDark = Color(0xFF2C2D3C) // Neutral 800
-val surfaceContainerHighestDark = Color(0xFF3D3E50) // Neutral 700
+val inverseSurfaceDark = Color(0xFFF2F2F7)
+val inverseOnSurfaceDark = Color(0xFF000000)
+val inversePrimaryDark = Color(0xFFF05511)
+val surfaceDimDark = Color(0xFF000000)
+val surfaceBrightDark = Color(0xFF2C2C2E)
+val surfaceContainerLowestDark = Color(0xFF000000)
+val surfaceContainerLowDark = Color(0xFF1C1C1E)
+val surfaceContainerDark = Color(0xFF1C1C1E)
+val surfaceContainerHighDark = Color(0xFF1C1C1E)
+val surfaceContainerHighestDark = Color(0xFF1C1C1E)

@@ -16,36 +16,30 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme.colorScheme
-import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
 import org.jetbrains.compose.resources.stringResource
@@ -59,22 +53,29 @@ import org.meshtastic.core.navigation.MultiBackstack
 import org.meshtastic.core.navigation.NodesRoute
 import org.meshtastic.core.navigation.TopLevelDestination
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.connected
-import org.meshtastic.core.resources.connecting
-import org.meshtastic.core.resources.device_sleeping
-import org.meshtastic.core.resources.disconnected
-import org.meshtastic.core.resources.node_restarting
-import org.meshtastic.core.resources.reconnecting
+import org.meshtastic.core.resources.pangea_status_connecting
+import org.meshtastic.core.resources.pangea_status_disconnected
+import org.meshtastic.core.resources.pangea_status_no_radio
+import org.meshtastic.core.resources.pangea_status_pair_radio
+import org.meshtastic.core.resources.pangea_status_reconnect
+import org.meshtastic.core.resources.pangea_tab_chats
+import org.meshtastic.core.resources.pangea_tab_map
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosStatusPill
+import org.meshtastic.core.ui.ios.IosTab
+import org.meshtastic.core.ui.ios.IosTabBar
+import org.meshtastic.core.ui.ios.LocalIosBottomInset
+import org.meshtastic.core.ui.ios.LocalIosUnderTabBar
 import org.meshtastic.core.ui.navigation.icon
 import org.meshtastic.core.ui.viewmodel.UIViewModel
 
 /**
- * Shared adaptive navigation shell using [NavigationSuiteScaffold].
+ * The app shell, drawn like the Pangea iPhone app (design/PANGEA-BRAND.md v2): screens fill the window and the iOS 26
+ * floating tab bar sits over the bottom, with the radio status pill above it on Chats in standard mode.
  *
- * This implementation uses the [MultiBackstack] state holder to manage independent histories for each tab, aligning
- * with Navigation 3 best practices for state preservation during tab switching.
+ * Uses the [MultiBackstack] state holder for independent histories per tab, as Navigation 3 recommends.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun MeshtasticNavigationSuite(
     multiBackstack: MultiBackstack,
@@ -88,14 +89,13 @@ fun MeshtasticNavigationSuite(
     val unreadMessageCount by uiViewModel.unreadMessageCount.collectAsStateWithLifecycle()
     val selectedDevice by uiViewModel.currentDeviceAddressFlow.collectAsStateWithLifecycle()
     val expertModeEnabled by uiViewModel.expertModeEnabled.collectAsStateWithLifecycle()
-    val destinations = visibleDestinations(expertModeEnabled, hasRadio = DeviceAddress.parse(selectedDevice) != null)
-
-    val adaptiveInfo = currentWindowAdaptiveInfoV2()
+    val hasRadio = DeviceAddress.parse(selectedDevice) != null
+    val destinations = visibleDestinations(expertModeEnabled)
 
     val currentTabRoute = multiBackstack.currentTabRoute
     val topLevelDestination = TopLevelDestination.fromNavKey(currentTabRoute)
 
-    // Pangea: a tab hidden by standard mode lands on Chats, except Connect, which Settings → My Radio opens to pair.
+    // Pangea: a tab hidden by standard mode lands on Chats, except Connect, which pairing opens.
     LaunchedEffect(topLevelDestination, destinations) {
         val current = topLevelDestination ?: return@LaunchedEffect
         if (current !in destinations && current != TopLevelDestination.Connect) {
@@ -103,51 +103,154 @@ fun MeshtasticNavigationSuite(
         }
     }
 
-    val layoutType = NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(adaptiveInfo).coerceNavigationType()
-    val showLabels = layoutType == NavigationSuiteType.NavigationRail
+    // iOS shows the radio's state above the tab bar on Chats until the radio is ready; Expert Mode shows it on the
+    // Connect tab instead.
+    val restarting = nodeRestartExpected && connectionState != ConnectionState.Connected
+    val pill: RadioPill? =
+        when {
+            expertModeEnabled || topLevelDestination != TopLevelDestination.Messages -> null
 
-    NavigationSuiteScaffold(
-        modifier = modifier,
-        layoutType = layoutType,
-        navigationSuiteItems = {
-            destinations.forEach { destination ->
-                val isSelected = destination == topLevelDestination
-                item(
-                    selected = isSelected,
-                    onClick = { handleNavigation(destination, topLevelDestination, multiBackstack, uiViewModel) },
-                    icon = {
-                        NavigationIconContent(
-                            destination = destination,
-                            isSelected = isSelected,
-                            connectionState = connectionState,
-                            nodeRestartExpected = nodeRestartExpected,
-                            watchdogReconnectInFlight = watchdogReconnectInFlight,
-                            unreadMessageCount = unreadMessageCount,
-                            selectedDevice = selectedDevice,
-                            meshActivityFlow = uiViewModel.meshActivity,
-                        )
-                    },
-                    label =
-                    if (showLabels) {
-                        { Text(stringResource(destination.label)) }
-                    } else {
-                        null
-                    },
+            !hasRadio -> RadioPill.NotPaired
+
+            connectionState == ConnectionState.Connected -> null
+
+            connectionState == ConnectionState.Disconnected && !restarting && !watchdogReconnectInFlight ->
+                RadioPill.Disconnected
+
+            else -> RadioPill.Connecting
+        }
+
+    val chatsLabel = stringResource(Res.string.pangea_tab_chats)
+    val mapLabel = stringResource(Res.string.pangea_tab_map)
+    val tabs =
+        destinations.map { destination ->
+            // iOS names the tabs plainly: Chats rather than Messages in standard mode, and Map rather than Mesh Map.
+            val label =
+                when {
+                    destination == TopLevelDestination.Messages && !expertModeEnabled -> chatsLabel
+                    destination == TopLevelDestination.Map -> mapLabel
+                    else -> stringResource(destination.label)
+                }
+            IosTab(
+                key = destination,
+                label = label,
+                badge = if (destination == TopLevelDestination.Messages) unreadMessageCount else 0,
+            ) { tint ->
+                TabIcon(
+                    destination = destination,
+                    tint = tint,
+                    connectionState = connectionState,
+                    restarting = restarting,
+                    reconnecting = watchdogReconnectInFlight && !restarting,
+                    selectedDevice = selectedDevice,
+                    meshActivityFlow = uiViewModel.meshActivity,
                 )
             }
-        },
-    ) {
-        Row { content() }
+        }
+
+    val density = LocalDensity.current
+    var chromeHeight by remember { mutableStateOf(0.dp) }
+    val underTabBar = remember { mutableIntStateOf(0) }
+    Box(modifier.fillMaxSize()) {
+        CompositionLocalProvider(LocalIosBottomInset provides chromeHeight, LocalIosUnderTabBar provides underTabBar) {
+            // Older screens stop above the bar; iOS-style screens scroll under it (IosDrawsUnderTabBar).
+            Box(Modifier.fillMaxSize().padding(bottom = if (underTabBar.intValue > 0) 0.dp else chromeHeight)) {
+                content()
+            }
+        }
+        Column(
+            modifier =
+            Modifier.align(Alignment.BottomCenter)
+                .onSizeChanged { chromeHeight = with(density) { it.height.toDp() } }
+                .navigationBarsPadding()
+                .padding(bottom = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (pill != null) {
+                RadioStatusPill(pill) { multiBackstack.navigateTopLevel(TopLevelDestination.Connect.route) }
+                Spacer(Modifier.height(10.dp))
+            }
+            IosTabBar(
+                tabs = tabs,
+                selected = topLevelDestination,
+                onSelect = { tab ->
+                    handleNavigation(tab.key as TopLevelDestination, topLevelDestination, multiBackstack, uiViewModel)
+                },
+            )
+        }
     }
 }
 
-/**
- * Caps [NavigationSuiteType] so that expanded/extra-large widths still use a NavigationRail instead of promoting to a
- * permanent NavigationDrawer.
- */
-private fun NavigationSuiteType.coerceNavigationType(): NavigationSuiteType = when (this) {
-    NavigationSuiteType.NavigationDrawer -> NavigationSuiteType.NavigationRail
-    else -> this
+private enum class RadioPill {
+    NotPaired,
+    Disconnected,
+    Connecting,
+}
+
+@Composable
+private fun RadioStatusPill(pill: RadioPill, onPair: () -> Unit) {
+    when (pill) {
+        RadioPill.NotPaired ->
+            IosStatusPill(
+                text = stringResource(Res.string.pangea_status_no_radio),
+                leading = IosIcons.Antenna,
+                actionLabel = stringResource(Res.string.pangea_status_pair_radio),
+                onAction = onPair,
+            )
+
+        RadioPill.Disconnected ->
+            IosStatusPill(
+                text = stringResource(Res.string.pangea_status_disconnected),
+                leading = IosIcons.Antenna,
+                actionLabel = stringResource(Res.string.pangea_status_reconnect),
+                onAction = onPair,
+            )
+
+        RadioPill.Connecting -> IosStatusPill(text = stringResource(Res.string.pangea_status_connecting), busy = true)
+    }
+}
+
+/** The tab icons: iOS-style Map, Chats and Settings; Nodes and Connect keep their own (Connect animates). */
+@Composable
+private fun TabIcon(
+    destination: TopLevelDestination,
+    tint: Color,
+    connectionState: ConnectionState,
+    restarting: Boolean,
+    reconnecting: Boolean,
+    selectedDevice: String?,
+    meshActivityFlow: Flow<MeshActivity>,
+) {
+    val iconModifier = Modifier.size(26.dp)
+    when (destination) {
+        TopLevelDestination.Map -> Icon(IosIcons.Map, contentDescription = null, tint = tint, modifier = iconModifier)
+
+        TopLevelDestination.Messages ->
+            Icon(IosIcons.Bubble, contentDescription = null, tint = tint, modifier = iconModifier)
+
+        TopLevelDestination.Settings ->
+            Icon(IosIcons.Gear, contentDescription = null, tint = tint, modifier = iconModifier)
+
+        TopLevelDestination.Connect -> {
+            // An expected restart or a watchdog recovery shows as "connecting", not a scary disconnect.
+            val presented =
+                if ((restarting || reconnecting) && connectionState == ConnectionState.Disconnected) {
+                    ConnectionState.Connecting
+                } else {
+                    connectionState
+                }
+            CompositionLocalProvider(LocalContentColor provides tint) {
+                AnimatedConnectionsNavIcon(
+                    connectionState = presented,
+                    deviceType = DeviceType.fromAddress(selectedDevice ?: "NoDevice"),
+                    meshActivityFlow = meshActivityFlow,
+                )
+            }
+        }
+
+        TopLevelDestination.Nodes ->
+            Icon(vectorResource(destination.icon), contentDescription = null, tint = tint, modifier = iconModifier)
+    }
 }
 
 private fun handleNavigation(
@@ -189,102 +292,12 @@ private fun handleNavigation(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun NavigationIconContent(
-    destination: TopLevelDestination,
-    isSelected: Boolean,
-    connectionState: ConnectionState,
-    unreadMessageCount: Int,
-    selectedDevice: String?,
-    meshActivityFlow: Flow<MeshActivity>,
-    nodeRestartExpected: Boolean = false,
-    watchdogReconnectInFlight: Boolean = false,
-) {
-    val isConnectionsRoute = destination == TopLevelDestination.Connect
-    // An expected node restart (reboot-applying config save) presents as an in-progress state, not a scary
-    // red disconnect: the icon borrows the Connecting treatment and the tooltip says "Restarting". A
-    // watchdog-forced handshake recovery gets the same treatment with a "Reconnecting…" tooltip.
-    val restarting = nodeRestartExpected && connectionState != ConnectionState.Connected
-    val reconnecting = watchdogReconnectInFlight && !restarting
-    val presentedState =
-        if ((restarting || reconnecting) && connectionState == ConnectionState.Disconnected) {
-            ConnectionState.Connecting
-        } else {
-            connectionState
-        }
-
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-        tooltip = {
-            PlainTooltip {
-                Text(
-                    if (isConnectionsRoute) {
-                        connectionTooltipLabel(restarting, reconnecting, connectionState)
-                    } else {
-                        stringResource(destination.label)
-                    },
-                )
-            }
-        },
-        state = rememberTooltipState(),
-    ) {
-        if (isConnectionsRoute) {
-            AnimatedConnectionsNavIcon(
-                connectionState = presentedState,
-                deviceType = DeviceType.fromAddress(selectedDevice ?: "NoDevice"),
-                meshActivityFlow = meshActivityFlow,
-            )
-        } else {
-            BadgedBox(
-                badge = {
-                    if (destination == TopLevelDestination.Messages) {
-                        var lastNonZeroCount by remember { mutableIntStateOf(unreadMessageCount) }
-                        if (unreadMessageCount > 0) {
-                            lastNonZeroCount = unreadMessageCount
-                        }
-                        AnimatedVisibility(
-                            visible = unreadMessageCount > 0,
-                            enter = scaleIn() + fadeIn(),
-                            exit = scaleOut() + fadeOut(),
-                        ) {
-                            Badge { Text(lastNonZeroCount.toString()) }
-                        }
-                    }
-                },
-            ) {
-                Crossfade(isSelected, label = "BottomBarIcon") { isSelectedState ->
-                    Icon(
-                        imageVector = vectorResource(destination.icon),
-                        contentDescription = stringResource(destination.label),
-                        tint = if (isSelectedState) colorScheme.primary else LocalContentColor.current,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun connectionTooltipLabel(
-    restarting: Boolean,
-    reconnecting: Boolean,
-    connectionState: ConnectionState,
-): String = when {
-    restarting -> stringResource(Res.string.node_restarting)
-    reconnecting -> stringResource(Res.string.reconnecting)
-    connectionState == ConnectionState.Connected -> stringResource(Res.string.connected)
-    connectionState == ConnectionState.Connecting -> stringResource(Res.string.connecting)
-    connectionState == ConnectionState.DeviceSleep -> stringResource(Res.string.device_sleeping)
-    else -> stringResource(Res.string.disconnected)
-}
-
 /**
- * Pangea standard mode (Pangea-Apple ContentView): Chats and Settings only, with Connect kept until a radio is paired
- * so first launch can still pair one. Expert Mode shows every tab.
+ * Pangea standard mode (Pangea-Apple ContentView): Map, Chats and Settings, in that order. Pairing a radio goes through
+ * the status pill or Settings → My Radio, which open Connect. Expert Mode shows every tab.
  */
-internal fun visibleDestinations(expertMode: Boolean, hasRadio: Boolean): List<TopLevelDestination> = when {
-    expertMode -> TopLevelDestination.entries
-    hasRadio -> listOf(TopLevelDestination.Messages, TopLevelDestination.Settings)
-    else -> listOf(TopLevelDestination.Messages, TopLevelDestination.Settings, TopLevelDestination.Connect)
+internal fun visibleDestinations(expertMode: Boolean): List<TopLevelDestination> = if (expertMode) {
+    TopLevelDestination.entries
+} else {
+    listOf(TopLevelDestination.Map, TopLevelDestination.Messages, TopLevelDestination.Settings)
 }

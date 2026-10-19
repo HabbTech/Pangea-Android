@@ -16,25 +16,26 @@
  */
 package org.meshtastic.feature.intro
 
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 
 /**
- * A common bottom bar used across app introduction screens. Provides consistent "Skip" and "Configure" (or "Next")
- * buttons.
+ * The bottom of an introduction page, as on the Pangea iPhone app's setup pages: one full-width orange button for the
+ * main action, and the skip as a plain text link under it.
  *
  * @param onSkip Callback for the skip action.
  * @param onConfigure Callback for the main configure/next action.
- * @param skipButtonText Text for the skip button.
- * @param configureButtonText Text for the configure/next button.
- * @param showSkipButton Whether to display the skip button. Defaults to true.
+ * @param skipButtonText Text for the skip link.
+ * @param configureButtonText Text for the main button.
+ * @param showSkipButton Whether to show the skip link. Defaults to true.
  */
 @Composable
 internal fun IntroBottomBar(
@@ -44,13 +45,18 @@ internal fun IntroBottomBar(
     configureButtonText: String,
     showSkipButton: Boolean = true,
 ) {
-    BottomAppBar(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp)) {
+    Column(
+        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        IosButton(text = configureButtonText, onClick = onConfigure, large = true)
         if (showSkipButton) {
-            Button(onClick = onSkip) { Text(skipButtonText) }
+            IosButton(
+                text = skipButtonText,
+                onClick = onSkip,
+                style = IosButtonStyle.Plain,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
-
-        Spacer(modifier = Modifier.fillMaxWidth().weight(1f))
-
-        Button(onClick = onConfigure) { Text(configureButtonText) }
     }
 }

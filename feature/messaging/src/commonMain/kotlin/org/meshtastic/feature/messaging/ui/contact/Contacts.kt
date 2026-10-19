@@ -157,7 +157,6 @@ import org.meshtastic.feature.messaging.pangea.NewGroupDialog
 import org.meshtastic.feature.messaging.pangea.NewMessageSheet
 import org.meshtastic.feature.messaging.pangea.PangeaChatsViewModel
 import org.meshtastic.feature.messaging.pangea.PendingPangeaLink
-import org.meshtastic.feature.messaging.pangea.RadioStatusPill
 import org.meshtastic.feature.messaging.pangea.dmNodeNum
 import org.meshtastic.proto.ChannelSet
 import kotlin.time.Duration.Companion.days
@@ -357,10 +356,6 @@ fun ContactsScreen(
                     )
                 }
 
-                RadioStatusPill(
-                    connectionState = connectionState,
-                    expertMode = pangeaViewModel.expertModeEnabled.collectAsStateWithLifecycle().value,
-                )
                 SetupProfilePrompt()
                 GroupInvitesSection(viewModel = pangeaViewModel, onJoin = onNavigateToMessages)
 

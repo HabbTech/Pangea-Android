@@ -88,6 +88,7 @@ import org.meshtastic.core.resources.pangea_choose_photo
 import org.meshtastic.core.resources.pangea_display_name
 import org.meshtastic.core.resources.pangea_edit_profile
 import org.meshtastic.core.resources.pangea_my_profile
+import org.meshtastic.core.resources.pangea_profile_save_restarts_radio
 import org.meshtastic.core.resources.pangea_profile_shared_with
 import org.meshtastic.core.resources.pangea_remove_photo
 import org.meshtastic.core.resources.pangea_setup_profile
@@ -267,6 +268,15 @@ fun ProfileEditorSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // A new name is written to the radio, which restarts to use it: say so before Save.
+            val currentName = state.profile.displayName.ifEmpty { state.radioName }
+            if (state.code != null && ProfileCard.cleanName(name) != currentName) {
+                Text(
+                    stringResource(Res.string.pangea_profile_save_restarts_radio),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 16.dp)) {
                 TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
                 Button(

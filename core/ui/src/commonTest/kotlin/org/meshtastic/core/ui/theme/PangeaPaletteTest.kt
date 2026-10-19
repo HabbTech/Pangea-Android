@@ -29,9 +29,12 @@ import kotlin.test.assertEquals
 class PangeaPaletteTest {
 
     @Test
-    fun primaryRolesAreDarkenedFossil() {
-        assertEquals(Color(0xFFC4430D), primaryLight, "light primary must be darkened Fossil (AA 4.68)")
-        assertEquals(Color(0xFFFF9F6B), primaryDark, "dark primary must be light Fossil (AA 8.48)")
+    fun primaryRolesAreFossilAsOnIos() {
+        // v2 (Ben, 2026-10-18): Fossil itself with white text in light and dark, matching the Pangea iPhone app.
+        assertEquals(Color(0xFFF05511), primaryLight, "light primary must be Fossil, as on iOS")
+        assertEquals(Color(0xFFF05511), primaryDark, "dark primary must be Fossil, as on iOS")
+        assertEquals(Color(0xFFFFFFFF), onPrimaryLight)
+        assertEquals(Color(0xFFFFFFFF), onPrimaryDark)
     }
 
     @Test
