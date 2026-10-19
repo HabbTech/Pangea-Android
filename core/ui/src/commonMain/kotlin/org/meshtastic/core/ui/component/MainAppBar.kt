@@ -19,10 +19,13 @@ package org.meshtastic.core.ui.component
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,9 +43,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.model.Node
@@ -52,12 +57,14 @@ import org.meshtastic.core.resources.about_pangea
 import org.meshtastic.core.resources.event_info
 import org.meshtastic.core.resources.ic_meshtastic
 import org.meshtastic.core.resources.navigate_back
+import org.meshtastic.core.resources.pangea_logo
 import org.meshtastic.core.resources.power_mode_quick_access
 import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.CalendarMonth
 import org.meshtastic.core.ui.icon.Check
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.IosGlassButton
 import org.meshtastic.core.ui.theme.LocalEventTheme
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
@@ -180,6 +187,51 @@ private fun PowerModeQuickAccess() {
                 null
             },
         )
+    }
+    if (showSheet && eventEdition != null) {
+        EventInfoSheet(edition = eventEdition, onDismiss = { showSheet = false })
+    }
+}
+
+/**
+ * The round logo button at the top left of Chats and Settings, as on the Pangea iPhone app: the full-colour logo in a
+ * glass circle. Tapping it opens the Power Mode menu (P8), where the Material app bar shows a lightning icon.
+ */
+@Composable
+fun PangeaLogoButton(modifier: Modifier = Modifier) {
+    val state = LocalPowerModeMenu.current
+    val eventEdition = LocalEventBranding.current
+    var showMenu by remember { mutableStateOf(false) }
+    var showSheet by remember { mutableStateOf(false) }
+    Box(modifier) {
+        IosGlassButton(
+            onClick = { if (state != null) showMenu = true },
+            contentDescription =
+            state?.let {
+                stringResource(Res.string.power_mode_quick_access, stringResource(it.currentMode.labelRes))
+            },
+        ) {
+            Image(
+                painter = painterResource(Res.drawable.pangea_logo),
+                contentDescription = null,
+                modifier = Modifier.size(30.dp).clip(CircleShape),
+            )
+        }
+        if (state != null) {
+            PowerModeMenu(
+                expanded = showMenu,
+                state = state,
+                onDismiss = { showMenu = false },
+                onShowEventInfo =
+                if (eventEdition != null) {
+                    fun() {
+                        showSheet = true
+                    }
+                } else {
+                    null
+                },
+            )
+        }
     }
     if (showSheet && eventEdition != null) {
         EventInfoSheet(edition = eventEdition, onDismiss = { showSheet = false })

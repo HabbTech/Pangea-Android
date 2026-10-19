@@ -50,6 +50,7 @@ import org.meshtastic.core.resources.must_update
 import org.meshtastic.core.ui.component.MeshtasticAppShell
 import org.meshtastic.core.ui.component.MeshtasticNavDisplay
 import org.meshtastic.core.ui.component.MeshtasticNavigationSuite
+import org.meshtastic.core.ui.ios.LocalIosUnderTabBar
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
 import org.meshtastic.core.ui.util.PowerModeMenuState
 import org.meshtastic.core.ui.viewmodel.UIViewModel
@@ -121,7 +122,17 @@ fun MainScreen() {
                         firmwareGraph(backStack)
                         wifiProvisionGraph(backStack)
                     },
-                    modifier = Modifier.fillMaxSize().recalculateWindowInsets().safeDrawingPadding(),
+                    // iOS-style screens run under the status bar and tab bar and pad themselves (core/ui/ios).
+                    modifier =
+                    Modifier.fillMaxSize()
+                        .recalculateWindowInsets()
+                        .then(
+                            if (LocalIosUnderTabBar.current.intValue > 0) {
+                                Modifier
+                            } else {
+                                Modifier.safeDrawingPadding()
+                            },
+                        ),
                     analytics = koinInject<PlatformAnalytics>(),
                 )
             }

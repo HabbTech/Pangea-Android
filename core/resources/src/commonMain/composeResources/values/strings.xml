@@ -1435,6 +1435,8 @@
     <string name="pangea_join_group_prompt">Join the group %1$s? Everyone in it can read what you send there.</string>
     <string name="pangea_leave_group">Leave Group</string>
     <string name="pangea_leave_group_confirm">Leave %1$s? Its messages will be removed from this phone.</string>
+    <string name="pangea_message_someone">Message Someone</string>
+    <string name="pangea_mute">Mute</string>
     <string name="pangea_my_profile">My Profile</string>
     <string name="pangea_my_radio">My Radio</string>
     <string name="pangea_new_group">New Group</string>
@@ -1442,6 +1444,7 @@
     <string name="pangea_new_message_hint">@code, or paste a link</string>
     <string name="pangea_nickname">Nickname</string>
     <string name="pangea_nickname_hint">Only you see this.</string>
+    <string name="pangea_no_chats_yet">No Chats Yet</string>
     <string name="pangea_no_radio_paired">No radio paired</string>
     <string name="pangea_open_chat">Message</string>
     <string name="pangea_pair_different_radio">Pair a Different Radio</string>
@@ -1451,6 +1454,7 @@
     <string name="pangea_photo_connect_radio">Connect your radio to get photos.</string>
     <string name="pangea_photo_offer">They shared a profile photo.</string>
     <string name="pangea_photo_waiting_radio">Waiting for your radioâ€¦</string>
+    <string name="pangea_pin">Pin</string>
     <string name="pangea_profile">Profile</string>
     <string name="pangea_profile_save_restarts_radio">Saving restarts your radio so it can use your new name. It reconnects on its own.</string>
     <string name="pangea_profile_shared_with">Your name, photo and emoji are shared with people you message, your saved contacts and your groups. Never with Everyone Nearby.</string>
@@ -1468,6 +1472,7 @@
     <string name="pangea_share_group">Share Group</string>
     <string name="pangea_share_group_subtitle">Anyone who scans this can read and send messages in this group.</string>
     <string name="pangea_show_qr">QR Code</string>
+    <string name="pangea_start_group">Start a Group</string>
     <string name="pangea_status_connecting">Connecting to your radio…</string>
     <string name="pangea_status_couldnt_send_privately">Couldn't send privately yet. Try again in a minute.</string>
     <string name="pangea_status_delivered">Delivered</string>
@@ -1489,6 +1494,7 @@
     <string name="pangea_status_too_large">This message is too long to send.</string>
     <string name="pangea_tab_chats">Chats</string>
     <string name="pangea_tab_map">Map</string>
+    <string name="pangea_unpin">Unpin</string>
     <string name="pangea_unreachable">%1$s didn't answer. Make sure their radio is on and in range, then try again.</string>
     <string name="pangea_use_symbol">Use Symbol</string>
     <string name="pangea_what_is">What is Pangea?</string>

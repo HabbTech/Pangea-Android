@@ -19,8 +19,11 @@ package org.meshtastic.core.ui.component
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -154,7 +157,9 @@ fun MeshtasticNavigationSuite(
     Box(modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalIosBottomInset provides chromeHeight, LocalIosUnderTabBar provides underTabBar) {
             // Older screens stop above the bar; iOS-style screens scroll under it (IosDrawsUnderTabBar).
-            Box(Modifier.fillMaxSize().padding(bottom = if (underTabBar.intValue > 0) 0.dp else chromeHeight)) {
+            val navigationBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val olderScreenPadding = (chromeHeight - navigationBar).coerceAtLeast(0.dp)
+            Box(Modifier.fillMaxSize().padding(bottom = if (underTabBar.intValue > 0) 0.dp else olderScreenPadding)) {
                 content()
             }
         }
