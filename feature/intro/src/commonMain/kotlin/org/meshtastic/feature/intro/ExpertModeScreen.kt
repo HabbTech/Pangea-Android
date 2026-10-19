@@ -16,24 +16,9 @@
  */
 package org.meshtastic.feature.intro
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.intro_expert_advanced_user
@@ -85,33 +70,12 @@ internal fun ExpertModeScreen(onContinue: () -> Unit) {
             ),
         )
 
-    Scaffold(
-        bottomBar = {
-            IntroBottomBar(
-                onSkip = {},
-                onConfigure = onContinue,
-                skipButtonText = "",
-                configureButtonText = stringResource(Res.string.intro_expert_continue),
-                showSkipButton = false,
-            )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier =
-            Modifier.fillMaxSize().padding(innerPadding).padding(16.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(Res.string.intro_expert_mode_title),
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            rows.forEach { row ->
-                FeatureRow(feature = row)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
+    IosSetupPage(
+        title = stringResource(Res.string.intro_expert_mode_title),
+        primaryLabel = stringResource(Res.string.intro_expert_continue),
+        onPrimary = onContinue,
+    ) {
+        rows.forEach { row -> FeatureRow(feature = row) }
     }
 }
 

@@ -16,6 +16,8 @@
  */
 package org.meshtastic.feature.intro
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
@@ -61,58 +63,76 @@ internal fun EntryProviderScope<NavKey>.introGraph(
     }
 
     entry<Bluetooth> {
-        val permissions = LocalIntroPermissions.current
-        BluetoothScreen(
-            status = permissions.bluetooth.status,
-            requiresLocation = permissions.bluetoothRequiresLocation,
-            onSkip = { navigateToNext(Bluetooth, bluetoothRequiresLocation = permissions.bluetoothRequiresLocation) },
-            onPrimaryAction = {
-                onPrimaryAction(
-                    state = permissions.bluetooth,
-                    current = Bluetooth,
-                    bluetoothRequiresLocation = permissions.bluetoothRequiresLocation,
-                )
-            },
-        )
+        WithBack(backStack) {
+            val permissions = LocalIntroPermissions.current
+            BluetoothScreen(
+                status = permissions.bluetooth.status,
+                requiresLocation = permissions.bluetoothRequiresLocation,
+                onSkip = {
+                    navigateToNext(Bluetooth, bluetoothRequiresLocation = permissions.bluetoothRequiresLocation)
+                },
+                onPrimaryAction = {
+                    onPrimaryAction(
+                        state = permissions.bluetooth,
+                        current = Bluetooth,
+                        bluetoothRequiresLocation = permissions.bluetoothRequiresLocation,
+                    )
+                },
+            )
+        }
     }
 
     entry<Location> {
-        val permissions = LocalIntroPermissions.current
-        LocationScreen(
-            status = permissions.location.status,
-            onSkip = { navigateToNext(Location) },
-            onPrimaryAction = { onPrimaryAction(permissions.location, Location) },
-        )
+        WithBack(backStack) {
+            val permissions = LocalIntroPermissions.current
+            LocationScreen(
+                status = permissions.location.status,
+                onSkip = { navigateToNext(Location) },
+                onPrimaryAction = { onPrimaryAction(permissions.location, Location) },
+            )
+        }
     }
 
     entry<Notifications> {
-        val permissions = LocalIntroPermissions.current
-        val notificationPermission = permissions.notification
-        // Null means the platform doesn't gate notifications at runtime, so there is nothing to configure here.
-        val status = notificationPermission?.status ?: PermissionStatus.GRANTED
-        NotificationsScreen(
-            status = status,
-            onSkip = { navigateToNext(Notifications, permissionsGranted = false) },
-            onPrimaryAction = {
-                if (notificationPermission == null) {
-                    navigateToNext(Notifications, permissionsGranted = true)
-                } else {
-                    onPrimaryAction(notificationPermission, Notifications)
-                }
-            },
-        )
+        WithBack(backStack) {
+            val permissions = LocalIntroPermissions.current
+            val notificationPermission = permissions.notification
+            // Null means the platform doesn't gate notifications at runtime, so there is nothing to configure here.
+            val status = notificationPermission?.status ?: PermissionStatus.GRANTED
+            NotificationsScreen(
+                status = status,
+                onSkip = { navigateToNext(Notifications, permissionsGranted = false) },
+                onPrimaryAction = {
+                    if (notificationPermission == null) {
+                        navigateToNext(Notifications, permissionsGranted = true)
+                    } else {
+                        onPrimaryAction(notificationPermission, Notifications)
+                    }
+                },
+            )
+        }
     }
 
     entry<CriticalAlerts> {
-        val settingsNavigator = LocalIntroSettingsNavigator.current
-        CriticalAlertsScreen(
-            onSkip = { navigateToNext(CriticalAlerts) },
-            onConfigure = {
-                settingsNavigator.openCriticalAlertsSettings()
-                navigateToNext(CriticalAlerts)
-            },
-        )
+        WithBack(backStack) {
+            val settingsNavigator = LocalIntroSettingsNavigator.current
+            CriticalAlertsScreen(
+                onSkip = { navigateToNext(CriticalAlerts) },
+                onConfigure = {
+                    settingsNavigator.openCriticalAlertsSettings()
+                    navigateToNext(CriticalAlerts)
+                },
+            )
+        }
     }
 
-    entry<ExpertMode> { ExpertModeScreen(onContinue = { navigateToNext(ExpertMode) }) }
+    entry<ExpertMode> { WithBack(backStack) { ExpertModeScreen(onContinue = { navigateToNext(ExpertMode) }) } }
+
+    entry<AllSet> { WithBack(backStack) { AllSetScreen(onStart = onDone) } }
+}
+
+/** Gives a setup page its back button (every page after Welcome). */
+@Composable
+private fun WithBack(backStack: NavBackStack<NavKey>, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalIntroBack provides { backStack.removeLastOrNull() }, content = content)
 }

@@ -16,39 +16,27 @@
  */
 package org.meshtastic.feature.intro
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.communicate_off_the_grid
-import org.meshtastic.core.resources.create_your_own_networks
-import org.meshtastic.core.resources.easily_set_up_private_mesh_networks
 import org.meshtastic.core.resources.get_started
-import org.meshtastic.core.resources.intro_welcome
-import org.meshtastic.core.resources.meshtastic
-import org.meshtastic.core.resources.share_your_location_in_real_time
-import org.meshtastic.core.resources.stay_connected_anywhere
-import org.meshtastic.core.resources.track_and_share_locations
-import org.meshtastic.core.ui.icon.Antenna
-import org.meshtastic.core.ui.icon.MeshHub
+import org.meshtastic.core.resources.pangea_welcome_offgrid_desc
+import org.meshtastic.core.resources.pangea_welcome_offgrid_title
+import org.meshtastic.core.resources.pangea_welcome_private_desc
+import org.meshtastic.core.resources.pangea_welcome_private_title
+import org.meshtastic.core.resources.pangea_welcome_ready_desc
+import org.meshtastic.core.resources.pangea_welcome_ready_title
+import org.meshtastic.core.resources.pangea_welcome_title
+import org.meshtastic.core.ui.icon.CheckCircle
 import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.NearMe
+import org.meshtastic.core.ui.icon.ShieldCheck
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.LocalAnalyticsIntroProvider
 
@@ -63,56 +51,29 @@ internal fun WelcomeScreen(onGetStarted: () -> Unit) {
     val features =
         listOf(
             FeatureUIData(
-                icon = MeshtasticIcons.Antenna,
-                titleRes = Res.string.stay_connected_anywhere,
-                subtitleRes = Res.string.communicate_off_the_grid,
+                icon = IosIcons.Bubble,
+                titleRes = Res.string.pangea_welcome_offgrid_title,
+                subtitleRes = Res.string.pangea_welcome_offgrid_desc,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.MeshHub,
-                titleRes = Res.string.create_your_own_networks,
-                subtitleRes = Res.string.easily_set_up_private_mesh_networks,
+                icon = MeshtasticIcons.ShieldCheck,
+                titleRes = Res.string.pangea_welcome_private_title,
+                subtitleRes = Res.string.pangea_welcome_private_desc,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.NearMe,
-                titleRes = Res.string.track_and_share_locations,
-                subtitleRes = Res.string.share_your_location_in_real_time,
+                icon = MeshtasticIcons.CheckCircle,
+                titleRes = Res.string.pangea_welcome_ready_title,
+                subtitleRes = Res.string.pangea_welcome_ready_desc,
             ),
         )
-
-    Scaffold(
-        bottomBar = {
-            IntroBottomBar(
-                onSkip = {},
-                onConfigure = onGetStarted,
-                skipButtonText = "",
-                configureButtonText = stringResource(Res.string.get_started),
-                showSkipButton = false,
-            )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier =
-            Modifier.fillMaxSize().padding(innerPadding).padding(16.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(Res.string.intro_welcome),
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = stringResource(Res.string.meshtastic),
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(32.dp))
-            features.forEach { feature ->
-                FeatureRow(feature = feature)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            analyticsIntro()
-        }
+    IosSetupPage(
+        title = stringResource(Res.string.pangea_welcome_title),
+        primaryLabel = stringResource(Res.string.get_started),
+        onPrimary = onGetStarted,
+    ) {
+        features.forEach { feature -> FeatureRow(feature = feature) }
+        Spacer(modifier = Modifier.height(24.dp))
+        analyticsIntro()
     }
 }
 

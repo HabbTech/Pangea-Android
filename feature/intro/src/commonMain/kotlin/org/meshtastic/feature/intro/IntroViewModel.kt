@@ -50,7 +50,8 @@ class IntroViewModel : ViewModel() {
         is Location -> Notifications
         is Notifications -> if (allPermissionsGranted) CriticalAlerts else ExpertMode
         is CriticalAlerts -> ExpertMode
-        is ExpertMode -> null
+        is ExpertMode -> AllSet
+        is AllSet -> null
         else -> null
     }
 }

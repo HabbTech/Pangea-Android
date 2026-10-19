@@ -31,3 +31,6 @@ import kotlinx.serialization.Serializable
 
 /** Informational screen describing Expert Mode; final step of the intro flow. */
 @Serializable data object ExpertMode : NavKey
+
+/** Pangea: "You're All Set", the last page, as on the iPhone app. */
+@Serializable data object AllSet : NavKey

@@ -1330,6 +1330,8 @@ packet_authenticity_unsupported
 pangea_add_nickname
 pangea_add_to_contacts
 pangea_all_emoji
+pangea_all_set_desc
+pangea_all_set_title
 pangea_app_settings
 pangea_appearance
 pangea_appearance_footer
@@ -1462,6 +1464,7 @@ pangea_share_group_subtitle
 pangea_show_qr
 pangea_start_chat
 pangea_start_group
+pangea_start_messaging
 pangea_status_connecting
 pangea_status_couldnt_send_privately
 pangea_status_delivered
@@ -1486,6 +1489,13 @@ pangea_tab_map
 pangea_unpin
 pangea_unreachable
 pangea_use_symbol
+pangea_welcome_offgrid_desc
+pangea_welcome_offgrid_title
+pangea_welcome_private_desc
+pangea_welcome_private_title
+pangea_welcome_ready_desc
+pangea_welcome_ready_title
+pangea_welcome_title
 pangea_what_is
 pangea_what_is_description
 pangea_you

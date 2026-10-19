@@ -20,15 +20,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,8 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -49,6 +43,7 @@ import org.meshtastic.core.resources.skip
 import org.meshtastic.core.ui.icon.AppSettingsAlt
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.PermissionStatus
 
 /**
@@ -101,47 +96,19 @@ internal fun PermissionScreenLayout(
             -> configureButtonTextRes
         }
 
-    Scaffold(
-        bottomBar = {
-            IntroBottomBar(
-                onSkip = onSkip,
-                onConfigure = onPrimaryAction,
-                configureButtonText = stringResource(primaryLabelRes),
-                skipButtonText = stringResource(Res.string.skip),
-            )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier =
-            Modifier.fillMaxSize().padding(innerPadding).padding(16.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = stringResource(headlineRes),
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(descriptionRes),
-                style =
-                MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                ),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            // Directly under the description, above the feature list. Placed last it sat below up to four feature
-            // rows in a scrolling column — off-screen on a typical phone, so a user who had just declined saw the
-            // button label change and no reason why. It renders only after a denial, so the happy path pays nothing.
-            PermissionNotice(status = status, deniedNoticeRes = deniedNoticeRes, blockedNoticeRes = blockedNoticeRes)
-            features.forEach { feature ->
-                FeatureRow(feature = feature)
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-            additionalContent?.invoke()
-        }
+    IosSetupPage(
+        title = stringResource(headlineRes),
+        description = stringResource(descriptionRes),
+        primaryLabel = stringResource(primaryLabelRes),
+        onPrimary = onPrimaryAction,
+        skipLabel = stringResource(Res.string.skip),
+        onSkip = onSkip,
+    ) {
+        // Directly under the description, above the feature list, so a user who has just declined sees why the
+        // button changed. It renders only after a denial, so the happy path pays nothing.
+        PermissionNotice(status = status, deniedNoticeRes = deniedNoticeRes, blockedNoticeRes = blockedNoticeRes)
+        features.forEach { feature -> FeatureRow(feature = feature) }
+        additionalContent?.invoke()
     }
 }
 
@@ -175,7 +142,7 @@ private fun PermissionNotice(
     Column(modifier = Modifier.fillMaxWidth()) {
         Surface(
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            color = Ios.colors.fieldFill,
             modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
         ) {
             Row(
@@ -183,11 +150,11 @@ private fun PermissionNotice(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(imageVector = icon, contentDescription = null, tint = Ios.colors.secondaryLabel)
                 Text(
                     text = stringResource(noticeRes),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                     modifier = Modifier.weight(1f),
                 )
             }

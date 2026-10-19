@@ -89,9 +89,9 @@ class IntroViewModelTest {
     }
 
     @Test
-    fun testExpertModeIsTerminal() {
-        val next = viewModel.getNextKey(ExpertMode, allPermissionsGranted = true)
-        assertNull(next, "ExpertMode is the final step and should not navigate further")
+    fun testExpertModeLeadsToAllSet() {
+        assertEquals(AllSet, viewModel.getNextKey(ExpertMode, allPermissionsGranted = true))
+        assertNull(viewModel.getNextKey(AllSet, allPermissionsGranted = true), "All Set is the final step")
     }
 
     @Test
@@ -99,12 +99,13 @@ class IntroViewModelTest {
         // Exhaustive: from every non-terminal step, walking the flow with either permission outcome ends at ExpertMode.
         for (granted in listOf(true, false)) {
             var key: androidx.navigation3.runtime.NavKey? = Welcome
-            var last: androidx.navigation3.runtime.NavKey = Welcome
+            val seen = mutableListOf<androidx.navigation3.runtime.NavKey>()
             while (key != null) {
-                last = key
+                seen += key
                 key = viewModel.getNextKey(key, allPermissionsGranted = granted)
             }
-            assertEquals(ExpertMode, last, "Flow with permissionsGranted=$granted must end on ExpertMode")
+            assertEquals(AllSet, seen.last(), "Flow with permissionsGranted=$granted must end on All Set")
+            assertEquals(ExpertMode, seen[seen.size - 2], "Expert Mode must come just before All Set")
         }
     }
 }

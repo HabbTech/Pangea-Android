@@ -1366,6 +1366,8 @@
     <string name="pangea_add_nickname">Add a nickname</string>
     <string name="pangea_add_to_contacts">Add to Contacts</string>
     <string name="pangea_all_emoji">All Emoji</string>
+    <string name="pangea_all_set_desc">Pair your radio next, then you can message anyone nearby with Pangea, no cell service needed.</string>
+    <string name="pangea_all_set_title">You're All Set</string>
     <string name="pangea_app_settings">App Settings</string>
     <string name="pangea_appearance">Appearance</string>
     <string name="pangea_appearance_footer">Match Device follows your device's Light or Dark setting.</string>
@@ -1498,6 +1500,7 @@
     <string name="pangea_show_qr">Show QR</string>
     <string name="pangea_start_chat">Start Chat</string>
     <string name="pangea_start_group">Start a Group</string>
+    <string name="pangea_start_messaging">Start Messaging</string>
     <string name="pangea_status_connecting">Connecting to your radio…</string>
     <string name="pangea_status_couldnt_send_privately">Couldn't send privately yet. Try again in a minute.</string>
     <string name="pangea_status_delivered">Delivered</string>
@@ -1522,6 +1525,13 @@
     <string name="pangea_unpin">Unpin</string>
     <string name="pangea_unreachable">%1$s didn't answer. Make sure their radio is on and in range, then try again.</string>
     <string name="pangea_use_symbol">Use Symbol</string>
+    <string name="pangea_welcome_offgrid_desc">Pangea radios talk to each other directly, so you can chat where phones have no signal.</string>
+    <string name="pangea_welcome_offgrid_title">Message Without Cell Service</string>
+    <string name="pangea_welcome_private_desc">Your chats are encrypted, and Pangea doesn't collect personal information.</string>
+    <string name="pangea_welcome_private_title">Private by Default</string>
+    <string name="pangea_welcome_ready_desc">We'll help you pair your radio and set it up for you. No technical settings needed.</string>
+    <string name="pangea_welcome_ready_title">Ready in Minutes</string>
+    <string name="pangea_welcome_title">Welcome to Pangea</string>
     <string name="pangea_what_is">What is Pangea?</string>
     <string name="pangea_what_is_description">Off-grid, decentralized, mesh network that runs on affordable, low-power radios.</string>
     <string name="pangea_you">You</string>
