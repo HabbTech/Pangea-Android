@@ -16,41 +16,25 @@
  */
 package org.meshtastic.feature.settings
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.ImageRequest
-import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.about
@@ -65,52 +49,32 @@ import org.meshtastic.core.resources.license_notice
 import org.meshtastic.core.resources.pangea_buy_radios
 import org.meshtastic.core.resources.pangea_buy_radios_description
 import org.meshtastic.core.resources.pangea_copyright_notice
+import org.meshtastic.core.resources.pangea_solar_node
 import org.meshtastic.core.resources.pangea_what_is
 import org.meshtastic.core.resources.pangea_what_is_description
 import org.meshtastic.core.resources.project_information
 import org.meshtastic.core.resources.website
-import org.meshtastic.core.ui.component.ListItem
-import org.meshtastic.core.ui.component.MainAppBar
-import org.meshtastic.core.ui.icon.ChevronRight
-import org.meshtastic.core.ui.icon.Code
-import org.meshtastic.core.ui.icon.HelpOutline
-import org.meshtastic.core.ui.icon.Info
-import org.meshtastic.core.ui.icon.Language
-import org.meshtastic.core.ui.icon.Memory
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Notes
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosPushedColumnScreen
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.iosPressable
+import org.meshtastic.core.ui.ios.iosRowSeparator
 import org.meshtastic.core.ui.theme.AppTheme
-import org.meshtastic.feature.settings.component.ExpressiveSection
-
-private const val CAROUSEL_INTERVAL_MS = 3000L
-private const val CROSSFADE_DURATION_MS = 500
-private val CAROUSEL_IMAGE_WIDTH = 110.dp
-private val CAROUSEL_IMAGE_HEIGHT = 130.dp
 
 // Pangea (Pangea-Apple About.swift): complete radios from AlloNode, habb.tech, and Pangea's own guides. The source
-// link stays, pointed at this fork, as the GPL notice above asks.
+// link stays, pointed at this fork, as the GPL notice below asks.
 private const val HARDWARE_URL = "https://www.etsy.com/shop/AlloNode"
 private const val GITHUB_REPO_URL = "https://github.com/HabbTech/Pangea-Android"
 private const val WEBSITE_URL = "https://habb.tech/"
 private const val DOCS_URL = "https://github.com/HabbTech/Pangea-Documentation/tree/main"
 private const val LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 
-private data class PopularDevice(val name: String, val svgFileName: String)
-
-private val POPULAR_DEVICES =
-    listOf(
-        PopularDevice(name = "T-Deck Plus", svgFileName = "t-deck.svg"),
-        PopularDevice(name = "R1 Neo", svgFileName = "muzi_r1_neo.svg"),
-        PopularDevice(name = "T1000-E Tracker", svgFileName = "tracker-t1000-e.svg"),
-        PopularDevice(name = "Station G2", svgFileName = "station-g2.svg"),
-        PopularDevice(name = "WisMesh Tag", svgFileName = "rak_wismesh_tag.svg"),
-        PopularDevice(name = "Mesh Pocket", svgFileName = "heltec_mesh_pocket.svg"),
-        PopularDevice(name = "ThinkNode M1", svgFileName = "thinknode_m1.svg"),
-    )
-
 /**
- * About screen displaying general information about Meshtastic, hardware recommendations, repository and version
- * details, acknowledgements, and project links.
+ * About, drawn like the Pangea iPhone app: what Pangea is, the AlloNode radios, the version, and the project links.
+ * Android keeps its source link, acknowledgements and licence rows and the copyright notices, as the GPL asks.
  */
 @Composable
 fun AboutScreen(
@@ -120,115 +84,72 @@ fun AboutScreen(
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
-
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            MainAppBar(
-                title = stringResource(Res.string.about),
-                canNavigateUp = true,
-                onNavigateUp = onNavigateUp,
-                ourNode = null,
-                showNodeChip = false,
-                onClickChip = {},
-                actions = {},
+    val c = Ios.colors
+    IosPushedColumnScreen(title = stringResource(Res.string.about), onBack = onNavigateUp, modifier = modifier) {
+        IosSection(header = stringResource(Res.string.pangea_what_is)) {
+            Text(
+                stringResource(Res.string.pangea_what_is_description),
+                style = Ios.type.title3,
+                color = c.label,
+                modifier = Modifier.padding(IosInset),
             )
-        },
-    ) { innerPadding ->
-        Column(
-            modifier =
-            Modifier.fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            WhatIsMeshtasticSection()
-            AppsSection(
-                appVersionName = appVersionName,
-                onNavigateToAcknowledgements = onNavigateToAcknowledgements,
-                onOpenHardwareLink = { uriHandler.openUri(HARDWARE_URL) },
-                onOpenRepoLink = { uriHandler.openUri(GITHUB_REPO_URL) },
-            )
-            ProjectInformationSection(
-                onOpenWebsite = { uriHandler.openUri(WEBSITE_URL) },
-                onOpenDocs = { uriHandler.openUri(DOCS_URL) },
-                onOpenLicense = { uriHandler.openUri(LICENSE_URL) },
-            )
-            CopyrightFooter()
         }
+        IosSection(header = stringResource(Res.string.apps)) {
+            BuyRadiosRow(onClick = { uriHandler.openUri(HARDWARE_URL) })
+            IosRow(
+                title = stringResource(Res.string.github_repository),
+                accessory = IosAccessory.Chevron,
+                onClick = { uriHandler.openUri(GITHUB_REPO_URL) },
+            )
+            IosRow(title = stringResource(Res.string.app_version), value = appVersionName)
+            IosRow(
+                title = stringResource(Res.string.acknowledgements),
+                accessory = IosAccessory.Chevron,
+                onClick = onNavigateToAcknowledgements,
+            )
+        }
+        IosSection(header = stringResource(Res.string.project_information)) {
+            listOf(
+                Res.string.website to WEBSITE_URL,
+                Res.string.documentation to DOCS_URL,
+                Res.string.license to LICENSE_URL,
+            )
+                .forEach { (label, url) ->
+                    IosRow(
+                        title = stringResource(label),
+                        titleColor = c.tint,
+                        titleStyle = Ios.type.title2,
+                        onClick = { uriHandler.openUri(url) },
+                    )
+                }
+        }
+        CopyrightFooter()
     }
 }
 
+/** The AlloNode solar router with "Buy Complete Radios", as the iPhone app shows it. */
 @Composable
-private fun WhatIsMeshtasticSection(modifier: Modifier = Modifier) {
-    ExpressiveSection(title = stringResource(Res.string.pangea_what_is), modifier = modifier) {
-        Text(
-            text = stringResource(Res.string.pangea_what_is_description),
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+private fun BuyRadiosRow(onClick: () -> Unit) {
+    val c = Ios.colors
+    Row(
+        Modifier.iosRowSeparator().fillMaxWidth().iosPressable(onClick = onClick).padding(IosInset),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Image(
+            painter = painterResource(Res.drawable.pangea_solar_node),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.width(75.dp).clip(RoundedCornerShape(5.dp)),
         )
-    }
-}
-
-@Composable
-private fun AppsSection(
-    appVersionName: String,
-    onNavigateToAcknowledgements: () -> Unit,
-    onOpenHardwareLink: () -> Unit,
-    onOpenRepoLink: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ExpressiveSection(title = stringResource(Res.string.apps), modifier = modifier) {
-        NeedHardwareRow(onOpenHardwareLink = onOpenHardwareLink)
-        ListItem(
-            text = stringResource(Res.string.github_repository),
-            leadingIcon = MeshtasticIcons.Code,
-            trailingIcon = MeshtasticIcons.ChevronRight,
-            onClick = onOpenRepoLink,
-        )
-        ListItem(
-            text = stringResource(Res.string.app_version),
-            leadingIcon = MeshtasticIcons.Memory,
-            supportingText = appVersionName,
-            trailingIcon = null,
-        )
-        ListItem(
-            text = stringResource(Res.string.acknowledgements),
-            leadingIcon = MeshtasticIcons.Info,
-            trailingIcon = MeshtasticIcons.ChevronRight,
-            onClick = onNavigateToAcknowledgements,
-        )
-    }
-}
-
-@Composable
-private fun ProjectInformationSection(
-    onOpenWebsite: () -> Unit,
-    onOpenDocs: () -> Unit,
-    onOpenLicense: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ExpressiveSection(title = stringResource(Res.string.project_information), modifier = modifier) {
-        ListItem(
-            text = stringResource(Res.string.website),
-            leadingIcon = MeshtasticIcons.Language,
-            trailingIcon = MeshtasticIcons.ChevronRight,
-            onClick = onOpenWebsite,
-        )
-        ListItem(
-            text = stringResource(Res.string.documentation),
-            leadingIcon = MeshtasticIcons.HelpOutline,
-            trailingIcon = MeshtasticIcons.ChevronRight,
-            onClick = onOpenDocs,
-        )
-        ListItem(
-            text = stringResource(Res.string.license),
-            leadingIcon = MeshtasticIcons.Notes,
-            trailingIcon = MeshtasticIcons.ChevronRight,
-            onClick = onOpenLicense,
-        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(Res.string.pangea_buy_radios), style = Ios.type.title2, color = c.tint)
+            Text(
+                stringResource(Res.string.pangea_buy_radios_description),
+                style = Ios.type.callout,
+                color = c.tint.copy(alpha = 0.6f),
+            )
+        }
     }
 }
 
@@ -237,78 +158,16 @@ private fun ProjectInformationSection(
 @Composable
 private fun CopyrightFooter(modifier: Modifier = Modifier) {
     Column(
-        modifier = modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text = stringResource(Res.string.pangea_copyright_notice),
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(Res.string.copyright_notice),
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(Res.string.license_notice),
-            modifier = Modifier.fillMaxWidth(),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun NeedHardwareRow(onOpenHardwareLink: () -> Unit, modifier: Modifier = Modifier) {
-    var currentDeviceIndex by remember { mutableIntStateOf(0) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(CAROUSEL_INTERVAL_MS)
-            currentDeviceIndex = (currentDeviceIndex + 1) % POPULAR_DEVICES.size
-        }
-    }
-
-    Row(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onOpenHardwareLink).padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Box(
-            modifier = Modifier.width(CAROUSEL_IMAGE_WIDTH).height(CAROUSEL_IMAGE_HEIGHT),
-            contentAlignment = Alignment.Center,
-        ) {
-            Crossfade(
-                targetState = POPULAR_DEVICES[currentDeviceIndex],
-                animationSpec = tween(durationMillis = CROSSFADE_DURATION_MS),
-            ) { device ->
-                val imageUri = remember(device.svgFileName) { Res.getUri("files/${device.svgFileName}") }
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalPlatformContext.current).data(imageUri).build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        }
-
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        listOf(Res.string.pangea_copyright_notice, Res.string.copyright_notice, Res.string.license_notice).forEach {
             Text(
-                text = stringResource(Res.string.pangea_buy_radios),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = stringResource(Res.string.pangea_buy_radios_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = stringResource(it),
+                modifier = Modifier.fillMaxWidth(),
+                style = Ios.type.caption1,
+                color = Ios.colors.secondaryLabel,
+                textAlign = TextAlign.Center,
             )
         }
     }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -38,6 +39,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -174,6 +177,54 @@ fun IosPushedScreen(
             showTitle = collapsed,
             background = background,
             titleContent = titleContent,
+            leading = { IosGlassIconButton(IosIcons.ChevronLeft, contentDescription = backLabel, onClick = onBack) },
+            trailing = trailing,
+        )
+    }
+}
+
+/**
+ * A short pushed screen that scrolls as one column (About, a sheet-like page): same chrome as [IosPushedScreen], but
+ * every row is composed up front, so nothing waits on a lazy list.
+ */
+@Composable
+fun IosPushedColumnScreen(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    largeTitle: Boolean = false,
+    grouped: Boolean = true,
+    trailing: (@Composable RowScope.() -> Unit)? = null,
+    backLabel: String = stringResource(Res.string.navigate_back),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val c = Ios.colors
+    val background = if (grouped) c.groupedBackground else c.background
+    val scroll = rememberScrollState()
+    val collapsed by remember(scroll, largeTitle) { derivedStateOf { !largeTitle || scroll.value > 90 } }
+    IosDrawsUnderTabBar()
+    val bottom = LocalIosBottomInset.current
+    Box(modifier.fillMaxSize().background(background)) {
+        Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(bottom = bottom + 24.dp)) {
+            Column(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+                Spacer(Modifier.height(TopBarHeight))
+                if (largeTitle) {
+                    Text(
+                        title,
+                        style = Ios.type.largeTitle,
+                        color = c.label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = IosInset, end = IosInset, top = 2.dp, bottom = 6.dp),
+                    )
+                }
+            }
+            content()
+        }
+        IosTopBar(
+            title = title,
+            showTitle = collapsed,
+            background = background,
             leading = { IosGlassIconButton(IosIcons.ChevronLeft, contentDescription = backLabel, onClick = onBack) },
             trailing = trailing,
         )
