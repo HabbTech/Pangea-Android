@@ -25,12 +25,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,7 +36,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
@@ -53,6 +49,8 @@ import org.meshtastic.core.ui.icon.FileDownload
 import org.meshtastic.core.ui.icon.KeyboardArrowDown
 import org.meshtastic.core.ui.icon.KeyboardArrowUp
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosSearchField
 import org.meshtastic.feature.settings.debugging.DebugViewModel.UiMeshLog
 import org.meshtastic.feature.settings.debugging.LogSearchManager.SearchState
 
@@ -99,20 +97,13 @@ fun DebugSearchBar(
     onClearSearch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    OutlinedTextField(
+    IosSearchField(
         value = searchState.searchText,
         onValueChange = onSearchTextChange,
         modifier = modifier.then(Modifier.padding(end = 8.dp)),
-        placeholder = { Text(stringResource(Res.string.debug_default_search)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions =
-        KeyboardActions(
-            onSearch = {
-                // Clear focus when search is performed
-            },
-        ),
-        trailingIcon = {
+        placeholder = stringResource(Res.string.debug_default_search),
+        glass = false,
+        trailing = {
             Row(
                 modifier = Modifier.width(IntrinsicSize.Min),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -155,12 +146,11 @@ fun DebugSearchState(
     onFilterModeChange: (FilterMode) -> Unit,
     onExportLogs: (() -> Unit)? = null,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
     var customFilterText by rememberSaveable { mutableStateOf("") }
 
-    Column(modifier = modifier.background(color = colorScheme.background.copy(alpha = 1.0f)).padding(8.dp)) {
+    Column(modifier = modifier.background(color = Ios.colors.groupedBackground).padding(8.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth().background(colorScheme.background.copy(alpha = 1.0f)),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

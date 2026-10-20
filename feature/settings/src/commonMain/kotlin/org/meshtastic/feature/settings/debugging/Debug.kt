@@ -37,9 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -91,6 +89,8 @@ import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Settings
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosSegmentedControl
 import org.meshtastic.core.ui.theme.AnnotationColor
 import org.meshtastic.feature.settings.debugging.DebugViewModel.UiMeshLog
 
@@ -152,6 +152,7 @@ fun DebugScreen(onNavigateUp: () -> Unit, viewModel: DebugViewModel) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
             MainAppBar(
                 title = stringResource(Res.string.debug_panel),
@@ -173,18 +174,13 @@ fun DebugScreen(onNavigateUp: () -> Unit, viewModel: DebugViewModel) {
         },
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text(stringResource(Res.string.debug_tab_packets)) },
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text(stringResource(Res.string.debug_tab_app_logs)) },
-                )
-            }
+            IosSegmentedControl(
+                options =
+                listOf(stringResource(Res.string.debug_tab_packets), stringResource(Res.string.debug_tab_app_logs)),
+                selectedIndex = selectedTab,
+                onSelect = { selectedTab = it },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
             if (selectedTab == 1) {
                 LogcatContent(modifier = Modifier.fillMaxSize())
                 return@Column
