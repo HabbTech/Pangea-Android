@@ -25,6 +25,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -51,6 +52,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -178,6 +180,9 @@ fun IosRow(
     accessory: IosAccessory = IosAccessory.None,
     showSeparator: Boolean = true,
     leadingWidth: Dp? = null,
+    // Above 1, a long [value] wraps over up to this many lines, end-aligned, and the title keeps its own width (a
+    // node's status message).
+    valueLines: Int = 1,
     onClick: (() -> Unit)? = null,
 ) {
     val c = Ios.colors
@@ -211,22 +216,14 @@ fun IosRow(
                 icon != null -> Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(28.dp))
             }
         }
-        Column(Modifier.weight(1f).padding(vertical = 11.dp)) {
+        val wraps = valueLines > 1 && value != null
+        Column((if (wraps) Modifier else Modifier.weight(1f)).padding(vertical = 11.dp)) {
             Text(title, style = titleStyle, color = titleColor)
             if (subtitle != null) {
                 Text(subtitle, style = Ios.type.subheadline, color = subtitleColor)
             }
         }
-        if (value != null) {
-            Text(
-                value,
-                style = Ios.type.body,
-                color = c.secondaryLabel,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 8.dp),
-            )
-        }
+        if (value != null) RowValue(value, valueLines, wraps)
         when (accessory) {
             IosAccessory.None -> Unit
 
@@ -252,4 +249,19 @@ fun IosRow(
             is IosAccessory.Custom -> accessory.content()
         }
     }
+}
+
+/** An [IosRow]'s grey value: one line at the row's end, or, when [wraps], up to [lines] lines end-aligned. */
+@Composable
+private fun RowScope.RowValue(value: String, lines: Int, wraps: Boolean) {
+    Text(
+        value,
+        style = Ios.type.body,
+        color = Ios.colors.secondaryLabel,
+        maxLines = lines,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = if (wraps) TextAlign.End else TextAlign.Unspecified,
+        modifier =
+        (if (wraps) Modifier.weight(1f) else Modifier).padding(start = 8.dp, top = if (wraps) 11.dp else 0.dp),
+    )
 }

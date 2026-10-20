@@ -16,21 +16,11 @@
  */
 package org.meshtastic.feature.node.component
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,8 +29,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -55,14 +45,16 @@ import org.meshtastic.core.resources.device_links_affiliate_disclosure
 import org.meshtastic.core.resources.device_links_i_want_one
 import org.meshtastic.core.resources.device_links_open_in_browser
 import org.meshtastic.core.resources.expanded
-import org.meshtastic.core.ui.icon.ExpandLess
-import org.meshtastic.core.ui.icon.ExpandMore
-import org.meshtastic.core.ui.icon.Language
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
 
 /**
- * Collapsible "I want one" section listing msh.to vendor/variant and marketplace links for the viewed device. Renders
- * nothing when there are no matching links. Ported from the Meshtastic-Apple `DeviceLinksSection`.
+ * Collapsible "I want one" section listing msh.to vendor/variant and marketplace links for the viewed device, drawn as
+ * the iPhone app's own: a tinted row with a chevron that opens the links. Renders nothing when there are no matching
+ * links. Ported from the Meshtastic-Apple `DeviceLinksSection`.
  */
 @Composable
 fun DeviceLinksSection(links: List<DeviceLink>, modifier: Modifier = Modifier) {
@@ -71,44 +63,38 @@ fun DeviceLinksSection(links: List<DeviceLink>, modifier: Modifier = Modifier) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val title = stringResource(Res.string.device_links_i_want_one)
     val expandStateDescription = stringResource(if (expanded) Res.string.expanded else Res.string.collapsed)
+    val c = Ios.colors
 
-    ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(containerColor = colorScheme.surfaceContainerHigh),
-        shape = MaterialTheme.shapes.extraLarge,
-    ) {
-        Column(modifier = Modifier.padding(vertical = 16.dp).animateContentSize()) {
-            Row(
-                modifier =
-                Modifier.fillMaxWidth()
-                    .clickable(role = Role.Button) { expanded = !expanded }
-                    .semantics { stateDescription = expandStateDescription }
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f).semantics { heading() },
-                )
+    IosSection(modifier = modifier) {
+        IosRow(
+            title = title,
+            titleColor = c.tint,
+            titleStyle = Ios.type.headline,
+            modifier =
+            Modifier.semantics {
+                stateDescription = expandStateDescription
+                heading()
+            },
+            accessory =
+            IosAccessory.Custom {
                 Icon(
-                    imageVector = if (expanded) MeshtasticIcons.ExpandLess else MeshtasticIcons.ExpandMore,
+                    IosIcons.ChevronRight,
                     contentDescription = null,
-                    tint = colorScheme.primary,
+                    tint = c.tint,
+                    modifier = Modifier.size(13.dp).rotate(if (expanded) CHEVRON_UP else CHEVRON_DOWN),
                 )
-            }
-            if (expanded) {
-                // The disclosure sits above the links it covers.
-                Text(
-                    text = stringResource(Res.string.device_links_affiliate_disclosure),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colorScheme.onSurfaceVariant,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
-                )
-                links.forEach { DeviceLinkRow(it) }
-            }
+            },
+            onClick = { expanded = !expanded },
+        )
+        if (expanded) {
+            // The disclosure sits above the links it covers.
+            Text(
+                text = stringResource(Res.string.device_links_affiliate_disclosure),
+                style = Ios.type.footnote,
+                color = c.secondaryLabel,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+            )
+            links.forEach { DeviceLinkRow(it) }
         }
     }
 }
@@ -120,29 +106,22 @@ private fun DeviceLinkRow(link: DeviceLink) {
     val prominent = link.isVendor || link.regions == null
     val openLabel = stringResource(Res.string.device_links_open_in_browser)
     val label = link.description ?: link.shortCode
+    val c = Ios.colors
 
-    Row(
-        modifier =
-        Modifier.fillMaxWidth()
-            .defaultMinSize(minHeight = 48.dp)
-            .clickable(role = Role.Button) { uriHandler.openUri(link.url) }
-            .padding(horizontal = 20.dp, vertical = 8.dp)
-            .semantics { contentDescription = "$openLabel: $label" },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = if (prominent) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-            fontWeight = if (prominent) FontWeight.SemiBold else FontWeight.Normal,
-            color = colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        Spacer(Modifier.width(8.dp))
-        Icon(
-            imageVector = MeshtasticIcons.Language,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = colorScheme.primary,
-        )
-    }
+    IosRow(
+        title = label,
+        titleStyle = if (prominent) Ios.type.body.copy(fontWeight = FontWeight.SemiBold) else Ios.type.subheadline,
+        modifier = Modifier.semantics { contentDescription = "$openLabel: $label" },
+        accessory =
+        IosAccessory.Custom {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(IosIcons.Globe, contentDescription = null, tint = c.tint, modifier = Modifier.size(20.dp))
+            }
+        },
+        onClick = { uriHandler.openUri(link.url) },
+    )
 }
+
+/** The disclosure chevron is the right chevron turned to point down, or up while open. */
+private const val CHEVRON_DOWN = 90f
+private const val CHEVRON_UP = -90f

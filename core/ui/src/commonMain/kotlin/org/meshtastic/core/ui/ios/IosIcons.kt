@@ -2420,6 +2420,210 @@ object IosIcons {
         }
     }
 
+    /** `star`: Add to favorites. */
+    val Star: ImageVector by lazy {
+        icon("ios.star") {
+            stroked(width = 1.5f) {
+                moveTo(12.00f, 3.00f)
+                lineTo(14.47f, 9.20f)
+                lineTo(21.13f, 9.63f)
+                lineTo(15.99f, 13.90f)
+                lineTo(17.64f, 20.37f)
+                lineTo(12.00f, 16.80f)
+                lineTo(6.36f, 20.37f)
+                lineTo(8.01f, 13.90f)
+                lineTo(2.87f, 9.63f)
+                lineTo(9.53f, 9.20f)
+                close()
+            }
+        }
+    }
+
+    /** `star.fill`: a favourite; Remove from favorites. */
+    val StarFill: ImageVector by lazy {
+        icon("ios.starFill") {
+            filled {
+                moveTo(12.00f, 3.00f)
+                lineTo(14.47f, 9.20f)
+                lineTo(21.13f, 9.63f)
+                lineTo(15.99f, 13.90f)
+                lineTo(17.64f, 20.37f)
+                lineTo(12.00f, 16.80f)
+                lineTo(6.36f, 20.37f)
+                lineTo(8.01f, 13.90f)
+                lineTo(2.87f, 9.63f)
+                lineTo(9.53f, 9.20f)
+                close()
+            }
+        }
+    }
+
+    /** `minus.circle`: Ignore. */
+    val MinusCircle: ImageVector by lazy {
+        icon("ios.minusCircle") {
+            stroked(width = 1.5f) {
+                circle(12f, 12f, 9.2f)
+                moveTo(7.6f, 12f)
+                lineTo(16.4f, 12f)
+            }
+        }
+    }
+
+    /** `chart.bar`: local stats. */
+    val ChartBar: ImageVector by lazy {
+        icon("ios.chartBar") {
+            stroked(width = 1.5f) {
+                roundRect(3.2f, 12.5f, 7.6f, 20f, 1f)
+                roundRect(9.8f, 8f, 14.2f, 20f, 1f)
+                roundRect(16.4f, 4f, 20.8f, 20f, 1f)
+            }
+        }
+    }
+
+    /** `signpost.right.and.left`: trace route. */
+    val Signpost: ImageVector by lazy {
+        icon("ios.signpost") {
+            stroked(width = 1.5f) {
+                moveTo(12f, 2.8f)
+                lineTo(12f, 21.2f)
+                moveTo(8f, 21.2f)
+                lineTo(16f, 21.2f)
+                moveTo(12f, 5f)
+                lineTo(18.3f, 5f)
+                lineTo(20.5f, 7.2f)
+                lineTo(18.3f, 9.4f)
+                lineTo(12f, 9.4f)
+                moveTo(12f, 11.8f)
+                lineTo(5.7f, 11.8f)
+                lineTo(3.5f, 14f)
+                lineTo(5.7f, 16.2f)
+                lineTo(12f, 16.2f)
+            }
+        }
+    }
+
+    /** `person.2.badge.gearshape`: Exchange User Info. */
+    val PeopleGear: ImageVector by lazy {
+        icon("ios.peopleGear") {
+            stroked(width = 1.5f) {
+                circle(8.6f, 7.6f, 3.2f)
+                moveTo(2.6f, 19.6f)
+                curveTo(2.6f, 15.8f, 5.3f, 13.6f, 8.6f, 13.6f)
+                curveTo(10.1f, 13.6f, 11.4f, 14f, 12.4f, 14.8f)
+                moveTo(15.2f, 9.6f)
+                curveTo(16.8f, 9.6f, 18f, 8.4f, 18f, 6.8f)
+                curveTo(18f, 5.2f, 16.8f, 4f, 15.2f, 4f)
+                gearOutline(17.6f, 17.6f, 3.6f, 2.6f, 6)
+            }
+            filled { circle(17.6f, 17.6f, 1f) }
+        }
+    }
+
+    /** `mappin.and.ellipse`: Position Log. */
+    val MapPinEllipse: ImageVector by lazy {
+        icon("ios.mapPinEllipse") {
+            stroked(width = 1.5f) {
+                circle(12f, 7.4f, 3.6f)
+                moveTo(12f, 11f)
+                lineTo(12f, 18.4f)
+                moveTo(8f, 15.6f)
+                curveTo(4.9f, 16.1f, 3f, 17.1f, 3f, 18.3f)
+                curveTo(3f, 19.9f, 7f, 21.2f, 12f, 21.2f)
+                curveTo(17f, 21.2f, 21f, 19.9f, 21f, 18.3f)
+                curveTo(21f, 17.1f, 19.1f, 16.1f, 16f, 15.6f)
+            }
+        }
+    }
+
+    /** `cloud.sun.rain`: Environment Metrics Log. */
+    val CloudSunRain: ImageVector by lazy {
+        icon("ios.cloudSunRain") {
+            stroked(width = 1.5f) {
+                moveTo(8.2f, 17f)
+                lineTo(6.4f, 17f)
+                curveTo(4.4f, 17f, 2.8f, 15.5f, 2.8f, 13.6f)
+                curveTo(2.8f, 11.8f, 4.2f, 10.4f, 6f, 10.2f)
+                curveTo(6.6f, 8.2f, 8.4f, 6.8f, 10.6f, 6.8f)
+                curveTo(13f, 6.8f, 15f, 8.5f, 15.3f, 10.8f)
+                curveTo(17f, 10.9f, 18.3f, 12.2f, 18.3f, 13.9f)
+                curveTo(18.3f, 15.6f, 16.9f, 17f, 15.2f, 17f)
+                lineTo(14.6f, 17f)
+                moveTo(9.4f, 18.4f)
+                lineTo(8.6f, 20.6f)
+                moveTo(12.4f, 18.4f)
+                lineTo(11.6f, 20.6f)
+                moveTo(13.2f, 6.9f)
+                curveTo(13.9f, 5.4f, 15.4f, 4.4f, 17.1f, 4.4f)
+                curveTo(19.5f, 4.4f, 21.4f, 6.3f, 21.4f, 8.7f)
+                curveTo(21.4f, 9.9f, 20.9f, 11f, 20.1f, 11.8f)
+                moveTo(17.1f, 1.4f)
+                lineTo(17.1f, 2.4f)
+                moveTo(22.6f, 8.7f)
+                lineTo(23.4f, 8.7f)
+            }
+        }
+    }
+
+    /** `bolt`: Power Metrics Log. */
+    val Bolt: ImageVector by lazy {
+        icon("ios.bolt") {
+            stroked(width = 1.5f) {
+                moveTo(13.6f, 2.6f)
+                lineTo(5.4f, 13.6f)
+                lineTo(11.4f, 13.6f)
+                lineTo(10.4f, 21.4f)
+                lineTo(18.6f, 10.4f)
+                lineTo(12.6f, 10.4f)
+                close()
+            }
+        }
+    }
+
+    /** `person.crop.circle`: a node's Name. */
+    val PersonCropCircle: ImageVector by lazy {
+        icon("ios.personCropCircle") {
+            stroked(width = 1.5f) {
+                circle(12f, 12f, 9.4f)
+                circle(12f, 9.6f, 3.4f)
+                moveTo(5.8f, 18.8f)
+                curveTo(7.1f, 16.4f, 9.4f, 15.2f, 12f, 15.2f)
+                curveTo(14.6f, 15.2f, 16.9f, 16.4f, 18.2f, 18.8f)
+            }
+        }
+    }
+
+    /** `clock.arrow.circlepath`: Last heard. */
+    val ClockArrowCirclepath: ImageVector by lazy {
+        icon("ios.clockArrowCirclepath") {
+            stroked(width = 1.5f) {
+                moveTo(4.2f, 9.4f)
+                arcTo(8.6f, 8.6f, 0f, isMoreThanHalf = true, isPositiveArc = true, x1 = 3.6f, y1 = 13.6f)
+                moveTo(2.2f, 6.8f)
+                lineTo(4.2f, 9.4f)
+                lineTo(6.9f, 7.7f)
+                moveTo(12.2f, 7.4f)
+                lineTo(12.2f, 12.4f)
+                lineTo(15.4f, 14.4f)
+            }
+        }
+    }
+
+    /** `checkmark.circle.fill`: Uptime. The check is cut out of the disc. */
+    val CheckCircleFill: ImageVector by lazy {
+        icon("ios.checkCircleFill") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                circle(12f, 12f, 9.6f)
+                moveTo(7.2f, 12.2f)
+                lineTo(8.3f, 11.1f)
+                lineTo(10.6f, 13.4f)
+                lineTo(15.7f, 8.3f)
+                lineTo(16.8f, 9.4f)
+                lineTo(10.6f, 15.6f)
+                close()
+            }
+        }
+    }
+
     private fun icon(name: String, size: Float = 24f, viewport: Float = 24f, block: ImageVector.Builder.() -> Unit) =
         ImageVector.Builder(name, size.dp, size.dp, viewport, viewport).apply(block).build()
 

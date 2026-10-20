@@ -63,11 +63,14 @@ internal fun PositionInlineContent(
     ourNode: Node?,
     displayUnits: MeasurementSystem,
     onAction: (NodeDetailAction) -> Unit,
+    // The iOS-style node detail lists Open Compass and Estimate Coverage among its actions and logs instead.
+    showActions: Boolean = true,
 ) {
     val distance = ourNode?.distance(node)?.takeIf { it > 0 }?.toDistanceString(displayUnits)
 
     PositionMap(node, distance)
     LinkedCoordinatesItem(node, displayUnits)
+    if (!showActions) return
     Spacer(Modifier.height(8.dp))
     FilledTonalButton(
         onClick = { onAction(NodeDetailAction.OpenCompass(node, displayUnits)) },

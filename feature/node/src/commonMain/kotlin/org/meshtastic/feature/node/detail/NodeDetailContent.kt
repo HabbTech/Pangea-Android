@@ -17,10 +17,12 @@
 package org.meshtastic.feature.node.detail
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,13 +37,21 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.database.entity.FirmwareRelease
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.air_quality
+import org.meshtastic.core.resources.environment
 import org.meshtastic.core.resources.loading
+import org.meshtastic.core.resources.position
+import org.meshtastic.core.resources.power
+import org.meshtastic.core.resources.soil_water_metrics
+import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.feature.node.component.AdministrationSection
-import org.meshtastic.feature.node.component.DeviceActions
+import org.meshtastic.feature.node.component.AirQualityInfoCards
 import org.meshtastic.feature.node.component.DeviceLinksSection
-import org.meshtastic.feature.node.component.NodeDetailsSection
-import org.meshtastic.feature.node.component.NodeMenuAction
+import org.meshtastic.feature.node.component.EnvironmentMetrics
 import org.meshtastic.feature.node.component.NotesSection
+import org.meshtastic.feature.node.component.PositionInlineContent
+import org.meshtastic.feature.node.component.PowerMetrics
+import org.meshtastic.feature.node.component.SoilWaterMetrics
 import org.meshtastic.feature.node.model.NodeDetailAction
 
 /**
@@ -81,9 +91,11 @@ fun NodeDetailContent(
 }
 
 /**
- * Scrollable list of node detail sections: identity, device actions (including telemetry and position), hardware
- * details, notes, and administration.
+ * Scrollable list of node detail sections in the iPhone app's order: the hardware, "I want one", the node itself, its
+ * latest environment, air quality and power readings, its logs and the actions on it. Android's extras follow: the
+ * position map, telemetry requests, notes and administration.
  */
+@Suppress("LongMethod")
 @Composable
 fun NodeDetailList(
     node: Node,
@@ -95,53 +107,88 @@ fun NodeDetailList(
     onSaveNotes: (Int, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        state = listState,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        item {
-            NodeDetailsSection(
-                node = node,
-                deviceHardware = uiState.metricsState.deviceHardware,
-                reportedTarget = uiState.metricsState.reportedTarget,
-                isLocal = uiState.metricsState.isLocal,
-                onRequestUserInfo = {
-                    onAction(NodeDetailAction.HandleNodeMenuAction(NodeMenuAction.RequestUserInfo(node)))
-                },
-            )
+    val metrics = uiState.metricsState
+    val isLocal = metrics.isLocal
+    LazyColumn(modifier = modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 24.dp)) {
+        metrics.deviceHardware?.let { hardware ->
+            item { NodeHardwareSection(deviceHardware = hardware, reportedTarget = metrics.reportedTarget) }
         }
-        if (uiState.metricsState.deviceLinks.isNotEmpty()) {
-            item { DeviceLinksSection(links = uiState.metricsState.deviceLinks) }
+        if (metrics.deviceLinks.isNotEmpty()) {
+            item { DeviceLinksSection(links = metrics.deviceLinks) }
         }
+        item { NodeIdentitySection(node = node, isLocal = isLocal) }
+        if (node.hasEnvironmentMetrics) {
+            item {
+                ReadingsSection(stringResource(Res.string.environment)) {
+                    EnvironmentMetrics(node, metrics.displayUnits, metrics.isFahrenheit)
+                }
+            }
+        }
+        if (node.hasAirQualityMetrics) {
+            item {
+                ReadingsSection(stringResource(Res.string.air_quality)) {
+                    AirQualityInfoCards(node, metrics.airQualityMetrics, metrics.isFahrenheit)
+                }
+            }
+        }
+        if (node.hasSoilWaterMetrics) {
+            item { ReadingsSection(stringResource(Res.string.soil_water_metrics)) { SoilWaterMetrics(node) } }
+        }
+        if (node.hasPowerMetrics) {
+            item { ReadingsSection(stringResource(Res.string.power)) { PowerMetrics(node) } }
+        }
+        item { NodeLogsSection(node = node, availableLogs = uiState.availableLogs, onAction = onAction) }
         item {
-            DeviceActions(
+            NodeActionsSection(
                 node = node,
-                ourNode = ourNode,
-                lastTracerouteTime = uiState.lastTracerouteTime,
-                lastRequestNeighborsTime = uiState.lastRequestNeighborsTime,
-                availableLogs = uiState.availableLogs,
-                onAction = onAction,
-                displayUnits = uiState.metricsState.displayUnits,
-                isFahrenheit = uiState.metricsState.isFahrenheit,
-                isLocal = uiState.metricsState.isLocal,
+                isLocal = isLocal,
                 hasConversation = uiState.hasConversation,
-                airQualityHistory = uiState.metricsState.airQualityMetrics,
+                lastTracerouteTime = uiState.lastTracerouteTime,
+                displayUnits = metrics.displayUnits,
+                onAction = onAction,
             )
         }
-        item { NotesSection(node = node, onSaveNotes = onSaveNotes) }
-        if (!uiState.metricsState.isManaged) {
+        if (node.latitude != 0.0 || node.longitude != 0.0) {
+            item {
+                ReadingsSection(stringResource(Res.string.position)) {
+                    PositionInlineContent(node, ourNode, metrics.displayUnits, onAction, showActions = false)
+                }
+            }
+        }
+        if (!isLocal) {
+            item {
+                NodeTelemetryRequestsSection(
+                    node = node,
+                    lastRequestNeighborsTime = uiState.lastRequestNeighborsTime,
+                    onAction = onAction,
+                )
+            }
+        }
+        item {
+            NotesSection(
+                node = node,
+                onSaveNotes = onSaveNotes,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp),
+            )
+        }
+        if (!metrics.isManaged) {
             item {
                 AdministrationSection(
                     node = node,
-                    metricsState = uiState.metricsState,
+                    metricsState = metrics,
                     onAction = onAction,
                     onFirmwareSelect = onFirmwareSelect,
                     sessionStatus = uiState.sessionStatus,
                     isEnsuringSession = uiState.isEnsuringSession,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp),
                 )
             }
         }
     }
+}
+
+/** A section holding a node's latest readings: Android's metric cards on the iPhone app's grouped card. */
+@Composable
+private fun ReadingsSection(title: String, content: @Composable () -> Unit) {
+    IosSection(header = title) { Column(Modifier.fillMaxWidth().padding(16.dp)) { content() } }
 }
