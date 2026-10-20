@@ -19,8 +19,6 @@ package org.meshtastic.feature.map.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.last_heard_filter_label
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosSlider
 import org.meshtastic.feature.map.LastHeardFilter
 import kotlin.math.roundToInt
 
@@ -69,9 +69,10 @@ internal fun LastHeardSlider(selected: LastHeardFilter, onSelect: (LastHeardFilt
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(
             text = stringResource(Res.string.last_heard_filter_label, stringResource(selected.label)),
-            style = MaterialTheme.typography.labelLarge,
+            style = Ios.type.body,
+            color = Ios.colors.label,
         )
-        Slider(
+        IosSlider(
             value = sliderPosition,
             onValueChange = { sliderPosition = it },
             onValueChangeFinished = { onSelect(options[sliderPosition.roundToInt().coerceIn(0, options.lastIndex)]) },

@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.IosSlider
 import org.meshtastic.core.ui.theme.AppTheme
 import kotlin.math.roundToInt
 
@@ -72,7 +72,7 @@ fun <T> SliderPreference(
         supportingContent = {
             Column {
                 summary?.let { Text(text = it, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) }
-                Slider(
+                IosSlider(
                     value = animatedValue,
                     onValueChange = {
                         val index = it.roundToInt()

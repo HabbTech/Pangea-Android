@@ -19,7 +19,6 @@ package org.meshtastic.feature.map.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.map_layer_opacity
+import org.meshtastic.core.ui.ios.IosSlider
 import org.meshtastic.feature.map.layers.LAYER_OPACITY_OPAQUE
 import kotlin.math.roundToInt
 
@@ -63,7 +63,7 @@ fun LayerOpacitySlider(
             text = stringResource(Res.string.map_layer_opacity, (position * PERCENT).roundToInt()),
             style = MaterialTheme.typography.labelMedium,
         )
-        Slider(
+        IosSlider(
             value = position,
             onValueChange = { position = it },
             onValueChangeFinished = { onOpacityChange(layerKey, position) },

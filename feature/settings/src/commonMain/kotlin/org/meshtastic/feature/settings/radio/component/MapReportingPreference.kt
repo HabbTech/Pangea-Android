@@ -19,7 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,6 +52,7 @@ import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosSlider
 import org.meshtastic.feature.settings.util.FixedUpdateIntervals
 import org.meshtastic.feature.settings.util.IntervalConfiguration
 import org.meshtastic.feature.settings.util.toDisplayString
@@ -138,7 +138,7 @@ fun MapReportingPreference(
                         onItemSelected = { onPublishIntervalSecsChanged(it.value.toInt()) },
                     )
                     PreferenceDivider()
-                    Slider(
+                    IosSlider(
                         modifier = Modifier.padding(horizontal = 16.dp),
                         value = positionPrecision.toFloat(),
                         onValueChange = { onPositionPrecisionChanged(it.roundToInt()) },

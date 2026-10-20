@@ -23,15 +23,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -43,6 +45,8 @@ import org.meshtastic.core.resources.units_imperial
 import org.meshtastic.core.resources.units_metric
 import org.meshtastic.core.resources.units_scope_summary
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 
 /** The [UnitsOverride] choices with their labels; System default follows the OS locale. */
 enum class UnitsOption(val label: StringResource, val override: UnitsOverride) {
@@ -73,17 +77,20 @@ fun UnitsPickerDialog(
             Column {
                 Text(
                     text = stringResource(Res.string.units_scope_summary),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
+                    style = Ios.type.footnote,
+                    color = Ios.colors.label,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
                 )
+                // iOS's inline picker: one row per choice, a checkmark at the end of the chosen one.
                 Column(modifier = Modifier.selectableGroup()) {
-                    UnitsOption.entries.forEach { option ->
+                    UnitsOption.entries.forEachIndexed { index, option ->
                         val selected = option.override == current
+                        if (index > 0) HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
                         Row(
                             modifier =
                             Modifier.fillMaxWidth()
-                                .height(48.dp)
+                                .height(44.dp)
                                 .selectable(
                                     selected = selected,
                                     role = Role.RadioButton,
@@ -94,12 +101,20 @@ fun UnitsPickerDialog(
                                 ),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            RadioButton(selected = selected, onClick = null)
                             Text(
                                 text = stringResource(option.label),
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 8.dp),
+                                style = Ios.type.body,
+                                color = Ios.colors.label,
+                                modifier = Modifier.weight(1f),
                             )
+                            if (selected) {
+                                Icon(
+                                    IosIcons.Checkmark,
+                                    contentDescription = null,
+                                    tint = Ios.colors.tint,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         }
                     }
                 }

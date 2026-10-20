@@ -17,25 +17,19 @@
 package org.meshtastic.feature.settings.radio
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
@@ -47,12 +41,24 @@ import org.meshtastic.core.resources.clean_nodes_older_than
 import org.meshtastic.core.resources.clean_now
 import org.meshtastic.core.resources.clean_unknown_nodes
 import org.meshtastic.core.resources.nodes_queued_for_deletion
-import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.NodeChip
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosPushedColumnScreen
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.IosSlider
+import org.meshtastic.core.ui.ios.iosPressable
+import org.meshtastic.core.ui.ios.iosRowSeparator
 
 /**
  * Composable screen for cleaning the node database. Allows users to specify criteria for deleting nodes. The list of
  * nodes to be deleted updates automatically as filter criteria change.
+ *
+ * Drawn as an iOS grouped form, as the iPhone app's own stale-node purge in App Settings: the age as a row with its
+ * slider (the caution as the section's footer), the unknown-only switch, the nodes about to go, and Clean Now in red in
+ * a card of its own.
  */
 @Composable
 fun CleanNodeDatabaseScreen(viewModel: CleanNodeDatabaseViewModel, onBack: () -> Unit) {
@@ -62,49 +68,32 @@ fun CleanNodeDatabaseScreen(viewModel: CleanNodeDatabaseViewModel, onBack: () ->
 
     SideEffect(olderThanDays, onlyUnknownNodes) { viewModel.getNodesToDelete() }
 
-    Scaffold(
-        topBar = {
-            MainAppBar(
-                title = stringResource(Res.string.clean_node_database_title),
-                ourNode = null,
-                showNodeChip = false,
-                canNavigateUp = true,
-                onNavigateUp = onBack,
-                actions = {},
-                onClickChip = {},
-            )
-        },
-    ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues).padding(16.dp).verticalScroll(rememberScrollState())) {
-            Text(stringResource(Res.string.clean_node_database_description), style = MaterialTheme.typography.bodySmall)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            DaysThresholdFilter(
-                olderThanDays = olderThanDays,
-                onlyUnknownNodes = onlyUnknownNodes,
-                onDaysChanged = viewModel::onOlderThanDaysChanged,
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            UnknownNodesFilter(
-                onlyUnknownNodes = onlyUnknownNodes,
-                onCheckedChanged = viewModel::onOnlyUnknownNodesChanged,
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            NodesDeletionPreview(nodesToDelete = nodesToDelete)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { if (nodesToDelete.isNotEmpty()) viewModel.requestCleanNodes() },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = nodesToDelete.isNotEmpty(),
-            ) {
-                Text(stringResource(Res.string.clean_now))
+    IosPushedColumnScreen(
+        title = stringResource(Res.string.clean_node_database_title),
+        onBack = onBack,
+        largeTitle = true,
+    ) {
+        Column(Modifier.fillMaxWidth()) {
+            IosSection(footer = stringResource(Res.string.clean_node_database_description)) {
+                DaysThresholdFilter(
+                    olderThanDays = olderThanDays,
+                    onlyUnknownNodes = onlyUnknownNodes,
+                    onDaysChanged = viewModel::onOlderThanDaysChanged,
+                )
+                IosRow(
+                    title = stringResource(Res.string.clean_unknown_nodes),
+                    accessory =
+                    IosAccessory.Switch(
+                        checked = onlyUnknownNodes,
+                        onCheckedChange = viewModel::onOnlyUnknownNodesChanged,
+                    ),
+                )
             }
+            NodesDeletionPreview(nodesToDelete = nodesToDelete)
+            CleanNowSection(
+                enabled = nodesToDelete.isNotEmpty(),
+                onClick = { if (nodesToDelete.isNotEmpty()) viewModel.requestCleanNodes() },
+            )
         }
     }
 }
@@ -128,35 +117,19 @@ private fun DaysThresholdFilter(olderThanDays: Float, onlyUnknownNodes: Boolean,
         } else {
             MIN_KNOWN_DAYS_THRESHOLD..MAX_DAYS_THRESHOLD
         }
-    val steps = (valueRange.endInclusive - valueRange.start - 1).toInt().coerceAtLeast(0)
-
-    Column(modifier = Modifier.fillMaxWidth()) {
+    // A day per stop, without iOS's stop dots: a year of them would be a solid line.
+    Column(Modifier.iosRowSeparator().fillMaxWidth().padding(horizontal = IosInset, vertical = 11.dp)) {
         Text(
-            modifier = Modifier.padding(bottom = 8.dp),
             text = stringResource(Res.string.clean_nodes_older_than, olderThanDays.toInt()),
+            style = Ios.type.body,
+            color = Ios.colors.label,
         )
-        Slider(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        IosSlider(
             value = olderThanDays,
-            onValueChange = onDaysChanged,
+            onValueChange = { onDaysChanged(kotlin.math.round(it)) },
             valueRange = valueRange,
-            steps = steps,
+            modifier = Modifier.fillMaxWidth(),
         )
-    }
-}
-
-/**
- * Composable for the "only unknown nodes" filter.
- *
- * @param onlyUnknownNodes Whether the filter is enabled.
- * @param onCheckedChanged Callback for when the checked state changes.
- */
-@Composable
-private fun UnknownNodesFilter(onlyUnknownNodes: Boolean, onCheckedChanged: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(Res.string.clean_unknown_nodes))
-        Spacer(Modifier.weight(1f))
-        Switch(checked = onlyUnknownNodes, onCheckedChange = onCheckedChanged)
     }
 }
 
@@ -167,15 +140,32 @@ private fun UnknownNodesFilter(onlyUnknownNodes: Boolean, onCheckedChanged: (Boo
  */
 @Composable
 private fun NodesDeletionPreview(nodesToDelete: List<Node>) {
-    Text(
-        stringResource(Res.string.nodes_queued_for_deletion, nodesToDelete.size),
-        modifier = Modifier.padding(bottom = 16.dp),
-    )
-    androidx.compose.foundation.layout.FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        nodesToDelete.forEach { node -> NodeChip(node = node, modifier = Modifier.padding(end = 8.dp, bottom = 8.dp)) }
+    IosSection(header = stringResource(Res.string.nodes_queued_for_deletion, nodesToDelete.size).trimEnd(':')) {
+        if (nodesToDelete.isNotEmpty()) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = IosInset, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                nodesToDelete.forEach { node -> NodeChip(node = node) }
+            }
+        }
+    }
+}
+
+/** iOS's destructive form button: red words centred in a card of their own, grey while there is nothing to clean. */
+@Composable
+private fun CleanNowSection(enabled: Boolean, onClick: () -> Unit) {
+    IosSection {
+        Box(
+            Modifier.fillMaxWidth().heightIn(min = 52.dp).iosPressable(enabled = enabled, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                stringResource(Res.string.clean_now),
+                style = Ios.type.body.copy(fontWeight = FontWeight.SemiBold),
+                color = if (enabled) Ios.colors.systemRed else Ios.colors.tertiaryLabel,
+            )
+        }
     }
 }

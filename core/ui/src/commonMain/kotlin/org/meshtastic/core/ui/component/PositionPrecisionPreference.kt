@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,6 +38,7 @@ import org.meshtastic.core.model.util.toDistanceString
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.position_enabled
 import org.meshtastic.core.resources.precise_location
+import org.meshtastic.core.ui.ios.IosSlider
 import org.meshtastic.core.ui.theme.AppTheme
 import kotlin.math.roundToInt
 
@@ -89,7 +89,7 @@ fun PositionPrecisionPreference(
         }
         if (value in (POSITION_DISABLED + 1) until POSITION_ENABLED) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Slider(
+                IosSlider(
                     value = value.toFloat(),
                     onValueChange = { onValueChanged(it.roundToInt()) },
                     enabled = enabled,
