@@ -889,11 +889,10 @@ fun MapView(
                         null
                     },
                     // Dropping our local copy needs no mesh permission, so it's offered even when locked to its
-                    // creator.
+                    // creator. The trash opens the delete alert, which lists the ways to delete, as the editor's does.
                     onDeleteForMe = {
-                        Logger.d { "User deleted waypoint ${waypoint.id} for me" }
-                        mapViewModel.deleteWaypoint(waypoint.id)
                         geofenceInfoWaypoint = null
+                        deletingWaypoint = waypoint
                     },
                 )
             }

@@ -21,21 +21,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,6 +80,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Nodes
 import org.meshtastic.core.ui.icon.Person
 import org.meshtastic.core.ui.icon.ShieldCheck
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
@@ -248,40 +246,45 @@ private val LEGEND_ORDER =
 /** The explanation for one state, with a toggle to the full legend. Shared by every surface that shows a glyph. */
 @Suppress("LongMethod")
 @Composable
-fun NodeSecurityDialog(indicator: NodeSecurityIndicator, key: ByteString?, onDismiss: () -> Unit = {}) {
+fun NodeSecurityDialog(
+    indicator: NodeSecurityIndicator,
+    key: ByteString?,
+    onDismiss: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     var showAll by rememberSaveable { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (showAll) Res.string.security else indicator.title)) },
+    // An iOS alert: "Show All" in grey beside the tinted dismiss, the legend scrolling inside when it is long.
+    MeshtasticDialog(
+        modifier = modifier,
+        title = stringResource(if (showAll) Res.string.security else indicator.title),
         text = {
+            // The legend scrolls itself; nesting it in another scroll would measure it without a height limit.
             if (showAll) {
                 SecurityLegend()
             } else {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = stringResource(indicator.helpText), textAlign = TextAlign.Center)
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(indicator.helpText),
+                        style = Ios.type.subheadline,
+                        color = Ios.colors.label,
+                        textAlign = TextAlign.Center,
+                    )
                     Spacer(Modifier.height(16.dp))
                     PublicKeyBlock(indicator, key)
                 }
             }
         },
-        confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = { showAll = !showAll }) {
-                    Text(
-                        if (showAll) {
-                            stringResource(Res.string.security_icon_help_show_less)
-                        } else {
-                            stringResource(Res.string.security_icon_help_show_all)
-                        },
-                    )
-                }
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.security_icon_help_dismiss)) }
-            }
-        },
+        dismissText =
+        stringResource(
+            if (showAll) Res.string.security_icon_help_show_less else Res.string.security_icon_help_show_all,
+        ),
+        onDismiss = { showAll = !showAll },
+        confirmText = stringResource(Res.string.security_icon_help_dismiss),
+        onConfirm = onDismiss,
+        onDismissRequest = onDismiss,
     )
 }
 

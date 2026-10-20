@@ -17,22 +17,26 @@
 package org.meshtastic.feature.messaging.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
@@ -47,12 +51,15 @@ import org.meshtastic.core.resources.insert_link_message
 import org.meshtastic.core.resources.insert_link_title
 import org.meshtastic.core.resources.insert_link_url_hint
 import org.meshtastic.core.ui.component.InlineStyle
+import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.icon.Bold
 import org.meshtastic.core.ui.icon.Code
 import org.meshtastic.core.ui.icon.Italic
 import org.meshtastic.core.ui.icon.Link
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Strikethrough
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.feature.messaging.FormattingResult
 import org.meshtastic.feature.messaging.insertDelimiters
 import org.meshtastic.feature.messaging.isMarkdownLink
@@ -129,23 +136,29 @@ private fun FormatButton(icon: ImageVector, label: String, onClick: () -> Unit) 
 @Composable
 private fun LinkDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var url by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(Res.string.insert_link_title)) },
+    MeshtasticDialog(
+        titleRes = Res.string.insert_link_title,
         text = {
-            OutlinedTextField(
-                value = url,
-                onValueChange = { url = it },
-                singleLine = true,
-                label = { Text(stringResource(Res.string.insert_link_message)) },
-                placeholder = { Text(stringResource(Res.string.insert_link_url_hint)) },
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(url) }, enabled = url.isNotBlank()) {
-                Text(stringResource(Res.string.insert))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    stringResource(Res.string.insert_link_message),
+                    style = Ios.type.footnote,
+                    color = Ios.colors.label,
+                    textAlign = TextAlign.Center,
+                )
+                IosTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    placeholder = stringResource(Res.string.insert_link_url_hint),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
+        confirmTextRes = Res.string.insert,
+        onConfirm = { onConfirm(url) },
+        confirmEnabled = url.isNotBlank(),
+        dismissTextRes = Res.string.cancel,
+        onDismiss = onDismiss,
     )
 }

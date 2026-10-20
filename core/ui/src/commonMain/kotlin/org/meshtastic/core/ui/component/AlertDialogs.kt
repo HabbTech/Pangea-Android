@@ -86,6 +86,8 @@ private val AlertMaxHeight = 600.dp
  * @param dismissable Whether the dialog can be dismissed by clicking outside or pressing back.
  * @param confirmDestructive Draws the confirm action as a destructive one (red), as iOS's `role: .destructive`.
  * @param confirmEnabled Whether the confirm action can be pressed yet.
+ * @param onDismissRequest What a tap outside or Back does, when that differs from [onDismiss] (an alert whose grey
+ *   button toggles its content rather than closing it).
  */
 @Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod")
@@ -109,6 +111,7 @@ fun MeshtasticDialog(
     dismissable: Boolean = true,
     confirmDestructive: Boolean = false,
     confirmEnabled: Boolean = true,
+    onDismissRequest: (() -> Unit)? = null,
 ) {
     val titleText = title ?: titleRes?.let { stringResource(it) } ?: ""
     val messageText = message ?: messageRes?.let { stringResource(it) }
@@ -127,7 +130,7 @@ fun MeshtasticDialog(
         }
 
     Dialog(
-        onDismissRequest = { if (dismissable) onDismiss?.invoke() },
+        onDismissRequest = { if (dismissable) (onDismissRequest ?: onDismiss)?.invoke() },
         properties = DialogProperties(dismissOnBackPress = dismissable, dismissOnClickOutside = dismissable),
     ) {
         CompositionLocalProvider(LocalIosColors provides c) {

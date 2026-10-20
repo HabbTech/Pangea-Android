@@ -31,14 +31,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,8 +45,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.patrykandpatrick.vico.compose.cartesian.axis.Axis
@@ -66,8 +62,8 @@ import org.meshtastic.core.resources.info
 import org.meshtastic.core.resources.metric_channel_label
 import org.meshtastic.core.resources.rssi
 import org.meshtastic.core.resources.snr
-import org.meshtastic.core.ui.icon.Info
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import kotlin.time.Duration.Companion.days
 
@@ -200,48 +196,36 @@ fun Legend(
 
 /** Displays a dialog with information about the legend items. */
 @Composable
-fun LegendInfoDialog(infoData: List<InfoDialogData>, onDismiss: () -> Unit) {
-    AlertDialog(
-        icon = { Icon(imageVector = MeshtasticIcons.Info, contentDescription = null) },
-        title = {
-            Text(
-                text = stringResource(Res.string.info),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.headlineSmall,
-            )
-        },
+fun LegendInfoDialog(infoData: List<InfoDialogData>, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    MeshtasticDialog(
+        modifier = modifier,
+        titleRes = Res.string.info,
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            // The alert leaves scrolling a long body to its content.
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
                 for (item in infoData) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             MetricIndicator(item.color)
                             Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(item.titleRes),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = item.color,
-                            )
+                            Text(text = stringResource(item.titleRes), style = Ios.type.headline, color = item.color)
                         }
                         Text(
                             text = stringResource(item.definitionRes),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = Ios.type.footnote,
+                            color = Ios.colors.secondaryLabel,
                             modifier = Modifier.padding(start = 16.dp),
                         )
                     }
                 }
             }
         },
+        confirmTextRes = Res.string.close,
+        onConfirm = onDismiss,
         onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(Res.string.close), fontWeight = FontWeight.Bold)
-            }
-        },
-        shape = RoundedCornerShape(28.dp),
     )
 }
 

@@ -49,6 +49,7 @@ import org.meshtastic.core.resources.pangea_pair_radio
 import org.meshtastic.core.resources.pangea_radio_connected
 import org.meshtastic.core.resources.pangea_radio_connecting
 import org.meshtastic.core.resources.pangea_radio_not_connected
+import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.pangea.MyProfileViewModel
 
 /** My radio: its name and whether it's connected, with Pair and Forget (Pangea-Apple MyRadioSection). */
@@ -102,23 +103,17 @@ fun MyRadioSection(
         }
     }
     if (confirmForget) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { confirmForget = false },
-            title = { Text(stringResource(Res.string.pangea_forget_radio_title)) },
-            text = { Text(stringResource(Res.string.pangea_forget_radio_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmForget = false
-                        viewModel.forgetRadio()
-                    },
-                ) {
-                    Text(stringResource(Res.string.pangea_forget_radio))
-                }
+        MeshtasticDialog(
+            titleRes = Res.string.pangea_forget_radio_title,
+            messageRes = Res.string.pangea_forget_radio_message,
+            confirmTextRes = Res.string.pangea_forget_radio,
+            onConfirm = {
+                confirmForget = false
+                viewModel.forgetRadio()
             },
-            dismissButton = {
-                TextButton(onClick = { confirmForget = false }) { Text(stringResource(Res.string.cancel)) }
-            },
+            confirmDestructive = true,
+            dismissTextRes = Res.string.cancel,
+            onDismiss = { confirmForget = false },
         )
     }
 }

@@ -19,11 +19,11 @@ package org.meshtastic.feature.map.maplibre.component
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.v2.runComposeUiTest
 import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.delete_for_me
+import org.meshtastic.core.resources.delete
 import org.meshtastic.core.resources.edit
 import org.meshtastic.core.resources.getString
 import org.meshtastic.proto.Waypoint
@@ -67,7 +67,7 @@ class WaypointInfoSlotTest {
             )
         }
 
-        onNodeWithText(getString(Res.string.edit)).assertIsDisplayed()
+        onNodeWithContentDescription(getString(Res.string.edit)).assertIsDisplayed()
     }
 
     @Test
@@ -85,7 +85,7 @@ class WaypointInfoSlotTest {
             )
         }
 
-        onNodeWithText(getString(Res.string.edit)).assertIsDisplayed()
+        onNodeWithContentDescription(getString(Res.string.edit)).assertIsDisplayed()
     }
 
     @Test
@@ -103,7 +103,7 @@ class WaypointInfoSlotTest {
             )
         }
 
-        onNodeWithText(getString(Res.string.edit)).assertDoesNotExist()
+        onNodeWithContentDescription(getString(Res.string.edit)).assertDoesNotExist()
     }
 
     @Test
@@ -121,7 +121,7 @@ class WaypointInfoSlotTest {
             )
         }
 
-        onNodeWithText(getString(Res.string.edit)).assertDoesNotExist()
+        onNodeWithContentDescription(getString(Res.string.edit)).assertDoesNotExist()
     }
 
     @Test
@@ -140,6 +140,6 @@ class WaypointInfoSlotTest {
             )
         }
 
-        onNodeWithText(getString(Res.string.delete_for_me)).assertIsDisplayed()
+        onNodeWithContentDescription(getString(Res.string.delete)).assertIsDisplayed()
     }
 }

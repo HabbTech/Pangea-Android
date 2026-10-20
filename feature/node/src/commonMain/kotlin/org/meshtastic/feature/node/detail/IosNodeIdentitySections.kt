@@ -52,7 +52,7 @@ import org.meshtastic.core.resources.name
 import org.meshtastic.core.resources.node_number
 import org.meshtastic.core.resources.node_sort_last_heard
 import org.meshtastic.core.resources.pangea_community_hardware
-import org.meshtastic.core.resources.pangea_connected_node
+import org.meshtastic.core.resources.pangea_connected_node_trust
 import org.meshtastic.core.resources.pangea_firmware_version
 import org.meshtastic.core.resources.pangea_maker_hardware
 import org.meshtastic.core.resources.pangea_messaging
@@ -268,7 +268,7 @@ private fun NodeBadgeRow(node: Node) {
 private fun TrustRow(indicator: NodeSecurityIndicator, isLocal: Boolean) {
     val (title, detail) =
         when {
-            isLocal -> Res.string.pangea_connected_node to Res.string.pangea_this_is_your_radio
+            isLocal -> Res.string.pangea_connected_node_trust to Res.string.pangea_this_is_your_radio
 
             indicator == NodeSecurityIndicator.VERIFIED_CONTACT ->
                 Res.string.pangea_verified_contact to Res.string.pangea_verified_in_person

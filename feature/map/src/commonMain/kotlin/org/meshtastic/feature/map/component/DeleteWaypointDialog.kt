@@ -16,34 +16,30 @@
  */
 package org.meshtastic.feature.map.component
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.cancel
-import org.meshtastic.core.resources.delete
 import org.meshtastic.core.resources.delete_for_everyone
+import org.meshtastic.core.resources.delete_for_me
 import org.meshtastic.core.resources.waypoint_delete
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 
 /**
- * Waypoint removal confirmation, shared by both map flavors. Confirming always drops our local copy — that needs no
- * mesh-wide permission, so it stays available for a waypoint locked to another node. Broadcasting the removal to the
- * mesh is the opt-in checkbox, offered only when [canDeleteForEveryone] (unlocked or locked to us, and connected).
+ * Waypoint removal confirmation, shared by both map flavors. Dropping our local copy needs no mesh-wide permission, so
+ * it stays available for a waypoint locked to another node. Broadcasting the removal to the mesh is offered only when
+ * [canDeleteForEveryone] (unlocked or locked to us, and connected).
+ *
+ * As on iOS, the ways to delete are the choices themselves, each a red capsule, stacked over Cancel.
  */
 @Composable
 fun DeleteWaypointDialog(
@@ -53,38 +49,30 @@ fun DeleteWaypointDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Keyed on eligibility so a mid-dialog disconnect clears the opt-in along with the checkbox that set it, rather
-    // than leaving a stale selection that would broadcast on confirm.
-    var alsoDeleteForEveryone by remember(canDeleteForEveryone) { mutableStateOf(false) }
-
     MeshtasticDialog(
         modifier = modifier,
         titleRes = Res.string.waypoint_delete,
-        text =
-        if (canDeleteForEveryone) {
-            {
-                // The whole row is one toggleable target so the label names the checkbox to a screen reader.
-                Row(
-                    modifier =
-                    Modifier.fillMaxWidth()
-                        .toggleable(
-                            value = alsoDeleteForEveryone,
-                            role = Role.Checkbox,
-                            onValueChange = { alsoDeleteForEveryone = it },
-                        ),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(checked = alsoDeleteForEveryone, onCheckedChange = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(Res.string.delete_for_everyone))
+        text = {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Keyed on eligibility at composition, so a mid-dialog disconnect takes the broadcast choice away.
+                if (canDeleteForEveryone) {
+                    DeleteChoice(stringResource(Res.string.delete_for_everyone), onDeleteForEveryone)
                 }
+                DeleteChoice(stringResource(Res.string.delete_for_me), onDeleteForMe)
             }
-        } else {
-            null
         },
-        confirmTextRes = Res.string.delete,
-        onConfirm = { if (canDeleteForEveryone && alsoDeleteForEveryone) onDeleteForEveryone() else onDeleteForMe() },
         dismissTextRes = Res.string.cancel,
         onDismiss = onDismissRequest,
+    )
+}
+
+@Composable
+private fun DeleteChoice(label: String, onClick: () -> Unit) {
+    IosButton(
+        text = label,
+        onClick = onClick,
+        style = IosButtonStyle.Destructive,
+        textStyle = Ios.type.body.copy(fontWeight = FontWeight.SemiBold),
+        modifier = Modifier.fillMaxWidth(),
     )
 }

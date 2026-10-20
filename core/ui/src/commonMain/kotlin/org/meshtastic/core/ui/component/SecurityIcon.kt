@@ -22,14 +22,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.HorizontalDivider
@@ -38,7 +35,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -398,48 +394,30 @@ fun SecurityIcon(
 private fun SecurityHelpDialog(securityState: SecurityState, onDismiss: () -> Unit) {
     var showAll by rememberSaveable { mutableStateOf(false) }
 
-    AlertDialog(
-        modifier =
-        if (showAll) {
-            Modifier.fillMaxSize()
-        } else {
-            Modifier
-        },
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                if (showAll) {
-                    stringResource(Res.string.security_icon_help_title_all)
-                } else {
-                    stringResource(Res.string.security_icon_help_title)
-                },
-            )
-        },
+    // An iOS alert: "Show All" in grey beside the tinted dismiss, the list of states scrolling inside.
+    MeshtasticDialog(
+        title =
+        stringResource(
+            if (showAll) Res.string.security_icon_help_title_all else Res.string.security_icon_help_title,
+        ),
         text = {
+            // The full list scrolls itself; nesting it in another scroll would measure it without a height limit.
             if (showAll) {
                 AllSecurityStates()
             } else {
-                ContextualSecurityState(securityState)
-            }
-        },
-        confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TextButton(onClick = { showAll = !showAll }) {
-                    Text(
-                        if (showAll) {
-                            stringResource(Res.string.security_icon_help_show_less)
-                        } else {
-                            stringResource(Res.string.security_icon_help_show_all)
-                        },
-                    )
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    ContextualSecurityState(securityState)
                 }
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.security_icon_help_dismiss)) }
             }
         },
+        dismissText =
+        stringResource(
+            if (showAll) Res.string.security_icon_help_show_less else Res.string.security_icon_help_show_all,
+        ),
+        onDismiss = { showAll = !showAll },
+        confirmText = stringResource(Res.string.security_icon_help_dismiss),
+        onConfirm = onDismiss,
+        onDismissRequest = onDismiss,
     )
 }
 

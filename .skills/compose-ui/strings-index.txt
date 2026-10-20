@@ -1380,6 +1380,7 @@ pangea_configuration_for
 pangea_configure
 pangea_configure_bluetooth
 pangea_connected_node
+pangea_connected_node_trust
 pangea_connection_name
 pangea_contacts
 pangea_contacts_count
@@ -1694,6 +1695,9 @@ pangea_verified_contact
 pangea_verified_in_person
 pangea_version_line
 pangea_via_mqtt
+pangea_waypoint_area
+pangea_waypoint_location
+pangea_waypoint_timestamps
 pangea_waypoints
 pangea_welcome_offgrid_desc
 pangea_welcome_offgrid_title

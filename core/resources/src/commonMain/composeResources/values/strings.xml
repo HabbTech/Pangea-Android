@@ -1416,6 +1416,7 @@
     <string name="pangea_configure">Configure</string>
     <string name="pangea_configure_bluetooth">Configure Bluetooth Connectivity</string>
     <string name="pangea_connected_node">Connected Node %1$s</string>
+    <string name="pangea_connected_node_trust">Connected node</string>
     <string name="pangea_connection_name">Connection Name: %1$s</string>
     <string name="pangea_contacts">Contacts</string>
     <string name="pangea_contacts_count">Contacts (%1$d)</string>
@@ -1730,6 +1731,9 @@
     <string name="pangea_verified_in_person">Verified in person</string>
     <string name="pangea_version_line">Version: %1$s</string>
     <string name="pangea_via_mqtt">Via Mqtt</string>
+    <string name="pangea_waypoint_area">Custom area</string>
+    <string name="pangea_waypoint_location">Location</string>
+    <string name="pangea_waypoint_timestamps">Timestamps</string>
     <string name="pangea_waypoints">Waypoints</string>
     <string name="pangea_welcome_offgrid_desc">Pangea radios talk to each other directly, so you can chat where phones have no signal.</string>
     <string name="pangea_welcome_offgrid_title">Message Without Cell Service</string>
