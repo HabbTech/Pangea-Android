@@ -89,6 +89,8 @@ fun NodeFilterSearchBar(
     toggles: NodeFilterToggles,
     modifier: Modifier = Modifier,
     searchResults: @Composable ColumnScope.() -> Unit = {},
+    // False where the sort and filter menu has its own button (Pangea's floating one, as on iOS).
+    showSortButton: Boolean = true,
 ) {
     Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         MeshtasticSearchBar(
@@ -97,7 +99,13 @@ fun NodeFilterSearchBar(
             placeholder = stringResource(Res.string.pangea_find_node),
             inputFieldTag = NODE_FILTER_SEARCH_BAR_INPUT_FIELD_TAG,
             trailingActions = {
-                NodeSortButton(currentSortOption = currentSortOption, onSortSelect = onSortSelect, toggles = toggles)
+                if (showSortButton) {
+                    NodeSortButton(
+                        currentSortOption = currentSortOption,
+                        onSortSelect = onSortSelect,
+                        toggles = toggles,
+                    )
+                }
             },
             expandedContent = searchResults,
         )
@@ -146,30 +154,41 @@ data class NodeFilterToggles(
     val onToggleOnlyEncrypted: () -> Unit,
 )
 
+/**
+ * The sort and filter menu, opened from [button] (by default the sort icon in the search field). [extraItems] adds
+ * Android's own entries at the top, such as Pangea's hop histogram now that the bar has no room for it.
+ */
 @Suppress("LongMethod")
 @Composable
-private fun NodeSortButton(
+fun NodeSortButton(
     currentSortOption: NodeSortOption,
     onSortSelect: (NodeSortOption) -> Unit,
     toggles: NodeFilterToggles,
     modifier: Modifier = Modifier,
+    extraItems: (@Composable (dismiss: () -> Unit) -> Unit)? = null,
+    button: @Composable (open: () -> Unit) -> Unit = { open ->
+        IconButton(onClick = open) {
+            Icon(
+                imageVector = MeshtasticIcons.Sort,
+                contentDescription = stringResource(Res.string.node_sort_button),
+                modifier = Modifier.heightIn(max = 48.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    },
 ) = Box(modifier) {
     var expanded by remember { mutableStateOf(false) }
 
-    IconButton(onClick = { expanded = true }) {
-        Icon(
-            imageVector = MeshtasticIcons.Sort,
-            contentDescription = stringResource(Res.string.node_sort_button),
-            modifier = Modifier.heightIn(max = 48.dp),
-            tint = MaterialTheme.colorScheme.onSurface,
-        )
-    }
+    button { expanded = true }
 
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = { expanded = false },
         modifier = Modifier.background(MaterialTheme.colorScheme.background.copy(alpha = 1f)),
     ) {
+        if (extraItems != null) {
+            DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) { extraItems { expanded = false } }
+        }
         DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
             DropdownMenuTitle(text = stringResource(Res.string.node_sort_title))
 

@@ -37,8 +37,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -72,6 +72,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.channel_invalid
 import org.meshtastic.core.resources.hop_histogram_title
 import org.meshtastic.core.resources.node_list_help_title
+import org.meshtastic.core.resources.node_sort_button
 import org.meshtastic.core.resources.nodes
 import org.meshtastic.core.resources.nodes_empty_disconnected_hint
 import org.meshtastic.core.resources.nodes_empty_disconnected_title
@@ -91,12 +92,13 @@ import org.meshtastic.core.ui.component.ScrollToTopEvent
 import org.meshtastic.core.ui.component.SharedContactDialog
 import org.meshtastic.core.ui.component.smartScrollToTop
 import org.meshtastic.core.ui.icon.BarChart
-import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.Nodes
 import org.meshtastic.core.ui.icon.SignalOff
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.feature.node.component.LocalNodeContextMenu
@@ -106,6 +108,7 @@ import org.meshtastic.feature.node.component.NodeFilterSearchBar
 import org.meshtastic.feature.node.component.NodeFilterToggles
 import org.meshtastic.feature.node.component.NodeHopHistogramSheet
 import org.meshtastic.feature.node.component.NodeListHelp
+import org.meshtastic.feature.node.component.NodeSortButton
 import org.meshtastic.proto.ExcludedModules
 
 /**
@@ -285,6 +288,30 @@ fun NodeListScreen(
         }
     }
 
+    val filterPrefs = viewModel.nodeFilterPreferences
+    val filterToggles =
+        NodeFilterToggles(
+            includeUnknown = state.filter.includeUnknown,
+            onToggleIncludeUnknown = filterPrefs::toggleIncludeUnknown,
+            excludeInfrastructure = state.filter.excludeInfrastructure,
+            onToggleExcludeInfrastructure = filterPrefs::toggleExcludeInfrastructure,
+            onlyOnline = state.filter.onlyOnline,
+            onToggleOnlyOnline = filterPrefs::toggleOnlyOnline,
+            onlyDirect = state.filter.onlyDirect,
+            onToggleOnlyDirect = filterPrefs::toggleOnlyDirect,
+            showIgnored = state.filter.showIgnored,
+            onToggleShowIgnored = filterPrefs::toggleShowIgnored,
+            ignoredNodeCount = ignoredNodeCount,
+            excludeUnheard = state.filter.excludeUnheard,
+            onToggleExcludeUnheard = filterPrefs::toggleExcludeUnheard,
+            excludeMqtt = state.filter.excludeMqtt,
+            onToggleExcludeMqtt = filterPrefs::toggleExcludeMqtt,
+            onlySigned = state.filter.onlySigned,
+            onToggleOnlySigned = filterPrefs::toggleOnlySigned,
+            onlyEncrypted = state.filter.onlyEncrypted,
+            onToggleOnlyEncrypted = filterPrefs::toggleOnlyEncrypted,
+        )
+
     Scaffold(
         modifier = modifier,
         containerColor = Ios.colors.background,
@@ -300,31 +327,22 @@ fun NodeListScreen(
                 canNavigateUp = false,
                 onNavigateUp = {},
                 background = Ios.colors.background,
-                actions = {
-                    IconButton(onClick = { showHopHistogram = true }) {
-                        Icon(
-                            imageVector = MeshtasticIcons.BarChart,
-                            contentDescription = stringResource(Res.string.hop_histogram_title),
-                        )
-                    }
-                    IconButton(onClick = { showHelpSheet = true }) {
-                        Icon(
-                            imageVector = MeshtasticIcons.Info,
-                            contentDescription = stringResource(Res.string.node_list_help_title),
-                        )
-                    }
-                },
+                // iOS's bar holds only the radio chip: the legend and the filters are floating buttons at the foot.
+                actions = {},
                 onClickChip = { navigateToNodeDetails(it.num) },
             )
         },
         floatingActionButton = {
             val shareCapable = ourNode?.capabilities?.supportsQrCodeSharing ?: false
+            // Android's import and share button, which iOS doesn't have: above the floating filter button.
             MeshtasticImportFAB(
                 modifier =
-                Modifier.animateFloatingActionButton(
-                    visible = !isScrollInProgress && connectionState == ConnectionState.Connected && shareCapable,
-                    alignment = androidx.compose.ui.Alignment.BottomEnd,
-                ),
+                Modifier.padding(bottom = 68.dp)
+                    .animateFloatingActionButton(
+                        visible =
+                        !isScrollInProgress && connectionState == ConnectionState.Connected && shareCapable,
+                        alignment = androidx.compose.ui.Alignment.BottomEnd,
+                    ),
                 onImport = { uriString ->
                     val onInvalid: () -> Unit = { scope.launch { showToast(Res.string.channel_invalid) } }
                     parseDeepLinkOrInvalid(uriString, onHandleDeepLink, onInvalid)
@@ -352,13 +370,13 @@ fun NodeListScreen(
                             onRemoveAll = { unheardNodes.forEach(viewModel::removeNode) },
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                         )
-                        val filterPrefs = viewModel.nodeFilterPreferences
                         NodeFilterSearchBar(
                             filterText = state.filter.filterText,
                             onTextChange = { viewModel.nodeFilterText = it },
                             currentSortOption = state.sort,
                             onSortSelect = viewModel::setSortOption,
                             modifier = Modifier.fillMaxWidth(),
+                            showSortButton = false,
                             searchResults = {
                                 // The full-screen expanded bar hides the sticky header's counts.
                                 LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -374,28 +392,7 @@ fun NodeListScreen(
                                     items(nodes, key = { it.num }, itemContent = nodeRow)
                                 }
                             },
-                            toggles =
-                            NodeFilterToggles(
-                                includeUnknown = state.filter.includeUnknown,
-                                onToggleIncludeUnknown = filterPrefs::toggleIncludeUnknown,
-                                excludeInfrastructure = state.filter.excludeInfrastructure,
-                                onToggleExcludeInfrastructure = filterPrefs::toggleExcludeInfrastructure,
-                                onlyOnline = state.filter.onlyOnline,
-                                onToggleOnlyOnline = filterPrefs::toggleOnlyOnline,
-                                onlyDirect = state.filter.onlyDirect,
-                                onToggleOnlyDirect = filterPrefs::toggleOnlyDirect,
-                                showIgnored = state.filter.showIgnored,
-                                onToggleShowIgnored = filterPrefs::toggleShowIgnored,
-                                ignoredNodeCount = ignoredNodeCount,
-                                excludeUnheard = state.filter.excludeUnheard,
-                                onToggleExcludeUnheard = filterPrefs::toggleExcludeUnheard,
-                                excludeMqtt = state.filter.excludeMqtt,
-                                onToggleExcludeMqtt = filterPrefs::toggleExcludeMqtt,
-                                onlySigned = state.filter.onlySigned,
-                                onToggleOnlySigned = filterPrefs::toggleOnlySigned,
-                                onlyEncrypted = state.filter.onlyEncrypted,
-                                onToggleOnlyEncrypted = filterPrefs::toggleOnlyEncrypted,
-                            ),
+                            toggles = filterToggles,
                         )
                     }
                 }
@@ -412,6 +409,39 @@ fun NodeListScreen(
                 }
                 item { Spacer(modifier = Modifier.height(88.dp)) }
             }
+            // iOS's two floating glass buttons above the tab bar: the legend at the left, sort and filters at the
+            // right. Android's hop histogram rides at the top of the filter menu.
+            IosGlassIconButton(
+                icon = IosIcons.QuestionCircle,
+                contentDescription = stringResource(Res.string.node_list_help_title),
+                onClick = { showHelpSheet = true },
+                tint = Ios.colors.tint,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 22.dp),
+            )
+            NodeSortButton(
+                currentSortOption = state.sort,
+                onSortSelect = viewModel::setSortOption,
+                toggles = filterToggles,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 22.dp),
+                extraItems = { dismiss ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(Res.string.hop_histogram_title)) },
+                        leadingIcon = { Icon(MeshtasticIcons.BarChart, contentDescription = null) },
+                        onClick = {
+                            dismiss()
+                            showHopHistogram = true
+                        },
+                    )
+                },
+                button = { open ->
+                    IosGlassIconButton(
+                        icon = IosIcons.FilterCircle,
+                        contentDescription = stringResource(Res.string.node_sort_button),
+                        onClick = open,
+                        tint = Ios.colors.tint,
+                    )
+                },
+            )
         }
     }
 }

@@ -1378,6 +1378,20 @@ object IosIcons {
         }
     }
 
+    /** `questionmark.circle`: a screen's legend or help. */
+    val QuestionCircle: ImageVector by lazy {
+        icon("ios.questionCircle") {
+            stroked(width = 1.6f) {
+                circle(12f, 12f, 9.2f)
+                moveTo(9.5f, 9.6f)
+                curveTo(9.5f, 8.1f, 10.6f, 7.1f, 12f, 7.1f)
+                curveTo(13.4f, 7.1f, 14.5f, 8.1f, 14.5f, 9.4f)
+                curveTo(14.5f, 11.2f, 12f, 11.5f, 12f, 13.6f)
+            }
+            filled { circle(12f, 16.6f, 1.05f) }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

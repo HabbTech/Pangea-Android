@@ -108,6 +108,8 @@ private fun NodeDetailScaffold(
                 inlineTitle = true,
                 ourNode = uiState.ourNode,
                 showNodeChip = false,
+                // iOS's node detail has no radio chip.
+                radioChip = false,
                 canNavigateUp = true,
                 onNavigateUp = onNavigateUp,
                 actions = {},

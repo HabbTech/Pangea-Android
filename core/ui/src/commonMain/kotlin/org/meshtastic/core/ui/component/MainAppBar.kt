@@ -104,6 +104,9 @@ fun MainAppBar(
     background: Color = MaterialTheme.colorScheme.background,
     // iOS's inline title (navigationBarTitleDisplayMode(.inline)): the title small and centred in the top row.
     inlineTitle: Boolean = false,
+    // Expert Mode's radio chip, on pushed screens and the tab roots that ask for it ([showNodeChip]); false where iOS
+    // leaves it out (node detail).
+    radioChip: Boolean = true,
     // Trailing slot: a @Composable content lambda, not an event handler (detekt LambdaParameterEventTrailing).
     actions: @Composable () -> Unit,
 ) {
@@ -147,7 +150,7 @@ fun MainAppBar(
                 IosActionCapsule { CompositionLocalProvider(LocalContentColor provides c.label) { actions() } }
                 // iOS's radio chip (Expert Mode only): on the tab roots that ask for it, and on every pushed screen.
                 val chip = LocalIosRadioChip.current
-                if (chip != null && (showNodeChip || canNavigateUp)) {
+                if (chip != null && radioChip && (showNodeChip || canNavigateUp)) {
                     Spacer(Modifier.width(10.dp))
                     IosRadioChip(chip, onClick = ourNode?.let { node -> { onClickChip(node) } })
                 }
