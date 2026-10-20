@@ -30,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -95,7 +94,6 @@ import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
 import org.meshtastic.feature.settings.pangea.IosSettingsScreen
 import org.meshtastic.feature.settings.pangea.MyRadioSection
-import org.meshtastic.feature.settings.pangea.PangeaHelpSheet
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.search.SettingsSearchBar
@@ -122,9 +120,6 @@ fun DesktopSettingsScreen(
     val homoglyphEnabled by radioConfigViewModel.homoglyphEncodingEnabledFlow.collectAsStateWithLifecycle(false)
     val hiddenFeaturesUnlocked by settingsViewModel.hiddenFeaturesUnlocked.collectAsStateWithLifecycle()
     val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
-    // Pangea: Help & Documentation opens Pangea's own guides (Pangea-Apple PangeaHelp).
-    var showPangeaHelp by rememberSaveable { mutableStateOf(false) }
-    if (showPangeaHelp) PangeaHelpSheet(expertMode = expertModeEnabled, onDismiss = { showPangeaHelp = false })
     val cacheLimit by settingsViewModel.dbCacheLimit.collectAsStateWithLifecycle()
     val isOtaCapable by settingsViewModel.isOtaCapable.collectAsStateWithLifecycle()
     val showFullMessageTimestamps by settingsViewModel.showFullMessageTimestamps.collectAsStateWithLifecycle()
@@ -334,7 +329,7 @@ fun DesktopSettingsScreen(
                         text = stringResource(Res.string.help_and_documentation),
                         leadingIcon = MeshtasticIcons.HelpOutline,
                     ) {
-                        showPangeaHelp = true
+                        onNavigate(SettingsRoute.Help)
                     }
                 }
 

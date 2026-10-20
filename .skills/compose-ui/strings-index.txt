@@ -1448,6 +1448,7 @@ pangea_help_apple_watch
 pangea_help_connecting_radios
 pangea_help_contacts_profiles
 pangea_help_expert_guides
+pangea_help_expert_section
 pangea_help_faq
 pangea_help_firmware_updates
 pangea_help_footer
@@ -1463,6 +1464,7 @@ pangea_help_mqtt
 pangea_help_nodes
 pangea_help_privacy_security
 pangea_help_report_problem
+pangea_help_search
 pangea_help_settings
 pangea_help_signal_meter
 pangea_help_supported_hardware

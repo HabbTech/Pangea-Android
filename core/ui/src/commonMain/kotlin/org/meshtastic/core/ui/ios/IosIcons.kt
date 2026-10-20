@@ -2624,6 +2624,92 @@ object IosIcons {
         }
     }
 
+    /** `flag`: Getting Started. */
+    val Flag: ImageVector by lazy {
+        icon("ios.flag") {
+            stroked(width = 1.5f) {
+                moveTo(5f, 21f)
+                lineTo(5f, 3.6f)
+                moveTo(5f, 4.2f)
+                curveTo(7.6f, 3f, 9.6f, 3.2f, 12f, 4.4f)
+                curveTo(14.4f, 5.6f, 16.4f, 5.8f, 19f, 4.6f)
+                lineTo(19f, 13.6f)
+                curveTo(16.4f, 14.8f, 14.4f, 14.6f, 12f, 13.4f)
+                curveTo(9.6f, 12.2f, 7.6f, 12f, 5f, 13.2f)
+            }
+        }
+    }
+
+    /** `bubble.left.and.bubble.right`: Messaging. */
+    val BubblesTwo: ImageVector by lazy {
+        icon("ios.bubblesTwo") {
+            stroked(width = 1.5f) {
+                moveTo(4.6f, 4.4f)
+                lineTo(13.4f, 4.4f)
+                curveTo(14.7f, 4.4f, 15.6f, 5.3f, 15.6f, 6.6f)
+                lineTo(15.6f, 10.6f)
+                curveTo(15.6f, 11.9f, 14.7f, 12.8f, 13.4f, 12.8f)
+                lineTo(8.2f, 12.8f)
+                lineTo(5f, 15.4f)
+                lineTo(5f, 12.8f)
+                lineTo(4.6f, 12.8f)
+                curveTo(3.3f, 12.8f, 2.4f, 11.9f, 2.4f, 10.6f)
+                lineTo(2.4f, 6.6f)
+                curveTo(2.4f, 5.3f, 3.3f, 4.4f, 4.6f, 4.4f)
+                close()
+                moveTo(17.8f, 8.6f)
+                lineTo(19.4f, 8.6f)
+                curveTo(20.7f, 8.6f, 21.6f, 9.5f, 21.6f, 10.8f)
+                lineTo(21.6f, 14.8f)
+                curveTo(21.6f, 16.1f, 20.7f, 17f, 19.4f, 17f)
+                lineTo(19f, 17f)
+                lineTo(19f, 19.6f)
+                lineTo(15.8f, 17f)
+                lineTo(10.6f, 17f)
+                curveTo(9.3f, 17f, 8.4f, 16.1f, 8.4f, 14.8f)
+            }
+        }
+    }
+
+    /** `arrow.up.forward`, small: a link that opens in the browser. */
+    val ArrowUpForward: ImageVector by lazy {
+        icon("ios.arrowUpForward") {
+            stroked(width = 1.8f) {
+                moveTo(6.5f, 17.5f)
+                lineTo(17f, 7f)
+                moveTo(8.5f, 7f)
+                lineTo(17f, 7f)
+                lineTo(17f, 15.5f)
+            }
+        }
+    }
+
+    /** `lock`, outlined: Privacy & Security. */
+    val LockOutline: ImageVector by lazy {
+        icon("ios.lockOutline") {
+            stroked(width = 1.5f) {
+                roundRect(5.4f, 10.4f, 18.6f, 21f, 2.2f)
+                moveTo(8.2f, 10.4f)
+                lineTo(8.2f, 7.4f)
+                curveTo(8.2f, 5.2f, 9.9f, 3.4f, 12f, 3.4f)
+                curveTo(14.1f, 3.4f, 15.8f, 5.2f, 15.8f, 7.4f)
+                lineTo(15.8f, 10.4f)
+            }
+        }
+    }
+
+    /** `cellularbars`: Signal Meter. */
+    val CellularBars: ImageVector by lazy {
+        icon("ios.cellularBars") {
+            filled {
+                roundRect(2.6f, 14.6f, 6.2f, 20f, 0.8f)
+                roundRect(7.8f, 11f, 11.4f, 20f, 0.8f)
+                roundRect(13f, 7.4f, 16.6f, 20f, 0.8f)
+                roundRect(18.2f, 3.8f, 21.8f, 20f, 0.8f)
+            }
+        }
+    }
+
     private fun icon(name: String, size: Float = 24f, viewport: Float = 24f, block: ImageVector.Builder.() -> Unit) =
         ImageVector.Builder(name, size.dp, size.dp, viewport, viewport).apply(block).build()
 

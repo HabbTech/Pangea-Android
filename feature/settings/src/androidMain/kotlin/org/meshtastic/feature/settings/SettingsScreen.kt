@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -69,7 +68,6 @@ import org.meshtastic.feature.settings.component.expertModeCaptionColor
 import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.ModuleRoute
 import org.meshtastic.feature.settings.pangea.IosSettingsScreen
-import org.meshtastic.feature.settings.pangea.PangeaHelpSheet
 import org.meshtastic.feature.settings.radio.RadioConfigItemList
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.component.EditDeviceProfileDialog
@@ -89,9 +87,6 @@ fun SettingsScreen(
     onBack: (() -> Unit)? = null,
 ) {
     val expertModeEnabled by settingsViewModel.expertModeEnabled.collectAsStateWithLifecycle()
-    // Pangea: Help & Documentation opens Pangea's own guides (Pangea-Apple PangeaHelp).
-    var showPangeaHelp by rememberSaveable { mutableStateOf(false) }
-    if (showPangeaHelp) PangeaHelpSheet(expertMode = expertModeEnabled, onDismiss = { showPangeaHelp = false })
     val localConfig by settingsViewModel.localConfig.collectAsStateWithLifecycle()
     val ourNode by settingsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
     val isConnected by settingsViewModel.isConnected.collectAsStateWithLifecycle(false)
@@ -227,7 +222,7 @@ fun SettingsScreen(
                         supportingTextColor = expertModeCaptionColor(),
                         leadingIcon = IosIcons.DocText,
                     ) {
-                        showPangeaHelp = true
+                        onNavigate(SettingsRoute.Help)
                     }
                     ListItem(text = stringResource(Res.string.pangea_app_settings), leadingIcon = IosIcons.Gear) {
                         onNavigate(SettingsRoute.AppSettings)

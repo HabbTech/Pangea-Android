@@ -179,6 +179,9 @@ sealed interface SettingsRoute : Route {
 
     @Serializable data object About : SettingsRoute
 
+    /** Pangea: Help & Documentation, Pangea's guides, pushed as on the iPhone app. */
+    @Serializable data object Help : SettingsRoute
+
     /** Pangea: App Settings (appearance, Expert Mode, Power Mode), as on the iPhone app. */
     @Serializable data object AppSettings : SettingsRoute
 

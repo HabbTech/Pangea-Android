@@ -1484,6 +1484,7 @@
     <string name="pangea_help_connecting_radios">Connecting Radios</string>
     <string name="pangea_help_contacts_profiles">Contacts &amp; Profiles</string>
     <string name="pangea_help_expert_guides">Expert Mode Guides</string>
+    <string name="pangea_help_expert_section">Expert Mode</string>
     <string name="pangea_help_faq">FAQ</string>
     <string name="pangea_help_firmware_updates">Firmware Updates</string>
     <string name="pangea_help_footer">Guides open in your browser.</string>
@@ -1499,6 +1500,7 @@
     <string name="pangea_help_nodes">Nodes</string>
     <string name="pangea_help_privacy_security">Privacy &amp; Security</string>
     <string name="pangea_help_report_problem">Report a Problem</string>
+    <string name="pangea_help_search">Search guides</string>
     <string name="pangea_help_settings">Settings &amp; Expert Mode</string>
     <string name="pangea_help_signal_meter">Signal Meter</string>
     <string name="pangea_help_supported_hardware">Supported Hardware</string>
