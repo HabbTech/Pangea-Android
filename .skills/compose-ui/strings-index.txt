@@ -1583,6 +1583,9 @@ pangea_primary_admin_key
 pangea_primary_channel
 pangea_primary_gpio
 pangea_profile
+pangea_profile_emoji
+pangea_profile_emoji_footer
+pangea_profile_name_footer
 pangea_profile_row_subtitle
 pangea_profile_save_restarts_radio
 pangea_profile_shared_with

@@ -203,6 +203,23 @@ fun iosTypography(family: FontFamily): IosTypography {
 fun interFontFamily(): FontFamily =
     FontFamily(Font(Res.font.inter_regular, FontWeight.Normal), Font(Res.font.inter_semibold, FontWeight.SemiBold))
 
+/**
+ * The colours of a sheet in Dark Mode: iOS lifts a sheet off the screen by drawing it in its *elevated* greys, so the
+ * sheet is #1C1C1E rather than black and its cards and fields one step lighter. Light Mode has no elevated set.
+ */
+fun IosColors.elevated(): IosColors = if (!isDark) {
+    this
+} else {
+    copy(
+        background = Color(0xFF1C1C1E),
+        groupedBackground = Color(0xFF1C1C1E),
+        groupedRow = Color(0xFF2C2C2E),
+        fieldFill = Color(0xFF3A3A3C),
+        separator = Color(0xFF48484A),
+        chrome = Color(0xFF2C2C2E),
+    )
+}
+
 @Suppress("CompositionLocalAllowlist")
 val LocalIosColors = staticCompositionLocalOf { LightIosColors }
 

@@ -38,6 +38,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,43 +71,46 @@ fun IosSheet(
     grabber: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val c = Ios.colors
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        sheetState =
-        rememberBottomSheetState(
-            initialValue = SheetValue.Hidden,
-            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-        ),
-        shape = RoundedCornerShape(topStart = SheetCorner, topEnd = SheetCorner),
-        containerColor = if (grouped) c.groupedBackground else c.background,
-        dragHandle = null,
-        contentWindowInsets = { WindowInsets(0) },
-    ) {
-        Column(modifier.fillMaxWidth().fillMaxHeight(heightFraction).navigationBarsPadding().imePadding()) {
-            if (grabber) {
-                Box(
-                    Modifier.padding(top = 5.dp)
-                        .align(Alignment.CenterHorizontally)
-                        .size(width = 36.dp, height = 5.dp)
-                        .clip(CircleShape)
-                        .background(c.tertiaryLabel),
-                )
+    // In Dark Mode a sheet is drawn in iOS's elevated greys, for its own background and everything on it.
+    val c = Ios.colors.elevated()
+    CompositionLocalProvider(LocalIosColors provides c) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissRequest,
+            sheetState =
+            rememberBottomSheetState(
+                initialValue = SheetValue.Hidden,
+                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+            ),
+            shape = RoundedCornerShape(topStart = SheetCorner, topEnd = SheetCorner),
+            containerColor = if (grouped) c.groupedBackground else c.background,
+            dragHandle = null,
+            contentWindowInsets = { WindowInsets(0) },
+        ) {
+            Column(modifier.fillMaxWidth().fillMaxHeight(heightFraction).navigationBarsPadding().imePadding()) {
+                if (grabber) {
+                    Box(
+                        Modifier.padding(top = 5.dp)
+                            .align(Alignment.CenterHorizontally)
+                            .size(width = 36.dp, height = 5.dp)
+                            .clip(CircleShape)
+                            .background(c.tertiaryLabel),
+                    )
+                }
+                if (header != null) {
+                    header()
+                } else {
+                    IosSheetHeader(
+                        title = title,
+                        cancelLabel = cancelLabel,
+                        onCancel = onDismissRequest,
+                        actionLabel = actionLabel,
+                        actionEnabled = actionEnabled,
+                        onAction = onAction,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                content()
             }
-            if (header != null) {
-                header()
-            } else {
-                IosSheetHeader(
-                    title = title,
-                    cancelLabel = cancelLabel,
-                    onCancel = onDismissRequest,
-                    actionLabel = actionLabel,
-                    actionEnabled = actionEnabled,
-                    onAction = onAction,
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            content()
         }
     }
 }

@@ -1619,6 +1619,9 @@
     <string name="pangea_primary_channel">Primary channel</string>
     <string name="pangea_primary_gpio">Primary GPIO</string>
     <string name="pangea_profile">Profile</string>
+    <string name="pangea_profile_emoji">Emoji</string>
+    <string name="pangea_profile_emoji_footer">Shown when you don't have a photo, or until a friend downloads it.</string>
+    <string name="pangea_profile_name_footer">People see this when you message them.</string>
     <string name="pangea_profile_row_subtitle">Photo, name and emoji</string>
     <string name="pangea_profile_save_restarts_radio">Saving restarts your radio so it can use your new name. It reconnects on its own.</string>
     <string name="pangea_profile_shared_with">Your name, photo and emoji are shared with people you message, your saved contacts and your groups. Never with Everyone Nearby.</string>

@@ -32,13 +32,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,7 +51,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
@@ -82,12 +85,17 @@ import org.meshtastic.core.repository.PhotoChange
 import org.meshtastic.core.repository.RadioController
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.cancel
+import org.meshtastic.core.resources.name
 import org.meshtastic.core.resources.pangea_all_emoji
 import org.meshtastic.core.resources.pangea_choose_photo
+import org.meshtastic.core.resources.pangea_color
 import org.meshtastic.core.resources.pangea_display_name
 import org.meshtastic.core.resources.pangea_edit_profile
 import org.meshtastic.core.resources.pangea_my_profile
 import org.meshtastic.core.resources.pangea_profile
+import org.meshtastic.core.resources.pangea_profile_emoji
+import org.meshtastic.core.resources.pangea_profile_emoji_footer
+import org.meshtastic.core.resources.pangea_profile_name_footer
 import org.meshtastic.core.resources.pangea_profile_save_restarts_radio
 import org.meshtastic.core.resources.pangea_profile_shared_with
 import org.meshtastic.core.resources.pangea_remove_photo
@@ -98,6 +106,10 @@ import org.meshtastic.core.ui.component.AvatarPalette
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.PangeaEmojiPicker
 import org.meshtastic.core.ui.component.rememberAvatarBitmap
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.ios.IosSheet
 import org.meshtastic.core.ui.util.rememberAvatarPhotoPicker
 
@@ -225,6 +237,7 @@ fun ProfileEditorSheet(
     IosSheet(
         title = stringResource(Res.string.pangea_profile),
         onDismissRequest = onDismiss,
+        grouped = true,
         cancelLabel = stringResource(Res.string.cancel),
         actionLabel = stringResource(Res.string.save),
         actionEnabled = ProfileCard.cleanName(name).isNotEmpty(),
@@ -233,52 +246,77 @@ fun ProfileEditorSheet(
             onDismiss()
         },
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            PangeaAvatar(
-                photo = rememberAvatarBitmap(previewPhoto),
-                emoji = emoji,
-                colorIndex = color,
-                initials = RadioAutoConfig.shortName(name),
-                fallbackColor = AvatarPalette.color(color),
-                size = 96.dp,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = pickPhoto) { Text(stringResource(Res.string.pangea_choose_photo)) }
-                if (previewPhoto != null) {
-                    TextButton(onClick = { photoChange = PhotoChange.Remove }) {
-                        Text(stringResource(Res.string.pangea_remove_photo))
+        // iOS's ProfileEditorSheet is a form: the photo, then Name, Emoji and Color sections, then the privacy note.
+        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+            IosSection {
+                Column(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    PangeaAvatar(
+                        photo = rememberAvatarBitmap(previewPhoto),
+                        emoji = emoji,
+                        colorIndex = color,
+                        initials = RadioAutoConfig.shortName(name),
+                        fallbackColor = AvatarPalette.color(color),
+                        size = 96.dp,
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        IosButton(
+                            text = stringResource(Res.string.pangea_choose_photo),
+                            onClick = pickPhoto,
+                            style = IosButtonStyle.Gray,
+                            textStyle = Ios.type.subheadline,
+                        )
+                        if (previewPhoto != null) {
+                            IosButton(
+                                text = stringResource(Res.string.pangea_remove_photo),
+                                onClick = { photoChange = PhotoChange.Remove },
+                                style = IosButtonStyle.Gray,
+                                textStyle = Ios.type.subheadline,
+                            )
+                        }
                     }
                 }
             }
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(Res.string.pangea_display_name)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            EmojiQuickPicks(
-                selected = emoji,
-                onPick = { emoji = if (emoji == it) "" else it },
-                onAll = { showAllEmoji = true },
-            )
-            ColorDots(selected = color, onPick = { color = it })
+            IosSection(
+                header = stringResource(Res.string.name),
+                footer = stringResource(Res.string.pangea_profile_name_footer),
+            ) {
+                ProfileNameField(name = name, onNameChange = { name = it })
+            }
+            IosSection(
+                header = stringResource(Res.string.pangea_profile_emoji),
+                footer = stringResource(Res.string.pangea_profile_emoji_footer),
+            ) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    EmojiQuickPicks(
+                        selected = emoji,
+                        onPick = { emoji = if (emoji == it) "" else it },
+                        onAll = { showAllEmoji = true },
+                    )
+                }
+            }
+            IosSection(header = stringResource(Res.string.pangea_color)) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    ColorDots(selected = color, onPick = { color = it })
+                }
+            }
             Text(
                 stringResource(Res.string.pangea_profile_shared_with),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
+                modifier = Modifier.padding(horizontal = 32.dp, vertical = 12.dp),
             )
             // A new name is written to the radio, which restarts to use it: say so before Save.
             val currentName = state.profile.displayName.ifEmpty { state.radioName }
             if (state.code != null && ProfileCard.cleanName(name) != currentName) {
                 Text(
                     stringResource(Res.string.pangea_profile_save_restarts_radio),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.systemRed,
+                    modifier = Modifier.padding(horizontal = 32.dp),
                 )
             }
             Spacer(Modifier.height(24.dp))
@@ -377,4 +415,25 @@ fun SetupProfilePrompt(modifier: Modifier = Modifier, viewModel: MyProfileViewMo
         }
     }
     if (editing) ProfileEditorSheet(state, onSave = viewModel::save, onDismiss = { editing = false })
+}
+
+/** The Name section's field, as an iOS form's text field: the name inline on the card, its placeholder in grey. */
+@Composable
+private fun ProfileNameField(name: String, onNameChange: (String) -> Unit) {
+    val c = Ios.colors
+    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp)) {
+        if (name.isEmpty()) {
+            Text(stringResource(Res.string.pangea_display_name), style = Ios.type.body, color = c.tertiaryLabel)
+        }
+        BasicTextField(
+            value = name,
+            onValueChange = onNameChange,
+            singleLine = true,
+            textStyle = Ios.type.body.copy(color = c.label),
+            cursorBrush = SolidColor(c.tint),
+            keyboardOptions =
+            KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Done),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
