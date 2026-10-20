@@ -103,6 +103,7 @@ import org.meshtastic.core.ui.util.LocalMapMainScreenProvider
 import org.meshtastic.core.ui.util.LocalMapViewProvider
 import org.meshtastic.core.ui.util.LocalNodeProfileSheet
 import org.meshtastic.core.ui.util.LocalNodeTrackMapProvider
+import org.meshtastic.core.ui.util.LocalPairRadioSheet
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
 import org.meshtastic.core.ui.util.LocalSitePlannerAvailable
 import org.meshtastic.core.ui.util.LocalTracerouteMapProvider
@@ -115,6 +116,8 @@ import org.meshtastic.desktop.map.desktopMapViewProvider
 import org.meshtastic.desktop.notification.DesktopOS
 import org.meshtastic.desktop.notification.NativeNotificationSender
 import org.meshtastic.desktop.ui.DesktopMainScreen
+import org.meshtastic.feature.connections.pangea.PairRadioContent
+import org.meshtastic.feature.intro.PairRadioSheet
 import org.meshtastic.feature.map.MapScreen
 import org.meshtastic.feature.map.SharedMapViewModel
 import org.meshtastic.feature.map.maplibre.MapLibreDiscoveryMap
@@ -425,6 +428,7 @@ private fun ApplicationScope.MeshtasticWindow(
                 LocalEventBranding provides eventEdition,
                 LocalPowerModeMenu provides powerModeMenu,
                 LocalNodeProfileSheet provides nodeProfileSheetSlot(multiBackstack),
+                LocalPairRadioSheet provides PairRadioSheetSlot,
                 LocalMapViewProvider provides desktopMapViewProvider(),
                 // The planner runs in the browser here rather than in the app; the button is still offered.
                 LocalSitePlannerAvailable provides true,
@@ -555,4 +559,12 @@ private fun handleKeyboardShortcut(
 
         else -> false
     }
+}
+
+/** iOS's Pair Radio sheet, joining the connections feature's pairing list with setup's name page. */
+private val PairRadioSheetSlot: @Composable (onDismiss: () -> Unit) -> Unit = { onDismiss ->
+    PairRadioSheet(
+        pairRadio = { onPair -> PairRadioContent(onPair = onPair, finishIfAlreadyConnected = false) },
+        onDismiss = onDismiss,
+    )
 }

@@ -20,11 +20,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.meshtastic.core.ui.ios.Ios
 
-/** The hairline between two rows of a [TitledCard], inset 16 dp at both ends as iOS draws it. */
+/**
+ * The hairline between two rows of a [TitledCard], inset 16 dp at both ends as iOS draws it. Under a row whose text
+ * starts after a symbol, iOS starts the line at the text: pass that as [startIndent].
+ */
 @Composable
-fun PreferenceDivider() {
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Ios.colors.separator)
+fun PreferenceDivider(startIndent: Dp = 16.dp) {
+    HorizontalDivider(
+        modifier = Modifier.padding(start = startIndent, end = 16.dp),
+        thickness = 0.5.dp,
+        color = Ios.colors.separator,
+    )
 }

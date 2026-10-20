@@ -1385,6 +1385,14 @@
     <string name="pangea_chat_icon_hint">Only you see this icon.</string>
     <string name="pangea_choose_photo">Choose Photo</string>
     <string name="pangea_code_placeholder">@code</string>
+    <string name="pangea_color">Color</string>
+    <string name="pangea_color_blue">Blue</string>
+    <string name="pangea_color_green">Green</string>
+    <string name="pangea_color_grid">Grid</string>
+    <string name="pangea_color_red">Red</string>
+    <string name="pangea_color_sliders">Sliders</string>
+    <string name="pangea_color_spectrum">Spectrum</string>
+    <string name="pangea_colors">Colors</string>
     <string name="pangea_config_title">%1$s Config</string>
     <string name="pangea_configuration_for">Configuration for: %1$s</string>
     <string name="pangea_configure">Configure</string>
@@ -1402,6 +1410,7 @@
     <string name="pangea_create_group">Create Group</string>
     <string name="pangea_critical_alerts_desc">Select packets sent as critical will ignore silent mode and Do Not Disturb in your phone's notification settings.</string>
     <string name="pangea_decline">Decline</string>
+    <string name="pangea_decrease">Decrease</string>
     <string name="pangea_developers">Developers</string>
     <string name="pangea_device_screen">Device Screen</string>
     <string name="pangea_device_section">Device</string>
@@ -1417,6 +1426,7 @@
     <string name="pangea_find_contact">Find a contact</string>
     <string name="pangea_find_in_conversation">Find in conversation</string>
     <string name="pangea_find_node">Find a node</string>
+    <string name="pangea_firmware_reconnect">Please reconnect to your device to load firmware information.</string>
     <string name="pangea_firmware_updates">Firmware Updates</string>
     <string name="pangea_forget_radio">Forget This Radio</string>
     <string name="pangea_forget_radio_message">This disconnects the radio. You can pair it again anytime.</string>
@@ -1467,6 +1477,7 @@
     <string name="pangea_help_units_locale">Units &amp; Language</string>
     <string name="pangea_help_whats_new">What's New</string>
     <string name="pangea_hops_away">Hops Away:</string>
+    <string name="pangea_increase">Increase</string>
     <string name="pangea_invite_from">%1$s invited you</string>
     <string name="pangea_invite_people">Invite</string>
     <string name="pangea_invite_sent">Invited</string>
@@ -1576,6 +1587,7 @@
     <string name="pangea_unreachable">%1$s didn't answer. Make sure their radio is on and in range, then try again.</string>
     <string name="pangea_use_symbol">Use Symbol</string>
     <string name="pangea_user_details">User Details</string>
+    <string name="pangea_version_line">Version: %1$s</string>
     <string name="pangea_welcome_offgrid_desc">Pangea radios talk to each other directly, so you can chat where phones have no signal.</string>
     <string name="pangea_welcome_offgrid_title">Message Without Cell Service</string>
     <string name="pangea_welcome_private_desc">Your chats are encrypted, and Pangea doesn't collect personal information.</string>

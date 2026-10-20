@@ -65,6 +65,8 @@ import org.meshtastic.core.ui.ios.IosTabBar
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.ios.LocalIosUnderTabBar
 import org.meshtastic.core.ui.navigation.icon
+import org.meshtastic.core.ui.util.LocalOpenPairRadio
+import org.meshtastic.core.ui.util.LocalPairRadioSheet
 import org.meshtastic.core.ui.viewmodel.UIViewModel
 
 /**
@@ -138,11 +140,22 @@ fun MeshtasticNavigationSuite(
             }
         }
 
+    // iOS's PairRadioPresenter: the pill and Settings open one Pair Radio sheet, shown over everything.
+    val pairSheet = LocalPairRadioSheet.current
+    var pairing by remember { mutableStateOf(false) }
+    val openPairRadio: () -> Unit = {
+        if (pairSheet != null) pairing = true else multiBackstack.navigateTopLevel(TopLevelDestination.Connect.route)
+    }
+
     val density = LocalDensity.current
     var chromeHeight by remember { mutableStateOf(0.dp) }
     val underTabBar = remember { mutableIntStateOf(0) }
     Box(modifier.fillMaxSize()) {
-        CompositionLocalProvider(LocalIosBottomInset provides chromeHeight, LocalIosUnderTabBar provides underTabBar) {
+        CompositionLocalProvider(
+            LocalIosBottomInset provides chromeHeight,
+            LocalIosUnderTabBar provides underTabBar,
+            LocalOpenPairRadio provides openPairRadio,
+        ) {
             // Older screens stop above the bar; iOS-style screens scroll under it (IosDrawsUnderTabBar).
             val navigationBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
             val olderScreenPadding = (chromeHeight - navigationBar).coerceAtLeast(0.dp)
@@ -158,7 +171,7 @@ fun MeshtasticNavigationSuite(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (pill != null) {
-                RadioStatusPill(pill) { multiBackstack.navigateTopLevel(TopLevelDestination.Connect.route) }
+                RadioStatusPill(pill, onPair = openPairRadio)
                 Spacer(Modifier.height(10.dp))
             }
             IosTabBar(
@@ -169,6 +182,7 @@ fun MeshtasticNavigationSuite(
                 },
             )
         }
+        if (pairing && pairSheet != null) pairSheet { pairing = false }
     }
 }
 

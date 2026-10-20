@@ -83,6 +83,10 @@ class SetupProfileViewModel(
             .orEmpty()
     }
 
+    /** True while the connected radio still has its factory name ("Meshtastic 1a2b"). */
+    fun radioHasDefaultName(): Boolean =
+        nodeRepository.ourNodeInfo.value?.user?.long_name?.let(RadioAutoConfig::hasDefaultName) ?: false
+
     fun save(name: String, region: RegionCode?) {
         if (_phase.value == Phase.SAVING || _phase.value == Phase.RESTARTING) return
         _phase.value = Phase.SAVING

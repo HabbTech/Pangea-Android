@@ -914,6 +914,73 @@ object IosIcons {
         }
     }
 
+    /** `eyedropper`: a colour setting. */
+    val Eyedropper: ImageVector by lazy {
+        icon("ios.eyedropper") {
+            stroked(width = 1.4f) { capsule(4.4f, 19.6f, 12.2f, 11.8f, 1.1f) }
+            filled {
+                capsule(10.9f, 9.1f, 14.9f, 13.1f, 1.2f)
+                capsule(14.6f, 9.4f, 18.4f, 5.6f, 2.7f)
+            }
+        }
+    }
+
+    /** `plus`, as on a stepper. */
+    val Plus: ImageVector by lazy {
+        icon("ios.plus") {
+            stroked(width = 2.4f) {
+                moveTo(3.6f, 12f)
+                lineTo(20.4f, 12f)
+                moveTo(12f, 3.6f)
+                lineTo(12f, 20.4f)
+            }
+        }
+    }
+
+    /** `minus`, as on a stepper. */
+    val Minus: ImageVector by lazy {
+        icon("ios.minus") {
+            stroked(width = 2.4f) {
+                moveTo(3.6f, 12f)
+                lineTo(20.4f, 12f)
+            }
+        }
+    }
+
+    /** `xmark`: close a sheet. */
+    val Xmark: ImageVector by lazy {
+        icon("ios.xmark") {
+            stroked(width = 2.2f) {
+                moveTo(6f, 6f)
+                lineTo(18f, 18f)
+                moveTo(18f, 6f)
+                lineTo(6f, 18f)
+            }
+        }
+    }
+
+    /** `arrow.triangle.2.circlepath`: refresh, and the empty Firmware Updates page. */
+    val ArrowsCirclepath: ImageVector by lazy {
+        icon("ios.arrowsCirclepath") {
+            stroked(width = 1.6f) {
+                moveTo(5.24f, 10.19f)
+                arcTo(7f, 7f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 18.89f, y1 = 10.78f)
+                moveTo(18.76f, 13.81f)
+                arcTo(7f, 7f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 5.11f, y1 = 13.22f)
+            }
+            filled {
+                moveTo(16.2f, 9.9f)
+                lineTo(21.6f, 9.9f)
+                lineTo(18.9f, 13.7f)
+                close()
+                moveTo(2.4f, 14.1f)
+                lineTo(7.8f, 14.1f)
+                lineTo(5.1f, 10.3f)
+                close()
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

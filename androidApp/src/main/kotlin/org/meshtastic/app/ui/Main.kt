@@ -52,13 +52,16 @@ import org.meshtastic.core.ui.component.MeshtasticNavDisplay
 import org.meshtastic.core.ui.component.MeshtasticNavigationSuite
 import org.meshtastic.core.ui.ios.LocalIosUnderTabBar
 import org.meshtastic.core.ui.util.LocalNodeProfileSheet
+import org.meshtastic.core.ui.util.LocalPairRadioSheet
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
 import org.meshtastic.core.ui.util.PowerModeMenuState
 import org.meshtastic.core.ui.viewmodel.UIViewModel
 import org.meshtastic.feature.connections.navigation.connectionsGraph
+import org.meshtastic.feature.connections.pangea.PairRadioContent
 import org.meshtastic.feature.discovery.navigation.discoveryGraph
 import org.meshtastic.feature.docs.navigation.docsEntries
 import org.meshtastic.feature.firmware.navigation.firmwareGraph
+import org.meshtastic.feature.intro.PairRadioSheet
 import org.meshtastic.feature.map.navigation.mapGraph
 import org.meshtastic.feature.messaging.navigation.contactsGraph
 import org.meshtastic.feature.messaging.pangea.nodeProfileSheetSlot
@@ -98,6 +101,7 @@ fun MainScreen() {
     CompositionLocalProvider(
         LocalPowerModeMenu provides rememberPowerModeMenu(multiBackstack),
         LocalNodeProfileSheet provides nodeProfileSheetSlot(multiBackstack),
+        LocalPairRadioSheet provides PairRadioSheetSlot,
     ) {
         MeshtasticAppShell(multiBackstack = multiBackstack, uiViewModel = viewModel, hostModifier = Modifier) {
             MeshtasticNavigationSuite(
@@ -192,3 +196,11 @@ private fun AndroidAppVersionCheck(viewModel: UIViewModel) {
 }
 
 private const val SECONDS_PER_MINUTE = 60
+
+/** iOS's Pair Radio sheet, joining the connections feature's pairing list with setup's name page. */
+private val PairRadioSheetSlot: @Composable (onDismiss: () -> Unit) -> Unit = { onDismiss ->
+    PairRadioSheet(
+        pairRadio = { onPair -> PairRadioContent(onPair = onPair, finishIfAlreadyConnected = false) },
+        onDismiss = onDismiss,
+    )
+}

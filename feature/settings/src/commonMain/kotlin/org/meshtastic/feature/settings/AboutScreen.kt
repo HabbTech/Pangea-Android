@@ -39,7 +39,6 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.about
 import org.meshtastic.core.resources.acknowledgements
-import org.meshtastic.core.resources.app_version
 import org.meshtastic.core.resources.apps
 import org.meshtastic.core.resources.copyright_notice
 import org.meshtastic.core.resources.documentation
@@ -50,6 +49,7 @@ import org.meshtastic.core.resources.pangea_buy_radios
 import org.meshtastic.core.resources.pangea_buy_radios_description
 import org.meshtastic.core.resources.pangea_copyright_notice
 import org.meshtastic.core.resources.pangea_solar_node
+import org.meshtastic.core.resources.pangea_version_line
 import org.meshtastic.core.resources.pangea_what_is
 import org.meshtastic.core.resources.pangea_what_is_description
 import org.meshtastic.core.resources.project_information
@@ -96,17 +96,20 @@ fun AboutScreen(
         }
         IosSection(header = stringResource(Res.string.apps)) {
             BuyRadiosRow(onClick = { uriHandler.openUri(HARDWARE_URL) })
+            // iOS's rows here (Sponsor, Review) are title3; its version line is plain body text.
             IosRow(
                 title = stringResource(Res.string.github_repository),
+                titleStyle = Ios.type.title3,
                 accessory = IosAccessory.Chevron,
                 onClick = { uriHandler.openUri(GITHUB_REPO_URL) },
             )
-            IosRow(title = stringResource(Res.string.app_version), value = appVersionName)
             IosRow(
                 title = stringResource(Res.string.acknowledgements),
+                titleStyle = Ios.type.title3,
                 accessory = IosAccessory.Chevron,
                 onClick = onNavigateToAcknowledgements,
             )
+            IosRow(title = stringResource(Res.string.pangea_version_line, appVersionName))
         }
         IosSection(header = stringResource(Res.string.project_information)) {
             listOf(
@@ -132,7 +135,10 @@ fun AboutScreen(
 private fun BuyRadiosRow(onClick: () -> Unit) {
     val c = Ios.colors
     Row(
-        Modifier.iosRowSeparator().fillMaxWidth().iosPressable(onClick = onClick).padding(IosInset),
+        Modifier.iosRowSeparator()
+            .fillMaxWidth()
+            .iosPressable(onClick = onClick)
+            .padding(horizontal = IosInset, vertical = 28.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {

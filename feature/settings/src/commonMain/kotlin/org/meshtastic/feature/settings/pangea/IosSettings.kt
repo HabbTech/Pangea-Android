@@ -101,6 +101,7 @@ import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.pangea.MyProfileViewModel
 import org.meshtastic.core.ui.pangea.ProfileEditorSheet
+import org.meshtastic.core.ui.util.LocalOpenPairRadio
 import org.meshtastic.core.ui.util.icon
 import org.meshtastic.core.ui.util.labelRes
 import org.meshtastic.core.ui.util.rememberOpenAppSettings
@@ -130,6 +131,7 @@ fun IosSettingsScreen(
     val name = state.profile.displayName.ifEmpty { state.radioName }
     val paired = state.code != null
     val c = Ios.colors
+    val openPairRadio = LocalOpenPairRadio.current
 
     IosLargeTitleScreen(
         title = stringResource(Res.string.bottom_nav_settings),
@@ -184,7 +186,7 @@ fun IosSettingsScreen(
                         if (paired) Res.string.pangea_pair_different_radio else Res.string.pangea_pair_radio,
                     ),
                     titleColor = c.tint,
-                    onClick = { onNavigate(ConnectionsRoute.Connections()) },
+                    onClick = { openPairRadio?.invoke() ?: onNavigate(ConnectionsRoute.Connections()) },
                 )
                 if (paired) {
                     IosRow(

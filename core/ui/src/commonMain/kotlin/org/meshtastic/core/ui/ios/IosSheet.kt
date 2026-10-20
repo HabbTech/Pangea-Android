@@ -42,7 +42,8 @@ private val SheetCorner = 38.dp
 /**
  * An iOS sheet at its large detent: rounded top, no drag handle, the [IosSheetHeader] (**Cancel** at the left when
  * [cancelLabel] is set, the [title], an optional emphasized [actionLabel] at the right), then [content]. [grouped]
- * gives the grey background used when the content is white cards (Profile); otherwise the sheet is white.
+ * gives the grey background used when the content is white cards (Profile); otherwise the sheet is white. A smaller
+ * [heightFraction] is a sheet at iOS's medium detent; [header] replaces the standard one.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,6 +56,8 @@ fun IosSheet(
     actionEnabled: Boolean = true,
     onAction: () -> Unit = {},
     grouped: Boolean = false,
+    heightFraction: Float = 0.93f,
+    header: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Ios.colors
@@ -70,15 +73,19 @@ fun IosSheet(
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0) },
     ) {
-        Column(modifier.fillMaxWidth().fillMaxHeight(0.93f).navigationBarsPadding().imePadding()) {
-            IosSheetHeader(
-                title = title,
-                cancelLabel = cancelLabel,
-                onCancel = onDismissRequest,
-                actionLabel = actionLabel,
-                actionEnabled = actionEnabled,
-                onAction = onAction,
-            )
+        Column(modifier.fillMaxWidth().fillMaxHeight(heightFraction).navigationBarsPadding().imePadding()) {
+            if (header != null) {
+                header()
+            } else {
+                IosSheetHeader(
+                    title = title,
+                    cancelLabel = cancelLabel,
+                    onCancel = onDismissRequest,
+                    actionLabel = actionLabel,
+                    actionEnabled = actionEnabled,
+                    onAction = onAction,
+                )
+            }
             Spacer(Modifier.height(12.dp))
             content()
         }

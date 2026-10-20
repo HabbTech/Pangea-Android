@@ -66,9 +66,8 @@ class AboutScreenTest {
         )
             .assertIsDisplayed()
         onNodeWithText("GitHub Repository").assertIsDisplayed()
-        onNodeWithText("Version").assertIsDisplayed()
-        onNodeWithText("2.5.0").assertIsDisplayed()
         onNodeWithText("Acknowledgements").assertIsDisplayed()
+        onNodeWithText("Version: 2.5.0").performScrollTo().assertIsDisplayed()
 
         // Project information section
         onNodeWithText("Project information").assertIsDisplayed()

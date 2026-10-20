@@ -33,7 +33,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -401,31 +400,41 @@ fun IosStatusPill(
     onAction: () -> Unit = {},
 ) {
     val c = Ios.colors
+    // iOS's banner is `.regularMaterial` in a capsule: a soft grey, no shadow. With a button it spans the screen less
+    // 16 dp each side and pushes the button to the end; without one it hugs its text.
+    val material = if (c.isDark) Color(0xF2252527) else Color(0xF2F5F5F5)
     Row(
         modifier =
         modifier
-            .shadow(12.dp, CircleShape, ambientColor = c.chromeShadow, spotColor = c.chromeShadow)
+            .then(if (actionLabel != null) Modifier.fillMaxWidth().padding(horizontal = 16.dp) else Modifier)
             .clip(CircleShape)
-            .background(c.chrome)
-            .padding(start = 16.dp, end = if (actionLabel != null) 6.dp else 20.dp, top = 6.dp, bottom = 6.dp)
-            .defaultMinSize(minHeight = 32.dp),
+            .background(material)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .defaultMinSize(minHeight = 26.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         when {
             busy -> IosActivityIndicator(size = 18.dp)
-            leading != null -> Icon(leading, null, tint = c.secondaryLabel, modifier = Modifier.size(18.dp))
+            leading != null -> Icon(leading, null, tint = c.secondaryLabel, modifier = Modifier.size(20.dp))
         }
         Spacer(Modifier.width(10.dp))
-        Text(text, style = Ios.type.subheadline, color = c.label, modifier = Modifier.weight(1f, fill = false))
+        Text(
+            text,
+            style = Ios.type.subheadline,
+            color = c.label,
+            modifier = Modifier.weight(1f, fill = actionLabel != null),
+        )
         if (actionLabel != null) {
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(8.dp))
             Box(
-                Modifier.clip(CircleShape)
+                Modifier.height(27.dp)
+                    .clip(CircleShape)
                     .background(c.tint)
                     .iosPressable(onClick = onAction)
-                    .padding(PaddingValues(horizontal = 12.dp, vertical = 5.dp)),
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(actionLabel, style = Ios.type.subheadline.copy(fontWeight = FontWeight.SemiBold), color = c.onTint)
+                Text(actionLabel, style = Ios.type.subheadline.copy(fontWeight = FontWeight.Bold), color = c.onTint)
             }
         }
     }

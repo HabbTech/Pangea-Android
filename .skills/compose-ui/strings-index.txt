@@ -1349,6 +1349,14 @@ pangea_chat_icon
 pangea_chat_icon_hint
 pangea_choose_photo
 pangea_code_placeholder
+pangea_color
+pangea_color_blue
+pangea_color_green
+pangea_color_grid
+pangea_color_red
+pangea_color_sliders
+pangea_color_spectrum
+pangea_colors
 pangea_config_title
 pangea_configuration_for
 pangea_configure
@@ -1366,6 +1374,7 @@ pangea_create
 pangea_create_group
 pangea_critical_alerts_desc
 pangea_decline
+pangea_decrease
 pangea_developers
 pangea_device_screen
 pangea_device_section
@@ -1381,6 +1390,7 @@ pangea_expert_mode_footer
 pangea_find_contact
 pangea_find_in_conversation
 pangea_find_node
+pangea_firmware_reconnect
 pangea_firmware_updates
 pangea_forget_radio
 pangea_forget_radio_message
@@ -1431,6 +1441,7 @@ pangea_help_troubleshooting
 pangea_help_units_locale
 pangea_help_whats_new
 pangea_hops_away
+pangea_increase
 pangea_invite_from
 pangea_invite_people
 pangea_invite_sent
@@ -1540,6 +1551,7 @@ pangea_unpin
 pangea_unreachable
 pangea_use_symbol
 pangea_user_details
+pangea_version_line
 pangea_welcome_offgrid_desc
 pangea_welcome_offgrid_title
 pangea_welcome_private_desc

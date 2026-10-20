@@ -22,12 +22,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusState
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.StepperPreference
 import org.meshtastic.feature.settings.util.intRange
 import org.meshtastic.proto.FieldMetadata
 
 /**
  * An integer field bounded by its proto field metadata: an out-of-range value shows as an error and is not applied. A
- * field the registry leaves unbounded accepts any value.
+ * field the registry leaves unbounded accepts any value. A small range is a stepper, as on the iPhone app.
  */
 @Composable
 fun BoundedIntEditTextPreference(
@@ -43,6 +44,19 @@ fun BoundedIntEditTextPreference(
     trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     val range = remember(metadata) { metadata.intRange }
+    // iOS draws a field the registry bounds to a small range as a stepper beside the value.
+    if (range != null && range.last - range.first <= STEPPER_MAX_SPAN) {
+        StepperPreference(
+            title = title,
+            value = value,
+            range = range,
+            enabled = enabled,
+            onValueChange = onValueChange,
+            modifier = modifier,
+            summary = summary,
+        )
+        return
+    }
     EditTextPreference(
         title = title,
         value = value,
@@ -56,3 +70,6 @@ fun BoundedIntEditTextPreference(
         trailingIcon = trailingIcon,
     )
 }
+
+/** The widest range iOS still draws as a stepper; anything wider is a slider or a number field there. */
+private const val STEPPER_MAX_SPAN = 32

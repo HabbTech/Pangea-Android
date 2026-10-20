@@ -66,6 +66,10 @@ private val SheetBackdrop = Color(0xFFCFCFD4)
 @Suppress("CompositionLocalAllowlist")
 internal val LocalIntroBack = staticCompositionLocalOf<(() -> Unit)?> { null }
 
+/** True inside [PairRadioSheet]: the setup pages then draw no backdrop or rounded top of their own. */
+@Suppress("CompositionLocalAllowlist")
+internal val LocalSetupInSheet = staticCompositionLocalOf { false }
+
 /**
  * The sheet every setup page sits on, as on the Pangea iPhone app: rounded top corners over grey, a glass back button
  * when [onBack] is set, scrolling [content] and a [bottom] pinned under it. With [centered] the content doesn't scroll
@@ -84,14 +88,18 @@ internal fun IosSetupSheet(
     val sheet = if (c.isDark) c.groupedRow else c.background
     val behind = if (c.isDark) Color.Black else SheetBackdrop
     Column(
-        modifier
-            .fillMaxSize()
-            .background(behind)
-            .statusBarsPadding()
-            .padding(top = 10.dp)
-            .clip(RoundedCornerShape(topStart = 38.dp, topEnd = 38.dp))
-            .background(sheet)
-            .imePadding(),
+        if (LocalSetupInSheet.current) {
+            modifier.fillMaxSize().imePadding()
+        } else {
+            modifier
+                .fillMaxSize()
+                .background(behind)
+                .statusBarsPadding()
+                .padding(top = 10.dp)
+                .clip(RoundedCornerShape(topStart = 38.dp, topEnd = 38.dp))
+                .background(sheet)
+                .imePadding()
+        },
     ) {
         // Pages without a back button hide the bar altogether, as iOS does (navigationBarBackButtonHidden).
         if (onBack != null) {

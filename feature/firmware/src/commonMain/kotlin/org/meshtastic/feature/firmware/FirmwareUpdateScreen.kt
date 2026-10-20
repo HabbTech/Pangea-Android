@@ -21,35 +21,29 @@ package org.meshtastic.feature.firmware
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.spacedBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -66,10 +60,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -133,7 +129,6 @@ import org.meshtastic.core.resources.firmware_update_success
 import org.meshtastic.core.resources.firmware_update_success_wiped
 import org.meshtastic.core.resources.firmware_update_taking_a_while
 import org.meshtastic.core.resources.firmware_update_target
-import org.meshtastic.core.resources.firmware_update_title
 import org.meshtastic.core.resources.firmware_update_unknown_release
 import org.meshtastic.core.resources.firmware_update_unsupported_transport
 import org.meshtastic.core.resources.firmware_update_usb_bootloader_warning
@@ -151,9 +146,11 @@ import org.meshtastic.core.resources.img_chirpy
 import org.meshtastic.core.resources.img_hw_unknown
 import org.meshtastic.core.resources.learn_more
 import org.meshtastic.core.resources.okay
+import org.meshtastic.core.resources.pangea_firmware_reconnect
+import org.meshtastic.core.resources.pangea_firmware_updates
+import org.meshtastic.core.resources.retry
 import org.meshtastic.core.resources.save
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.Bluetooth
 import org.meshtastic.core.ui.icon.CheckCircle
 import org.meshtastic.core.ui.icon.CloudDownload
@@ -164,6 +161,13 @@ import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Usb
 import org.meshtastic.core.ui.icon.Warning
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosPushedColumnScreen
 import org.meshtastic.core.ui.util.KeepScreenOn
 import org.meshtastic.core.ui.util.rememberOpenDocumentTreeLauncher
 import org.meshtastic.core.ui.util.rememberOpenFileLauncher
@@ -315,7 +319,6 @@ private fun LocalFirmwareFileConfirmationDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FirmwareUpdateScaffold(
     onNavigateUp: () -> Unit,
@@ -328,26 +331,28 @@ private fun FirmwareUpdateScaffold(
     selectedRelease: FirmwareRelease?,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
+    // iOS shows its "reconnect" page until it knows the radio's hardware, and that page has no title.
+    val unavailable =
+        deviceHardware == null &&
+            (
+                state is FirmwareUpdateState.Idle ||
+                    state is FirmwareUpdateState.Checking ||
+                    state is FirmwareUpdateState.Error
+                )
+    IosPushedColumnScreen(
+        title = if (unavailable) "" else stringResource(Res.string.pangea_firmware_updates),
+        onBack = onNavigateUp,
         modifier = modifier,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(Res.string.firmware_update_title)) },
-                navigationIcon = {
-                    IconButton(onClick = { onNavigateUp() }) {
-                        Icon(MeshtasticIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
-                    }
-                },
+    ) {
+        if (unavailable) {
+            FirmwareUnavailableCard(
+                onRetry = (state as? FirmwareUpdateState.Error)?.let { actions.onRetry },
+                modifier = Modifier.padding(horizontal = IosInset).padding(top = 37.dp),
             )
-        },
-    ) { padding ->
+            return@IosPushedColumnScreen
+        }
         Column(
-            modifier =
-            Modifier.padding(padding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .animateContentSize(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = IosInset).animateContentSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (deviceHardware != null) {
@@ -378,6 +383,48 @@ private fun FirmwareUpdateScaffold(
             Box(contentAlignment = Alignment.TopCenter) {
                 FirmwareUpdateContent(state = state, selectedReleaseType = selectedReleaseType, actions = actions)
             }
+        }
+    }
+}
+
+/**
+ * iOS's empty Firmware Updates page (`ContentUnavailableView`): the refresh symbol, the title and "Please reconnect…"
+ * in a card. A check that failed adds [onRetry], which iOS doesn't need because it retries on reconnecting.
+ */
+@Composable
+private fun FirmwareUnavailableCard(onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
+    val c = Ios.colors
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clip(IosCardShape)
+            .background(c.groupedRow)
+            .padding(start = 24.dp, end = 24.dp, top = 34.dp, bottom = 44.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            IosIcons.ArrowsCirclepath,
+            contentDescription = null,
+            tint = c.secondaryLabel,
+            modifier = Modifier.size(60.dp),
+        )
+        Spacer(Modifier.height(14.dp))
+        Text(
+            stringResource(Res.string.pangea_firmware_updates),
+            style = Ios.type.title2.copy(fontWeight = FontWeight.Bold),
+            color = c.label,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            stringResource(Res.string.pangea_firmware_reconnect),
+            style = Ios.type.body,
+            color = c.secondaryLabel,
+            textAlign = TextAlign.Center,
+        )
+        if (onRetry != null) {
+            Spacer(Modifier.height(16.dp))
+            IosButton(text = stringResource(Res.string.retry), onClick = onRetry, style = IosButtonStyle.Tinted)
         }
     }
 }
