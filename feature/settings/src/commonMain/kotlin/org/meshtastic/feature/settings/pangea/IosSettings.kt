@@ -297,6 +297,7 @@ fun IosAppSettingsScreen(
     onExpertModeChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    extras: (@Composable () -> Unit)? = null,
 ) {
     val powerModeManager: PowerModeManager = koinInject()
     val powerMode by powerModeManager.selectedMode.collectAsState()
@@ -390,6 +391,9 @@ fun IosAppSettingsScreen(
                     onClick = { menu = true },
                 )
             }
+        }
+        if (extras != null) {
+            item(key = "platform") { extras() }
         }
     }
 }

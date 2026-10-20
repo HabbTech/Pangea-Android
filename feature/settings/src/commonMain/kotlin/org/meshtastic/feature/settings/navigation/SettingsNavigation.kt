@@ -438,6 +438,7 @@ fun EntryProviderScope<NavKey>.settingsGraph(
             expertModeEnabled = expertModeEnabled,
             onExpertModeChange = settingsViewModel::setExpertModeEnabled,
             onBack = dropUnlessResumed { backStack.removeLastOrNull() },
+            extras = if (expertModeEnabled) ({ AppSettingsExtras(onNavigate = backStack::addSettingsRoute) }) else null,
         )
     }
 

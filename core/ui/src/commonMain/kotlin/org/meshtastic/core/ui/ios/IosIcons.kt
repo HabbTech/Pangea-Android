@@ -981,6 +981,377 @@ object IosIcons {
         }
     }
 
+    /** `dot.radiowaves.left.and.right` turned upright: LoRa. */
+    val LoraWaves: ImageVector by lazy {
+        icon("ios.loraWaves") {
+            filled { circle(12f, 12f, 1.8f) }
+            stroked(width = 1.6f) {
+                moveTo(8.75f, 8.75f)
+                arcTo(4.6f, 4.6f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 15.25f, y1 = 8.75f)
+                moveTo(6.2f, 6.2f)
+                arcTo(8.2f, 8.2f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 17.8f, y1 = 6.2f)
+                moveTo(15.25f, 15.25f)
+                arcTo(4.6f, 4.6f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 8.75f, y1 = 15.25f)
+                moveTo(17.8f, 17.8f)
+                arcTo(8.2f, 8.2f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 6.2f, y1 = 17.8f)
+            }
+        }
+    }
+
+    /** `dot.radiowaves.left.and.right`: Mesh Beacon. */
+    val RadiowavesLeftRight: ImageVector by lazy {
+        icon("ios.radiowavesLeftRight") {
+            filled { circle(12f, 12f, 1.8f) }
+            stroked(width = 1.6f) {
+                moveTo(8.75f, 8.75f)
+                arcTo(4.6f, 4.6f, 0f, isMoreThanHalf = false, isPositiveArc = false, x1 = 8.75f, y1 = 15.25f)
+                moveTo(6.2f, 6.2f)
+                arcTo(8.2f, 8.2f, 0f, isMoreThanHalf = false, isPositiveArc = false, x1 = 6.2f, y1 = 17.8f)
+                moveTo(15.25f, 8.75f)
+                arcTo(4.6f, 4.6f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 15.25f, y1 = 15.25f)
+                moveTo(17.8f, 6.2f)
+                arcTo(8.2f, 8.2f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 17.8f, y1 = 17.8f)
+            }
+        }
+    }
+
+    /** `fibrechannel`: Channels. */
+    val FibreChannel: ImageVector by lazy {
+        icon("ios.fibreChannel") {
+            stroked(width = 1.7f) {
+                moveTo(21f, 7.5f)
+                lineTo(9.5f, 7.5f)
+                lineTo(5.8f, 11.6f)
+                moveTo(3f, 16.5f)
+                lineTo(14.5f, 16.5f)
+                lineTo(18.2f, 12.4f)
+            }
+        }
+    }
+
+    /** `flipphone`: Device. */
+    val FlipPhone: ImageVector by lazy {
+        icon("ios.flipPhone") {
+            stroked(width = 1.5f) {
+                roundRect(6.5f, 2.5f, 17.5f, 21.5f, 3f)
+                moveTo(6.5f, 14.2f)
+                lineTo(17.5f, 14.2f)
+            }
+            filled { roundRect(8.6f, 5f, 15.4f, 11.8f, 1.2f) }
+        }
+    }
+
+    /** `bolt.fill`: Power. */
+    val BoltFill: ImageVector by lazy {
+        icon("ios.boltFill") {
+            filled {
+                moveTo(14f, 1.8f)
+                lineTo(4.8f, 13.6f)
+                lineTo(11f, 13.6f)
+                lineTo(9.8f, 22.2f)
+                lineTo(19.2f, 10f)
+                lineTo(13f, 10f)
+                close()
+            }
+        }
+    }
+
+    /** `waveform`: Audio. */
+    val Waveform: ImageVector by lazy {
+        icon("ios.waveform") {
+            stroked(width = 1.6f) {
+                listOf(
+                    3f to 2f,
+                    6f to 4.5f,
+                    9f to 8f,
+                    12f to 10f,
+                    15f to 6.5f,
+                    18f to 4f,
+                    21f to 1.5f,
+                ).forEach { (x, h) ->
+                    moveTo(x, 12f - h)
+                    lineTo(x, 12f + h)
+                }
+            }
+        }
+    }
+
+    /** `list.bullet.rectangle.fill`: Canned Messages. */
+    val ListRectFill: ImageVector by lazy {
+        icon("ios.listRectFill") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                roundRect(2f, 4f, 22f, 20f, 3f)
+                listOf(8.4f, 12f, 15.6f).forEach { y ->
+                    circle(6.2f, y, 1.05f)
+                    roundRect(8.8f, y - 0.8f, 18.6f, y + 0.8f, 0.8f)
+                }
+            }
+        }
+    }
+
+    /** `sensor`: Detection Sensor. */
+    val Sensor: ImageVector by lazy {
+        icon("ios.sensor") {
+            stroked(width = 1.5f) {
+                roundRect(2.5f, 6f, 15.5f, 18f, 3f)
+                listOf(6.5f, 9f, 11.5f).forEach { x ->
+                    moveTo(x, 9.5f)
+                    lineTo(x, 13f)
+                }
+                moveTo(18f, 9.2f)
+                arcTo(4.2f, 4.2f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 18f, y1 = 14.8f)
+                moveTo(20.4f, 7.4f)
+                arcTo(6.6f, 6.6f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 20.4f, y1 = 16.6f)
+            }
+        }
+    }
+
+    /** `megaphone`: External Notification. */
+    val Megaphone: ImageVector by lazy {
+        icon("ios.megaphone") {
+            stroked(width = 1.5f) {
+                moveTo(3f, 9.5f)
+                lineTo(3f, 14.5f)
+                lineTo(7f, 14.5f)
+                lineTo(17.5f, 19.5f)
+                lineTo(17.5f, 4.5f)
+                lineTo(7f, 9.5f)
+                close()
+                moveTo(7f, 9.5f)
+                lineTo(7f, 14.5f)
+                moveTo(7.4f, 14.7f)
+                lineTo(8.8f, 19.8f)
+                lineTo(11.2f, 19.8f)
+                lineTo(10.2f, 16f)
+                moveTo(19.8f, 9.6f)
+                arcTo(2.6f, 2.6f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 19.8f, y1 = 14.4f)
+            }
+        }
+    }
+
+    /** `point.3.connected.trianglepath.dotted`: Range Test and Trace Routes. */
+    val PointsConnected: ImageVector by lazy {
+        icon("ios.pointsConnected") {
+            stroked(width = 1.5f) {
+                circle(5f, 6f, 2.2f)
+                circle(19f, 6f, 2.2f)
+                circle(12f, 18.5f, 2.2f)
+            }
+            filled {
+                listOf(9.2f, 12f, 14.8f).forEach { x -> circle(x, 6f, 0.75f) }
+                listOf(0.3f, 0.52f, 0.74f).forEach { t ->
+                    circle(5f + 7f * t, 6f + 12.5f * t, 0.75f)
+                    circle(19f - 7f * t, 6f + 12.5f * t, 0.75f)
+                }
+            }
+        }
+    }
+
+    /** `figure.walk.motion`: PAX Counter. */
+    val FigureWalk: ImageVector by lazy {
+        icon("ios.figureWalk") {
+            filled { circle(15f, 3.8f, 1.9f) }
+            stroked(width = 2f) {
+                moveTo(14.2f, 7.2f)
+                lineTo(12.6f, 13.2f)
+                moveTo(10f, 11f)
+                lineTo(13.8f, 7.6f)
+                lineTo(17.2f, 11.2f)
+                moveTo(12.6f, 13.2f)
+                lineTo(10f, 17f)
+                lineTo(8f, 21f)
+                moveTo(12.6f, 13.2f)
+                lineTo(15.2f, 17f)
+                lineTo(16.6f, 21f)
+            }
+            stroked(width = 1.4f) {
+                moveTo(2.5f, 8f)
+                lineTo(7f, 8f)
+                moveTo(3.5f, 11.5f)
+                lineTo(7.5f, 11.5f)
+                moveTo(2.5f, 15f)
+                lineTo(6.5f, 15f)
+            }
+        }
+    }
+
+    /** `terminal`: Serial. */
+    val Terminal: ImageVector by lazy {
+        icon("ios.terminal") {
+            stroked(width = 1.5f) {
+                roundRect(2.5f, 4.5f, 21.5f, 19.5f, 2.5f)
+                moveTo(6f, 8.5f)
+                lineTo(8.8f, 10.8f)
+                lineTo(6f, 13.1f)
+                moveTo(10.4f, 13.1f)
+                lineTo(14f, 13.1f)
+            }
+        }
+    }
+
+    /** `envelope.arrow.triangle.branch`: Store & Forward. */
+    val EnvelopeBranch: ImageVector by lazy {
+        icon("ios.envelopeBranch") {
+            stroked(width = 1.5f) {
+                roundRect(3f, 9.5f, 21f, 21f, 2f)
+                moveTo(3.4f, 10.2f)
+                lineTo(12f, 16f)
+                lineTo(20.6f, 10.2f)
+                moveTo(12f, 12f)
+                lineTo(12f, 7f)
+                lineTo(8f, 3f)
+                moveTo(12f, 7f)
+                lineTo(16f, 3f)
+                moveTo(8f, 5.6f)
+                lineTo(8f, 3f)
+                lineTo(10.6f, 3f)
+                moveTo(16f, 5.6f)
+                lineTo(16f, 3f)
+                lineTo(13.4f, 3f)
+            }
+        }
+    }
+
+    /** `target`: TAK Server. */
+    val Target: ImageVector by lazy {
+        icon("ios.target") {
+            stroked(width = 1.5f) {
+                circle(12f, 12f, 9f)
+                circle(12f, 12f, 5.4f)
+            }
+            filled { circle(12f, 12f, 2.2f) }
+        }
+    }
+
+    /** `chart.xyaxis.line`: Telemetry. */
+    val ChartLine: ImageVector by lazy {
+        icon("ios.chartLine") {
+            stroked(width = 1.5f) {
+                moveTo(3f, 3f)
+                lineTo(3f, 21f)
+                lineTo(21f, 21f)
+                moveTo(5.5f, 16.5f)
+                lineTo(9.5f, 11.5f)
+                lineTo(13.5f, 15f)
+                lineTo(19.5f, 8f)
+            }
+        }
+    }
+
+    /** `arrow.triangle.branch`: Traffic Management. */
+    val ArrowBranch: ImageVector by lazy {
+        icon("ios.arrowBranch") {
+            stroked(width = 1.7f) {
+                moveTo(12f, 21f)
+                lineTo(12f, 12.5f)
+                lineTo(6f, 4.5f)
+                moveTo(12f, 12.5f)
+                lineTo(18f, 4.5f)
+                moveTo(6.1f, 8.4f)
+                lineTo(6f, 4.5f)
+                lineTo(9.7f, 5.4f)
+                moveTo(17.9f, 8.4f)
+                lineTo(18f, 4.5f)
+                lineTo(14.3f, 5.4f)
+            }
+        }
+    }
+
+    /** `square.and.arrow.down`: Import Configuration. */
+    val ShareDown: ImageVector by lazy {
+        icon("ios.shareDown") {
+            stroked(width = 1.6f) {
+                moveTo(8.5f, 9f)
+                lineTo(6.8f, 9f)
+                curveTo(5.8f, 9f, 5f, 9.8f, 5f, 10.8f)
+                lineTo(5f, 19.2f)
+                curveTo(5f, 20.2f, 5.8f, 21f, 6.8f, 21f)
+                lineTo(17.2f, 21f)
+                curveTo(18.2f, 21f, 19f, 20.2f, 19f, 19.2f)
+                lineTo(19f, 10.8f)
+                curveTo(19f, 9.8f, 18.2f, 9f, 17.2f, 9f)
+                lineTo(15.5f, 9f)
+                moveTo(12f, 2.8f)
+                lineTo(12f, 14.5f)
+                moveTo(8.6f, 11.1f)
+                lineTo(12f, 14.5f)
+                lineTo(15.4f, 11.1f)
+            }
+        }
+    }
+
+    /** `scroll`: Logs. */
+    val Scroll: ImageVector by lazy {
+        icon("ios.scroll") {
+            stroked(width = 1.5f) {
+                moveTo(6f, 18f)
+                lineTo(6f, 5.5f)
+                curveTo(6f, 4.1f, 7.1f, 3f, 8.5f, 3f)
+                lineTo(18.5f, 3f)
+                curveTo(19.9f, 3f, 21f, 4.1f, 21f, 5.5f)
+                curveTo(21f, 6.9f, 19.9f, 8f, 18.5f, 8f)
+                lineTo(18f, 8f)
+                moveTo(18f, 5.5f)
+                lineTo(18f, 18.5f)
+                curveTo(18f, 19.9f, 16.9f, 21f, 15.5f, 21f)
+                lineTo(5.5f, 21f)
+                curveTo(4.1f, 21f, 3f, 19.9f, 3f, 18.5f)
+                lineTo(3f, 18f)
+                lineTo(13f, 18f)
+                lineTo(13f, 18.5f)
+                curveTo(13f, 19.9f, 14.1f, 21f, 15.5f, 21f)
+                moveTo(9f, 8f)
+                lineTo(15f, 8f)
+                moveTo(9f, 11.5f)
+                lineTo(15f, 11.5f)
+                moveTo(9f, 15f)
+                lineTo(13f, 15f)
+            }
+        }
+    }
+
+    /** `trash`: Clean Node Database. */
+    val Trash: ImageVector by lazy {
+        icon("ios.trash") {
+            stroked(width = 1.5f) {
+                moveTo(3.5f, 6.5f)
+                lineTo(20.5f, 6.5f)
+                moveTo(9f, 6.5f)
+                lineTo(9.4f, 3.8f)
+                lineTo(14.6f, 3.8f)
+                lineTo(15f, 6.5f)
+                moveTo(5.6f, 6.5f)
+                lineTo(6.8f, 20.6f)
+                lineTo(17.2f, 20.6f)
+                lineTo(18.4f, 6.5f)
+                moveTo(10f, 10f)
+                lineTo(10f, 17f)
+                moveTo(14f, 10f)
+                lineTo(14f, 17f)
+            }
+        }
+    }
+
+    /** `cpu`: Remote Hardware. */
+    val Cpu: ImageVector by lazy {
+        icon("ios.cpu") {
+            stroked(width = 1.5f) {
+                roundRect(6f, 6f, 18f, 18f, 2f)
+                roundRect(9.2f, 9.2f, 14.8f, 14.8f, 1f)
+                listOf(9.5f, 12f, 14.5f).forEach { v ->
+                    moveTo(v, 3f)
+                    lineTo(v, 6f)
+                    moveTo(v, 18f)
+                    lineTo(v, 21f)
+                    moveTo(3f, v)
+                    lineTo(6f, v)
+                    moveTo(18f, v)
+                    lineTo(21f, v)
+                }
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

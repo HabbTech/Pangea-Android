@@ -46,7 +46,7 @@ internal fun ColumnScope.AppearanceSettingsContent(
     showFullMessageTimestamps: Boolean,
     onShowFullMessageTimestampsChange: (Boolean) -> Unit,
     onShowLanguagePicker: () -> Unit,
-    onShowThemePicker: () -> Unit,
+    onShowThemePicker: (() -> Unit)?,
     unitsSummary: String,
     onShowUnitsPicker: () -> Unit,
 ) {
@@ -76,8 +76,15 @@ internal fun ColumnScope.AppearanceSettingsContent(
         }
     }
 
-    ListItem(text = stringResource(Res.string.theme), leadingIcon = MeshtasticIcons.FormatPaint, trailingIcon = null) {
-        onShowThemePicker()
+    // Null where the screen has its own theme choice (App Settings' Appearance).
+    if (onShowThemePicker != null) {
+        ListItem(
+            text = stringResource(Res.string.theme),
+            leadingIcon = MeshtasticIcons.FormatPaint,
+            trailingIcon = null,
+        ) {
+            onShowThemePicker()
+        }
     }
 
     ListItem(

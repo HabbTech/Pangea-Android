@@ -1345,6 +1345,7 @@ pangea_bt_nodes_desc
 pangea_bt_nodes_title
 pangea_buy_radios
 pangea_buy_radios_description
+pangea_canned_messages
 pangea_chat_icon
 pangea_chat_icon_hint
 pangea_choose_photo
@@ -1376,6 +1377,7 @@ pangea_critical_alerts_desc
 pangea_decline
 pangea_decrease
 pangea_developers
+pangea_device_configuration
 pangea_device_screen
 pangea_device_section
 pangea_display_name
@@ -1387,6 +1389,7 @@ pangea_error_send_failed
 pangea_everyone_bell
 pangea_everyone_nearby
 pangea_expert_mode_footer
+pangea_export_configuration
 pangea_find_contact
 pangea_find_in_conversation
 pangea_find_node
@@ -1441,6 +1444,7 @@ pangea_help_troubleshooting
 pangea_help_units_locale
 pangea_help_whats_new
 pangea_hops_away
+pangea_import_configuration
 pangea_increase
 pangea_invite_from
 pangea_invite_people
@@ -1449,11 +1453,13 @@ pangea_join
 pangea_join_group_prompt
 pangea_leave_group
 pangea_leave_group_confirm
+pangea_logging
 pangea_map_empty_body
 pangea_map_empty_title
 pangea_match_device
 pangea_message_someone
 pangea_message_someone_title
+pangea_module_configuration
 pangea_more
 pangea_mute
 pangea_my_profile
@@ -1482,6 +1488,7 @@ pangea_pair_radio
 pangea_pair_title
 pangea_pair_try_again
 pangea_paste
+pangea_pax_counter
 pangea_photo_busy
 pangea_photo_connect_radio
 pangea_photo_offer
@@ -1492,6 +1499,7 @@ pangea_profile_row_subtitle
 pangea_profile_save_restarts_radio
 pangea_profile_shared_with
 pangea_radio
+pangea_radio_configuration
 pangea_radio_connected
 pangea_radio_connecting
 pangea_radio_name
@@ -1521,6 +1529,7 @@ pangea_setup_profile_hint
 pangea_share
 pangea_share_group
 pangea_share_group_subtitle
+pangea_share_qr_code
 pangea_show_qr
 pangea_start_chat
 pangea_start_group
