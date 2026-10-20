@@ -1343,8 +1343,13 @@ pangea_appearance_footer
 pangea_backup
 pangea_battery
 pangea_battery_charging
+pangea_beacon_message
+pangea_beacon_region_notice
 pangea_bluetooth_desc
 pangea_bluetooth_title
+pangea_broadcast_interval
+pangea_broadcast_on
+pangea_broadcast_on_footer
 pangea_bt_background_desc
 pangea_bt_background_title
 pangea_bt_nodes_desc
@@ -1535,6 +1540,7 @@ pangea_no_radio_paired
 pangea_node_section
 pangea_nodes_count
 pangea_notify_messages_desc
+pangea_offered_to_listeners
 pangea_offline_maps
 pangea_online
 pangea_open_chat

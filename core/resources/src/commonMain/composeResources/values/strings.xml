@@ -1379,8 +1379,13 @@
     <string name="pangea_backup">Backup</string>
     <string name="pangea_battery">Battery</string>
     <string name="pangea_battery_charging">CHG</string>
+    <string name="pangea_beacon_message">Beacon Message</string>
+    <string name="pangea_beacon_region_notice">Set a LoRa region before configuring a mesh beacon.</string>
     <string name="pangea_bluetooth_desc">Pangea uses Bluetooth to connect to BLE-based accessories. You can update the permissions at any time from settings.</string>
     <string name="pangea_bluetooth_title">Bluetooth Connectivity</string>
+    <string name="pangea_broadcast_interval">Broadcast Interval</string>
+    <string name="pangea_broadcast_on">Broadcast On</string>
+    <string name="pangea_broadcast_on_footer">The channel and preset the beacon transmits on. Add a target to broadcast on more channels.</string>
     <string name="pangea_bt_background_desc">Bluetooth Low Energy supports background connections. When possible, the application will remain connected to these accessories while the app is in the background.</string>
     <string name="pangea_bt_background_title">Background Connections</string>
     <string name="pangea_bt_nodes_desc">The most reliable messaging experience is with Bluetooth Low Energy connected nodes.</string>
@@ -1571,6 +1576,7 @@
     <string name="pangea_node_section">Node</string>
     <string name="pangea_nodes_count">Nodes (%1$d)</string>
     <string name="pangea_notify_messages_desc">Know right away when someone messages you.</string>
+    <string name="pangea_offered_to_listeners">Offered to Listeners</string>
     <string name="pangea_offline_maps">Offline Maps</string>
     <string name="pangea_online">Online</string>
     <string name="pangea_open_chat">Message</string>

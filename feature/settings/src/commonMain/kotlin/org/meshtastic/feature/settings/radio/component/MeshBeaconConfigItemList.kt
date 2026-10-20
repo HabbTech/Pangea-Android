@@ -16,18 +16,27 @@
  */
 package org.meshtastic.feature.settings.radio.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.pluralStringResource
@@ -57,16 +66,26 @@ import org.meshtastic.core.resources.mesh_beacon_target_add
 import org.meshtastic.core.resources.mesh_beacon_target_channel_index
 import org.meshtastic.core.resources.mesh_beacon_target_default
 import org.meshtastic.core.resources.mesh_beacon_target_remove
-import org.meshtastic.core.resources.mesh_beacon_targets
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_beacon_message
+import org.meshtastic.core.resources.pangea_beacon_region_notice
+import org.meshtastic.core.resources.pangea_broadcast_interval
+import org.meshtastic.core.resources.pangea_broadcast_on
+import org.meshtastic.core.resources.pangea_broadcast_on_footer
+import org.meshtastic.core.resources.pangea_offered_to_listeners
 import org.meshtastic.core.resources.plurals_seconds
 import org.meshtastic.core.resources.schema_meshbeacon_broadcast_message
 import org.meshtastic.core.ui.component.DropDownItem
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.RegularPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.util.FixedUpdateIntervals
 import org.meshtastic.feature.settings.util.IntervalConfiguration
@@ -190,46 +209,45 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
             viewModel.setModuleConfig(ModuleConfig.Builder().also { wb -> wb.mesh_beacon = stamped }.build())
         },
     ) {
+        // iOS's order: Options, then (while broadcasting) the message, what is offered, how often, and where.
+        if (radioLora.region == Config.LoRaConfig.RegionCode.UNSET) {
+            item { BeaconRegionNotice() }
+        }
         item {
-            TitledCard(title = stringResource(Res.string.mesh_beacon)) {
-                RegularPreference(
-                    title = stringResource(Res.string.mesh_beacon_region_label),
-                    subtitle =
-                    RegionInfo.fromRegionCode(radioLora.region)?.description
-                        ?: radioLora.region.name.replace('_', ' '),
-                    onClick = {},
-                    enabled = false,
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Antenna) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.mesh_beacon_listen),
+                        summary = stringResource(Res.string.mesh_beacon_listen_summary),
+                        checked = formState.value.flags.hasFlag(listenFlag),
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value
+                                    .newBuilder()
+                                    .also { wb -> wb.flags = formState.value.flags.withFlag(listenFlag, it) }
+                                    .build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.mesh_beacon_listen),
-                    summary = stringResource(Res.string.mesh_beacon_listen_summary),
-                    checked = formState.value.flags.hasFlag(listenFlag),
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value
-                                .newBuilder()
-                                .also { wb -> wb.flags = formState.value.flags.withFlag(listenFlag, it) }
-                                .build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.mesh_beacon_broadcast),
-                    summary = stringResource(Res.string.mesh_beacon_broadcast_summary),
-                    checked = formState.value.flags.hasFlag(broadcastFlag),
-                    enabled = broadcastGate.toggleEnabled,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value
-                                .newBuilder()
-                                .also { wb -> wb.flags = formState.value.flags.withFlag(broadcastFlag, it) }
-                                .build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.DotRadiowavesRight) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.mesh_beacon_broadcast),
+                        summary = stringResource(Res.string.mesh_beacon_broadcast_summary),
+                        checked = formState.value.flags.hasFlag(broadcastFlag),
+                        enabled = broadcastGate.toggleEnabled,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value
+                                    .newBuilder()
+                                    .also { wb -> wb.flags = formState.value.flags.withFlag(broadcastFlag, it) }
+                                    .build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 if (!radioLora.use_preset) {
                     PreferenceDivider()
                     Text(
@@ -238,8 +256,11 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-                if (broadcastGate.sectionsVisible) {
-                    PreferenceDivider()
+            }
+        }
+        if (broadcastGate.sectionsVisible) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_beacon_message)) {
                     EditTextPreference(
                         title = stringResource(Res.string.schema_meshbeacon_broadcast_message),
                         value = formState.value.broadcast_message,
@@ -253,7 +274,37 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                                 formState.value.newBuilder().also { wb -> wb.broadcast_message = it }.build()
                         },
                     )
+                }
+            }
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_offered_to_listeners)) {
+                    PreferenceIcon(IosIcons.Globe) {
+                        RegularPreference(
+                            title = stringResource(Res.string.mesh_beacon_region_label),
+                            subtitle =
+                            RegionInfo.fromRegionCode(radioLora.region)?.description
+                                ?: radioLora.region.name.replace('_', ' '),
+                            onClick = {},
+                            enabled = false,
+                        )
+                    }
                     PreferenceDivider()
+                    OfferChannelPreference(
+                        offerChannel = formState.value.broadcast_offer_channel,
+                        channelList = state.channelList,
+                        selectableChannels = selectableChannels,
+                        radioLora = radioLora,
+                        channelItems = channelItems,
+                        enabled = broadcastGate.sectionsEnabled,
+                        onChannelSelect = { chosen ->
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.broadcast_offer_channel = chosen }.build()
+                        },
+                    )
+                }
+            }
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_broadcast_interval)) {
                     val intervalOptions = remember { IntervalConfiguration.MESH_BEACON_BROADCAST.allowedIntervals }
                     val storedIntervalSecs = formState.value.broadcast_interval_secs.toLong()
                     val intervalFallback =
@@ -293,24 +344,6 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                                     .newBuilder()
                                     .also { wb -> wb.broadcast_interval_secs = it.toInt() }
                                     .build()
-                        },
-                    )
-                }
-            }
-        }
-        if (broadcastGate.sectionsVisible) {
-            item {
-                TitledCard(title = stringResource(Res.string.mesh_beacon_offer_channel_name)) {
-                    OfferChannelPreference(
-                        offerChannel = formState.value.broadcast_offer_channel,
-                        channelList = state.channelList,
-                        selectableChannels = selectableChannels,
-                        radioLora = radioLora,
-                        channelItems = channelItems,
-                        enabled = broadcastGate.sectionsEnabled,
-                        onChannelSelect = { chosen ->
-                            formState.value =
-                                formState.value.newBuilder().also { wb -> wb.broadcast_offer_channel = chosen }.build()
                         },
                     )
                 }
@@ -404,7 +437,10 @@ internal fun BroadcastTargetsCard(
     capabilities: Capabilities,
     onChange: (List<MeshBeaconConfig.BroadcastTarget>) -> Unit,
 ) {
-    TitledCard(title = stringResource(Res.string.mesh_beacon_targets)) {
+    TitledCard(
+        title = stringResource(Res.string.pangea_broadcast_on),
+        footer = stringResource(Res.string.pangea_broadcast_on_footer),
+    ) {
         targets.forEachIndexed { index, target ->
             if (index > 0) PreferenceDivider()
             BroadcastTargetRow(
@@ -497,4 +533,31 @@ private fun BroadcastTargetRow(
         onItemSelected = { sel -> onChange { it.newBuilder().also { wb -> wb.preset = sel }.build() } },
     )
     TextButton(onClick = onRemove, enabled = enabled) { Text(stringResource(Res.string.mesh_beacon_target_remove)) }
+}
+
+/** iOS's note above the beacon settings while the radio has no LoRa region: a beacon needs one. */
+@Composable
+private fun BeaconRegionNotice() {
+    Row(
+        modifier =
+        Modifier.fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp)
+            .clip(IosCardShape)
+            .background(Ios.colors.groupedRow)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            IosIcons.WarningFill,
+            contentDescription = null,
+            tint = Ios.colors.systemOrange,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = stringResource(Res.string.pangea_beacon_region_notice),
+            style = Ios.type.callout,
+            color = Ios.colors.systemOrange,
+        )
+    }
 }
