@@ -29,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +65,8 @@ import org.meshtastic.core.ui.icon.BluetoothSearching
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Usb
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.connections.model.DeviceListEntry
 
 private const val RSSI_UPDATE_RATE_MS = 2000L
@@ -165,7 +166,15 @@ fun DeviceListItem(
                 if (connectionState is ConnectionState.Connecting) {
                     CircularWavyProgressIndicator(modifier = Modifier.size(32.dp))
                 } else {
-                    RadioButton(selected = connectionState is ConnectionState.Connected, onClick = null)
+                    // iOS marks the chosen device with a checkmark in the tint rather than a radio button.
+                    if (connectionState is ConnectionState.Connected) {
+                        Icon(
+                            IosIcons.Checkmark,
+                            contentDescription = null,
+                            tint = Ios.colors.tint,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
                 }
             }
         },
