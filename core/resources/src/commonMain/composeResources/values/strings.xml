@@ -1406,6 +1406,7 @@
     <string name="pangea_colors">Colors</string>
     <string name="pangea_community_hardware">Community Hardware</string>
     <string name="pangea_config_title">%1$s Config</string>
+    <string name="pangea_configuration">Configuration</string>
     <string name="pangea_configuration_for">Configuration for: %1$s</string>
     <string name="pangea_configure">Configure</string>
     <string name="pangea_configure_bluetooth">Configure Bluetooth Connectivity</string>
@@ -1691,6 +1692,7 @@
     <string name="pangea_tab_map">Map</string>
     <string name="pangea_tak_identity_footer">These values are included in TAK position reports. Leaving either at its default lets the firmware choose Cyan and Team Member.</string>
     <string name="pangea_tak_role_notice">These settings only apply when the device role is TAK or TAK Tracker.</string>
+    <string name="pangea_tak_server_status">Server Status</string>
     <string name="pangea_tertiary_admin_key">Tertiary Admin Key</string>
     <string name="pangea_this_is_your_radio">This is your radio</string>
     <string name="pangea_timing_overrides">Timing and Overrides</string>

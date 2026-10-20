@@ -1370,6 +1370,7 @@ pangea_color_spectrum
 pangea_colors
 pangea_community_hardware
 pangea_config_title
+pangea_configuration
 pangea_configuration_for
 pangea_configure
 pangea_configure_bluetooth
@@ -1655,6 +1656,7 @@ pangea_tab_chats
 pangea_tab_map
 pangea_tak_identity_footer
 pangea_tak_role_notice
+pangea_tak_server_status
 pangea_tertiary_admin_key
 pangea_this_is_your_radio
 pangea_timing_overrides

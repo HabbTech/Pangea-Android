@@ -31,13 +31,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -61,11 +57,12 @@ import org.meshtastic.core.repository.NodeRepository
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.TakPrefs
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.back
 import org.meshtastic.core.resources.export_tak_data_package
+import org.meshtastic.core.resources.pangea_configuration
 import org.meshtastic.core.resources.pangea_identity
 import org.meshtastic.core.resources.pangea_tak_identity_footer
 import org.meshtastic.core.resources.pangea_tak_role_notice
+import org.meshtastic.core.resources.pangea_tak_server_status
 import org.meshtastic.core.resources.schema_tak_role
 import org.meshtastic.core.resources.schema_tak_role_description
 import org.meshtastic.core.resources.schema_tak_team
@@ -81,7 +78,6 @@ import org.meshtastic.core.resources.tak_server_export_data_package_desc
 import org.meshtastic.core.resources.tak_server_loading
 import org.meshtastic.core.resources.tak_server_mesh_to_cot
 import org.meshtastic.core.resources.tak_server_mesh_to_cot_desc
-import org.meshtastic.core.resources.tak_server_section
 import org.meshtastic.core.resources.tak_server_status
 import org.meshtastic.core.resources.tak_server_status_connected
 import org.meshtastic.core.resources.tak_server_status_failed
@@ -108,17 +104,19 @@ import org.meshtastic.core.takserver.TakMeshTestRunner
 import org.meshtastic.core.takserver.TakProtocol
 import org.meshtastic.core.takserver.TakTestResult
 import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.PreferenceActionRow
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
-import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PlayArrow
-import org.meshtastic.core.ui.icon.Share
 import org.meshtastic.core.ui.icon.Warning
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosPushedColumnScreen
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.radio.ResponseState
@@ -245,7 +243,6 @@ internal fun handleTakPermissionResult(granted: Boolean, isTakServerEnabled: Boo
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TakServerScreen(onBack: () -> Unit) {
     val takPrefs: TakPrefs = koinInject()
@@ -302,32 +299,21 @@ fun TakServerScreen(onBack: () -> Unit) {
         onPermissionResult = { granted -> handleTakPermissionResult(granted, isTakServerEnabled, takPrefs) },
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.tak_server)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = MeshtasticIcons.ArrowBack,
-                            contentDescription = stringResource(Res.string.back),
-                        )
-                    }
-                },
-                actions = {
-                    if (isTakServerEnabled) {
-                        IconButton(onClick = { exportLauncher("Meshtastic_TAK_Server.zip") }) {
-                            Icon(
-                                imageVector = MeshtasticIcons.Share,
-                                contentDescription = stringResource(Res.string.export_tak_data_package),
-                            )
-                        }
-                    }
-                },
-            )
+    IosPushedColumnScreen(
+        title = stringResource(Res.string.tak_server),
+        onBack = onBack,
+        largeTitle = true,
+        trailing = {
+            if (isTakServerEnabled) {
+                IosGlassIconButton(
+                    IosIcons.ShareUp,
+                    contentDescription = stringResource(Res.string.export_tak_data_package),
+                    onClick = { exportLauncher("Meshtastic_TAK_Server.zip") },
+                )
+            }
         },
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(horizontal = 16.dp)) {
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             TakServerSection(
                 isTakServerEnabled = isTakServerEnabled,
                 onEnabledChange = { takPrefs.setTakServerEnabled(it) },
@@ -361,16 +347,19 @@ internal fun TakServerSection(
     onExport: () -> Unit,
     supportsTakV2: Boolean,
 ) {
-    TitledCard(title = stringResource(Res.string.tak_server_section)) {
-        SwitchPreference(
-            title = stringResource(Res.string.tak_server_enabled),
-            summary = stringResource(Res.string.tak_server_enabled_desc),
-            checked = isTakServerEnabled,
-            enabled = true,
-            onCheckedChange = onEnabledChange,
-        )
-        PreferenceDivider()
+    TitledCard(title = stringResource(Res.string.pangea_tak_server_status)) {
         TakServerStatusRow(status = status, clientCount = clientCount)
+    }
+    TitledCard(title = stringResource(Res.string.pangea_configuration)) {
+        PreferenceIcon(IosIcons.RadiowavesLeftRight) {
+            SwitchPreference(
+                title = stringResource(Res.string.tak_server_enabled),
+                summary = stringResource(Res.string.tak_server_enabled_desc),
+                checked = isTakServerEnabled,
+                enabled = true,
+                onCheckedChange = onEnabledChange,
+            )
+        }
         if (isTakServerEnabled) {
             PreferenceDivider()
             SwitchPreference(
@@ -385,38 +374,25 @@ internal fun TakServerSection(
                 TakV1FallbackNotice()
             }
             PreferenceDivider()
-            DropDownPreference(
-                title = stringResource(Res.string.tak_server_channel),
-                summary = stringResource(Res.string.tak_server_channel_desc),
-                enabled = true,
-                items = channelOptions,
-                selectedItem = takServerChannel,
-                onItemSelected = onChannelSelected,
-            )
-            PreferenceDivider()
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(Res.string.export_tak_data_package),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text(
-                        text = stringResource(Res.string.tak_server_export_data_package_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                IconButton(onClick = onExport) {
-                    Icon(
-                        imageVector = MeshtasticIcons.Share,
-                        contentDescription = stringResource(Res.string.export_tak_data_package),
-                    )
-                }
+            PreferenceIcon(IosIcons.BubblesTwo) {
+                DropDownPreference(
+                    title = stringResource(Res.string.tak_server_channel),
+                    summary = stringResource(Res.string.tak_server_channel_desc),
+                    enabled = true,
+                    items = channelOptions,
+                    selectedItem = takServerChannel,
+                    onItemSelected = onChannelSelected,
+                )
             }
+            PreferenceDivider()
+            PreferenceActionRow(
+                title = stringResource(Res.string.export_tak_data_package),
+                actionIcon = IosIcons.ShareUp,
+                actionDescription = stringResource(Res.string.export_tak_data_package),
+                enabled = true,
+                onAction = onExport,
+                summary = stringResource(Res.string.tak_server_export_data_package_desc),
+            )
         }
     }
 }
@@ -429,11 +405,16 @@ private fun TakV1FallbackNotice() {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        Icon(imageVector = MeshtasticIcons.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+        Icon(
+            imageVector = IosIcons.WarningFill,
+            contentDescription = null,
+            tint = Ios.colors.systemOrange,
+            modifier = Modifier.size(20.dp),
+        )
         Text(
             text = stringResource(Res.string.tak_server_v1_fallback_notice),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.systemOrange,
         )
     }
 }
@@ -496,18 +477,18 @@ private fun TakServerStatusRow(status: TakServerStatus, clientCount: Int) {
         }
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.size(10.dp).background(color, CircleShape))
-        Column(modifier = Modifier.padding(start = 12.dp)) {
-            Text(text = stringResource(Res.string.tak_server_status), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = stringResource(Res.string.tak_server_status),
+            style = Ios.type.body,
+            color = Ios.colors.label,
+            modifier = Modifier.weight(1f),
+        )
+        Text(text = description, style = Ios.type.body, color = Ios.colors.secondaryLabel)
     }
 }
 
