@@ -31,11 +31,7 @@ import org.meshtastic.core.resources.intro_expert_hidden_options_desc
 import org.meshtastic.core.resources.intro_expert_mode_title
 import org.meshtastic.core.resources.intro_expert_standard_user
 import org.meshtastic.core.resources.intro_expert_standard_user_desc
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Person
-import org.meshtastic.core.ui.icon.Settings
-import org.meshtastic.core.ui.icon.Tune
-import org.meshtastic.core.ui.icon.VisibilityOff
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.AppTheme
 
 /**
@@ -49,22 +45,22 @@ internal fun ExpertModeScreen(onContinue: () -> Unit) {
     val rows =
         listOf(
             FeatureUIData(
-                icon = MeshtasticIcons.Person,
+                icon = IosIcons.Person,
                 titleRes = Res.string.intro_expert_standard_user,
                 subtitleRes = Res.string.intro_expert_standard_user_desc,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.Tune,
+                icon = IosIcons.WrenchScrewdriver,
                 titleRes = Res.string.intro_expert_advanced_user,
                 subtitleRes = Res.string.intro_expert_advanced_user_desc,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.VisibilityOff,
+                icon = IosIcons.EyeSlash,
                 titleRes = Res.string.intro_expert_hidden_options,
                 subtitleRes = Res.string.intro_expert_hidden_options_desc,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.Settings,
+                icon = IosIcons.HandTap,
                 titleRes = Res.string.intro_expert_change_anytime,
                 subtitleRes = Res.string.intro_expert_change_anytime_desc,
             ),
@@ -74,6 +70,7 @@ internal fun ExpertModeScreen(onContinue: () -> Unit) {
         title = stringResource(Res.string.intro_expert_mode_title),
         primaryLabel = stringResource(Res.string.intro_expert_continue),
         onPrimary = onContinue,
+        largeTitle = true,
     ) {
         rows.forEach { row -> FeatureRow(feature = row) }
     }

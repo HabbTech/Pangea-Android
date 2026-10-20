@@ -70,9 +70,7 @@ import org.meshtastic.core.resources.pangea_send_message
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.rememberAvatarBitmap
 import org.meshtastic.core.ui.icon.Close
-import org.meshtastic.core.ui.icon.Copy
 import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.PersonAdd
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
@@ -131,8 +129,8 @@ fun ContactProfileSheet(
                 colorIndex = profile?.card?.color,
                 initials = shortName,
                 fallbackColor = nodeColor,
-                size = 120.dp,
-                modifier = Modifier.padding(top = 20.dp),
+                size = 110.dp,
+                modifier = Modifier.padding(top = 40.dp),
             )
             Text(
                 viewModel.displayName(num, radioName),
@@ -148,7 +146,7 @@ fun ContactProfileSheet(
                     scope.launch { clipboard.setClipEntry(createClipEntry(code, code)) }
                 },
             ) {
-                Icon(MeshtasticIcons.Copy, contentDescription = null, tint = c.tint, modifier = Modifier.size(20.dp))
+                Icon(IosIcons.DocOnDoc, contentDescription = null, tint = c.tint, modifier = Modifier.size(22.dp))
                 Text(code, style = Ios.type.body.copy(fontFamily = FontFamily.Monospace), color = c.tint)
             }
             Box(Modifier.padding(horizontal = IosInset, vertical = 8.dp)) {
@@ -183,7 +181,7 @@ fun ContactProfileSheet(
                     stringResource(
                         if (saved) Res.string.pangea_remove_from_contacts else Res.string.pangea_add_to_contacts,
                     ),
-                    icon = MeshtasticIcons.PersonAdd,
+                    icon = IosIcons.PersonCirclePlus,
                     titleColor = if (saved) c.systemRed else c.tint,
                     iconTint = if (saved) c.systemRed else c.tint,
                     onClick = { viewModel.setContact(num, !saved, radioName) },

@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,8 +41,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -126,5 +130,37 @@ fun IosSegmentedControl(
                 )
             }
         }
+    }
+}
+
+/** A map control as iOS 26 draws it: a rounded-square glass button with the symbol in [tint]. */
+@Composable
+fun IosGlassMapButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = Ios.colors.label,
+) {
+    val c = Ios.colors
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier =
+        modifier
+            .size(50.dp)
+            .shadow(12.dp, shape, ambientColor = c.chromeShadow, spotColor = c.chromeShadow)
+            .clip(shape)
+            .background(c.chrome)
+            .iosPressable(onClick = onClick)
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else {
+                    Modifier
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
     }
 }

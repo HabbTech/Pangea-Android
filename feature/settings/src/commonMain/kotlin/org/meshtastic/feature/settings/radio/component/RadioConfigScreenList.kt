@@ -41,6 +41,7 @@ import com.squareup.wire.Message
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.discard_changes
+import org.meshtastic.core.resources.pangea_config_title
 import org.meshtastic.core.resources.pangea_configuration_for
 import org.meshtastic.core.resources.save_and_restart
 import org.meshtastic.core.resources.save_changes
@@ -76,7 +77,8 @@ fun <T : Message<T, *>> RadioConfigScreenList(
         Scaffold(
             topBar = {
                 MainAppBar(
-                    title = title,
+                    // iOS names each form "<Name> Config".
+                    title = stringResource(Res.string.pangea_config_title, title),
                     canNavigateUp = true,
                     onNavigateUp = onBack,
                     ourNode = null,

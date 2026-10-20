@@ -24,9 +24,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.Capabilities
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.advanced
 import org.meshtastic.core.resources.display
-import org.meshtastic.core.resources.display_config
+import org.meshtastic.core.resources.pangea_device_screen
+import org.meshtastic.core.resources.pangea_timing_overrides
 import org.meshtastic.core.resources.schema_display_auto_screen_carousel_secs
 import org.meshtastic.core.resources.schema_display_auto_screen_carousel_secs_description
 import org.meshtastic.core.resources.schema_display_compass_north_top
@@ -51,8 +51,10 @@ import org.meshtastic.core.resources.schema_display_wake_on_tap_or_motion
 import org.meshtastic.core.resources.schema_display_wake_on_tap_or_motion_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.util.IntervalConfiguration
 import org.meshtastic.feature.settings.util.toDisplayString
@@ -71,7 +73,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
 
     RadioConfigScreenList(
         title = stringResource(Res.string.display),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -83,7 +85,19 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.display_config)) {
+            // As the iPhone app: the screen's own settings first, then timing and overrides.
+            TitledCard(title = stringResource(Res.string.pangea_device_screen)) {
+                DropDownPreference(
+                    title = stringResource(Res.string.schema_display_compass_orientation),
+                    summary = stringResource(Res.string.schema_display_compass_orientation_description),
+                    enabled = state.connected,
+                    selectedItem = formState.value.compass_orientation,
+                    onItemSelected = {
+                        formState.value =
+                            formState.value.newBuilder().also { wb -> wb.compass_orientation = it }.build()
+                    },
+                )
+                PreferenceDivider()
                 if (
                     capabilities.offers(
                         Config.DisplayConfig.compass_north_top,
@@ -104,28 +118,33 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     PreferenceDivider()
                 }
                 if (capabilities.offers(Config.DisplayConfig.use_12h_clock)) {
+                    PreferenceIcon(IosIcons.Clock) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.schema_display_use_12h_clock),
+                            summary = stringResource(Res.string.schema_display_use_12h_clock_description),
+                            checked = formState.value.use_12h_clock,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value =
+                                    formState.value.newBuilder().also { wb -> wb.use_12h_clock = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                    PreferenceDivider()
+                }
+                PreferenceIcon(IosIcons.BoldB) {
                     SwitchPreference(
-                        title = stringResource(Res.string.schema_display_use_12h_clock),
-                        summary = stringResource(Res.string.schema_display_use_12h_clock_description),
+                        title = stringResource(Res.string.schema_display_heading_bold),
+                        summary = stringResource(Res.string.schema_display_heading_bold_description),
+                        checked = formState.value.heading_bold,
                         enabled = state.connected,
-                        checked = formState.value.use_12h_clock,
                         onCheckedChange = {
-                            formState.value = formState.value.newBuilder().also { wb -> wb.use_12h_clock = it }.build()
+                            formState.value = formState.value.newBuilder().also { wb -> wb.heading_bold = it }.build()
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    PreferenceDivider()
                 }
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_display_heading_bold),
-                    summary = stringResource(Res.string.schema_display_heading_bold_description),
-                    checked = formState.value.heading_bold,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.heading_bold = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
                 PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_display_units),
@@ -139,7 +158,7 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
             }
         }
         item {
-            TitledCard(title = stringResource(Res.string.advanced)) {
+            TitledCard(title = stringResource(Res.string.pangea_timing_overrides)) {
                 val screenOnIntervals = remember { IntervalConfiguration.DISPLAY_SCREEN_ON.allowedIntervals }
                 val carouselIntervals = remember { IntervalConfiguration.DISPLAY_CAROUSEL.allowedIntervals }
                 DropDownPreference(
@@ -173,28 +192,32 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                 )
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_display_wake_on_tap_or_motion),
-                    summary = stringResource(Res.string.schema_display_wake_on_tap_or_motion_description),
-                    checked = formState.value.wake_on_tap_or_motion,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.wake_on_tap_or_motion = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.Gyroscope) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_display_wake_on_tap_or_motion),
+                        summary = stringResource(Res.string.schema_display_wake_on_tap_or_motion_description),
+                        checked = formState.value.wake_on_tap_or_motion,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.wake_on_tap_or_motion = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_display_flip_screen),
-                    summary = stringResource(Res.string.schema_display_flip_screen_description),
-                    checked = formState.value.flip_screen,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.flip_screen = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.FlipScreen) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_display_flip_screen),
+                        summary = stringResource(Res.string.schema_display_flip_screen_description),
+                        checked = formState.value.flip_screen,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.flip_screen = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_display_displaymode),
@@ -213,17 +236,6 @@ fun DisplayConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     selectedItem = formState.value.oled,
                     onItemSelected = {
                         formState.value = formState.value.newBuilder().also { wb -> wb.oled = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_display_compass_orientation),
-                    summary = stringResource(Res.string.schema_display_compass_orientation_description),
-                    enabled = state.connected,
-                    selectedItem = formState.value.compass_orientation,
-                    onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.compass_orientation = it }.build()
                     },
                 )
             }

@@ -75,15 +75,12 @@ import org.meshtastic.core.resources.pangea_start_chat
 import org.meshtastic.core.resources.pangea_unreachable
 import org.meshtastic.core.resources.pangea_your_code
 import org.meshtastic.core.ui.component.QrDialog
-import org.meshtastic.core.ui.icon.Copy
-import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.QrCode
-import org.meshtastic.core.ui.icon.QrCodeScanner
-import org.meshtastic.core.ui.icon.Share
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosSheet
 import org.meshtastic.core.ui.ios.IosTextField
@@ -182,7 +179,7 @@ private fun CodeEntry(resolve: ResolveState, onSubmit: (String) -> Unit) {
             if (canScan) {
                 {
                     Icon(
-                        MeshtasticIcons.QrCodeScanner,
+                        IosIcons.QrViewfinder,
                         contentDescription = stringResource(Res.string.pangea_scan_qr),
                         tint = c.tint,
                         modifier = Modifier.size(26.dp).iosPressable(onClick = scanner::startScan),
@@ -268,7 +265,7 @@ fun MyCodeCard(code: String, link: String, modifier: Modifier = Modifier) {
                 modifier = Modifier.weight(1f),
             )
             Icon(
-                MeshtasticIcons.Copy,
+                IosIcons.DocOnDoc,
                 contentDescription = stringResource(Res.string.pangea_copy_code),
                 tint = c.tint,
                 modifier =
@@ -281,14 +278,14 @@ fun MyCodeCard(code: String, link: String, modifier: Modifier = Modifier) {
             IosButton(
                 text = stringResource(Res.string.pangea_share),
                 onClick = { share("$code\n$link", title) },
-                icon = MeshtasticIcons.Share,
+                icon = IosIcons.ShareUp,
                 modifier = Modifier.weight(1f).height(48.dp),
             )
             IosButton(
                 text = stringResource(Res.string.pangea_show_qr),
                 onClick = { showQr = true },
                 style = IosButtonStyle.Tinted,
-                icon = MeshtasticIcons.QrCode,
+                icon = IosIcons.QrCode,
                 modifier = Modifier.weight(1f).height(48.dp),
             )
         }

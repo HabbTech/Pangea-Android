@@ -128,7 +128,7 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
     val focusManager = LocalFocusManager.current
     RadioConfigScreenList(
         title = stringResource(Res.string.device),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,

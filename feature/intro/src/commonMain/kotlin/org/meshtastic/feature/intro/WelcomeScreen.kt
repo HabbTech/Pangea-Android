@@ -33,9 +33,6 @@ import org.meshtastic.core.resources.pangea_welcome_private_title
 import org.meshtastic.core.resources.pangea_welcome_ready_desc
 import org.meshtastic.core.resources.pangea_welcome_ready_title
 import org.meshtastic.core.resources.pangea_welcome_title
-import org.meshtastic.core.ui.icon.CheckCircle
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.ShieldCheck
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.LocalAnalyticsIntroProvider
@@ -51,17 +48,17 @@ internal fun WelcomeScreen(onGetStarted: () -> Unit) {
     val features =
         listOf(
             FeatureUIData(
-                icon = IosIcons.Bubble,
+                icon = IosIcons.MessageWaveform,
                 titleRes = Res.string.pangea_welcome_offgrid_title,
                 subtitleRes = Res.string.pangea_welcome_offgrid_desc,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.ShieldCheck,
+                icon = IosIcons.LockShield,
                 titleRes = Res.string.pangea_welcome_private_title,
                 subtitleRes = Res.string.pangea_welcome_private_desc,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.CheckCircle,
+                icon = IosIcons.BoltCircle,
                 titleRes = Res.string.pangea_welcome_ready_title,
                 subtitleRes = Res.string.pangea_welcome_ready_desc,
             ),

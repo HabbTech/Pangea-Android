@@ -24,30 +24,39 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.configure_critical_alerts
 import org.meshtastic.core.resources.critical_alerts
 import org.meshtastic.core.resources.critical_alerts_dnd_request_text
-import org.meshtastic.core.resources.skip
+import org.meshtastic.core.resources.pangea_critical_alerts_desc
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.AppTheme
 
 /**
- * Screen for explaining and guiding the user to configure critical alert settings. This screen is part of the app
- * introduction flow and appears after the general notification permission screen.
+ * Critical Alerts: Android's extra step after notifications are allowed, which opens the alert channel's settings so
+ * critical messages can sound through Do Not Disturb (iOS asks for this with the notification permission itself). Laid
+ * out like the other setup pages, with one button.
  *
- * @param onSkip Callback invoked if the user chooses to skip configuring critical alerts.
- * @param onConfigure Callback invoked when the user proceeds to configure critical alerts.
+ * @param onConfigure Opens the settings and moves on.
  */
 @Composable
-internal fun CriticalAlertsScreen(onSkip: () -> Unit, onConfigure: () -> Unit) {
+internal fun CriticalAlertsScreen(onConfigure: () -> Unit) {
     IosSetupPage(
         title = stringResource(Res.string.critical_alerts),
         description = stringResource(Res.string.critical_alerts_dnd_request_text),
+        largeTitle = true,
         primaryLabel = stringResource(Res.string.configure_critical_alerts),
         onPrimary = onConfigure,
-        skipLabel = stringResource(Res.string.skip),
-        onSkip = onSkip,
-    )
+    ) {
+        FeatureRow(
+            FeatureUIData(
+                icon = IosIcons.WarningFill,
+                subtitleRes = Res.string.pangea_critical_alerts_desc,
+                tint = Ios.colors.systemYellow,
+            ),
+        )
+    }
 }
 
 @PreviewLightDark
 @Composable
 private fun CriticalAlertsScreenPreview() {
-    AppTheme { Surface { CriticalAlertsScreen(onSkip = {}, onConfigure = {}) } }
+    AppTheme { Surface { CriticalAlertsScreen(onConfigure = {}) } }
 }

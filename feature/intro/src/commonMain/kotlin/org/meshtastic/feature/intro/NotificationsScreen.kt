@@ -19,64 +19,65 @@ package org.meshtastic.feature.intro
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.app_notifications
 import org.meshtastic.core.resources.configure_notification_permissions
+import org.meshtastic.core.resources.critical_alerts
 import org.meshtastic.core.resources.incoming_messages
 import org.meshtastic.core.resources.low_battery
-import org.meshtastic.core.resources.new_nodes
 import org.meshtastic.core.resources.notification_permission_blocked_notice
 import org.meshtastic.core.resources.notification_permission_denied_notice
-import org.meshtastic.core.resources.notification_permissions_description
-import org.meshtastic.core.resources.notifications_for_channel_and_direct_messages
 import org.meshtastic.core.resources.notifications_for_low_battery_alerts
-import org.meshtastic.core.resources.notifications_for_newly_discovered_nodes
-import org.meshtastic.core.ui.icon.BatteryAlert
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Message
-import org.meshtastic.core.ui.icon.Speaker
+import org.meshtastic.core.resources.pangea_critical_alerts_desc
+import org.meshtastic.core.resources.pangea_notify_messages_desc
+import org.meshtastic.core.resources.pangea_send_notifications
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.PermissionStatus
 
 /**
- * Screen for configuring notification permissions during the app introduction. Explains why they are needed and offers
- * the recovery that matches [status].
- *
- * @param status Live permission status; drives the primary action and the denied/blocked notice.
- * @param onSkip Callback invoked if the user chooses to skip notification permission setup.
- * @param onPrimaryAction Callback for the status-driven primary action (request, open settings, or advance).
+ * App Notifications, as on the iPhone app: "Send Notifications" (incoming messages, low battery) and "Critical Alerts",
+ * with one button that asks for the permission. (iOS's Siri & CarPlay row has no Android counterpart.)
  */
 @Composable
-internal fun NotificationsScreen(status: PermissionStatus, onSkip: () -> Unit, onPrimaryAction: () -> Unit) {
-    val features =
+internal fun NotificationsScreen(status: PermissionStatus, onPrimaryAction: () -> Unit, onOpenSettings: () -> Unit) {
+    val c = Ios.colors
+    PermissionScreenLayout(
+        headlineRes = Res.string.app_notifications,
+        descriptionRes = null,
+        features =
         listOf(
             FeatureUIData(
-                icon = MeshtasticIcons.Message,
+                icon = IosIcons.MessageOutline,
                 titleRes = Res.string.incoming_messages,
-                subtitleRes = Res.string.notifications_for_channel_and_direct_messages,
+                subtitleRes = Res.string.pangea_notify_messages_desc,
+                tint = c.systemGreen,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.Speaker,
-                titleRes = Res.string.new_nodes,
-                subtitleRes = Res.string.notifications_for_newly_discovered_nodes,
-            ),
-            FeatureUIData(
-                icon = MeshtasticIcons.BatteryAlert,
+                icon = IosIcons.Battery25,
                 titleRes = Res.string.low_battery,
                 subtitleRes = Res.string.notifications_for_low_battery_alerts,
             ),
-        )
-
-    PermissionScreenLayout(
-        headlineRes = Res.string.app_notifications,
-        descriptionRes = Res.string.notification_permissions_description,
-        features = features,
+        ),
         status = status,
         deniedNoticeRes = Res.string.notification_permission_denied_notice,
         blockedNoticeRes = Res.string.notification_permission_blocked_notice,
         configureButtonTextRes = Res.string.configure_notification_permissions,
-        onSkip = onSkip,
         onPrimaryAction = onPrimaryAction,
+        onOpenSettings = onOpenSettings,
+        header = { SetupSectionTitle(stringResource(Res.string.pangea_send_notifications)) },
+        additionalContent = {
+            SetupSectionTitle(stringResource(Res.string.critical_alerts))
+            FeatureRow(
+                FeatureUIData(
+                    icon = IosIcons.WarningFill,
+                    subtitleRes = Res.string.pangea_critical_alerts_desc,
+                    tint = c.systemYellow,
+                ),
+            )
+        },
     )
 }
 
@@ -84,6 +85,8 @@ internal fun NotificationsScreen(status: PermissionStatus, onSkip: () -> Unit, o
 @Composable
 private fun NotificationsScreenPreview() {
     AppTheme {
-        Surface { NotificationsScreen(status = PermissionStatus.NOT_REQUESTED, onSkip = {}, onPrimaryAction = {}) }
+        Surface {
+            NotificationsScreen(status = PermissionStatus.NOT_REQUESTED, onPrimaryAction = {}, onOpenSettings = {})
+        }
     }
 }

@@ -102,7 +102,7 @@ fun ExternalNotificationConfigScreenCommon(
     RadioConfigScreenList(
         modifier = modifier,
         title = stringResource(Res.string.external_notification),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,

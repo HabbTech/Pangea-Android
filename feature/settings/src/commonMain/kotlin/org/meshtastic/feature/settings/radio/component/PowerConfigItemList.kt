@@ -56,7 +56,7 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
 
     RadioConfigScreenList(
         title = stringResource(Res.string.power),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,

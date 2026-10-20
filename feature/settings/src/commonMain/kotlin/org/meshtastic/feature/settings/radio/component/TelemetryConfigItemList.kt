@@ -71,7 +71,7 @@ fun TelemetryConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.telemetry),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,

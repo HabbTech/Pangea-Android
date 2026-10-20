@@ -37,17 +37,23 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.navigate_back
+import org.meshtastic.core.resources.pangea_settings_word
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
@@ -130,6 +136,8 @@ internal fun IosSetupPage(
     skipLabel: String? = null,
     onSkip: () -> Unit = {},
     header: (@Composable () -> Unit)? = null,
+    largeTitle: Boolean = false,
+    onDescriptionLink: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit = {},
 ) {
     val c = Ios.colors
@@ -149,18 +157,40 @@ internal fun IosSetupPage(
         header?.invoke()
         Text(
             text = title,
-            style = Ios.type.title1.copy(fontWeight = FontWeight.Bold),
+            style = if (largeTitle) Ios.type.largeTitle else Ios.type.title1.copy(fontWeight = FontWeight.Bold),
             color = c.label,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),
         )
         if (description != null) {
+            // iOS links the word "settings" to the app's system settings page.
+            val settingsWord = stringResource(Res.string.pangea_settings_word)
+            val linkColor = c.link
+            val text =
+                remember(description, settingsWord, linkColor, onDescriptionLink) {
+                    buildAnnotatedString {
+                        append(description)
+                        val at = description.lastIndexOf(settingsWord)
+                        if (onDescriptionLink != null && at >= 0) {
+                            addLink(
+                                LinkAnnotation.Clickable(
+                                    tag = "settings",
+                                    styles = TextLinkStyles(SpanStyle(color = linkColor)),
+                                ) {
+                                    onDescriptionLink()
+                                },
+                                at,
+                                at + settingsWord.length,
+                            )
+                        }
+                    }
+                }
             Text(
-                text = description,
+                text = text,
                 style = if (plainDescription) Ios.type.body else Ios.type.headline,
                 color = if (plainDescription) c.secondaryLabel else c.label,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 14.dp),
+                modifier = Modifier.padding(top = 22.dp),
             )
         }
         Spacer(Modifier.height(20.dp))
@@ -176,19 +206,55 @@ internal fun IosSetupPage(
 @Composable
 internal fun FeatureRow(feature: FeatureUIData) {
     val c = Ios.colors
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
-        Box(Modifier.width(56.dp), contentAlignment = Alignment.CenterStart) {
-            Icon(imageVector = feature.icon, contentDescription = null, modifier = Modifier.size(34.dp), tint = c.label)
+    // iOS makeRow: the symbol in a 72 × 60 frame (SF Symbols fill it more than these drawings do, hence the smaller
+    // insets), the text 8 pt after it, and 16 pt between rows.
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Box(
+            Modifier.size(width = 72.dp, height = 60.dp).padding(horizontal = 12.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (feature.capsule) {
+                Box(
+                    Modifier.size(width = 34.dp, height = 46.dp).clip(RoundedCornerShape(17.dp)).background(c.label),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = feature.icon,
+                        contentDescription = null,
+                        tint = if (c.isDark) c.groupedRow else c.background,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            } else {
+                Icon(
+                    imageVector = feature.icon,
+                    contentDescription = null,
+                    tint = feature.tint ?: c.label,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
+        Spacer(Modifier.width(8.dp))
         Column {
             feature.titleRes?.let { titleRes ->
                 Text(
                     text = stringResource(titleRes),
-                    style = Ios.type.subheadline.copy(fontWeight = FontWeight.SemiBold),
+                    style = Ios.type.footnote.copy(fontWeight = FontWeight.SemiBold),
                     color = c.label,
                 )
             }
-            Text(text = stringResource(feature.subtitleRes), style = Ios.type.subheadline, color = c.secondaryLabel)
+            Text(text = stringResource(feature.subtitleRes), style = Ios.type.footnote, color = c.secondaryLabel)
         }
     }
+}
+
+/** A section title inside a setup page ("Send Notifications"), as iOS's bold title 2. */
+@Composable
+internal fun SetupSectionTitle(text: String) {
+    Text(
+        text = text,
+        style = Ios.type.title2.copy(fontWeight = FontWeight.Bold),
+        color = Ios.colors.label,
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+    )
 }

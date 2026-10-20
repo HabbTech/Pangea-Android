@@ -29,76 +29,82 @@ import org.meshtastic.core.resources.location_permission_blocked_notice
 import org.meshtastic.core.resources.location_permission_denied_notice
 import org.meshtastic.core.resources.mesh_map_location
 import org.meshtastic.core.resources.mesh_map_location_description
+import org.meshtastic.core.resources.pangea_continuous_location_desc
+import org.meshtastic.core.resources.pangea_continuous_location_title
 import org.meshtastic.core.resources.phone_location
 import org.meshtastic.core.resources.phone_location_description
 import org.meshtastic.core.resources.share_location
 import org.meshtastic.core.resources.share_location_description
-import org.meshtastic.core.ui.icon.HardwareModel
-import org.meshtastic.core.ui.icon.LocationOn
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.PermissionStatus
 
 /**
- * Screen for configuring location permissions during the app introduction. Explains why they are needed and offers the
- * recovery that matches [status].
- *
- * Declining here is genuinely optional — every location-backed feature re-asks in context (the map, the compass, the
- * "provide location to mesh" toggle), so the notice says "later" rather than "never".
- *
- * @param status Live permission status; drives the primary action and the denied/blocked notice.
- * @param onSkip Callback invoked if the user chooses to skip location permission setup.
- * @param onPrimaryAction Callback for the status-driven primary action (request, open settings, or advance).
+ * Phone Location, as on the iPhone app: what the phone's location is used for, with one button that asks for it. iOS
+ * also has two switches here (share location, background activity); Android keeps location sharing per radio, set once
+ * one is paired, and shares in the background from its service, so they are left out.
  */
 @Composable
-internal fun LocationScreen(status: PermissionStatus, onSkip: () -> Unit, onPrimaryAction: () -> Unit) {
-    val features =
+internal fun LocationScreen(status: PermissionStatus, onPrimaryAction: () -> Unit, onOpenSettings: () -> Unit) {
+    val c = Ios.colors
+    PermissionScreenLayout(
+        headlineRes = Res.string.phone_location,
+        descriptionRes = Res.string.phone_location_description,
+        features =
         listOf(
             FeatureUIData(
-                icon = MeshtasticIcons.LocationOn,
+                icon = IosIcons.Location,
                 titleRes = Res.string.share_location,
                 subtitleRes = Res.string.share_location_description,
+                tint = c.systemBlue,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.HardwareModel,
+                icon = IosIcons.LocationFill,
+                titleRes = Res.string.pangea_continuous_location_title,
+                subtitleRes = Res.string.pangea_continuous_location_desc,
+                tint = c.systemBlue,
+            ),
+            FeatureUIData(
+                icon = IosIcons.Measurement,
                 titleRes = Res.string.distance_measurements,
                 subtitleRes = Res.string.distance_measurements_description,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.HardwareModel,
+                icon = IosIcons.FilterCircle,
                 titleRes = Res.string.distance_filters,
                 subtitleRes = Res.string.distance_filters_description,
             ),
             FeatureUIData(
-                icon = MeshtasticIcons.LocationOn,
+                icon = IosIcons.MapPin,
                 titleRes = Res.string.mesh_map_location,
                 subtitleRes = Res.string.mesh_map_location_description,
+                tint = c.systemRed,
             ),
-        )
-
-    PermissionScreenLayout(
-        headlineRes = Res.string.phone_location,
-        descriptionRes = Res.string.phone_location_description,
-        features = features,
+        ),
         status = status,
         deniedNoticeRes = Res.string.location_permission_denied_notice,
         blockedNoticeRes = Res.string.location_permission_blocked_notice,
         configureButtonTextRes = Res.string.configure_location_permissions,
-        onSkip = onSkip,
         onPrimaryAction = onPrimaryAction,
+        onOpenSettings = onOpenSettings,
     )
 }
 
 @PreviewLightDark
 @Composable
 private fun LocationScreenPreview() {
-    AppTheme { Surface { LocationScreen(status = PermissionStatus.NOT_REQUESTED, onSkip = {}, onPrimaryAction = {}) } }
+    AppTheme {
+        Surface { LocationScreen(status = PermissionStatus.NOT_REQUESTED, onPrimaryAction = {}, onOpenSettings = {}) }
+    }
 }
 
 @PreviewLightDark
 @Composable
 private fun LocationScreenDeniedPreview() {
     AppTheme {
-        Surface { LocationScreen(status = PermissionStatus.DENIED_CAN_RETRY, onSkip = {}, onPrimaryAction = {}) }
+        Surface {
+            LocationScreen(status = PermissionStatus.DENIED_CAN_RETRY, onPrimaryAction = {}, onOpenSettings = {})
+        }
     }
 }

@@ -24,12 +24,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -53,8 +59,13 @@ internal fun PreferenceRow(
 ) {
     val c = Ios.colors
     val alpha = if (enabled) 1f else DISABLED_ALPHA
+    val icon = LocalPreferenceIcon.current
     Column(modifier.fillMaxWidth().alpha(alpha).padding(horizontal = 16.dp, vertical = 11.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Icon(icon.icon, contentDescription = null, tint = icon.tint ?: c.tint, modifier = Modifier.size(26.dp))
+                Spacer(Modifier.width(14.dp))
+            }
             Text(
                 text = title,
                 style = Ios.type.body,
@@ -75,8 +86,25 @@ internal fun PreferenceRow(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
-        below()
+        // A symbol belongs to this row only, not to anything drawn inside it.
+        CompositionLocalProvider(LocalPreferenceIcon provides null) { below() }
     }
+}
+
+/** The symbol iOS shows before a setting's title (a clock before "12 Hour Clock"). */
+class PreferenceIconSpec(val icon: ImageVector, val tint: Color?)
+
+/** Set by [PreferenceIcon] for the one setting inside it. */
+@Suppress("CompositionLocalAllowlist")
+internal val LocalPreferenceIcon = compositionLocalOf<PreferenceIconSpec?> { null }
+
+/**
+ * Gives the setting inside [content] the symbol iOS shows before its title, in the tint (or [tint]), with the help text
+ * still starting at the card's edge, as on the iPhone app's forms.
+ */
+@Composable
+fun PreferenceIcon(icon: ImageVector, tint: Color? = null, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalPreferenceIcon provides PreferenceIconSpec(icon, tint), content = content)
 }
 
 /** How a form row looks while it can't be changed (no radio connected, or another setting rules it out). */

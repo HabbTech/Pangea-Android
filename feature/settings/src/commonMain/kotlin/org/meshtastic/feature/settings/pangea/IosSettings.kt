@@ -19,7 +19,9 @@
 package org.meshtastic.feature.settings.pangea
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,8 +35,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
@@ -72,6 +74,7 @@ import org.meshtastic.core.resources.pangea_forget_radio_title
 import org.meshtastic.core.resources.pangea_match_device
 import org.meshtastic.core.resources.pangea_my_radio
 import org.meshtastic.core.resources.pangea_no_radio_paired
+import org.meshtastic.core.resources.pangea_open_settings
 import org.meshtastic.core.resources.pangea_pair_different_radio
 import org.meshtastic.core.resources.pangea_pair_radio
 import org.meshtastic.core.resources.pangea_profile_row_subtitle
@@ -89,13 +92,6 @@ import org.meshtastic.core.ui.component.AvatarPalette
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.PangeaLogoButton
 import org.meshtastic.core.ui.component.rememberAvatarBitmap
-import org.meshtastic.core.ui.icon.DisplaySettings
-import org.meshtastic.core.ui.icon.HelpOutline
-import org.meshtastic.core.ui.icon.LightMode
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Person
-import org.meshtastic.core.ui.icon.SystemUpdate
-import org.meshtastic.core.ui.icon.Tune
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosAccessory
 import org.meshtastic.core.ui.ios.IosIcons
@@ -107,6 +103,7 @@ import org.meshtastic.core.ui.pangea.MyProfileViewModel
 import org.meshtastic.core.ui.pangea.ProfileEditorSheet
 import org.meshtastic.core.ui.util.icon
 import org.meshtastic.core.ui.util.labelRes
+import org.meshtastic.core.ui.util.rememberOpenAppSettings
 import org.meshtastic.core.ui.util.summaryRes
 import org.meshtastic.feature.settings.component.ThemeOption
 
@@ -148,7 +145,7 @@ fun IosSettingsScreen(
                     title = name.ifEmpty { stringResource(Res.string.pangea_setup_profile) },
                     subtitle = stringResource(Res.string.pangea_profile_row_subtitle),
                     subtitleColor = c.tint.copy(alpha = 0.7f),
-                    titleStyle = Ios.type.title3.copy(fontWeight = FontWeight.SemiBold),
+                    titleStyle = Ios.type.title3,
                     leading = {
                         PangeaAvatar(
                             photo = rememberAvatarBitmap(state.photo),
@@ -156,14 +153,14 @@ fun IosSettingsScreen(
                             colorIndex = state.profile.color,
                             initials = RadioAutoConfig.shortName(name),
                             fallbackColor = AvatarPalette.color(state.profile.color),
-                            size = 64.dp,
+                            size = 54.dp,
                             modifier = Modifier.padding(start = 2.dp),
                         )
                     },
-                    leadingWidth = 92.dp,
+                    leadingWidth = 82.dp,
                     accessory = IosAccessory.Chevron,
                     onClick = { editing = true },
-                    modifier = Modifier.padding(vertical = 6.dp),
+                    modifier = Modifier.padding(vertical = 12.dp),
                 )
             }
         }
@@ -202,7 +199,7 @@ fun IosSettingsScreen(
             IosSection {
                 IosRow(
                     title = stringResource(Res.string.about_pangea),
-                    icon = MeshtasticIcons.HelpOutline,
+                    icon = IosIcons.QuestionSquare,
                     accessory = IosAccessory.Chevron,
                     onClick = { onNavigate(SettingsRoute.About) },
                 )
@@ -214,7 +211,7 @@ fun IosSettingsScreen(
                 )
                 IosRow(
                     title = stringResource(Res.string.pangea_firmware_updates),
-                    icon = MeshtasticIcons.SystemUpdate,
+                    icon = IosIcons.ArrowsUpDownSquare,
                     accessory = IosAccessory.Chevron,
                     onClick = { onNavigate(FirmwareRoute.FirmwareGraph) },
                 )
@@ -228,13 +225,13 @@ fun IosSettingsScreen(
                 IosSection(header = stringResource(Res.string.pangea_device_section)) {
                     IosRow(
                         title = stringResource(Res.string.user),
-                        icon = MeshtasticIcons.Person,
+                        icon = IosIcons.PersonSquareFill,
                         accessory = IosAccessory.Chevron,
                         onClick = { onNavigate(SettingsRoute.User) },
                     )
                     IosRow(
                         title = stringResource(Res.string.display),
-                        icon = MeshtasticIcons.DisplaySettings,
+                        icon = IosIcons.DisplayMonitor,
                         accessory = IosAccessory.Chevron,
                         onClick = { onNavigate(SettingsRoute.Display) },
                     )
@@ -243,7 +240,7 @@ fun IosSettingsScreen(
                     IosSection(header = stringResource(Res.string.modules)) {
                         IosRow(
                             title = stringResource(Res.string.ambient_lighting),
-                            icon = MeshtasticIcons.LightMode,
+                            icon = IosIcons.Rays,
                             accessory = IosAccessory.Chevron,
                             onClick = { onNavigate(SettingsRoute.AmbientLighting) },
                         )
@@ -255,7 +252,7 @@ fun IosSettingsScreen(
             IosSection(footer = stringResource(Res.string.pangea_expert_mode_footer)) {
                 IosRow(
                     title = stringResource(Res.string.expert_mode),
-                    icon = MeshtasticIcons.Tune,
+                    icon = IosIcons.WandStars,
                     accessory = IosAccessory.Switch(expertModeEnabled, onExpertModeChange),
                 )
             }
@@ -332,9 +329,18 @@ fun IosAppSettingsScreen(
                 header = stringResource(Res.string.pangea_app_settings),
                 footer = stringResource(Res.string.expert_mode_summary),
             ) {
+                // iOS: Open Settings, then Expert Mode. (Its PKI Administration switch has no Android counterpart:
+                // remote administration is always available in Expert Mode.)
+                val openAppSettings = rememberOpenAppSettings()
+                IosRow(
+                    title = stringResource(Res.string.pangea_open_settings),
+                    icon = IosIcons.Gear,
+                    titleColor = c.tint,
+                    onClick = openAppSettings,
+                )
                 IosRow(
                     title = stringResource(Res.string.expert_mode),
-                    icon = MeshtasticIcons.Tune,
+                    icon = IosIcons.WandStars,
                     accessory = IosAccessory.Switch(expertModeEnabled, onExpertModeChange),
                 )
             }
@@ -347,15 +353,24 @@ fun IosAppSettingsScreen(
                 var menu by remember { mutableStateOf(false) }
                 IosRow(
                     title = stringResource(Res.string.power_mode),
-                    icon = MeshtasticIcons.Tune,
+                    icon = IosIcons.BatteryFull,
                     accessory =
                     IosAccessory.Custom {
                         Box {
-                            Text(
-                                stringResource(powerMode.labelRes),
-                                style = Ios.type.body.copy(fontWeight = FontWeight.Normal),
-                                color = c.tint,
-                            )
+                            // iOS's menu picker: the value in grey with up/down chevrons.
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    stringResource(powerMode.labelRes),
+                                    style = Ios.type.body,
+                                    color = c.secondaryLabel,
+                                )
+                                Icon(
+                                    IosIcons.ChevronUpDown,
+                                    contentDescription = null,
+                                    tint = c.secondaryLabel,
+                                    modifier = Modifier.padding(start = 4.dp).size(16.dp),
+                                )
+                            }
                             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                                 PowerMode.entries.forEach { mode ->
                                     DropdownMenuItem(

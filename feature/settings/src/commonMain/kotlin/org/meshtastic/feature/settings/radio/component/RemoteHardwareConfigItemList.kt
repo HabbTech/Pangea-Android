@@ -47,7 +47,7 @@ fun RemoteHardwareConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Un
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.remote_hardware),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,

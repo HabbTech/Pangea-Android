@@ -19,7 +19,6 @@ package org.meshtastic.feature.map.maplibre.layers
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
@@ -195,7 +195,7 @@ private class ChipImage(val painter: Painter, val size: DpSize)
 private fun rememberChipImages(chips: List<MapChipKey>): Map<String, ChipImage> {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val textStyle = MaterialTheme.typography.labelLarge
+    val textStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
 
     // Vector painters have to be built in composition, so they are resolved here and handed to the rasterizer rather
     // than looked up inside it.
@@ -218,17 +218,22 @@ private fun MapChipKey.rasterize(
 ): ChipImage {
     val style =
         textStyle.copy(textDecoration = TextDecoration.LineThrough.takeIf { struckThrough }, color = Color(foreground))
-    // A chip carrying a glyph shows the icon instead of the name, so it measures no text.
-    val layout = if (glyph == null) measurer.measure(AnnotatedString(label), style, density = density) else null
-
-    // NodeChip is a Card with 8dp of horizontal padding around text that is at least 64dp wide and 28dp tall. Sizing
-    // the sprite the same way is what keeps a map chip the size of the chip in the node list. An icon chip needs no
-    // room for text, so it is a square badge instead.
-    val width =
-        with(density) {
-            layout?.let { maxOf(MIN_WIDTH_DP.dp, it.size.width.toDp() + HORIZONTAL_PADDING_DP.dp * 2) } ?: HEIGHT_DP.dp
+    // Pangea: a marker is the iPhone app's coloured circle with the short name in it, inside a soft halo. A long name
+    // is drawn smaller rather than spilling out of the circle. A chip carrying a glyph shows the icon instead.
+    val innerPx = with(density) { (MARKER_DP - 2 * HALO_DP - TEXT_INSET_DP).dp.toPx() }
+    val layout =
+        if (glyph == null) {
+            val natural = measurer.measure(AnnotatedString(label), style, density = density)
+            if (natural.size.width <= innerPx) {
+                natural
+            } else {
+                val shrunk = style.copy(fontSize = style.fontSize * (innerPx / natural.size.width))
+                measurer.measure(AnnotatedString(label), shrunk, density = density)
+            }
+        } else {
+            null
         }
-    val cornerRadiusPx = with(density) { CORNER_RADIUS_DP.dp.toPx() }
+    val haloPx = with(density) { HALO_DP.dp.toPx() }
     val borderPx = if (outlined) with(density) { BORDER_DP.dp.toPx() } else 0f
 
     return ChipImage(
@@ -236,38 +241,34 @@ private fun MapChipKey.rasterize(
         ChipPainter(
             chip = this,
             layout = layout,
-            cornerRadiusPx = cornerRadiusPx,
+            haloPx = haloPx,
             borderPx = borderPx,
             glyphPainter = glyph?.let(glyphs::get),
             glyphSizePx = with(density) { GLYPH_DP.dp.toPx() },
         ),
-        size = DpSize(width, HEIGHT_DP.dp),
+        size = DpSize(MARKER_DP.dp, MARKER_DP.dp),
     )
 }
 
-/** Draws the chip: the marker's colour behind, and its name or its icon centred in the foreground colour. */
+/** Draws the marker: a halo, the circle in the marker's colour, and its name or icon centred in the foreground. */
 private class ChipPainter(
     private val chip: MapChipKey,
     private val layout: TextLayoutResult?,
-    private val cornerRadiusPx: Float,
+    private val haloPx: Float,
     private val borderPx: Float,
     private val glyphPainter: Painter?,
     private val glyphSizePx: Float,
 ) : Painter() {
-    // Never read: the caller always names an explicit size, which is what makes the chip's width follow its text.
+    // Never read: the caller always names an explicit size.
     override val intrinsicSize: Size = Size.Unspecified
 
     override fun DrawScope.onDraw() {
-        drawRoundRect(color = Color(chip.background), cornerRadius = CornerRadius(cornerRadiusPx))
+        val radius = size.minDimension / 2f
+        drawCircle(color = Color(chip.background).copy(alpha = HALO_ALPHA), radius = radius)
+        drawCircle(color = Color(chip.background), radius = radius - haloPx)
         if (borderPx > 0f) {
-            // Inset by half the stroke: a centred stroke on the sprite's own edge would be clipped to half width.
-            drawRoundRect(
-                color = Color.White,
-                topLeft = Offset(borderPx / 2f, borderPx / 2f),
-                size = Size(size.width - borderPx, size.height - borderPx),
-                cornerRadius = CornerRadius(cornerRadiusPx),
-                style = Stroke(width = borderPx),
-            )
+            // Inset by half the stroke so the whole ring stays inside the circle.
+            drawCircle(color = Color.White, radius = radius - haloPx - borderPx / 2f, style = Stroke(width = borderPx))
         }
         if (glyphPainter != null) {
             val glyph = Size(glyphSizePx, glyphSizePx)
@@ -296,11 +297,15 @@ private fun rememberBlankPainter(): Painter = remember {
     }
 }
 
-/** Material 3's `shapes.small`, which is the shape NodeChip asks its Card for. */
-private const val CORNER_RADIUS_DP = 8
-private const val MIN_WIDTH_DP = 64
-private const val HEIGHT_DP = 28
-private const val HORIZONTAL_PADDING_DP = 8
+/** The marker's size, halo included, as on the iPhone app's map. */
+private const val MARKER_DP = 46
+
+/** The halo around the circle, drawn in the marker's colour at [HALO_ALPHA]. */
+private const val HALO_DP = 4
+private const val HALO_ALPHA = 0.35f
+
+/** Room left either side of the name inside the circle. */
+private const val TEXT_INSET_DP = 6
 
 /** Border width for an outlined chip, matching the discovery map's own 1dp. */
 private const val BORDER_DP = 1

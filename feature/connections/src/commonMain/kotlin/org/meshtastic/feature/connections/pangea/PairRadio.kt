@@ -149,7 +149,7 @@ fun PairRadioContent(
 
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(
-            IosIcons.Antenna,
+            IosIcons.AntennaTwoTone,
             contentDescription = null,
             tint = c.tint,
             modifier = Modifier.padding(top = 24.dp).size(56.dp),

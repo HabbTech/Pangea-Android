@@ -20,9 +20,11 @@ package org.meshtastic.core.ui.ios
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -68,7 +70,7 @@ fun IosSheet(
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0) },
     ) {
-        Column(modifier.fillMaxWidth().fillMaxHeight(0.94f).navigationBarsPadding().imePadding()) {
+        Column(modifier.fillMaxWidth().fillMaxHeight(0.93f).navigationBarsPadding().imePadding()) {
             IosSheetHeader(
                 title = title,
                 cancelLabel = cancelLabel,
@@ -77,6 +79,7 @@ fun IosSheet(
                 actionEnabled = actionEnabled,
                 onAction = onAction,
             )
+            Spacer(Modifier.height(12.dp))
             content()
         }
     }

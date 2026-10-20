@@ -36,38 +36,8 @@ class IntroViewModelTest {
     }
 
     @Test
-    fun testWelcomeNavigatesNextToBluetooth() {
-        val next = viewModel.getNextKey(Welcome, allPermissionsGranted = false)
-        assertEquals(Bluetooth, next)
-    }
-
-    @Test
-    fun testWelcomeSkipsBluetoothOnHardwareWithoutIt() {
-        val next = viewModel.getNextKey(Welcome, allPermissionsGranted = false, bluetoothSupported = false)
-        assertEquals(Location, next)
-    }
-
-    @Test
-    fun testBluetoothNavigatesToLocation() {
-        val next = viewModel.getNextKey(Bluetooth, allPermissionsGranted = false)
-        assertEquals(Location, next)
-    }
-
-    /**
-     * On API < 31 the Bluetooth screen asks for ACCESS_FINE_LOCATION itself, so a Location screen after it would ask
-     * for the same system permission twice in a row — and a user who declines both is USER_FIXED before reaching the
-     * app, with no dialog available again.
-     */
-    @Test
-    fun testBluetoothSkipsLocationWhenItAlreadyAskedForIt() {
-        val next = viewModel.getNextKey(Bluetooth, allPermissionsGranted = false, bluetoothRequiresLocation = true)
-        assertEquals(Notifications, next)
-    }
-
-    @Test
-    fun testLocationNavigatesToNotifications() {
-        val next = viewModel.getNextKey(Location, allPermissionsGranted = false)
-        assertEquals(Notifications, next)
+    fun testWelcomeNavigatesNextToNotifications() {
+        assertEquals(Notifications, viewModel.getNextKey(Welcome, allPermissionsGranted = false))
     }
 
     @Test
@@ -77,15 +47,40 @@ class IntroViewModelTest {
     }
 
     @Test
-    fun testNotificationsWithoutPermissionNavigatesToExpertMode() {
-        val next = viewModel.getNextKey(Notifications, allPermissionsGranted = false)
-        assertEquals(ExpertMode, next, "Skipping notifications must still route through the Expert Mode step")
+    fun testNotificationsWithoutPermissionNavigatesToLocation() {
+        assertEquals(Location, viewModel.getNextKey(Notifications, allPermissionsGranted = false))
     }
 
     @Test
-    fun testCriticalAlertsNavigatesToExpertMode() {
-        val next = viewModel.getNextKey(CriticalAlerts, allPermissionsGranted = true)
-        assertEquals(ExpertMode, next, "Critical Alerts must route through the Expert Mode step")
+    fun testCriticalAlertsNavigatesToLocation() {
+        assertEquals(Location, viewModel.getNextKey(CriticalAlerts, allPermissionsGranted = true))
+    }
+
+    @Test
+    fun testLocationNavigatesToBluetooth() {
+        assertEquals(Bluetooth, viewModel.getNextKey(Location, allPermissionsGranted = false))
+    }
+
+    /**
+     * Below Android 12 Bluetooth scanning is gated by ACCESS_FINE_LOCATION, which the Location page has just asked for.
+     * A Bluetooth page would ask for the same system permission twice in a row — and a user who declines both is
+     * USER_FIXED before reaching the app, with no dialog available again.
+     */
+    @Test
+    fun testLocationSkipsBluetoothWhenItAlreadyAskedForIt() {
+        val next = viewModel.getNextKey(Location, allPermissionsGranted = false, bluetoothRequiresLocation = true)
+        assertEquals(ExpertMode, next)
+    }
+
+    @Test
+    fun testLocationSkipsBluetoothOnHardwareWithoutIt() {
+        val next = viewModel.getNextKey(Location, allPermissionsGranted = false, bluetoothSupported = false)
+        assertEquals(ExpertMode, next)
+    }
+
+    @Test
+    fun testBluetoothNavigatesToExpertMode() {
+        assertEquals(ExpertMode, viewModel.getNextKey(Bluetooth, allPermissionsGranted = false))
     }
 
     @Test

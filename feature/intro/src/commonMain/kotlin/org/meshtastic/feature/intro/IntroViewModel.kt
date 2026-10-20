@@ -25,20 +25,19 @@ import org.koin.core.annotation.KoinViewModel
 class IntroViewModel : ViewModel() {
 
     /**
-     * Determines the next navigation key based on the current key and the state of permissions. The flow hierarchy is:
-     * Core Connection -> Shared Location -> Notifications -> Critical Alerts -> Expert Mode -> Pair Your Radio -> Your
-     * Name -> All Set.
+     * The next setup page, in the iPhone app's order: Welcome -> Notifications -> Location -> Bluetooth -> Expert Mode
+     * -> Pair Your Radio -> Your Name -> All Set. Android adds Critical Alerts after Notifications when notifications
+     * are allowed (it has to open the alert channel's settings, which iOS asks for with the permission).
      *
-     * Every path ends on [ExpertMode] (informational, no permission ask) so that no skip shortcut bypasses it; see
-     * porting/notes/onboarding-routing.md in the project folder for the rationale.
+     * Every path passes through [ExpertMode], so no shortcut skips it; see porting/notes/onboarding-routing.md in the
+     * project folder for the rationale.
      *
-     * @param bluetoothRequiresLocation true on API < 31, where BLE scanning is gated by ACCESS_FINE_LOCATION rather
-     *   than the Android 12 "Nearby devices" permissions. There the Bluetooth screen has *already asked for the
-     *   location permission*, so following it with a Location screen asks the user for the same system permission twice
-     *   in a row — and a user who declines both has spent both of Android's allowed denials before ever seeing the app,
-     *   landing on USER_FIXED with no dialog available again. The Bluetooth screen covers both uses on those releases,
-     *   so the second ask is dropped rather than duplicated.
-     * @param bluetoothSupported false on hardware with no Bluetooth LE, where the Bluetooth screen is skipped.
+     * @param bluetoothRequiresLocation true below Android 12, where Bluetooth scanning is gated by ACCESS_FINE_LOCATION
+     *   rather than the "Nearby devices" permissions. The Location page has just asked for it, so a Bluetooth page
+     *   would ask for the same system permission twice in a row — and a user who declines both has spent both of
+     *   Android's allowed denials, landing on USER_FIXED with no dialog available again. The Bluetooth page is skipped
+     *   instead.
+     * @param bluetoothSupported false on hardware with no Bluetooth LE, where the Bluetooth page is skipped.
      * @param canPairRadio true where the app supplies the Pair Your Radio page; then setup pairs a radio and asks for
      *   the user's name before "You're All Set", as on the iPhone app.
      */
@@ -49,11 +48,11 @@ class IntroViewModel : ViewModel() {
         bluetoothSupported: Boolean = true,
         canPairRadio: Boolean = false,
     ): NavKey? = when (currentKey) {
-        is Welcome -> if (bluetoothSupported) Bluetooth else Location
-        is Bluetooth -> if (bluetoothRequiresLocation) Notifications else Location
-        is Location -> Notifications
-        is Notifications -> if (allPermissionsGranted) CriticalAlerts else ExpertMode
-        is CriticalAlerts -> ExpertMode
+        is Welcome -> Notifications
+        is Notifications -> if (allPermissionsGranted) CriticalAlerts else Location
+        is CriticalAlerts -> Location
+        is Location -> if (bluetoothSupported && !bluetoothRequiresLocation) Bluetooth else ExpertMode
+        is Bluetooth -> ExpertMode
         is ExpertMode -> if (canPairRadio) PairRadio else AllSet
         is PairRadio -> SetupProfile
         is SetupProfile -> AllSet

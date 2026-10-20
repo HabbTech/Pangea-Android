@@ -38,8 +38,10 @@ import org.meshtastic.core.resources.schema_ambientlighting_led_state_descriptio
 import org.meshtastic.core.resources.schema_ambientlighting_red
 import org.meshtastic.core.resources.schema_ambientlighting_red_description
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.proto.ModuleConfig
@@ -59,7 +61,7 @@ fun AmbientLightingConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.ambient_lighting),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,
@@ -72,16 +74,18 @@ fun AmbientLightingConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
     ) {
         item {
             TitledCard(title = stringResource(Res.string.ambient_lighting_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_ambientlighting_led_state),
-                    summary = stringResource(Res.string.schema_ambientlighting_led_state_description),
-                    checked = formState.value.led_state,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.led_state = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.Lightbulb) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_ambientlighting_led_state),
+                        summary = stringResource(Res.string.schema_ambientlighting_led_state_description),
+                        checked = formState.value.led_state,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.led_state = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 LedColorFields(
                     config = formState.value,

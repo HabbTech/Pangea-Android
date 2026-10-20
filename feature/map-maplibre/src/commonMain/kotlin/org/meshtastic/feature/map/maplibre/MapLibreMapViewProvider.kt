@@ -48,8 +48,7 @@ import org.maplibre.compose.location.rememberDefaultLocationProvider
 import org.maplibre.compose.location.rememberLocationState
 import org.maplibre.compose.location.rememberSystemSettingsLauncher
 import org.maplibre.compose.map.MapState
-import org.meshtastic.core.ui.ios.Ios
-import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosGlassMapButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.util.KeepScreenOn
@@ -247,11 +246,10 @@ class MapLibreMapViewProvider(
 /** The plain map's one control, as on iOS: a glass "locate me" button at the bottom right, above the tab bar. */
 @Composable
 private fun BoxScope.PlainLocationButton(location: LocationControls) {
-    IosGlassIconButton(
+    IosGlassMapButton(
         icon = if (location.following) IosIcons.LocationFill else IosIcons.Location,
         contentDescription = null,
         onClick = location.onToggleFollow,
-        tint = Ios.colors.tint,
         modifier =
         Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalIosBottomInset.current + 64.dp),
     )

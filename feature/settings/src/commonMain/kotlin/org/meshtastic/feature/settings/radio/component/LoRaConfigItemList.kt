@@ -134,7 +134,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     if (primarySettings == null) {
         RadioConfigScreenList(
             title = stringResource(Res.string.lora),
-            configFor = state.userConfig.long_name,
+            configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
             onBack = onBack,
             configState = rememberConfigState(initialValue = loraConfig),
             enabled = false,
@@ -160,7 +160,7 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
 
     RadioConfigScreenList(
         title = stringResource(Res.string.lora),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,

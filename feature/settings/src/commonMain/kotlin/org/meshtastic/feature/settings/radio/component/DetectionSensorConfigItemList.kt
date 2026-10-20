@@ -69,7 +69,7 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
         title = stringResource(Res.string.detection_sensor),
-        configFor = state.userConfig.long_name,
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
         enabled = state.connected,

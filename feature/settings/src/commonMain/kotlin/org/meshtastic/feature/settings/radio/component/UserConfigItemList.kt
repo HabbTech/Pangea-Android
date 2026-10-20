@@ -52,20 +52,22 @@ import org.meshtastic.core.resources.ham_long_name_summary
 import org.meshtastic.core.resources.hardware_model
 import org.meshtastic.core.resources.long_name
 import org.meshtastic.core.resources.node_id
+import org.meshtastic.core.resources.pangea_user_details
 import org.meshtastic.core.resources.short_name
 import org.meshtastic.core.resources.status_message
 import org.meshtastic.core.resources.status_message_summary
 import org.meshtastic.core.resources.unmessageable
 import org.meshtastic.core.resources.unmonitored_or_infrastructure
 import org.meshtastic.core.resources.user
-import org.meshtastic.core.resources.user_config
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.RegularPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.proto.ExcludedModules
 import org.meshtastic.proto.ModuleConfig
@@ -135,7 +137,7 @@ fun UserConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, focusS
         onSave = { viewModel.save(it, formState.isDirty, statusMessageInput, statusMessageDirty) },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.user_config)) {
+            TitledCard(title = stringResource(Res.string.pangea_user_details)) {
                 RegularPreference(
                     title = stringResource(Res.string.node_id),
                     subtitle = formState.value.id,
@@ -165,43 +167,48 @@ fun UserConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, focusS
                     onClick = {},
                 )
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.unmessageable),
-                    summary = stringResource(Res.string.unmonitored_or_infrastructure),
-                    checked =
-                    (formState.value.is_unmessagable ?: false) ||
-                        (!capabilities.canToggleUnmessageable && formState.value.role.isUnmessageableRole()),
-                    enabled = formState.value.is_unmessagable != null || capabilities.canToggleUnmessageable,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.is_unmessagable = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.PhoneSlash) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.unmessageable),
+                        summary = stringResource(Res.string.unmonitored_or_infrastructure),
+                        checked =
+                        (formState.value.is_unmessagable ?: false) ||
+                            (!capabilities.canToggleUnmessageable && formState.value.role.isUnmessageableRole()),
+                        enabled = formState.value.is_unmessagable != null || capabilities.canToggleUnmessageable,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.is_unmessagable = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                LicensedModeSetting(
-                    checked = formState.value.is_licensed,
-                    enabled = state.connected,
-                    signingSupported = state.metadata?.has_xeddsa,
-                    onCheckedChange = { licensed ->
-                        val longName = formState.value.long_name
-                        // The long-name field becomes the callsign while licensed, so reshape the name for the mode
-                        // being entered: one too wide to be a callsign is demoted to the ham long name rather than
-                        // discarded, and abandoning onboarding does not leave a stray separator behind.
-                        formState.value =
-                            formState.value
-                                .newBuilder()
-                                .also { wb ->
-                                    wb.is_licensed = licensed
-                                    wb.long_name =
-                                        when {
-                                            !state.isLocal -> longName
-                                            licensed -> HamName.forOnboarding(longName)
-                                            else -> HamName.forUnlicensing(longName)
-                                        }
-                                }
-                                .build()
-                    },
-                )
+                PreferenceIcon(IosIcons.PersonTextRect) {
+                    LicensedModeSetting(
+                        checked = formState.value.is_licensed,
+                        enabled = state.connected,
+                        signingSupported = state.metadata?.has_xeddsa,
+                        onCheckedChange = { licensed ->
+                            val longName = formState.value.long_name
+                            // The long-name field becomes the callsign while licensed, so reshape the name for the mode
+                            // being entered: one too wide to be a callsign is demoted to the ham long name rather than
+                            // discarded, and abandoning onboarding does not leave a stray separator behind.
+                            formState.value =
+                                formState.value
+                                    .newBuilder()
+                                    .also { wb ->
+                                        wb.is_licensed = licensed
+                                        wb.long_name =
+                                            when {
+                                                !state.isLocal -> longName
+                                                licensed -> HamName.forOnboarding(longName)
+                                                else -> HamName.forUnlicensing(longName)
+                                            }
+                                    }
+                                    .build()
+                        },
+                    )
+                }
             }
         }
     }
@@ -324,21 +331,23 @@ internal fun UserNameFields(
     val keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        EditTextPreference(
-            title = stringResource(if (hamMode) Res.string.call_sign else Res.string.long_name),
-            value = if (hamMode) callSign else formState.value.long_name,
-            summary = if (hamMode) stringResource(Res.string.call_sign_summary) else null,
-            maxSize = if (hamMode) HamName.MAX_CALL_SIGN_BYTES else LONG_NAME_MAX_LENGTH,
-            enabled = enabled,
-            isError = isLongNameError,
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            modifier = Modifier.testTag(USER_LONG_NAME_TEST_TAG),
-            onValueChanged = {
-                val longName = if (hamMode) HamName.compose(it, hamLongName) else it
-                formState.value = formState.value.newBuilder().also { wb -> wb.long_name = longName }.build()
-            },
-        )
+        PreferenceIcon(if (hamMode) IosIcons.PersonSquareFill else IosIcons.TextAlignLeft) {
+            EditTextPreference(
+                title = stringResource(if (hamMode) Res.string.call_sign else Res.string.long_name),
+                value = if (hamMode) callSign else formState.value.long_name,
+                summary = if (hamMode) stringResource(Res.string.call_sign_summary) else null,
+                maxSize = if (hamMode) HamName.MAX_CALL_SIGN_BYTES else LONG_NAME_MAX_LENGTH,
+                enabled = enabled,
+                isError = isLongNameError,
+                keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
+                modifier = Modifier.testTag(USER_LONG_NAME_TEST_TAG),
+                onValueChanged = {
+                    val longName = if (hamMode) HamName.compose(it, hamLongName) else it
+                    formState.value = formState.value.newBuilder().also { wb -> wb.long_name = longName }.build()
+                },
+            )
+        }
         if (hamMode) {
             PreferenceDivider()
             // Optional: firmware appends it to the callsign, so an empty field names the node after the callsign.
@@ -359,18 +368,20 @@ internal fun UserNameFields(
             )
         }
         PreferenceDivider()
-        EditTextPreference(
-            title = stringResource(Res.string.short_name),
-            value = formState.value.short_name,
-            maxSize = SHORT_NAME_MAX_LENGTH,
-            enabled = enabled,
-            isError = isShortNameError,
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
-            modifier = Modifier.testTag(USER_SHORT_NAME_TEST_TAG),
-            onValueChanged = {
-                formState.value = formState.value.newBuilder().also { wb -> wb.short_name = it }.build()
-            },
-        )
+        PreferenceIcon(IosIcons.CircleFill) {
+            EditTextPreference(
+                title = stringResource(Res.string.short_name),
+                value = formState.value.short_name,
+                maxSize = SHORT_NAME_MAX_LENGTH,
+                enabled = enabled,
+                isError = isShortNameError,
+                keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
+                modifier = Modifier.testTag(USER_SHORT_NAME_TEST_TAG),
+                onValueChanged = {
+                    formState.value = formState.value.newBuilder().also { wb -> wb.short_name = it }.build()
+                },
+            )
+        }
     }
 }

@@ -20,133 +20,56 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.bluetooth_feature_config
-import org.meshtastic.core.resources.bluetooth_feature_config_description
-import org.meshtastic.core.resources.bluetooth_feature_discovery
-import org.meshtastic.core.resources.bluetooth_feature_discovery_description
-import org.meshtastic.core.resources.bluetooth_permission
 import org.meshtastic.core.resources.bluetooth_permission_blocked_notice
-import org.meshtastic.core.resources.bluetooth_permission_blocked_notice_pre31
 import org.meshtastic.core.resources.bluetooth_permission_denied_notice
-import org.meshtastic.core.resources.bluetooth_permission_denied_notice_pre31
-import org.meshtastic.core.resources.configure_bluetooth_permissions
-import org.meshtastic.core.resources.configure_location_permissions
-import org.meshtastic.core.resources.mesh_map_location
-import org.meshtastic.core.resources.mesh_map_location_description
-import org.meshtastic.core.resources.permission_missing_31
-import org.meshtastic.core.resources.permission_missing_pre31
-import org.meshtastic.core.resources.share_location
-import org.meshtastic.core.resources.share_location_description
-import org.meshtastic.core.ui.icon.Antenna
-import org.meshtastic.core.ui.icon.Bluetooth
-import org.meshtastic.core.ui.icon.LocationOn
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.resources.pangea_bluetooth_desc
+import org.meshtastic.core.resources.pangea_bluetooth_title
+import org.meshtastic.core.resources.pangea_bt_background_desc
+import org.meshtastic.core.resources.pangea_bt_background_title
+import org.meshtastic.core.resources.pangea_bt_nodes_desc
+import org.meshtastic.core.resources.pangea_bt_nodes_title
+import org.meshtastic.core.resources.pangea_configure_bluetooth
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.PermissionStatus
 
 /**
- * Screen for configuring Bluetooth permissions during the app introduction. Explains why they are needed and offers the
- * recovery that matches [status].
- *
- * @param status Live permission status; drives the primary action and the denied/blocked notice.
- * @param requiresLocation True on API < 31, where BLE scanning is gated by the location permission instead of "Nearby
- *   devices". The copy follows, because naming a permission the user will never be shown is worse than saying nothing.
- * @param onSkip Callback invoked if the user chooses to skip Bluetooth permission setup.
- * @param onPrimaryAction Callback for the status-driven primary action (request, open settings, or advance).
+ * Bluetooth Connectivity, as on the iPhone app, with one button that asks for Android's "Nearby devices" permissions.
+ * Skipped below Android 12, where Bluetooth scanning rides on the location permission the page before asked for.
  */
 @Composable
-internal fun BluetoothScreen(
-    status: PermissionStatus,
-    requiresLocation: Boolean,
-    onSkip: () -> Unit,
-    onPrimaryAction: () -> Unit,
-) {
-    val features = bluetoothScreenFeatures(requiresLocation)
-
+internal fun BluetoothScreen(status: PermissionStatus, onPrimaryAction: () -> Unit, onOpenSettings: () -> Unit) {
     PermissionScreenLayout(
-        headlineRes = Res.string.bluetooth_permission,
-        descriptionRes =
-        if (requiresLocation) Res.string.permission_missing_pre31 else Res.string.permission_missing_31,
-        features = features,
+        headlineRes = Res.string.pangea_bluetooth_title,
+        descriptionRes = Res.string.pangea_bluetooth_desc,
+        features =
+        listOf(
+            FeatureUIData(
+                icon = IosIcons.BluetoothRune,
+                titleRes = Res.string.pangea_bt_nodes_title,
+                subtitleRes = Res.string.pangea_bt_nodes_desc,
+                capsule = true,
+            ),
+            FeatureUIData(
+                icon = IosIcons.PersonDotted,
+                titleRes = Res.string.pangea_bt_background_title,
+                subtitleRes = Res.string.pangea_bt_background_desc,
+            ),
+        ),
         status = status,
-        deniedNoticeRes =
-        if (requiresLocation) {
-            Res.string.bluetooth_permission_denied_notice_pre31
-        } else {
-            Res.string.bluetooth_permission_denied_notice
-        },
-        blockedNoticeRes =
-        if (requiresLocation) {
-            Res.string.bluetooth_permission_blocked_notice_pre31
-        } else {
-            Res.string.bluetooth_permission_blocked_notice
-        },
-        configureButtonTextRes =
-        if (requiresLocation) {
-            Res.string.configure_location_permissions
-        } else {
-            Res.string.configure_bluetooth_permissions
-        },
-        onSkip = onSkip,
+        deniedNoticeRes = Res.string.bluetooth_permission_denied_notice,
+        blockedNoticeRes = Res.string.bluetooth_permission_blocked_notice,
+        configureButtonTextRes = Res.string.pangea_configure_bluetooth,
         onPrimaryAction = onPrimaryAction,
+        onOpenSettings = onOpenSettings,
     )
-}
-
-/**
- * What Bluetooth access buys, plus what the *same* grant buys on API < 31 where it is the location permission.
- *
- * Split out so [BluetoothScreen] stays within the complexity budget and this stays about the platform difference.
- */
-@Composable
-private fun bluetoothScreenFeatures(requiresLocation: Boolean): List<FeatureUIData> = buildList {
-    add(
-        FeatureUIData(
-            icon = MeshtasticIcons.Bluetooth,
-            titleRes = Res.string.bluetooth_feature_discovery,
-            subtitleRes = Res.string.bluetooth_feature_discovery_description,
-        ),
-    )
-    add(
-        FeatureUIData(
-            icon = MeshtasticIcons.Antenna,
-            titleRes = Res.string.bluetooth_feature_config,
-            subtitleRes = Res.string.bluetooth_feature_config_description,
-        ),
-    )
-    // On API < 31 this screen asks for ACCESS_FINE_LOCATION and the Location screen is skipped, because
-    // asking twice for one system permission would burn both of Android's allowed denials inside onboarding.
-    // The location-backed features have to be named here instead, or the user grants a permission whose real
-    // scope they were never shown.
-    if (requiresLocation) {
-        add(
-            FeatureUIData(
-                icon = MeshtasticIcons.LocationOn,
-                titleRes = Res.string.mesh_map_location,
-                subtitleRes = Res.string.mesh_map_location_description,
-            ),
-        )
-        add(
-            FeatureUIData(
-                icon = MeshtasticIcons.LocationOn,
-                titleRes = Res.string.share_location,
-                subtitleRes = Res.string.share_location_description,
-            ),
-        )
-    }
 }
 
 @PreviewLightDark
 @Composable
 private fun BluetoothScreenPreview() {
     AppTheme {
-        Surface {
-            BluetoothScreen(
-                status = PermissionStatus.NOT_REQUESTED,
-                requiresLocation = false,
-                onSkip = {},
-                onPrimaryAction = {},
-            )
-        }
+        Surface { BluetoothScreen(status = PermissionStatus.NOT_REQUESTED, onPrimaryAction = {}, onOpenSettings = {}) }
     }
 }
 
@@ -155,12 +78,7 @@ private fun BluetoothScreenPreview() {
 private fun BluetoothScreenBlockedPreview() {
     AppTheme {
         Surface {
-            BluetoothScreen(
-                status = PermissionStatus.PERMANENTLY_DENIED,
-                requiresLocation = false,
-                onSkip = {},
-                onPrimaryAction = {},
-            )
+            BluetoothScreen(status = PermissionStatus.PERMANENTLY_DENIED, onPrimaryAction = {}, onOpenSettings = {})
         }
     }
 }

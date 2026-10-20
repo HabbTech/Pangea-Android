@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -41,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
@@ -154,8 +154,7 @@ fun MeshtasticNavigationSuite(
             modifier =
             Modifier.align(Alignment.BottomCenter)
                 .onSizeChanged { chromeHeight = with(density) { it.height.toDp() } }
-                .navigationBarsPadding()
-                .padding(bottom = 8.dp),
+                .padding(bottom = tabBarBottomGap()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (pill != null) {
@@ -267,3 +266,20 @@ internal fun visibleDestinations(expertMode: Boolean): List<TopLevelDestination>
 } else {
     listOf(TopLevelDestination.Map, TopLevelDestination.Messages, TopLevelDestination.Settings)
 }
+
+/**
+ * How far the floating tab bar sits above the screen's bottom edge. iOS floats it 21 pt up, over the home indicator;
+ * with gesture navigation Android's handle sits in the same place, so the bar goes there too. With three-button
+ * navigation it stays clear of the buttons.
+ */
+@Composable
+private fun tabBarBottomGap(): Dp {
+    val navigationBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    return if (navigationBar <= GESTURE_NAVIGATION_MAX) TAB_BAR_FLOAT else navigationBar + 6.dp
+}
+
+/** iOS's gap between the tab bar and the bottom of the screen. */
+private val TAB_BAR_FLOAT = 21.dp
+
+/** Taller than this, the navigation bar holds buttons rather than the gesture handle. */
+private val GESTURE_NAVIGATION_MAX = 32.dp

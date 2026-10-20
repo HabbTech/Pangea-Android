@@ -133,6 +133,8 @@ data class RadioConfigState(
     val route: String = "",
     val metadata: DeviceMetadata? = null,
     val userConfig: User = User.Builder().build(),
+    /** The radio's name from the node list, for "Configuration for:" until its owner has been read. */
+    val destNodeName: String = "",
     val channelList: List<ChannelSettings> = emptyList(),
     val radioConfig: LocalConfig = LocalConfig.Builder().build(),
     val moduleConfig: LocalModuleConfig = LocalModuleConfig.Builder().build(),
@@ -322,7 +324,11 @@ open class RadioConfigViewModel(
             .onEach {
                 _destNode.value = it
                 _radioConfigState.update { state ->
-                    state.copy(metadata = it?.metadata, localIsLicensed = it?.user?.is_licensed == true)
+                    state.copy(
+                        metadata = it?.metadata,
+                        localIsLicensed = it?.user?.is_licensed == true,
+                        destNodeName = it?.user?.long_name.orEmpty(),
+                    )
                 }
             }
             .launchIn(viewModelScope)

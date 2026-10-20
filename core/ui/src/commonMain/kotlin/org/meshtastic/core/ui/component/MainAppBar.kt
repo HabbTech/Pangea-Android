@@ -177,7 +177,7 @@ private fun LargeTitle(title: String, subtitle: String?) {
             overflow = TextOverflow.Ellipsis,
             style = Ios.type.largeTitle,
             color = c.label,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
         )
         if (subtitle != null) {
             Text(

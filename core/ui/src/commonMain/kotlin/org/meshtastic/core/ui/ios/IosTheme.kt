@@ -71,6 +71,8 @@ data class IosColors(
     val systemRed: Color,
     val systemGreen: Color,
     val systemBlue: Color,
+    /** The "settings" links on the setup pages. */
+    val link: Color,
     /** `.orange`: warnings that aren't errors. */
     val systemOrange: Color,
     /** `.yellow`: favourites' stars and an open lock. */
@@ -106,7 +108,8 @@ val LightIosColors =
         systemGray4 = Color(0xFFD1D1D6),
         systemRed = Color(0xFFFF3B30),
         systemGreen = Color(0xFF34C759),
-        systemBlue = Color(0xFF007AFF),
+        systemBlue = Color(0xFF0088FF),
+        link = Color(0xFF5C6BC0),
         systemOrange = Color(0xFFFF9500),
         systemYellow = Color(0xFFFFCC00),
         secondaryFill = Color(0xFFF2F2F7),
@@ -138,7 +141,8 @@ val DarkIosColors =
         systemGray4 = Color(0xFF3A3A3C),
         systemRed = Color(0xFFFF453A),
         systemGreen = Color(0xFF30D158),
-        systemBlue = Color(0xFF0A84FF),
+        systemBlue = Color(0xFF0091FF),
+        link = Color(0xFF5C6BC0),
         systemOrange = Color(0xFFFF9F0A),
         systemYellow = Color(0xFFFFD60A),
         secondaryFill = Color(0xFF2C2C2E),

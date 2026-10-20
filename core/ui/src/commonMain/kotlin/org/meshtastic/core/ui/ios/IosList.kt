@@ -208,7 +208,7 @@ fun IosRow(
         Box(Modifier.width(textStart), contentAlignment = Alignment.Center) {
             when {
                 leading != null -> leading()
-                icon != null -> Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(24.dp))
+                icon != null -> Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(28.dp))
             }
         }
         Column(Modifier.weight(1f).padding(vertical = 11.dp)) {

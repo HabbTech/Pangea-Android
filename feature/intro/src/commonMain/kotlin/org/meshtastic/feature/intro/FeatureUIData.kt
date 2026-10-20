@@ -16,18 +16,24 @@
  */
 package org.meshtastic.feature.intro
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.StringResource
 
 /**
- * Data class representing the UI elements for a feature row in the app introduction.
+ * One row of a setup page, as the iPhone app's `makeRow`: an icon, an optional bold title and a grey explanation.
  *
- * @param icon The vector asset for the feature icon.
- * @param titleRes Optional string resource ID for the feature title.
- * @param subtitleRes String resource ID for the feature subtitle.
+ * @param icon The row's symbol.
+ * @param titleRes Optional bold title.
+ * @param subtitleRes The explanation.
+ * @param tint The symbol's colour where iOS draws it in colour (location blue, map-pin red, …); null is the text
+ *   colour.
+ * @param capsule Draws the symbol on a dark capsule, as iOS's custom Bluetooth symbol.
  */
 internal data class FeatureUIData(
     val icon: ImageVector,
     val titleRes: StringResource? = null,
     val subtitleRes: StringResource,
+    val tint: Color? = null,
+    val capsule: Boolean = false,
 )

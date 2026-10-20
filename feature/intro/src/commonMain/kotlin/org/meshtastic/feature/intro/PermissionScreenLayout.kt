@@ -36,10 +36,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.next
-import org.meshtastic.core.resources.open_settings
-import org.meshtastic.core.resources.skip
 import org.meshtastic.core.ui.icon.AppSettingsAlt
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
@@ -47,66 +43,53 @@ import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.PermissionStatus
 
 /**
- * A generic layout for the permission screens of the app introduction flow: a headline, a description, a list of
- * features, and a bottom bar whose primary action follows the live [PermissionStatus].
+ * A setup page that asks for one permission, as on the iPhone app: a large title, an optional explanation whose word
+ * "settings" opens the app's settings, the rows saying what the permission is for, and one button.
  *
- * The primary action is status-driven rather than granted/not-granted, because the three not-granted states need three
- * different actions:
- * - [PermissionStatus.NOT_REQUESTED] / [PermissionStatus.DENIED_CAN_RETRY] — request; the system will show its dialog.
- * - [PermissionStatus.PERMANENTLY_DENIED] — the system will not show a dialog again, so requesting is a no-op that
- *   leaves the button looking broken. Route to app settings instead.
- * - [PermissionStatus.GRANTED] — nothing left to configure; advance.
+ * The button keeps its "Configure …" label whatever the status, as iOS's does: [onPrimaryAction] asks once and then
+ * moves on whatever the answer (see `rememberAskThenContinue` in the setup graph). After a denial the page also names
+ * what stays disabled, the educational UI Android's permissions guidance asks for; the notice is a polite live region
+ * so a screen reader announces it when the user comes back from the dialog.
  *
- * Both denied states also render an inline notice naming what stays disabled, which is the educational UI the Android
- * permissions guidance asks for before a re-request. The notice is a polite live region so a screen reader announces
- * the change when the user returns from a dialog they dismissed.
- *
- * @param headlineRes String resource for the main headline of the screen.
- * @param descriptionRes String resource for the main descriptive text.
- * @param features A list of [FeatureUIData] to be displayed using [FeatureRow].
- * @param status The live permission status driving the primary action and the notice.
+ * @param headlineRes The page title.
+ * @param descriptionRes The explanation under the title, or null for none (iOS's notifications page has none).
+ * @param features The rows, drawn with [FeatureRow].
+ * @param status The live permission status, for the notice.
  * @param deniedNoticeRes Notice shown after a single denial: what stays disabled if the user declines again.
  * @param blockedNoticeRes Notice shown once the system stops prompting: what stays disabled and where to turn it on.
- * @param configureButtonTextRes Primary button label while the permission can still be requested.
- * @param onSkip Callback for the skip action.
- * @param onPrimaryAction Callback for the primary action; the caller maps [status] to request / settings / advance.
- * @param additionalContent Optional composable lambda for adding custom content below the features.
+ * @param configureButtonTextRes The button's label.
+ * @param onPrimaryAction The button.
+ * @param onOpenSettings The "settings" link in the explanation.
+ * @param header Shown above the rows (a section title).
+ * @param additionalContent Shown below the rows.
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun PermissionScreenLayout(
     headlineRes: StringResource,
-    descriptionRes: StringResource,
+    descriptionRes: StringResource?,
     features: List<FeatureUIData>,
     status: PermissionStatus,
     deniedNoticeRes: StringResource,
     blockedNoticeRes: StringResource,
     configureButtonTextRes: StringResource,
-    onSkip: () -> Unit,
     onPrimaryAction: () -> Unit,
+    onOpenSettings: () -> Unit = {},
+    header: (@Composable () -> Unit)? = null,
     additionalContent: (@Composable () -> Unit)? = null,
 ) {
-    val primaryLabelRes =
-        when (status) {
-            PermissionStatus.GRANTED -> Res.string.next
-
-            PermissionStatus.PERMANENTLY_DENIED -> Res.string.open_settings
-
-            PermissionStatus.NOT_REQUESTED,
-            PermissionStatus.DENIED_CAN_RETRY,
-            -> configureButtonTextRes
-        }
-
     IosSetupPage(
         title = stringResource(headlineRes),
-        description = stringResource(descriptionRes),
-        primaryLabel = stringResource(primaryLabelRes),
+        description = descriptionRes?.let { stringResource(it) },
+        largeTitle = true,
+        onDescriptionLink = onOpenSettings,
+        primaryLabel = stringResource(configureButtonTextRes),
         onPrimary = onPrimaryAction,
-        skipLabel = stringResource(Res.string.skip),
-        onSkip = onSkip,
     ) {
-        // Directly under the description, above the feature list, so a user who has just declined sees why the
-        // button changed. It renders only after a denial, so the happy path pays nothing.
+        // Directly under the description, above the rows, so a user who has just declined sees what they lose. It
+        // renders only after a denial, so the happy path pays nothing.
         PermissionNotice(status = status, deniedNoticeRes = deniedNoticeRes, blockedNoticeRes = blockedNoticeRes)
+        header?.invoke()
         features.forEach { feature -> FeatureRow(feature = feature) }
         additionalContent?.invoke()
     }

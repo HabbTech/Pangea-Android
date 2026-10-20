@@ -112,7 +112,8 @@ fun IosLargeTitleScreen(
                         color = c.label,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = IosInset, end = IosInset, top = 2.dp, bottom = 6.dp),
+                        modifier =
+                        Modifier.padding(start = IosInset, end = IosInset, top = LargeTitleTop, bottom = 6.dp),
                     )
                 }
             }
@@ -165,7 +166,8 @@ fun IosPushedScreen(
                             color = c.label,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = IosInset, end = IosInset, top = 2.dp, bottom = 6.dp),
+                            modifier =
+                            Modifier.padding(start = IosInset, end = IosInset, top = LargeTitleTop, bottom = 6.dp),
                         )
                     }
                 }
@@ -215,7 +217,8 @@ fun IosPushedColumnScreen(
                         color = c.label,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = IosInset, end = IosInset, top = 2.dp, bottom = 6.dp),
+                        modifier =
+                        Modifier.padding(start = IosInset, end = IosInset, top = LargeTitleTop, bottom = 6.dp),
                     )
                 }
             }
@@ -295,7 +298,7 @@ fun IosSheetHeader(
     onAction: () -> Unit = {},
     horizontalPadding: Dp = IosInset,
 ) {
-    Box(modifier.fillMaxWidth().height(64.dp).padding(horizontal = horizontalPadding)) {
+    Box(modifier.fillMaxWidth().height(74.dp).padding(horizontal = horizontalPadding)) {
         if (cancelLabel != null) {
             IosGlassTextButton(cancelLabel, onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart))
         }
@@ -311,3 +314,6 @@ fun IosSheetHeader(
         }
     }
 }
+
+/** The large title's gap under the button row, measured against the iPhone app. */
+internal val LargeTitleTop = 8.dp
