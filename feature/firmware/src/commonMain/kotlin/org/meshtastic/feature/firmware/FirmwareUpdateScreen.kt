@@ -44,9 +44,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -168,6 +165,7 @@ import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosPushedColumnScreen
+import org.meshtastic.core.ui.ios.IosSegmentedControl
 import org.meshtastic.core.ui.util.KeepScreenOn
 import org.meshtastic.core.ui.util.rememberOpenDocumentTreeLauncher
 import org.meshtastic.core.ui.util.rememberOpenFileLauncher
@@ -1030,17 +1028,14 @@ private fun ReleaseTypeSelector(
         if (showNightly) add(FirmwareReleaseType.NIGHTLY to Res.string.firmware_update_nightly)
         add(FirmwareReleaseType.LOCAL to Res.string.firmware_update_local_file)
     }
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        types.forEachIndexed { index, (type, label) ->
-            SegmentedButton(
-                selected = selectedReleaseType == type,
-                onClick = { onReleaseTypeSelect(type) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = types.size),
-            ) {
-                Text(stringResource(label))
-            }
-        }
-    }
+    // iOS's segmented control, as the iPhone app picks a release channel.
+    IosSegmentedControl(
+        options = types.map { (_, label) -> stringResource(label) },
+        selectedIndex = types.indexOfFirst { it.first == selectedReleaseType }.coerceAtLeast(0),
+        onSelect = { onReleaseTypeSelect(types[it].first) },
+        modifier = Modifier.height(32.dp),
+        textStyle = Ios.type.subheadline,
+    )
 }
 
 @Composable
