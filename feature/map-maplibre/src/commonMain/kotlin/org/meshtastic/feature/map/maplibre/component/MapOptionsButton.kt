@@ -114,7 +114,7 @@ private fun MapStyleSection(selection: BasemapSelection, basemapExtra: @Composab
         (selection.builtIns + selection.customs).forEach { basemap: Basemap ->
             IosRow(
                 title = basemap.label,
-                accessory = if (basemap.id == selection.current.id) IosAccessory.Checkmark else IosAccessory.None,
+                accessory = if (basemap.id == selection.selected.id) IosAccessory.Checkmark else IosAccessory.None,
                 onClick = { selection.onSelect(basemap) },
             )
         }

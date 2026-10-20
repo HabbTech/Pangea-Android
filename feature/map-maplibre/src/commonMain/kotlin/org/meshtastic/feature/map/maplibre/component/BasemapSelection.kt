@@ -33,6 +33,7 @@ import org.meshtastic.core.repository.MapPrefs
 import org.meshtastic.core.repository.MapTileProviderPrefs
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.map_tile_source
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.map.component.BasemapChoice
 import org.meshtastic.feature.map.component.BasemapMenu
@@ -43,13 +44,17 @@ import org.meshtastic.feature.map.maplibre.style.Basemaps
 /** A preference value that has been read from disk; distinguishes "not read yet" from a persisted null. */
 private data class Loaded<T>(val value: T)
 
-/** The basemap in use, everything selectable, and how to change it. */
+/**
+ * The basemap in use, everything selectable, and how to change it. [current] is what the map draws; [selected] is what
+ * the user chose, which differs only when the default style is drawn dark for Dark Mode.
+ */
 @Stable
 internal class BasemapSelection(
     val current: Basemap,
     val builtIns: List<Basemap>,
     val customs: List<Basemap>,
     val onSelect: (Basemap) -> Unit,
+    val selected: Basemap = current,
 )
 
 /**
@@ -100,12 +105,16 @@ internal fun rememberBasemapSelection(customs: List<Basemap.Raster>): BasemapSel
     val loadedCustom = selectedCustomId
     if (loadedStyle == null || loadedCustom == null) return null
 
-    val current =
+    val chosen =
         customs.firstOrNull { it.id == loadedCustom.value }
             ?: Basemaps.all.getOrElse(loadedStyle.value) { Basemaps.default }
+    // Pangea: as the iPhone app's standard map follows the phone's appearance, the default style is drawn dark in Dark
+    // Mode. Known before the map is composed, so it never swaps a loaded style.
+    val current = if (Ios.colors.isDark && chosen == Basemaps.default) Basemaps.Dark else chosen
 
     return BasemapSelection(
         current = current,
+        selected = chosen,
         builtIns = Basemaps.all,
         customs = customs,
         onSelect = { chosen ->
@@ -142,7 +151,7 @@ internal fun BasemapButton(selection: BasemapSelection, extra: @Composable () ->
             onDismissRequest = { expanded = false },
             // The user's own sources read as a separate list from the ones we ship.
             groups = listOf(selection.builtIns.toChoices(), selection.customs.toChoices()),
-            selectedId = selection.current.id,
+            selectedId = selection.selected.id,
             onSelect = { choice -> selection.byId(choice.id)?.let(selection.onSelect) },
             trailingContent = extra,
         )
