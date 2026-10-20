@@ -26,9 +26,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -60,6 +57,8 @@ import org.meshtastic.core.resources.node_layout_signal_direct_only
 import org.meshtastic.core.ui.component.NodeItem
 import org.meshtastic.core.ui.component.NodeItemCompact
 import org.meshtastic.core.ui.component.SwitchPreference
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosSegmentedControl
 import org.meshtastic.feature.settings.NodeListSettingsState
 import org.meshtastic.proto.Config
 import org.meshtastic.proto.DeviceMetrics
@@ -87,23 +86,20 @@ fun NodeLayoutSettings(
 ) {
     ExpressiveSection(modifier = modifier, title = stringResource(Res.string.node_layout_section_title)) {
         // Density picker
-        SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            NodeListDensity.entries.forEachIndexed { index, option ->
-                val label =
-                    when (option) {
-                        NodeListDensity.COMPLETE -> stringResource(Res.string.node_layout_complete)
-                        NodeListDensity.COMPACT -> stringResource(Res.string.node_layout_compact)
-                    }
-                SegmentedButton(
-                    shape = SegmentedButtonDefaults.itemShape(index, NodeListDensity.entries.size),
-                    onClick = { onDensityChange(option) },
-                    selected = state.density == option,
-                    label = { Text(label) },
-                )
-            }
-        }
+        val densities = NodeListDensity.entries
+        IosSegmentedControl(
+            options =
+            densities.map { option ->
+                when (option) {
+                    NodeListDensity.COMPLETE -> stringResource(Res.string.node_layout_complete)
+                    NodeListDensity.COMPACT -> stringResource(Res.string.node_layout_compact)
+                }
+            },
+            selectedIndex = densities.indexOf(state.density),
+            onSelect = { onDensityChange(densities[it]) },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp).height(32.dp),
+            textStyle = Ios.type.subheadline,
+        )
 
         // Live preview — positioned above toggles so it doesn't jump with list size changes
         Text(

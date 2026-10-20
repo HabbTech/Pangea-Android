@@ -16,6 +16,7 @@
  */
 package org.meshtastic.feature.settings.filter
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,15 +24,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,9 +54,11 @@ import org.meshtastic.core.resources.filter_whole_word
 import org.meshtastic.core.resources.filter_words
 import org.meshtastic.core.resources.filter_words_summary
 import org.meshtastic.core.ui.component.MainAppBar
-import org.meshtastic.core.ui.icon.Add
-import org.meshtastic.core.ui.icon.Delete
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosSwitch
+import org.meshtastic.core.ui.ios.IosTextField
 
 @Composable
 fun FilterSettingsScreen(viewModel: FilterSettingsViewModel, onBack: () -> Unit) {
@@ -69,6 +68,7 @@ fun FilterSettingsScreen(viewModel: FilterSettingsViewModel, onBack: () -> Unit)
     var newWord by remember { mutableStateOf("") }
 
     Scaffold(
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
             MainAppBar(
                 title = stringResource(Res.string.filter_settings),
@@ -100,8 +100,8 @@ fun FilterSettingsScreen(viewModel: FilterSettingsViewModel, onBack: () -> Unit)
                 item {
                     Text(
                         stringResource(Res.string.filter_no_words),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = Ios.type.footnote,
+                        color = Ios.colors.secondaryLabel,
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                 }
@@ -115,48 +115,46 @@ fun FilterSettingsScreen(viewModel: FilterSettingsViewModel, onBack: () -> Unit)
 
 @Composable
 private fun FilterEnableCard(enabled: Boolean, onToggle: (Boolean) -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().clip(IosCardShape).background(Ios.colors.groupedRow)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(Res.string.filter_enable), style = MaterialTheme.typography.titleMediumEmphasized)
+                Text(stringResource(Res.string.filter_enable), style = Ios.type.headline)
                 Text(
                     stringResource(Res.string.filter_enable_summary),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
-            Switch(checked = enabled, onCheckedChange = onToggle)
+            IosSwitch(checked = enabled, onCheckedChange = onToggle)
         }
     }
 }
 
 @Composable
 private fun FilterWordsInputCard(newWord: String, onNewWordChange: (String) -> Unit, onAddWord: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().clip(IosCardShape).background(Ios.colors.groupedRow)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(Res.string.filter_words), style = MaterialTheme.typography.titleMediumEmphasized)
+            Text(stringResource(Res.string.filter_words), style = Ios.type.headline)
             Text(
                 stringResource(Res.string.filter_words_summary),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
+                IosTextField(
                     value = newWord,
                     onValueChange = onNewWordChange,
-                    modifier = Modifier.weight(1f),
-                    label = { Text(stringResource(Res.string.filter_add_placeholder)) },
-                    singleLine = true,
+                    placeholder = stringResource(Res.string.filter_add_placeholder),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onAddWord() }),
+                    modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = onAddWord) {
-                    Icon(MeshtasticIcons.Add, contentDescription = stringResource(Res.string.add))
+                    Icon(IosIcons.Plus, contentDescription = stringResource(Res.string.add), tint = Ios.colors.tint)
                 }
             }
         }
@@ -168,23 +166,27 @@ private fun FilterWordItem(word: String, onRemove: () -> Unit) {
     val isRegex = word.startsWith("regex:")
     val displayText = if (isRegex) word.removePrefix("regex:") else word
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().clip(IosCardShape).background(Ios.colors.groupedRow)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = displayText, style = MaterialTheme.typography.bodyLarge)
+                Text(text = displayText, style = Ios.type.body, color = Ios.colors.label)
                 Text(
                     text =
                     stringResource(if (isRegex) Res.string.filter_regex_pattern else Res.string.filter_whole_word),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
             IconButton(onClick = onRemove) {
-                Icon(MeshtasticIcons.Delete, contentDescription = stringResource(Res.string.delete))
+                Icon(
+                    IosIcons.Trash,
+                    contentDescription = stringResource(Res.string.delete),
+                    tint = Ios.colors.systemRed,
+                )
             }
         }
     }
