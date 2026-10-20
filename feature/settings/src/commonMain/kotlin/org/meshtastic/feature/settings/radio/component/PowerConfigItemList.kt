@@ -28,8 +28,10 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.adc_multiplier_override
 import org.meshtastic.core.resources.battery_ina_2xx_i2c_address
 import org.meshtastic.core.resources.minimum_wake_time_seconds
+import org.meshtastic.core.resources.pangea_battery
+import org.meshtastic.core.resources.pangea_more_options
+import org.meshtastic.core.resources.pangea_power_section
 import org.meshtastic.core.resources.power
-import org.meshtastic.core.resources.power_config
 import org.meshtastic.core.resources.schema_power_adc_multiplier_override
 import org.meshtastic.core.resources.schema_power_is_power_saving
 import org.meshtastic.core.resources.schema_power_is_power_saving_description
@@ -40,8 +42,10 @@ import org.meshtastic.core.resources.super_deep_sleep_duration_seconds
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.util.IntervalConfiguration
 import org.meshtastic.feature.settings.util.toDisplayString
@@ -68,34 +72,56 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.power_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_power_is_power_saving),
-                    summary = stringResource(Res.string.schema_power_is_power_saving_description),
-                    checked = formState.value.is_power_saving,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.is_power_saving = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            TitledCard(title = stringResource(Res.string.pangea_power_section)) {
+                PreferenceIcon(IosIcons.BoltFill) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_power_is_power_saving),
+                        summary = stringResource(Res.string.schema_power_is_power_saving_description),
+                        checked = formState.value.is_power_saving,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.is_power_saving = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                val items = remember { IntervalConfiguration.ALL.allowedIntervals }
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_power_on_battery_shutdown_after_secs),
-                    summary = stringResource(Res.string.schema_power_on_battery_shutdown_after_secs_description),
-                    selectedItem = formState.value.on_battery_shutdown_after_secs.toLong(),
-                    enabled = state.connected,
-                    items = items.map { it.value to it.toDisplayString() },
-                    onItemSelected = {
-                        formState.value =
-                            formState.value
-                                .newBuilder()
-                                .also { wb -> wb.on_battery_shutdown_after_secs = it.toInt() }
-                                .build()
-                    },
-                )
+                PreferenceIcon(IosIcons.Power) {
+                    val items = remember { IntervalConfiguration.ALL.allowedIntervals }
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_power_on_battery_shutdown_after_secs),
+                        summary = stringResource(Res.string.schema_power_on_battery_shutdown_after_secs_description),
+                        selectedItem = formState.value.on_battery_shutdown_after_secs.toLong(),
+                        enabled = state.connected,
+                        items = items.map { it.value to it.toDisplayString() },
+                        onItemSelected = {
+                            formState.value =
+                                formState.value
+                                    .newBuilder()
+                                    .also { wb -> wb.on_battery_shutdown_after_secs = it.toInt() }
+                                    .build()
+                        },
+                    )
+                }
                 PreferenceDivider()
+                PreferenceIcon(IosIcons.DotRadiowavesRight) {
+                    val waitBluetoothItems = remember { IntervalConfiguration.NAG_TIMEOUT.allowedIntervals }
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_power_wait_bluetooth_secs),
+                        selectedItem = formState.value.wait_bluetooth_secs.toLong(),
+                        enabled = state.connected,
+                        items = waitBluetoothItems.map { it.value to it.toDisplayString() },
+                        onItemSelected = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.wait_bluetooth_secs = it.toInt() }.build()
+                        },
+                    )
+                }
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_battery)) {
                 SwitchPreference(
                     title = stringResource(Res.string.adc_multiplier_override),
                     checked = formState.value.adc_multiplier_override > 0f,
@@ -122,19 +148,11 @@ fun PowerConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         },
                     )
                 }
-                PreferenceDivider()
-                val waitBluetoothItems = remember { IntervalConfiguration.NAG_TIMEOUT.allowedIntervals }
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_power_wait_bluetooth_secs),
-                    selectedItem = formState.value.wait_bluetooth_secs.toLong(),
-                    enabled = state.connected,
-                    items = waitBluetoothItems.map { it.value to it.toDisplayString() },
-                    onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.wait_bluetooth_secs = it.toInt() }.build()
-                    },
-                )
-                PreferenceDivider()
+            }
+        }
+        // Android offers these too; the iPhone app leaves them out.
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_more_options)) {
                 val sdsSecsItems = remember { IntervalConfiguration.ALL.allowedIntervals }
                 DropDownPreference(
                     title = stringResource(Res.string.super_deep_sleep_duration_seconds),

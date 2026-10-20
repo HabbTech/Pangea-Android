@@ -32,11 +32,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.advanced
 import org.meshtastic.core.resources.external_notification
-import org.meshtastic.core.resources.external_notification_config
-import org.meshtastic.core.resources.notifications_on_alert_bell_receipt
-import org.meshtastic.core.resources.notifications_on_message_receipt
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_more_options
+import org.meshtastic.core.resources.pangea_optional_gpio
+import org.meshtastic.core.resources.pangea_primary_gpio
+import org.meshtastic.core.resources.pangea_ringtone_placeholder
 import org.meshtastic.core.resources.ringtone
 import org.meshtastic.core.resources.schema_externalnotification_active
 import org.meshtastic.core.resources.schema_externalnotification_active_description
@@ -71,11 +72,14 @@ import org.meshtastic.core.resources.schema_externalnotification_use_pwm_descrip
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.util.FixedOutputDurations
 import org.meshtastic.feature.settings.util.IntervalConfiguration
+import org.meshtastic.feature.settings.util.rememberGpioPins
 import org.meshtastic.feature.settings.util.toDisplayString
 import org.meshtastic.proto.ModuleConfig
 
@@ -121,111 +125,77 @@ fun ExternalNotificationConfigScreenCommon(
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.external_notification_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_enabled),
-                    summary = stringResource(Res.string.schema_externalnotification_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Megaphone) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_enabled),
+                        summary = stringResource(Res.string.schema_externalnotification_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.Bell) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_alert_bell),
+                        summary = stringResource(Res.string.schema_externalnotification_alert_bell_description),
+                        checked = formState.value.alert_bell,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.alert_bell = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.MessageOutline) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_alert_message),
+                        summary = stringResource(Res.string.schema_externalnotification_alert_message_description),
+                        checked = formState.value.alert_message,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.alert_message = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.Beacon) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_use_pwm),
+                        summary = stringResource(Res.string.schema_externalnotification_use_pwm_description),
+                        checked = formState.value.use_pwm,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.use_pwm = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.Beacon) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_use_i2s_as_buzzer),
+                        summary = stringResource(Res.string.schema_externalnotification_use_i2s_as_buzzer_description),
+                        checked = formState.value.use_i2s_as_buzzer,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.use_i2s_as_buzzer = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
             }
         }
-
         item {
-            TitledCard(title = stringResource(Res.string.notifications_on_message_receipt)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_alert_message),
-                    summary = stringResource(Res.string.schema_externalnotification_alert_message_description),
-                    checked = formState.value.alert_message,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.alert_message = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_alert_message_buzzer),
-                    summary = stringResource(Res.string.schema_externalnotification_alert_message_buzzer_description),
-                    checked = formState.value.alert_message_buzzer,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.alert_message_buzzer = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_alert_message_vibra),
-                    summary = stringResource(Res.string.schema_externalnotification_alert_message_vibra_description),
-                    checked = formState.value.alert_message_vibra,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.alert_message_vibra = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-            }
-        }
-
-        item {
-            TitledCard(title = stringResource(Res.string.notifications_on_alert_bell_receipt)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_alert_bell),
-                    summary = stringResource(Res.string.schema_externalnotification_alert_bell_description),
-                    checked = formState.value.alert_bell,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.alert_bell = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_alert_bell_buzzer),
-                    summary = stringResource(Res.string.schema_externalnotification_alert_bell_buzzer_description),
-                    checked = formState.value.alert_bell_buzzer,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.alert_bell_buzzer = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_alert_bell_vibra),
-                    summary = stringResource(Res.string.schema_externalnotification_alert_bell_vibra_description),
-                    checked = formState.value.alert_bell_vibra,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.alert_bell_vibra = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-            }
-        }
-
-        item {
-            TitledCard(title = stringResource(Res.string.advanced)) {
-                val gpio = remember { org.meshtastic.feature.settings.util.gpioPins }
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_externalnotification_output),
-                    summary = stringResource(Res.string.schema_externalnotification_output_description),
-                    items = gpio,
-                    selectedItem = formState.value.output.toLong(),
-                    enabled = state.connected,
-                    onItemSelected = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.output = it.toInt() }.build()
-                    },
-                )
-                if (formState.value.output != 0) {
-                    PreferenceDivider()
+            TitledCard(title = stringResource(Res.string.pangea_primary_gpio)) {
+                PreferenceIcon(IosIcons.Power) {
                     SwitchPreference(
                         title = stringResource(Res.string.schema_externalnotification_active),
                         summary = stringResource(Res.string.schema_externalnotification_active_description),
@@ -239,39 +209,13 @@ fun ExternalNotificationConfigScreenCommon(
                 }
                 PreferenceDivider()
                 DropDownPreference(
-                    title = stringResource(Res.string.schema_externalnotification_output_buzzer),
-                    summary = stringResource(Res.string.schema_externalnotification_output_buzzer_description),
-                    items = gpio,
-                    selectedItem = formState.value.output_buzzer.toLong(),
+                    title = stringResource(Res.string.schema_externalnotification_output),
+                    summary = stringResource(Res.string.schema_externalnotification_output_description),
+                    items = rememberGpioPins(),
+                    selectedItem = formState.value.output,
                     enabled = state.connected,
                     onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.output_buzzer = it.toInt() }.build()
-                    },
-                )
-                if (formState.value.output_buzzer != 0) {
-                    PreferenceDivider()
-                    SwitchPreference(
-                        title = stringResource(Res.string.schema_externalnotification_use_pwm),
-                        summary = stringResource(Res.string.schema_externalnotification_use_pwm_description),
-                        checked = formState.value.use_pwm,
-                        enabled = state.connected,
-                        onCheckedChange = {
-                            formState.value = formState.value.newBuilder().also { wb -> wb.use_pwm = it }.build()
-                        },
-                        containerColor = CardDefaults.cardColors().containerColor,
-                    )
-                }
-                PreferenceDivider()
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_externalnotification_output_vibra),
-                    summary = stringResource(Res.string.schema_externalnotification_output_vibra_description),
-                    items = gpio,
-                    selectedItem = formState.value.output_vibra.toLong(),
-                    enabled = state.connected,
-                    onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.output_vibra = it.toInt() }.build()
+                        formState.value = formState.value.newBuilder().also { wb -> wb.output = it }.build()
                     },
                 )
                 PreferenceDivider()
@@ -299,7 +243,94 @@ fun ExternalNotificationConfigScreenCommon(
                             formState.value.newBuilder().also { wb -> wb.nag_timeout = it.toInt() }.build()
                     },
                 )
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_optional_gpio)) {
+                PreferenceIcon(IosIcons.Bell) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_alert_bell_buzzer),
+                        summary = stringResource(Res.string.schema_externalnotification_alert_bell_buzzer_description),
+                        checked = formState.value.alert_bell_buzzer,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.alert_bell_buzzer = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
+                PreferenceIcon(IosIcons.Bell) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_alert_bell_vibra),
+                        summary = stringResource(Res.string.schema_externalnotification_alert_bell_vibra_description),
+                        checked = formState.value.alert_bell_vibra,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.alert_bell_vibra = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.MessageOutline) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_alert_message_buzzer),
+                        summary =
+                        stringResource(Res.string.schema_externalnotification_alert_message_buzzer_description),
+                        checked = formState.value.alert_message_buzzer,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.alert_message_buzzer = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.MessageOutline) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_externalnotification_alert_message_vibra),
+                        summary =
+                        stringResource(Res.string.schema_externalnotification_alert_message_vibra_description),
+                        checked = formState.value.alert_message_vibra,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.alert_message_vibra = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                DropDownPreference(
+                    title = stringResource(Res.string.schema_externalnotification_output_buzzer),
+                    summary = stringResource(Res.string.schema_externalnotification_output_buzzer_description),
+                    items = rememberGpioPins(),
+                    selectedItem = formState.value.output_buzzer,
+                    enabled = state.connected,
+                    onItemSelected = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.output_buzzer = it }.build()
+                    },
+                )
+                PreferenceDivider()
+                DropDownPreference(
+                    title = stringResource(Res.string.schema_externalnotification_output_vibra),
+                    summary = stringResource(Res.string.schema_externalnotification_output_vibra_description),
+                    items = rememberGpioPins(),
+                    selectedItem = formState.value.output_vibra,
+                    enabled = state.connected,
+                    onItemSelected = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.output_vibra = it }.build()
+                    },
+                )
+            }
+        }
+        // Android offers these too; the iPhone app leaves them out.
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_more_options)) {
                 EditTextPreference(
                     title = stringResource(Res.string.ringtone),
                     value = ringtoneInput,
@@ -310,6 +341,8 @@ fun ExternalNotificationConfigScreenCommon(
                     KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     onValueChanged = { ringtoneInput = it },
+                    placeholder = stringResource(Res.string.pangea_ringtone_placeholder),
+                    valueAfterTitle = true,
                     trailingIcon = {
                         RingtoneTrailingIcon(
                             ringtoneInput = ringtoneInput,
@@ -317,17 +350,6 @@ fun ExternalNotificationConfigScreenCommon(
                             enabled = state.connected,
                         )
                     },
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_externalnotification_use_i2s_as_buzzer),
-                    summary = stringResource(Res.string.schema_externalnotification_use_i2s_as_buzzer_description),
-                    checked = formState.value.use_i2s_as_buzzer,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.use_i2s_as_buzzer = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
                 )
             }
         }

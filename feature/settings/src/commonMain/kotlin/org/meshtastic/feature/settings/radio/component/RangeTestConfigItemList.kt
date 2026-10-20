@@ -23,8 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.options
 import org.meshtastic.core.resources.range_test
-import org.meshtastic.core.resources.range_test_config
 import org.meshtastic.core.resources.schema_rangetest_enabled
 import org.meshtastic.core.resources.schema_rangetest_enabled_description
 import org.meshtastic.core.resources.schema_rangetest_save
@@ -33,8 +33,10 @@ import org.meshtastic.core.resources.schema_rangetest_sender
 import org.meshtastic.core.resources.schema_rangetest_sender_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.util.IntervalConfiguration
@@ -67,17 +69,19 @@ fun RangeTestConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.range_test_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_rangetest_enabled),
-                    summary = stringResource(Res.string.schema_rangetest_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = canConfigure || formState.value.enabled,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.FigureWalk) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_rangetest_enabled),
+                        summary = stringResource(Res.string.schema_rangetest_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = canConfigure || formState.value.enabled,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 val rangeItems = remember { IntervalConfiguration.RANGE_TEST_SENDER.allowedIntervals }
                 DropDownPreference(
@@ -91,16 +95,18 @@ fun RangeTestConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                 )
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_rangetest_save),
-                    summary = stringResource(Res.string.schema_rangetest_save_description),
-                    checked = formState.value.save,
-                    enabled = canConfigure,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.save = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.ShareDown) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_rangetest_save),
+                        summary = stringResource(Res.string.schema_rangetest_save_description),
+                        checked = formState.value.save,
+                        enabled = canConfigure,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.save = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
             }
         }
     }

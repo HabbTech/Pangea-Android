@@ -31,7 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.bluetooth
-import org.meshtastic.core.resources.bluetooth_config
+import org.meshtastic.core.resources.options
 import org.meshtastic.core.resources.schema_bluetooth_enabled
 import org.meshtastic.core.resources.schema_bluetooth_enabled_description
 import org.meshtastic.core.resources.schema_bluetooth_fixed_pin
@@ -40,8 +40,10 @@ import org.meshtastic.core.resources.schema_bluetooth_mode_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.proto.Config
@@ -70,17 +72,19 @@ fun BluetoothConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.bluetooth_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_bluetooth_enabled),
-                    summary = stringResource(Res.string.schema_bluetooth_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Antenna) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_bluetooth_enabled),
+                        summary = stringResource(Res.string.schema_bluetooth_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_bluetooth_mode),
@@ -97,15 +101,17 @@ fun BluetoothConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.mode = it }.build()
                     },
                 )
-                PreferenceDivider()
-                FixedPinPreference(
-                    pinValue = formState.value.fixed_pin,
-                    enabled = state.connected,
-                    focusManager = focusManager,
-                    onPinChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.fixed_pin = it }.build()
-                    },
-                )
+                if (formState.value.mode == Config.BluetoothConfig.PairingMode.FIXED_PIN) {
+                    PreferenceDivider()
+                    FixedPinPreference(
+                        pinValue = formState.value.fixed_pin,
+                        enabled = state.connected,
+                        focusManager = focusManager,
+                        onPinChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.fixed_pin = it }.build()
+                        },
+                    )
+                }
             }
         }
     }

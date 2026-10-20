@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -158,5 +159,23 @@ fun PreferenceActionRow(
                 Icon(actionIcon, contentDescription = null, tint = c.secondaryLabel, modifier = Modifier.size(24.dp))
             }
         },
+    )
+}
+
+/** A form row that is a button, as iOS draws one: the [title] alone, in the tint. */
+@Composable
+fun PreferenceButtonRow(title: String, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = Ios.type.body,
+        color = Ios.colors.tint,
+        modifier =
+        modifier
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            .iosPressable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 11.dp)
+            .heightIn(min = 28.dp)
+            .wrapContentHeight(Alignment.CenterVertically),
     )
 }

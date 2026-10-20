@@ -29,7 +29,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.detection_sensor
-import org.meshtastic.core.resources.detection_sensor_config
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_sensor_options
+import org.meshtastic.core.resources.pangea_update_interval
 import org.meshtastic.core.resources.schema_detectionsensor_detection_trigger_type
 import org.meshtastic.core.resources.schema_detectionsensor_detection_trigger_type_description
 import org.meshtastic.core.resources.schema_detectionsensor_enabled
@@ -49,8 +51,10 @@ import org.meshtastic.core.resources.schema_detectionsensor_use_pullup_descripti
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.util.IntervalConfiguration
@@ -81,106 +85,131 @@ fun DetectionSensorConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> U
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.detection_sensor_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_enabled),
-                    summary = stringResource(Res.string.schema_detectionsensor_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                val minimumBroadcastIntervals = remember {
-                    IntervalConfiguration.DETECTION_SENSOR_MINIMUM.allowedIntervals
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.DotRadiowavesRight) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_detectionsensor_enabled),
+                        summary = stringResource(Res.string.schema_detectionsensor_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
                 }
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_minimum_broadcast_secs),
-                    summary = stringResource(Res.string.schema_detectionsensor_minimum_broadcast_secs_description),
-                    selectedItem = formState.value.minimum_broadcast_secs.toLong(),
-                    enabled = state.connected,
-                    items = minimumBroadcastIntervals.map { it.value to it.toDisplayString() },
-                    onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.minimum_broadcast_secs = it.toInt() }.build()
-                    },
-                )
-
-                val stateBroadcastIntervals = remember { IntervalConfiguration.DETECTION_SENSOR_STATE.allowedIntervals }
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_state_broadcast_secs),
-                    summary = stringResource(Res.string.schema_detectionsensor_state_broadcast_secs_description),
-                    selectedItem = formState.value.state_broadcast_secs.toLong(),
-                    enabled = state.connected,
-                    items = stateBroadcastIntervals.map { it.value to it.toDisplayString() },
-                    onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.state_broadcast_secs = it.toInt() }.build()
-                    },
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_send_bell),
-                    summary = stringResource(Res.string.schema_detectionsensor_send_bell_description),
-                    checked = formState.value.send_bell,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.send_bell = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_name),
-                    summary = stringResource(Res.string.schema_detectionsensor_name_description),
-                    value = formState.value.name,
-                    maxSize = 19, // name max_size:20
-                    enabled = state.connected,
-                    isError = false,
-                    keyboardOptions =
-                    KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.name = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                val pins = remember { gpioPins }
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_monitor_pin),
-                    summary = stringResource(Res.string.schema_detectionsensor_monitor_pin_description),
-                    items = pins,
-                    selectedItem = formState.value.monitor_pin,
-                    enabled = state.connected,
-                    onItemSelected = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.monitor_pin = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_detection_trigger_type),
-                    summary = stringResource(Res.string.schema_detectionsensor_detection_trigger_type_description),
-                    enabled = state.connected,
-                    selectedItem = formState.value.detection_trigger_type,
-                    onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.detection_trigger_type = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_detectionsensor_use_pullup),
-                    summary = stringResource(Res.string.schema_detectionsensor_use_pullup_description),
-                    checked = formState.value.use_pullup,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.use_pullup = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
+            }
+        }
+        if (formState.value.enabled) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_sensor_options)) {
+                    PreferenceIcon(IosIcons.Bell) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.schema_detectionsensor_send_bell),
+                            summary = stringResource(Res.string.schema_detectionsensor_send_bell_description),
+                            checked = formState.value.send_bell,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.send_bell = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.Signature) {
+                        EditTextPreference(
+                            title = stringResource(Res.string.schema_detectionsensor_name),
+                            summary = stringResource(Res.string.schema_detectionsensor_name_description),
+                            value = formState.value.name,
+                            maxSize = 19, // name max_size:20
+                            enabled = state.connected,
+                            isError = false,
+                            keyboardOptions =
+                            KeyboardOptions.Default.copy(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.name = it }.build()
+                            },
+                        )
+                    }
+                    PreferenceDivider()
+                    val pins = remember { gpioPins }
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_detectionsensor_monitor_pin),
+                        summary = stringResource(Res.string.schema_detectionsensor_monitor_pin_description),
+                        items = pins,
+                        selectedItem = formState.value.monitor_pin,
+                        enabled = state.connected,
+                        onItemSelected = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.monitor_pin = it }.build()
+                        },
+                    )
+                    PreferenceDivider()
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_detectionsensor_detection_trigger_type),
+                        summary = stringResource(Res.string.schema_detectionsensor_detection_trigger_type_description),
+                        enabled = state.connected,
+                        selectedItem = formState.value.detection_trigger_type,
+                        onItemSelected = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.detection_trigger_type = it }.build()
+                        },
+                    )
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.ArrowUpToLine) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.schema_detectionsensor_use_pullup),
+                            summary = stringResource(Res.string.schema_detectionsensor_use_pullup_description),
+                            checked = formState.value.use_pullup,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.use_pullup = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                }
+            }
+        }
+        if (formState.value.enabled) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_update_interval)) {
+                    val minimumBroadcastIntervals = remember {
+                        IntervalConfiguration.DETECTION_SENSOR_MINIMUM.allowedIntervals
+                    }
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_detectionsensor_minimum_broadcast_secs),
+                        summary = stringResource(Res.string.schema_detectionsensor_minimum_broadcast_secs_description),
+                        selectedItem = formState.value.minimum_broadcast_secs.toLong(),
+                        enabled = state.connected,
+                        items = minimumBroadcastIntervals.map { it.value to it.toDisplayString() },
+                        onItemSelected = {
+                            formState.value =
+                                formState.value
+                                    .newBuilder()
+                                    .also { wb -> wb.minimum_broadcast_secs = it.toInt() }
+                                    .build()
+                        },
+                    )
+                    PreferenceDivider()
+                    val stateBroadcastIntervals = remember {
+                        IntervalConfiguration.DETECTION_SENSOR_STATE.allowedIntervals
+                    }
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_detectionsensor_state_broadcast_secs),
+                        summary = stringResource(Res.string.schema_detectionsensor_state_broadcast_secs_description),
+                        selectedItem = formState.value.state_broadcast_secs.toLong(),
+                        enabled = state.connected,
+                        items = stateBroadcastIntervals.map { it.value to it.toDisplayString() },
+                        onItemSelected = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.state_broadcast_secs = it.toInt() }.build()
+                        },
+                    )
+                }
             }
         }
     }

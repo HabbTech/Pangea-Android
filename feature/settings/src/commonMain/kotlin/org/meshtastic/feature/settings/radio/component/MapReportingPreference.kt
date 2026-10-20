@@ -19,9 +19,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +49,10 @@ import org.meshtastic.core.resources.schema_mqtt_map_reporting_enabled
 import org.meshtastic.core.resources.schema_mqtt_map_reporting_enabled_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.util.FixedUpdateIntervals
 import org.meshtastic.feature.settings.util.IntervalConfiguration
 import org.meshtastic.feature.settings.util.toDisplayString
@@ -75,29 +75,42 @@ fun MapReportingPreference(
     enabled: Boolean,
 ) {
     Column {
-        // Tracks the switch locally so the consent card can show before the config round-trips; re-keyed on
+        // Tracks the switch locally so the consent rows can show before the config round-trips; re-keyed on
         // [mapReportingEnabled] so an externally-changed config wins over a stale local toggle.
         var showMapReportingWarning by rememberSaveable(mapReportingEnabled) { mutableStateOf(mapReportingEnabled) }
-        SwitchPreference(
-            title = stringResource(Res.string.schema_mqtt_map_reporting_enabled),
-            summary = stringResource(Res.string.schema_mqtt_map_reporting_enabled_description),
-            checked = showMapReportingWarning,
-            enabled = enabled,
-            onCheckedChange = { checked ->
-                showMapReportingWarning = checked
-                if (checked && shouldReportLocation) {
-                    onMapReportingEnabledChanged(true)
-                } else if (!checked) {
-                    onMapReportingEnabledChanged(false)
-                }
-            },
-        )
+        PreferenceIcon(IosIcons.MapOutline) {
+            SwitchPreference(
+                title = stringResource(Res.string.schema_mqtt_map_reporting_enabled),
+                summary = stringResource(Res.string.schema_mqtt_map_reporting_enabled_description),
+                checked = showMapReportingWarning,
+                enabled = enabled,
+                onCheckedChange = { checked ->
+                    showMapReportingWarning = checked
+                    if (checked && shouldReportLocation) {
+                        onMapReportingEnabledChanged(true)
+                    } else if (!checked) {
+                        onMapReportingEnabledChanged(false)
+                    }
+                },
+            )
+        }
+        // The consent sits in the same section as rows of its own, as on the iPhone.
         AnimatedVisibility(showMapReportingWarning) {
-            Card(modifier = Modifier.padding(16.dp)) {
-                Text(text = stringResource(Res.string.map_reporting_consent_header), modifier = Modifier.padding(16.dp))
+            Column {
                 PreferenceDivider()
-                Text(stringResource(Res.string.map_reporting_consent_text), modifier = Modifier.padding(16.dp))
-
+                Text(
+                    text = stringResource(Res.string.map_reporting_consent_header),
+                    style = Ios.type.body,
+                    color = Ios.colors.label,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 11.dp),
+                )
+                Text(
+                    text = stringResource(Res.string.map_reporting_consent_text),
+                    style = Ios.type.caption1,
+                    color = Ios.colors.secondaryLabel,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 11.dp),
+                )
+                PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.i_agree),
                     summary = stringResource(Res.string.i_agree_to_share_my_location),
@@ -111,9 +124,20 @@ fun MapReportingPreference(
                             onShouldReportLocationChanged(false)
                         }
                     },
-                    containerColor = CardDefaults.cardColors().containerColor,
                 )
                 if (shouldReportLocation && mapReportingEnabled) {
+                    PreferenceDivider()
+                    val publishItems = remember { IntervalConfiguration.BROADCAST_MEDIUM.allowedIntervals }
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_mapreportsettings_publish_interval_secs),
+                        summary = stringResource(Res.string.schema_mapreportsettings_publish_interval_secs_description),
+                        items = publishItems.map { it to it.toDisplayString() },
+                        selectedItem =
+                        FixedUpdateIntervals.fromValue(publishIntervalSecs.toLong()) ?: publishItems.first(),
+                        enabled = enabled,
+                        onItemSelected = { onPublishIntervalSecsChanged(it.value.toInt()) },
+                    )
+                    PreferenceDivider()
                     Slider(
                         modifier = Modifier.padding(horizontal = 16.dp),
                         value = positionPrecision.toFloat(),
@@ -133,21 +157,11 @@ fun MapReportingPreference(
                         }
                     Text(
                         text = "± ${precisionMeters?.toDistanceString(unit).orEmpty()}",
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-                        fontSize = MaterialTheme.typography.bodyLarge.fontSize,
-                        overflow = TextOverflow.Companion.Ellipsis,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 11.dp),
+                        style = Ios.type.body,
+                        color = Ios.colors.secondaryLabel,
+                        overflow = TextOverflow.Ellipsis,
                         maxLines = 1,
-                    )
-                    val publishItems = remember { IntervalConfiguration.BROADCAST_MEDIUM.allowedIntervals }
-                    DropDownPreference(
-                        modifier = Modifier.padding(bottom = 16.dp),
-                        title = stringResource(Res.string.schema_mapreportsettings_publish_interval_secs),
-                        summary = stringResource(Res.string.schema_mapreportsettings_publish_interval_secs_description),
-                        items = publishItems.map { it to it.toDisplayString() },
-                        selectedItem =
-                        FixedUpdateIntervals.fromValue(publishIntervalSecs.toLong()) ?: publishItems.first(),
-                        enabled = enabled,
-                        onItemSelected = { onPublishIntervalSecsChanged(it.value.toInt()) },
                     )
                 }
             }

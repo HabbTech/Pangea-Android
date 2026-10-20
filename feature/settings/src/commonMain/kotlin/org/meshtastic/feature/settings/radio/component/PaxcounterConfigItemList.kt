@@ -37,9 +37,11 @@ import org.meshtastic.core.resources.schema_paxcounter_wifi_threshold
 import org.meshtastic.core.resources.schema_paxcounter_wifi_threshold_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SignedIntegerEditTextPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.util.IntervalConfiguration
@@ -77,49 +79,66 @@ fun PaxcounterConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) 
 private fun PaxcounterSettings(formState: ConfigState<ModuleConfig.PaxcounterConfig>, enabled: Boolean) {
     val focusManager = LocalFocusManager.current
     TitledCard(title = stringResource(Res.string.paxcounter_config)) {
-        SwitchPreference(
-            title = stringResource(Res.string.schema_paxcounter_enabled),
-            summary = stringResource(Res.string.schema_paxcounter_enabled_description),
-            checked = formState.value.enabled,
-            enabled = enabled,
-            onCheckedChange = { formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build() },
-            containerColor = CardDefaults.cardColors().containerColor,
-        )
-        PreferenceDivider()
-        val items = remember { IntervalConfiguration.PAX_COUNTER.allowedIntervals }
-        DropDownPreference(
-            title = stringResource(Res.string.schema_paxcounter_paxcounter_update_interval),
-            summary = stringResource(Res.string.schema_paxcounter_paxcounter_update_interval_description),
-            selectedItem = (formState.value.paxcounter_update_interval).toLong(),
-            enabled = enabled,
-            items = items.map { it.value to it.toDisplayString() },
-            onItemSelected = {
-                formState.value =
-                    formState.value.newBuilder().also { wb -> wb.paxcounter_update_interval = it.toInt() }.build()
-            },
-        )
-        PreferenceDivider()
-        SignedIntegerEditTextPreference(
-            title =
-            fieldTitle(Res.string.schema_paxcounter_wifi_threshold, ModuleConfig.PaxcounterConfig.wifi_threshold),
-            summary = stringResource(Res.string.schema_paxcounter_wifi_threshold_description),
-            value = formState.value.wifi_threshold,
-            enabled = enabled,
-            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            onValueChanged = {
-                formState.value = formState.value.newBuilder().also { wb -> wb.wifi_threshold = it }.build()
-            },
-        )
-        PreferenceDivider()
-        SignedIntegerEditTextPreference(
-            title = fieldTitle(Res.string.schema_paxcounter_ble_threshold, ModuleConfig.PaxcounterConfig.ble_threshold),
-            summary = stringResource(Res.string.schema_paxcounter_ble_threshold_description),
-            value = formState.value.ble_threshold,
-            enabled = enabled,
-            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-            onValueChanged = {
-                formState.value = formState.value.newBuilder().also { wb -> wb.ble_threshold = it }.build()
-            },
-        )
+        PreferenceIcon(IosIcons.FigureWalk) {
+            SwitchPreference(
+                title = stringResource(Res.string.schema_paxcounter_enabled),
+                summary = stringResource(Res.string.schema_paxcounter_enabled_description),
+                checked = formState.value.enabled,
+                enabled = enabled,
+                onCheckedChange = {
+                    formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                },
+                containerColor = CardDefaults.cardColors().containerColor,
+            )
+        }
+        if (formState.value.enabled) {
+            PreferenceDivider()
+            val items = remember { IntervalConfiguration.PAX_COUNTER.allowedIntervals }
+            DropDownPreference(
+                title = stringResource(Res.string.schema_paxcounter_paxcounter_update_interval),
+                summary = stringResource(Res.string.schema_paxcounter_paxcounter_update_interval_description),
+                selectedItem = (formState.value.paxcounter_update_interval).toLong(),
+                enabled = enabled,
+                items = items.map { it.value to it.toDisplayString() },
+                onItemSelected = {
+                    formState.value =
+                        formState.value.newBuilder().also { wb -> wb.paxcounter_update_interval = it.toInt() }.build()
+                },
+            )
+            PreferenceDivider()
+            PreferenceIcon(IosIcons.Wifi) {
+                SignedIntegerEditTextPreference(
+                    title =
+                    fieldTitle(
+                        Res.string.schema_paxcounter_wifi_threshold,
+                        ModuleConfig.PaxcounterConfig.wifi_threshold,
+                    ),
+                    summary = stringResource(Res.string.schema_paxcounter_wifi_threshold_description),
+                    value = formState.value.wifi_threshold,
+                    enabled = enabled,
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.wifi_threshold = it }.build()
+                    },
+                )
+            }
+            PreferenceDivider()
+            PreferenceIcon(IosIcons.Antenna) {
+                SignedIntegerEditTextPreference(
+                    title =
+                    fieldTitle(
+                        Res.string.schema_paxcounter_ble_threshold,
+                        ModuleConfig.PaxcounterConfig.ble_threshold,
+                    ),
+                    summary = stringResource(Res.string.schema_paxcounter_ble_threshold_description),
+                    value = formState.value.ble_threshold,
+                    enabled = enabled,
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.ble_threshold = it }.build()
+                    },
+                )
+            }
+        }
     }
 }

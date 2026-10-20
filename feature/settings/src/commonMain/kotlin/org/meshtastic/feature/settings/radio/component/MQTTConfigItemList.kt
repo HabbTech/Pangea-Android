@@ -21,7 +21,6 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,7 +28,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,7 +53,6 @@ import org.meshtastic.core.network.repository.effectiveTlsEnabled
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.json_output_enabled
 import org.meshtastic.core.resources.mqtt
-import org.meshtastic.core.resources.mqtt_config
 import org.meshtastic.core.resources.mqtt_probe_dns_failure
 import org.meshtastic.core.resources.mqtt_probe_other_failure
 import org.meshtastic.core.resources.mqtt_probe_rejected
@@ -77,13 +74,17 @@ import org.meshtastic.core.resources.mqtt_status_reconnecting_with_attempt
 import org.meshtastic.core.resources.mqtt_status_topics_refused_all
 import org.meshtastic.core.resources.mqtt_status_topics_refused_some
 import org.meshtastic.core.resources.mqtt_test_connection
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_map_report
+import org.meshtastic.core.resources.pangea_more_options
+import org.meshtastic.core.resources.pangea_root_topic
+import org.meshtastic.core.resources.pangea_server
 import org.meshtastic.core.resources.schema_mqtt_address
 import org.meshtastic.core.resources.schema_mqtt_address_description
 import org.meshtastic.core.resources.schema_mqtt_enabled
 import org.meshtastic.core.resources.schema_mqtt_enabled_description
 import org.meshtastic.core.resources.schema_mqtt_encryption_enabled
 import org.meshtastic.core.resources.schema_mqtt_encryption_enabled_description
-import org.meshtastic.core.resources.schema_mqtt_map_reporting_enabled
 import org.meshtastic.core.resources.schema_mqtt_password
 import org.meshtastic.core.resources.schema_mqtt_proxy_to_client_enabled
 import org.meshtastic.core.resources.schema_mqtt_proxy_to_client_enabled_description
@@ -95,9 +96,13 @@ import org.meshtastic.core.resources.schema_mqtt_username_description
 import org.meshtastic.core.resources.tls_enabled_public_broker_summary
 import org.meshtastic.core.ui.component.EditPasswordPreference
 import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceButtonRow
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.proto.ModuleConfig
@@ -153,139 +158,71 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
             viewModel.setModuleConfig(config)
         },
     ) {
-        item { MqttStatusRow(mqttProxyState) }
-
+        // The phone's own relay is offered once the radio's saved config lets it proxy, or while it is running.
+        val mqtt = state.moduleConfig.mqtt
+        val canProxy = mqtt?.enabled == true && mqtt.proxy_to_client_enabled == true
         item {
-            // Phone-local proxy control: stops/starts the MQTT proxy running on this phone via
-            // MqttManager directly, independent of the device's persisted MQTT config. Lets the user
-            // cut the proxy firehose immediately without the slow read-modify-write-readback round-trip.
-            val mqtt = state.moduleConfig.mqtt
-            val canProxy = mqtt?.enabled == true && mqtt.proxy_to_client_enabled == true
-            TitledCard(title = null) {
-                SwitchPreference(
-                    title = stringResource(Res.string.mqtt_proxy_local),
-                    summary = stringResource(Res.string.mqtt_proxy_local_summary),
-                    checked = mqttProxyActive,
-                    // Off→on only makes sense when the device config permits proxying; keep the
-                    // switch live while the proxy is running so it can always be turned off.
-                    enabled = state.connected && (mqttProxyActive || canProxy),
-                    onCheckedChange = viewModel::setMqttProxyActive,
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-            }
-        }
-
-        item {
-            TitledCard(title = stringResource(Res.string.mqtt_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_mqtt_enabled),
-                    summary = stringResource(Res.string.schema_mqtt_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                MqttAddressAndProbe(
-                    enabled = state.connected,
-                    formState = formState,
-                    probeStatus = probeStatus,
-                    focusManager = focusManager,
-                    onProbe = viewModel::probeMqttConnection,
-                    onClearProbe = viewModel::clearMqttProbeStatus,
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_mqtt_username),
-                    summary = stringResource(Res.string.schema_mqtt_username_description),
-                    value = formState.value.username,
-                    maxSize = 63, // username max_size:64
-                    enabled = state.connected,
-                    isError = false,
-                    keyboardOptions =
-                    KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.username = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                EditPasswordPreference(
-                    title = stringResource(Res.string.schema_mqtt_password),
-                    value = formState.value.password,
-                    maxSize = 63, // password max_size:64
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.password = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_mqtt_encryption_enabled),
-                    summary = stringResource(Res.string.schema_mqtt_encryption_enabled_description),
-                    checked = formState.value.encryption_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.encryption_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                if (capabilities.offers(ModuleConfig.MQTTConfig.json_enabled, isSet = formState.value.json_enabled)) {
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.DotRadiowavesUpForward) {
                     SwitchPreference(
-                        title = stringResource(Res.string.json_output_enabled),
-                        checked = formState.value.json_enabled,
+                        title = stringResource(Res.string.schema_mqtt_enabled),
+                        summary = stringResource(Res.string.schema_mqtt_enabled_description),
+                        checked = formState.value.enabled,
                         enabled = state.connected,
                         onCheckedChange = {
-                            formState.value = formState.value.newBuilder().also { wb -> wb.json_enabled = it }.build()
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    PreferenceDivider()
                 }
-                MqttTlsPreference(
-                    enabled = state.connected,
-                    address = formState.value.address,
-                    tlsEnabled = formState.value.tls_enabled,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.tls_enabled = it }.build()
-                    },
-                )
                 PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_mqtt_root),
-                    summary = stringResource(Res.string.schema_mqtt_root_description),
-                    value = formState.value.root,
-                    maxSize = 31, // root max_size:32
-                    enabled = state.connected,
-                    isError = false,
-                    keyboardOptions =
-                    KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.root = it }.build()
-                    },
-                )
+                PreferenceIcon(IosIcons.PhoneWaves) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_mqtt_proxy_to_client_enabled),
+                        summary = stringResource(Res.string.schema_mqtt_proxy_to_client_enabled_description),
+                        checked = formState.value.proxy_to_client_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.proxy_to_client_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                if (canProxy || mqttProxyActive) {
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.ServerRack) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.mqtt_proxy_local),
+                            summary = stringResource(Res.string.mqtt_proxy_local_summary),
+                            checked = mqttProxyActive,
+                            // Off→on only makes sense when the device config permits proxying; keep the
+                            // switch live while the proxy is running so it can always be turned off.
+                            enabled = state.connected && (mqttProxyActive || canProxy),
+                            onCheckedChange = viewModel::setMqttProxyActive,
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                    MqttStatusRow(mqttProxyState)
+                }
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_mqtt_proxy_to_client_enabled),
-                    summary = stringResource(Res.string.schema_mqtt_proxy_to_client_enabled_description),
-                    checked = formState.value.proxy_to_client_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.proxy_to_client_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.CloudLock) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_mqtt_encryption_enabled),
+                        summary = stringResource(Res.string.schema_mqtt_encryption_enabled_description),
+                        checked = formState.value.encryption_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.encryption_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
             }
         }
-
         item {
-            TitledCard(title = stringResource(Res.string.schema_mqtt_map_reporting_enabled)) {
+            TitledCard(title = stringResource(Res.string.pangea_map_report)) {
                 val mapReportSettings =
                     formState.value.map_report_settings ?: ModuleConfig.MapReportSettings.Builder().build()
                 MapReportingPreference(
@@ -317,6 +254,96 @@ fun MQTTConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                     enabled = state.connected,
                 )
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_root_topic)) {
+                PreferenceIcon(IosIcons.Tree) {
+                    EditTextPreference(
+                        title = stringResource(Res.string.schema_mqtt_root),
+                        summary = stringResource(Res.string.schema_mqtt_root_description),
+                        value = formState.value.root,
+                        maxSize = 31, // root max_size:32
+                        enabled = state.connected,
+                        isError = false,
+                        keyboardOptions =
+                        KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.root = it }.build()
+                        },
+                        valueAfterTitle = true,
+                    )
+                }
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_server)) {
+                MqttAddressAndProbe(
+                    enabled = state.connected,
+                    formState = formState,
+                    probeStatus = probeStatus,
+                    focusManager = focusManager,
+                    onProbe = viewModel::probeMqttConnection,
+                    onClearProbe = viewModel::clearMqttProbeStatus,
+                )
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.PersonTextRect) {
+                    EditTextPreference(
+                        title = stringResource(Res.string.schema_mqtt_username),
+                        summary = stringResource(Res.string.schema_mqtt_username_description),
+                        value = formState.value.username,
+                        maxSize = 63, // username max_size:64
+                        enabled = state.connected,
+                        isError = false,
+                        keyboardOptions =
+                        KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.username = it }.build()
+                        },
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.WalletPass) {
+                    EditPasswordPreference(
+                        title = stringResource(Res.string.schema_mqtt_password),
+                        value = formState.value.password,
+                        maxSize = 63, // password max_size:64
+                        enabled = state.connected,
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.password = it }.build()
+                        },
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.ShieldCheck) {
+                    MqttTlsPreference(
+                        enabled = state.connected,
+                        address = formState.value.address,
+                        tlsEnabled = formState.value.tls_enabled,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.tls_enabled = it }.build()
+                        },
+                    )
+                }
+            }
+        }
+        // Android offers this too; the iPhone app leaves it out.
+        if (capabilities.offers(ModuleConfig.MQTTConfig.json_enabled, isSet = formState.value.json_enabled)) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_more_options)) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.json_output_enabled),
+                        checked = formState.value.json_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.json_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
             }
         }
     }
@@ -398,14 +425,10 @@ private fun MqttStatusRow(state: MqttConnectionState) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(horizontal = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 11.dp),
     ) {
-        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(color))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))
+        Text(text = label, style = Ios.type.footnote, color = Ios.colors.secondaryLabel)
     }
 }
 
@@ -418,20 +441,23 @@ private fun MqttAddressAndProbe(
     onProbe: (address: String, tlsEnabled: Boolean, username: String, password: String) -> Unit,
     onClearProbe: () -> Unit,
 ) {
-    EditTextPreference(
-        title = stringResource(Res.string.schema_mqtt_address),
-        summary = stringResource(Res.string.schema_mqtt_address_description),
-        value = formState.value.address,
-        maxSize = 63, // address max_size:64
-        enabled = enabled,
-        isError = false,
-        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-        onValueChanged = {
-            formState.value = formState.value.newBuilder().also { wb -> wb.address = it }.build()
-            onClearProbe()
-        },
-    )
+    PreferenceIcon(IosIcons.ServerRack) {
+        EditTextPreference(
+            title = stringResource(Res.string.schema_mqtt_address),
+            summary = stringResource(Res.string.schema_mqtt_address_description),
+            value = formState.value.address,
+            maxSize = 63, // address max_size:64
+            enabled = enabled,
+            isError = false,
+            keyboardOptions =
+            KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+            onValueChanged = {
+                formState.value = formState.value.newBuilder().also { wb -> wb.address = it }.build()
+                onClearProbe()
+            },
+        )
+    }
     PreferenceDivider()
     MqttProbeRow(
         enabled = enabled && formState.value.address.isNotBlank(),
@@ -447,22 +473,18 @@ private fun MqttAddressAndProbe(
 
 @Composable
 private fun MqttProbeRow(enabled: Boolean, status: MqttProbeStatus?, onTestClick: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Button(onClick = onTestClick, enabled = enabled && status !is MqttProbeStatus.Probing) {
-                Text(stringResource(Res.string.mqtt_test_connection))
-            }
-            val (probeText, probeColor) = status.toLabel() ?: return@Row
-            Text(text = probeText, style = MaterialTheme.typography.bodySmall, color = probeColor)
-        }
-    }
+    PreferenceButtonRow(
+        title = stringResource(Res.string.mqtt_test_connection),
+        enabled = enabled && status !is MqttProbeStatus.Probing,
+        onClick = onTestClick,
+    )
+    val (probeText, probeColor) = status.toLabel() ?: return
+    Text(
+        text = probeText,
+        style = Ios.type.footnote,
+        color = probeColor,
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 11.dp),
+    )
 }
 
 @Composable

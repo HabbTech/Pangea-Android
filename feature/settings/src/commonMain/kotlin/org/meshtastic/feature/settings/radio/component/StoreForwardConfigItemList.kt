@@ -24,6 +24,9 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_section_settings
+import org.meshtastic.core.resources.pangea_server_option
 import org.meshtastic.core.resources.schema_storeforward_enabled
 import org.meshtastic.core.resources.schema_storeforward_enabled_description
 import org.meshtastic.core.resources.schema_storeforward_heartbeat
@@ -34,11 +37,12 @@ import org.meshtastic.core.resources.schema_storeforward_is_server
 import org.meshtastic.core.resources.schema_storeforward_is_server_description
 import org.meshtastic.core.resources.schema_storeforward_records
 import org.meshtastic.core.resources.store_forward
-import org.meshtastic.core.resources.store_forward_config
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.proto.ModuleConfig
@@ -65,70 +69,87 @@ fun StoreForwardConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.store_forward_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_storeforward_enabled),
-                    summary = stringResource(Res.string.schema_storeforward_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_storeforward_heartbeat),
-                    summary = stringResource(Res.string.schema_storeforward_heartbeat_description),
-                    checked = formState.value.heartbeat,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.heartbeat = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_storeforward_records),
-                    value = formState.value.records,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.records = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_storeforward_history_return_max),
-                    value = formState.value.history_return_max,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.history_return_max = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_storeforward_history_return_window),
-                    value = formState.value.history_return_window,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.history_return_window = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_storeforward_is_server),
-                    summary = stringResource(Res.string.schema_storeforward_is_server_description),
-                    checked = formState.value.is_server,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.is_server = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.EnvelopeBranch) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_storeforward_enabled),
+                        summary = stringResource(Res.string.schema_storeforward_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+            }
+        }
+        if (formState.value.enabled) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_section_settings)) {
+                    PreferenceIcon(IosIcons.Ecg) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.schema_storeforward_heartbeat),
+                            summary = stringResource(Res.string.schema_storeforward_heartbeat_description),
+                            checked = formState.value.heartbeat,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.heartbeat = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                    PreferenceDivider()
+                    EditTextPreference(
+                        title = stringResource(Res.string.schema_storeforward_records),
+                        value = formState.value.records,
+                        enabled = state.connected,
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.records = it }.build()
+                        },
+                    )
+                    PreferenceDivider()
+                    EditTextPreference(
+                        title = stringResource(Res.string.schema_storeforward_history_return_max),
+                        value = formState.value.history_return_max,
+                        enabled = state.connected,
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.history_return_max = it }.build()
+                        },
+                    )
+                    PreferenceDivider()
+                    EditTextPreference(
+                        title = stringResource(Res.string.schema_storeforward_history_return_window),
+                        value = formState.value.history_return_window,
+                        enabled = state.connected,
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.history_return_window = it }.build()
+                        },
+                    )
+                }
+            }
+        }
+        if (formState.value.enabled) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_server_option)) {
+                    PreferenceIcon(IosIcons.ServerRack) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.schema_storeforward_is_server),
+                            summary = stringResource(Res.string.schema_storeforward_is_server_description),
+                            checked = formState.value.is_server,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.is_server = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                }
             }
         }
     }

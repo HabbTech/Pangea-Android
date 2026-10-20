@@ -16,4 +16,17 @@
  */
 package org.meshtastic.feature.settings.util
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import org.jetbrains.compose.resources.stringResource
+import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.pangea_unset
+
 val gpioPins = (0..48).map { it to "Pin $it" }
+
+/** [gpioPins] as the iPhone app lists them: pin 0 reads "Unset", since the firmware takes 0 to mean no pin. */
+@Composable
+fun rememberGpioPins(): List<Pair<Int, String>> {
+    val unset = stringResource(Res.string.pangea_unset)
+    return remember(unset) { gpioPins.map { (pin, label) -> pin to if (pin == 0) unset else label } }
+}

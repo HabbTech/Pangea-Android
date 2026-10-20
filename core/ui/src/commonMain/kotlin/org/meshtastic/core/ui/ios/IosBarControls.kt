@@ -46,6 +46,7 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -90,6 +91,8 @@ fun IosSegmentedControl(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    textStyle: TextStyle = Ios.type.footnote,
+    enabled: Boolean = true,
 ) {
     val c = Ios.colors
     val track = if (c.isDark) Color(0xFF1C1C1E) else Color(0xFFEEEEF0)
@@ -116,6 +119,7 @@ fun IosSegmentedControl(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                         role = Role.Tab,
+                        enabled = enabled,
                     ) {
                         onSelect(index)
                     },
@@ -123,9 +127,8 @@ fun IosSegmentedControl(
             ) {
                 Text(
                     label,
-                    style =
-                    Ios.type.footnote.copy(fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal),
-                    color = c.label,
+                    style = textStyle.copy(fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal),
+                    color = if (enabled) c.label else c.secondaryLabel,
                     maxLines = 1,
                 )
             }

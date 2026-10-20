@@ -73,9 +73,11 @@ import org.meshtastic.core.ui.component.DropDownItem
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SignedIntegerEditTextPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.util.fieldTitle
 import org.meshtastic.feature.settings.util.intRange
@@ -219,16 +221,18 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                 )
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_lora_use_preset),
-                    summary = stringResource(Res.string.schema_lora_use_preset_description),
-                    checked = formState.value.use_preset,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.use_preset = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.ListRect) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_lora_use_preset),
+                        summary = stringResource(Res.string.schema_lora_use_preset_description),
+                        checked = formState.value.use_preset,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.use_preset = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 if (formState.value.use_preset) {
                     // Restrict the preset list to those legal in the selected region (R7); a null constraint means
@@ -268,37 +272,44 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
 
         item {
             TitledCard(title = stringResource(Res.string.advanced)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_lora_ignore_mqtt),
-                    summary = stringResource(Res.string.schema_lora_ignore_mqtt_description),
-                    checked = formState.value.ignore_mqtt,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.ignore_mqtt = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.ServerRack) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_lora_ignore_mqtt),
+                        summary = stringResource(Res.string.schema_lora_ignore_mqtt_description),
+                        checked = formState.value.ignore_mqtt,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.ignore_mqtt = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_lora_config_ok_to_mqtt),
-                    checked = formState.value.config_ok_to_mqtt,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.config_ok_to_mqtt = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.Globe) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_lora_config_ok_to_mqtt),
+                        checked = formState.value.config_ok_to_mqtt,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.config_ok_to_mqtt = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_lora_tx_enabled),
-                    summary = stringResource(Res.string.schema_lora_tx_enabled_description),
-                    checked = formState.value.tx_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.tx_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.Waveform) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_lora_tx_enabled),
+                        summary = stringResource(Res.string.schema_lora_tx_enabled_description),
+                        checked = formState.value.tx_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.tx_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 SwitchPreference(
                     title = stringResource(Res.string.schema_lora_override_duty_cycle),
@@ -346,17 +357,19 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     },
                 )
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_lora_sx126x_rx_boosted_gain),
-                    summary = stringResource(Res.string.schema_lora_sx126x_rx_boosted_gain_description),
-                    checked = formState.value.sx126x_rx_boosted_gain,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.sx126x_rx_boosted_gain = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.WaveformPlus) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_lora_sx126x_rx_boosted_gain),
+                        summary = stringResource(Res.string.schema_lora_sx126x_rx_boosted_gain_description),
+                        checked = formState.value.sx126x_rx_boosted_gain,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.sx126x_rx_boosted_gain = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 var isFocusedOverride by remember { mutableStateOf(false) }
                 EditTextPreference(

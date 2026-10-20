@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -224,6 +225,11 @@ fun EditTextPreference(
     trailingIcon: (@Composable () -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     multiline: Boolean = false,
+    // What the empty field shows; the title by default, as iOS does.
+    placeholder: String = title,
+    // iOS sets a one-line value at the row's end, except where a form puts the field straight after its title
+    // (Root Topic, the canned messages).
+    valueAfterTitle: Boolean = false,
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val c = Ios.colors
@@ -248,9 +254,10 @@ fun EditTextPreference(
                 InlineTextField(
                     value = value,
                     onValueChange = onFieldChange,
-                    placeholder = title,
+                    placeholder = placeholder,
                     enabled = enabled,
                     multiline = multiline,
+                    atEnd = !multiline && !valueAfterTitle && visualTransformation == VisualTransformation.None,
                     isError = isError,
                     keyboardOptions = keyboardOptions,
                     keyboardActions = keyboardActions,
@@ -275,9 +282,10 @@ fun EditTextPreference(
                 InlineTextField(
                     value = value,
                     onValueChange = onFieldChange,
-                    placeholder = title,
+                    placeholder = placeholder,
                     enabled = enabled,
                     multiline = multiline,
+                    atEnd = !multiline && !valueAfterTitle && visualTransformation == VisualTransformation.None,
                     isError = isError,
                     keyboardOptions = keyboardOptions,
                     keyboardActions = keyboardActions,
@@ -301,6 +309,9 @@ private fun InlineTextField(
     placeholder: String,
     enabled: Boolean,
     multiline: Boolean,
+    // iOS sets a one-line value at the row's end in grey, its name as the grey placeholder there; a secret (a
+    // password), a multi-line value and a field placed straight after its title read from the start.
+    atEnd: Boolean,
     isError: Boolean,
     keyboardOptions: KeyboardOptions,
     keyboardActions: KeyboardActions,
@@ -308,6 +319,7 @@ private fun InlineTextField(
     modifier: Modifier = Modifier,
 ) {
     val c = Ios.colors
+    val align = if (atEnd) TextAlign.End else TextAlign.Start
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
@@ -315,7 +327,16 @@ private fun InlineTextField(
         enabled = enabled,
         singleLine = !multiline,
         maxLines = if (multiline) MULTILINE_MAX_LINES else 1,
-        textStyle = Ios.type.body.copy(color = if (isError) c.systemRed else c.label),
+        textStyle =
+        Ios.type.body.copy(
+            color =
+            when {
+                isError -> c.systemRed
+                atEnd -> c.secondaryLabel
+                else -> c.label
+            },
+            textAlign = align,
+        ),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         visualTransformation = visualTransformation,
@@ -329,7 +350,8 @@ private fun InlineTextField(
                         style = Ios.type.body,
                         color = c.tertiaryLabel,
                         maxLines = 1,
-                        modifier = Modifier.clearAndSetSemantics {},
+                        textAlign = align,
+                        modifier = Modifier.fillMaxWidth().clearAndSetSemantics {},
                     )
                 }
                 inner()

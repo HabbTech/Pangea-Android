@@ -25,7 +25,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.neighbor_info
-import org.meshtastic.core.resources.neighbor_info_config
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_section_settings
 import org.meshtastic.core.resources.schema_neighborinfo_enabled
 import org.meshtastic.core.resources.schema_neighborinfo_enabled_description
 import org.meshtastic.core.resources.schema_neighborinfo_transmit_over_lora
@@ -34,8 +35,10 @@ import org.meshtastic.core.resources.schema_neighborinfo_update_interval
 import org.meshtastic.core.resources.schema_neighborinfo_update_interval_description
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.proto.ModuleConfig
@@ -62,39 +65,50 @@ fun NeighborInfoConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.neighbor_info_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_neighborinfo_enabled),
-                    summary = stringResource(Res.string.schema_neighborinfo_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_neighborinfo_update_interval),
-                    summary = stringResource(Res.string.schema_neighborinfo_update_interval_description),
-                    value = formState.value.update_interval,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.update_interval = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_neighborinfo_transmit_over_lora),
-                    summary = stringResource(Res.string.schema_neighborinfo_transmit_over_lora_description),
-                    checked = formState.value.transmit_over_lora,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.transmit_over_lora = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Globe) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_neighborinfo_enabled),
+                        summary = stringResource(Res.string.schema_neighborinfo_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+            }
+        }
+        if (formState.value.enabled) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_section_settings)) {
+                    EditTextPreference(
+                        title = stringResource(Res.string.schema_neighborinfo_update_interval),
+                        summary = stringResource(Res.string.schema_neighborinfo_update_interval_description),
+                        value = formState.value.update_interval,
+                        enabled = state.connected,
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.update_interval = it }.build()
+                        },
+                    )
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.Antenna) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.schema_neighborinfo_transmit_over_lora),
+                            summary = stringResource(Res.string.schema_neighborinfo_transmit_over_lora_description),
+                            checked = formState.value.transmit_over_lora,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value =
+                                    formState.value.newBuilder().also { wb -> wb.transmit_over_lora = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                }
             }
         }
     }

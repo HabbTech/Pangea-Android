@@ -23,9 +23,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,10 +63,14 @@ import org.meshtastic.core.repository.TakPrefs
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.back
 import org.meshtastic.core.resources.export_tak_data_package
+import org.meshtastic.core.resources.pangea_identity
+import org.meshtastic.core.resources.pangea_tak_identity_footer
+import org.meshtastic.core.resources.pangea_tak_role_notice
 import org.meshtastic.core.resources.schema_tak_role
+import org.meshtastic.core.resources.schema_tak_role_description
 import org.meshtastic.core.resources.schema_tak_team
+import org.meshtastic.core.resources.schema_tak_team_description
 import org.meshtastic.core.resources.tak
-import org.meshtastic.core.resources.tak_config
 import org.meshtastic.core.resources.tak_server
 import org.meshtastic.core.resources.tak_server_channel
 import org.meshtastic.core.resources.tak_server_channel_desc
@@ -109,6 +116,9 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PlayArrow
 import org.meshtastic.core.ui.icon.Share
 import org.meshtastic.core.ui.icon.Warning
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.radio.ResponseState
@@ -169,20 +179,55 @@ internal fun TakConfigCard(
     onTeamSelected: (Team) -> Unit,
     onRoleSelected: (MemberRole) -> Unit,
 ) {
-    TitledCard(title = stringResource(Res.string.tak_config)) {
-        DropDownPreference(
-            title = stringResource(Res.string.schema_tak_team),
-            enabled = enabled,
-            selectedItem = team,
-            itemColor = { Color(getColorFrom(it)) },
-            onItemSelected = onTeamSelected,
+    Column {
+        TakRoleNotice()
+        TitledCard(
+            title = stringResource(Res.string.pangea_identity),
+            footer = stringResource(Res.string.pangea_tak_identity_footer),
+        ) {
+            DropDownPreference(
+                title = stringResource(Res.string.schema_tak_team),
+                summary = stringResource(Res.string.schema_tak_team_description),
+                enabled = enabled,
+                selectedItem = team,
+                itemColor = { Color(getColorFrom(it)) },
+                onItemSelected = onTeamSelected,
+            )
+            PreferenceDivider()
+            DropDownPreference(
+                title = stringResource(Res.string.schema_tak_role),
+                summary = stringResource(Res.string.schema_tak_role_description),
+                enabled = enabled,
+                selectedItem = role,
+                onItemSelected = onRoleSelected,
+            )
+        }
+    }
+}
+
+/** iOS's note above TAK's settings: they only take effect on a radio in a TAK role. */
+@Composable
+private fun TakRoleNotice() {
+    Row(
+        modifier =
+        Modifier.fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp)
+            .clip(IosCardShape)
+            .background(Ios.colors.groupedRow)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            IosIcons.Warning,
+            contentDescription = null,
+            tint = Ios.colors.systemOrange,
+            modifier = Modifier.size(22.dp),
         )
-        PreferenceDivider()
-        DropDownPreference(
-            title = stringResource(Res.string.schema_tak_role),
-            enabled = enabled,
-            selectedItem = role,
-            onItemSelected = onRoleSelected,
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = stringResource(Res.string.pangea_tak_role_notice),
+            style = Ios.type.body,
+            color = Ios.colors.systemOrange,
         )
     }
 }

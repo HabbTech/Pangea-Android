@@ -25,7 +25,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.audio
-import org.meshtastic.core.resources.audio_config
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_codec2_settings
+import org.meshtastic.core.resources.pangea_gpio_configuration
 import org.meshtastic.core.resources.schema_audio_bitrate
 import org.meshtastic.core.resources.schema_audio_bitrate_description
 import org.meshtastic.core.resources.schema_audio_codec2_enabled
@@ -39,8 +41,10 @@ import org.meshtastic.core.resources.schema_audio_ptt_pin_description
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.proto.ModuleConfig
@@ -67,74 +71,100 @@ fun AudioConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.audio_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_audio_codec2_enabled),
-                    summary = stringResource(Res.string.schema_audio_codec2_enabled_description),
-                    checked = formState.value.codec2_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.codec2_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_audio_ptt_pin),
-                    summary = stringResource(Res.string.schema_audio_ptt_pin_description),
-                    value = formState.value.ptt_pin,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.ptt_pin = it }.build()
-                    },
-                )
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_audio_bitrate),
-                    summary = stringResource(Res.string.schema_audio_bitrate_description),
-                    enabled = state.connected,
-                    selectedItem = formState.value.bitrate,
-                    onItemSelected = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.bitrate = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_audio_i2s_ws),
-                    value = formState.value.i2s_ws,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.i2s_ws = it }.build()
-                    },
-                )
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_audio_i2s_sd),
-                    value = formState.value.i2s_sd,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.i2s_sd = it }.build()
-                    },
-                )
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_audio_i2s_din),
-                    value = formState.value.i2s_din,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.i2s_din = it }.build()
-                    },
-                )
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_audio_i2s_sck),
-                    value = formState.value.i2s_sck,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.i2s_sck = it }.build()
-                    },
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Waveform) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_audio_codec2_enabled),
+                        summary = stringResource(Res.string.schema_audio_codec2_enabled_description),
+                        checked = formState.value.codec2_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.codec2_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+            }
+        }
+        if (formState.value.codec2_enabled) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_codec2_settings)) {
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_audio_bitrate),
+                        summary = stringResource(Res.string.schema_audio_bitrate_description),
+                        enabled = state.connected,
+                        selectedItem = formState.value.bitrate,
+                        onItemSelected = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.bitrate = it }.build()
+                        },
+                    )
+                }
+            }
+        }
+        if (formState.value.codec2_enabled) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_gpio_configuration)) {
+                    PreferenceIcon(IosIcons.ButtonHorizontal) {
+                        EditTextPreference(
+                            title = stringResource(Res.string.schema_audio_ptt_pin),
+                            summary = stringResource(Res.string.schema_audio_ptt_pin_description),
+                            value = formState.value.ptt_pin,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.ptt_pin = it }.build()
+                            },
+                        )
+                    }
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.PointsConnected) {
+                        EditTextPreference(
+                            title = stringResource(Res.string.schema_audio_i2s_ws),
+                            value = formState.value.i2s_ws,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.i2s_ws = it }.build()
+                            },
+                        )
+                    }
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.PointsConnected) {
+                        EditTextPreference(
+                            title = stringResource(Res.string.schema_audio_i2s_sd),
+                            value = formState.value.i2s_sd,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.i2s_sd = it }.build()
+                            },
+                        )
+                    }
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.PointsConnected) {
+                        EditTextPreference(
+                            title = stringResource(Res.string.schema_audio_i2s_din),
+                            value = formState.value.i2s_din,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.i2s_din = it }.build()
+                            },
+                        )
+                    }
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.PointsConnected) {
+                        EditTextPreference(
+                            title = stringResource(Res.string.schema_audio_i2s_sck),
+                            value = formState.value.i2s_sck,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.i2s_sck = it }.build()
+                            },
+                        )
+                    }
+                }
             }
         }
     }

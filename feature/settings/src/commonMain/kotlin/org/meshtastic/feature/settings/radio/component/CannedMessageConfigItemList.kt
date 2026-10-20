@@ -34,9 +34,15 @@ import org.meshtastic.core.model.Capabilities
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.allow_input_source
 import org.meshtastic.core.resources.canned_message
-import org.meshtastic.core.resources.canned_message_config
 import org.meshtastic.core.resources.canned_message_enabled
 import org.meshtastic.core.resources.messages
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.pangea_canned_messages
+import org.meshtastic.core.resources.pangea_canned_messages_placeholder
+import org.meshtastic.core.resources.pangea_control_type
+import org.meshtastic.core.resources.pangea_inputs
+import org.meshtastic.core.resources.pangea_key_mapping
+import org.meshtastic.core.resources.pangea_more_options
 import org.meshtastic.core.resources.schema_cannedmessage_inputbroker_event_ccw
 import org.meshtastic.core.resources.schema_cannedmessage_inputbroker_event_ccw_description
 import org.meshtastic.core.resources.schema_cannedmessage_inputbroker_event_cw
@@ -58,10 +64,13 @@ import org.meshtastic.core.resources.schema_cannedmessage_updown1_enabled_descri
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
+import org.meshtastic.feature.settings.util.rememberGpioPins
 import org.meshtastic.proto.ModuleConfig
 import org.meshtastic.proto.allow_input_source
 import org.meshtastic.proto.enabled
@@ -80,7 +89,7 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
 
     RadioConfigScreenList(
         rebootBehavior = RebootBehavior.ALWAYS,
-        title = stringResource(Res.string.canned_message),
+        title = stringResource(Res.string.pangea_canned_messages),
         configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
         onBack = onBack,
         configState = formState,
@@ -100,72 +109,110 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.canned_message_config)) {
-                if (capabilities.offers(ModuleConfig.CannedMessageConfig.enabled, isSet = formState.value.enabled)) {
+            TitledCard(title = stringResource(Res.string.messages)) {
+                PreferenceIcon(IosIcons.Bubble) {
+                    EditTextPreference(
+                        title = stringResource(Res.string.messages),
+                        value = messagesInput,
+                        maxSize = 200, // messages max_size:201
+                        enabled = state.connected,
+                        isError = false,
+                        keyboardOptions =
+                        KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        onValueChanged = { messagesInput = it },
+                        placeholder = stringResource(Res.string.pangea_canned_messages_placeholder),
+                        valueAfterTitle = true,
+                    )
+                }
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Bell) {
                     SwitchPreference(
-                        title = stringResource(Res.string.canned_message_enabled),
-                        checked = formState.value.enabled,
+                        title = stringResource(Res.string.schema_cannedmessage_send_bell),
+                        summary = stringResource(Res.string.schema_cannedmessage_send_bell_description),
+                        checked = formState.value.send_bell,
                         enabled = state.connected,
                         onCheckedChange = {
-                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                            formState.value = formState.value.newBuilder().also { wb -> wb.send_bell = it }.build()
                         },
                         containerColor = CardDefaults.cardColors().containerColor,
                     )
-                    PreferenceDivider()
                 }
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_cannedmessage_rotary1_enabled),
-                    summary = stringResource(Res.string.schema_cannedmessage_rotary1_enabled_description),
-                    checked = formState.value.rotary1_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.rotary1_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_control_type)) {
+                PreferenceIcon(IosIcons.Dial) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_cannedmessage_rotary1_enabled),
+                        summary = stringResource(Res.string.schema_cannedmessage_rotary1_enabled_description),
+                        checked = formState.value.rotary1_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.rotary1_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                EditTextPreference(
+                PreferenceIcon(IosIcons.ArrowsUpDown) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_cannedmessage_updown1_enabled),
+                        summary = stringResource(Res.string.schema_cannedmessage_updown1_enabled_description),
+                        checked = formState.value.updown1_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.updown1_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_inputs)) {
+                DropDownPreference(
                     title = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_a),
                     summary = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_a_description),
-                    value = formState.value.inputbroker_pin_a,
                     enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
+                    items = rememberGpioPins(),
+                    selectedItem = formState.value.inputbroker_pin_a,
+                    onItemSelected = {
                         formState.value = formState.value.newBuilder().also { wb -> wb.inputbroker_pin_a = it }.build()
                     },
                 )
-                EditTextPreference(
+                PreferenceDivider()
+                DropDownPreference(
                     title = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_b),
                     summary = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_b_description),
-                    value = formState.value.inputbroker_pin_b,
                     enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
+                    items = rememberGpioPins(),
+                    selectedItem = formState.value.inputbroker_pin_b,
+                    onItemSelected = {
                         formState.value = formState.value.newBuilder().also { wb -> wb.inputbroker_pin_b = it }.build()
                     },
                 )
-                EditTextPreference(
+                PreferenceDivider()
+                DropDownPreference(
                     title = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_press),
                     summary = stringResource(Res.string.schema_cannedmessage_inputbroker_pin_press_description),
-                    value = formState.value.inputbroker_pin_press,
                     enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
+                    items = rememberGpioPins(),
+                    selectedItem = formState.value.inputbroker_pin_press,
+                    onItemSelected = {
                         formState.value =
                             formState.value.newBuilder().also { wb -> wb.inputbroker_pin_press = it }.build()
                     },
                 )
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_cannedmessage_inputbroker_event_press),
-                    summary = stringResource(Res.string.schema_cannedmessage_inputbroker_event_press_description),
-                    enabled = state.connected,
-                    selectedItem = formState.value.inputbroker_event_press,
-                    onItemSelected = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.inputbroker_event_press = it }.build()
-                    },
-                )
-                PreferenceDivider()
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_key_mapping)) {
                 DropDownPreference(
                     title = stringResource(Res.string.schema_cannedmessage_inputbroker_event_cw),
                     summary = stringResource(Res.string.schema_cannedmessage_inputbroker_event_cw_description),
@@ -188,61 +235,61 @@ fun CannedMessageConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Uni
                     },
                 )
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_cannedmessage_updown1_enabled),
-                    summary = stringResource(Res.string.schema_cannedmessage_updown1_enabled_description),
-                    checked = formState.value.updown1_enabled,
+                DropDownPreference(
+                    title = stringResource(Res.string.schema_cannedmessage_inputbroker_event_press),
+                    summary = stringResource(Res.string.schema_cannedmessage_inputbroker_event_press_description),
                     enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.updown1_enabled = it }.build()
+                    selectedItem = formState.value.inputbroker_event_press,
+                    onItemSelected = {
+                        formState.value =
+                            formState.value.newBuilder().also { wb -> wb.inputbroker_event_press = it }.build()
                     },
-                    containerColor = CardDefaults.cardColors().containerColor,
                 )
-                PreferenceDivider()
-                if (
-                    capabilities.offers(
-                        ModuleConfig.CannedMessageConfig.allow_input_source,
-                        isSet = formState.value.allow_input_source.isNotEmpty(),
-                    )
-                ) {
-                    EditTextPreference(
-                        title = stringResource(Res.string.allow_input_source),
-                        value = formState.value.allow_input_source,
-                        maxSize = 63, // allow_input_source max_size:16
-                        enabled = state.connected,
-                        isError = false,
-                        keyboardOptions =
-                        KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        onValueChanged = {
-                            formState.value =
-                                formState.value.newBuilder().also { wb -> wb.allow_input_source = it }.build()
-                        },
-                    )
+            }
+        }
+        // Android offers these too; the iPhone app leaves them out.
+        val offersEnabled =
+            capabilities.offers(ModuleConfig.CannedMessageConfig.enabled, isSet = formState.value.enabled)
+        val offersInputSource =
+            capabilities.offers(
+                ModuleConfig.CannedMessageConfig.allow_input_source,
+                isSet = formState.value.allow_input_source.isNotEmpty(),
+            )
+        if (offersEnabled || offersInputSource) {
+            item {
+                TitledCard(title = stringResource(Res.string.pangea_more_options)) {
+                    if (offersEnabled) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.canned_message_enabled),
+                            checked = formState.value.enabled,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                    if (offersInputSource) {
+                        if (offersEnabled) PreferenceDivider()
+                        EditTextPreference(
+                            title = stringResource(Res.string.allow_input_source),
+                            value = formState.value.allow_input_source,
+                            maxSize = 63, // allow_input_source max_size:16
+                            enabled = state.connected,
+                            isError = false,
+                            keyboardOptions =
+                            KeyboardOptions.Default.copy(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = {
+                                formState.value =
+                                    formState.value.newBuilder().also { wb -> wb.allow_input_source = it }.build()
+                            },
+                        )
+                    }
                 }
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_cannedmessage_send_bell),
-                    summary = stringResource(Res.string.schema_cannedmessage_send_bell_description),
-                    checked = formState.value.send_bell,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.send_bell = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.messages),
-                    value = messagesInput,
-                    maxSize = 200, // messages max_size:201
-                    enabled = state.connected,
-                    isError = false,
-                    keyboardOptions =
-                    KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = { messagesInput = it },
-                    multiline = true,
-                )
             }
         }
     }

@@ -36,10 +36,15 @@ import org.meshtastic.core.ui.theme.AppTheme
 
 /**
  * A section of a settings form, as on the Pangea iPhone app (inset-grouped `Form`): a grey [title] over a white rounded
- * card holding the rows.
+ * card holding the rows, and an optional grey [footer] under it.
  */
 @Composable
-fun TitledCard(title: String?, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun TitledCard(
+    title: String?,
+    modifier: Modifier = Modifier,
+    footer: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(modifier = modifier) {
         title?.let {
             Text(
@@ -50,6 +55,14 @@ fun TitledCard(title: String?, modifier: Modifier = Modifier, content: @Composab
             )
         }
         Column(Modifier.fillMaxWidth().clip(IosCardShape).background(Ios.colors.groupedRow), content = content)
+        footer?.let {
+            Text(
+                text = it,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp).fillMaxWidth(),
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
+            )
+        }
     }
 }
 

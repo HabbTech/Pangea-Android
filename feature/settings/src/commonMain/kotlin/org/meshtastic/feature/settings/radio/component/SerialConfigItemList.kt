@@ -24,7 +24,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.options
 import org.meshtastic.core.resources.override_console_serial_port
+import org.meshtastic.core.resources.pangea_gpio
+import org.meshtastic.core.resources.pangea_more_options
 import org.meshtastic.core.resources.schema_serial_baud
 import org.meshtastic.core.resources.schema_serial_baud_description
 import org.meshtastic.core.resources.schema_serial_echo
@@ -40,12 +43,13 @@ import org.meshtastic.core.resources.schema_serial_timeout_description
 import org.meshtastic.core.resources.schema_serial_txd
 import org.meshtastic.core.resources.schema_serial_txd_description
 import org.meshtastic.core.resources.serial
-import org.meshtastic.core.resources.serial_config
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.proto.ModuleConfig
@@ -72,50 +76,32 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
         },
     ) {
         item {
-            TitledCard(title = stringResource(Res.string.serial_config)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_serial_enabled),
-                    summary = stringResource(Res.string.schema_serial_enabled_description),
-                    checked = formState.value.enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Terminal) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_serial_enabled),
+                        summary = stringResource(Res.string.schema_serial_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_serial_echo),
-                    summary = stringResource(Res.string.schema_serial_echo_description),
-                    checked = formState.value.echo,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.echo = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_serial_rxd),
-                    summary = stringResource(Res.string.schema_serial_rxd_description),
-                    value = formState.value.rxd,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.rxd = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                EditTextPreference(
-                    title = stringResource(Res.string.schema_serial_txd),
-                    summary = stringResource(Res.string.schema_serial_txd_description),
-                    value = formState.value.txd,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValueChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.txd = it }.build()
-                    },
-                )
+                PreferenceIcon(IosIcons.Repeat) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_serial_echo),
+                        summary = stringResource(Res.string.schema_serial_echo_description),
+                        checked = formState.value.echo,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.echo = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
                 DropDownPreference(
                     title = stringResource(Res.string.schema_serial_baud),
@@ -147,7 +133,36 @@ fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                         formState.value = formState.value.newBuilder().also { wb -> wb.mode = it }.build()
                     },
                 )
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_gpio)) {
+                EditTextPreference(
+                    title = stringResource(Res.string.schema_serial_rxd),
+                    summary = stringResource(Res.string.schema_serial_rxd_description),
+                    value = formState.value.rxd,
+                    enabled = state.connected,
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.rxd = it }.build()
+                    },
+                )
                 PreferenceDivider()
+                EditTextPreference(
+                    title = stringResource(Res.string.schema_serial_txd),
+                    summary = stringResource(Res.string.schema_serial_txd_description),
+                    value = formState.value.txd,
+                    enabled = state.connected,
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.txd = it }.build()
+                    },
+                )
+            }
+        }
+        // Android offers these too; the iPhone app leaves them out.
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_more_options)) {
                 SwitchPreference(
                     title = stringResource(Res.string.override_console_serial_port),
                     checked = formState.value.override_console_serial_port,

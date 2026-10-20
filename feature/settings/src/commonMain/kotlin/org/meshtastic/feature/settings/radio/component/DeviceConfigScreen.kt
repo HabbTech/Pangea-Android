@@ -90,12 +90,14 @@ import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.InsetDivider
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PhoneAndroid
 import org.meshtastic.core.ui.icon.role
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.util.annotatedStringFromHtml
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.util.IntervalConfiguration
@@ -183,45 +185,51 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
 
         item {
             TitledCard(title = stringResource(Res.string.hardware)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_device_double_tap_as_button_press),
-                    summary = stringResource(Res.string.schema_device_double_tap_as_button_press_description),
-                    checked = formState.value.double_tap_as_button_press,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.double_tap_as_button_press = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.HandTap) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_device_double_tap_as_button_press),
+                        summary = stringResource(Res.string.schema_device_double_tap_as_button_press_description),
+                        checked = formState.value.double_tap_as_button_press,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.double_tap_as_button_press = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
 
                 InsetDivider()
 
-                SwitchPreference(
-                    title = stringResource(Res.string.triple_click_adhoc_ping),
-                    summary = stringResource(Res.string.config_device_tripleClickAsAdHocPing_summary),
-                    checked = !formState.value.disable_triple_click,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.disable_triple_click = !it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.MapPin) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.triple_click_adhoc_ping),
+                        summary = stringResource(Res.string.config_device_tripleClickAsAdHocPing_summary),
+                        checked = !formState.value.disable_triple_click,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.disable_triple_click = !it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
 
                 InsetDivider()
 
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_device_led_heartbeat_disabled),
-                    summary = stringResource(Res.string.config_device_ledHeartbeatEnabled_summary),
-                    checked = !formState.value.led_heartbeat_disabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.led_heartbeat_disabled = !it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.Ecg) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_device_led_heartbeat_disabled),
+                        summary = stringResource(Res.string.config_device_ledHeartbeatEnabled_summary),
+                        checked = !formState.value.led_heartbeat_disabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.led_heartbeat_disabled = !it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
             }
         }
         item {

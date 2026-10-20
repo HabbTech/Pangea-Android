@@ -45,29 +45,30 @@ import org.meshtastic.core.resources.schema_position_fixed_position
 import org.meshtastic.core.resources.schema_position_fixed_position_description
 import org.meshtastic.core.resources.schema_position_gps_en_gpio
 import org.meshtastic.core.resources.schema_position_gps_en_gpio_description
-import org.meshtastic.core.resources.schema_position_gps_mode
 import org.meshtastic.core.resources.schema_position_gps_update_interval
 import org.meshtastic.core.resources.schema_position_gps_update_interval_description
 import org.meshtastic.core.resources.schema_position_position_broadcast_secs
 import org.meshtastic.core.resources.schema_position_position_broadcast_secs_description
 import org.meshtastic.core.resources.schema_position_position_broadcast_smart_enabled
 import org.meshtastic.core.resources.schema_position_position_flags
-import org.meshtastic.core.resources.schema_position_position_flags_description
 import org.meshtastic.core.resources.schema_position_rx_gpio
 import org.meshtastic.core.resources.schema_position_rx_gpio_description
 import org.meshtastic.core.resources.schema_position_tx_gpio
 import org.meshtastic.core.resources.schema_position_tx_gpio_description
-import org.meshtastic.core.ui.component.BitwisePreference
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
+import org.meshtastic.core.ui.component.SegmentedPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.util.FixedUpdateIntervals
 import org.meshtastic.feature.settings.util.IntervalConfiguration
 import org.meshtastic.feature.settings.util.fieldTitle
+import org.meshtastic.feature.settings.util.rememberGpioPins
 import org.meshtastic.feature.settings.util.toDisplayString
 import org.meshtastic.proto.Config
 import org.meshtastic.proto.broadcast_smart_minimum_distance
@@ -202,16 +203,21 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                     },
                 )
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_position_position_broadcast_smart_enabled),
-                    checked = formState.value.position_broadcast_smart_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.position_broadcast_smart_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.Brain) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_position_position_broadcast_smart_enabled),
+                        checked = formState.value.position_broadcast_smart_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value
+                                    .newBuilder()
+                                    .also { wb -> wb.position_broadcast_smart_enabled = it }
+                                    .build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 if (formState.value.position_broadcast_smart_enabled) {
                     PreferenceDivider()
                     val smartItems = remember { IntervalConfiguration.SMART_BROADCAST_MINIMUM.allowedIntervals }
@@ -258,67 +264,18 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                 }
             }
         }
+        // iOS's order: the GPS mode first; a fixed position only where the GPS isn't in use (or already set).
+        val gpsOn = formState.value.gps_mode == Config.PositionConfig.GpsMode.ENABLED
         item {
             TitledCard(title = stringResource(Res.string.device_gps)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_position_fixed_position),
-                    summary = stringResource(Res.string.schema_position_fixed_position_description),
-                    checked = formState.value.fixed_position,
+                SegmentedPreference(
+                    selectedItem = formState.value.gps_mode,
                     enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.fixed_position = it }.build()
+                    onSelect = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.gps_mode = it }.build()
                     },
-                    containerColor = CardDefaults.cardColors().containerColor,
                 )
-                if (formState.value.fixed_position) {
-                    PreferenceDivider()
-                    EditTextPreference(
-                        title = stringResource(Res.string.latitude),
-                        value = locationInput.latitude,
-                        enabled = state.connected,
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        onValueChanged = { lat: Double ->
-                            if (lat >= -90 && lat <= 90.0) {
-                                locationInput = locationInput.copy(latitude = lat)
-                            }
-                        },
-                    )
-                    PreferenceDivider()
-                    EditTextPreference(
-                        title = stringResource(Res.string.longitude),
-                        value = locationInput.longitude,
-                        enabled = state.connected,
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        onValueChanged = { lon: Double ->
-                            if (lon >= -180 && lon <= 180.0) {
-                                locationInput = locationInput.copy(longitude = lon)
-                            }
-                        },
-                    )
-                    PreferenceDivider()
-                    EditTextPreference(
-                        title = stringResource(Res.string.altitude),
-                        value = locationInput.altitude,
-                        enabled = state.connected,
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        onValueChanged = { alt: Int -> locationInput = locationInput.copy(altitude = alt) },
-                    )
-                    PreferenceDivider()
-                    DeviceLocationButton(
-                        viewModel = viewModel,
-                        enabled = state.connected,
-                        onLocationReceived = { locationInput = it },
-                    )
-                } else {
-                    PreferenceDivider()
-                    DropDownPreference(
-                        title = stringResource(Res.string.schema_position_gps_mode),
-                        enabled = state.connected,
-                        selectedItem = formState.value.gps_mode,
-                        onItemSelected = {
-                            formState.value = formState.value.newBuilder().also { wb -> wb.gps_mode = it }.build()
-                        },
-                    )
+                if (gpsOn) {
                     PreferenceDivider()
                     val items = remember { IntervalConfiguration.GPS_UPDATE.allowedIntervals }
                     DropDownPreference(
@@ -338,60 +295,111 @@ fun PositionConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
                         },
                     )
                 }
+                if (!gpsOn || formState.value.fixed_position) {
+                    PreferenceDivider()
+                    PreferenceIcon(IosIcons.LocationSquareFill) {
+                        SwitchPreference(
+                            title = stringResource(Res.string.schema_position_fixed_position),
+                            summary = stringResource(Res.string.schema_position_fixed_position_description),
+                            checked = formState.value.fixed_position,
+                            enabled = state.connected,
+                            onCheckedChange = {
+                                formState.value =
+                                    formState.value.newBuilder().also { wb -> wb.fixed_position = it }.build()
+                            },
+                            containerColor = CardDefaults.cardColors().containerColor,
+                        )
+                    }
+                    if (formState.value.fixed_position) {
+                        PreferenceDivider()
+                        EditTextPreference(
+                            title = stringResource(Res.string.latitude),
+                            value = locationInput.latitude,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = { lat: Double ->
+                                if (lat >= -90 && lat <= 90.0) {
+                                    locationInput = locationInput.copy(latitude = lat)
+                                }
+                            },
+                        )
+                        PreferenceDivider()
+                        EditTextPreference(
+                            title = stringResource(Res.string.longitude),
+                            value = locationInput.longitude,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = { lon: Double ->
+                                if (lon >= -180 && lon <= 180.0) {
+                                    locationInput = locationInput.copy(longitude = lon)
+                                }
+                            },
+                        )
+                        PreferenceDivider()
+                        EditTextPreference(
+                            title = stringResource(Res.string.altitude),
+                            value = locationInput.altitude,
+                            enabled = state.connected,
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            onValueChanged = { alt: Int -> locationInput = locationInput.copy(altitude = alt) },
+                        )
+                        PreferenceDivider()
+                        DeviceLocationButton(
+                            viewModel = viewModel,
+                            enabled = state.connected,
+                            onLocationReceived = { locationInput = it },
+                        )
+                    }
+                }
             }
         }
         item {
             TitledCard(title = stringResource(Res.string.schema_position_position_flags)) {
-                BitwisePreference(
-                    title = stringResource(Res.string.schema_position_position_flags),
-                    summary = stringResource(Res.string.schema_position_position_flags_description),
-                    value = formState.value.position_flags,
+                PositionFlagRows(
+                    flags = formState.value.position_flags,
                     enabled = state.connected,
-                    items =
-                    Config.PositionConfig.PositionFlags.entries
-                        .filter { it != Config.PositionConfig.PositionFlags.UNSET }
-                        .map { it.value to it.name },
-                    onItemSelected = {
+                    onFlagsChange = {
                         formState.value = formState.value.newBuilder().also { wb -> wb.position_flags = it }.build()
                     },
                 )
             }
         }
-        item {
-            TitledCard(title = stringResource(Res.string.advanced_device_gps)) {
-                val pins = remember { org.meshtastic.feature.settings.util.gpioPins }
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_position_rx_gpio),
-                    summary = stringResource(Res.string.schema_position_rx_gpio_description),
-                    enabled = state.connected,
-                    items = pins,
-                    selectedItem = formState.value.rx_gpio,
-                    onItemSelected = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.rx_gpio = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_position_tx_gpio),
-                    summary = stringResource(Res.string.schema_position_tx_gpio_description),
-                    enabled = state.connected,
-                    items = pins,
-                    selectedItem = formState.value.tx_gpio,
-                    onItemSelected = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.tx_gpio = it }.build()
-                    },
-                )
-                PreferenceDivider()
-                DropDownPreference(
-                    title = stringResource(Res.string.schema_position_gps_en_gpio),
-                    summary = stringResource(Res.string.schema_position_gps_en_gpio_description),
-                    enabled = state.connected,
-                    items = pins,
-                    selectedItem = formState.value.gps_en_gpio,
-                    onItemSelected = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.gps_en_gpio = it }.build()
-                    },
-                )
+        if (gpsOn) {
+            item {
+                TitledCard(title = stringResource(Res.string.advanced_device_gps)) {
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_position_rx_gpio),
+                        summary = stringResource(Res.string.schema_position_rx_gpio_description),
+                        enabled = state.connected,
+                        items = rememberGpioPins(),
+                        selectedItem = formState.value.rx_gpio,
+                        onItemSelected = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.rx_gpio = it }.build()
+                        },
+                    )
+                    PreferenceDivider()
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_position_tx_gpio),
+                        summary = stringResource(Res.string.schema_position_tx_gpio_description),
+                        enabled = state.connected,
+                        items = rememberGpioPins(),
+                        selectedItem = formState.value.tx_gpio,
+                        onItemSelected = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.tx_gpio = it }.build()
+                        },
+                    )
+                    PreferenceDivider()
+                    DropDownPreference(
+                        title = stringResource(Res.string.schema_position_gps_en_gpio),
+                        summary = stringResource(Res.string.schema_position_gps_en_gpio_description),
+                        enabled = state.connected,
+                        items = rememberGpioPins(),
+                        selectedItem = formState.value.gps_en_gpio,
+                        onItemSelected = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.gps_en_gpio = it }.build()
+                        },
+                    )
+                }
             }
         }
     }
