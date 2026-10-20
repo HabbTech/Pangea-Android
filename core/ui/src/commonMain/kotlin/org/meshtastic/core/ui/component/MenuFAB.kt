@@ -16,31 +16,26 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleFloatingActionButton
-import androidx.compose.material3.ToggleFloatingActionButtonDefaults
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.close
-import org.meshtastic.core.ui.icon.Close
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.OfflineShare
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * A floating button with a menu of actions, drawn as the Pangea iPhone app draws its floating controls: a round glass
+ * button with the symbol in the tint, opening a menu of [items] (iOS's context menu) above it.
+ */
 @Composable
 fun MenuFAB(
     expanded: Boolean,
@@ -51,38 +46,26 @@ fun MenuFAB(
     testTag: String? = null,
 ) {
     val stateAwareDescription = if (expanded) stringResource(Res.string.close) else contentDescription
-    FloatingActionButtonMenu(
-        modifier = modifier.then(if (testTag != null) Modifier.testTag(testTag) else Modifier),
-        expanded = expanded,
-        button = {
-            TooltipBox(
-                positionProvider = TooltipDefaults.rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-                tooltip = { stateAwareDescription?.let { PlainTooltip { Text(it) } } },
-                state = rememberTooltipState(),
-            ) {
-                ToggleFloatingActionButton(
-                    checked = expanded,
-                    onCheckedChange = onExpandedChange,
-                    content = {
-                        val imageVector = if (expanded) MeshtasticIcons.Close else MeshtasticIcons.OfflineShare
-                        Icon(imageVector = imageVector, contentDescription = stateAwareDescription)
+    Box(modifier = modifier) {
+        IosGlassIconButton(
+            icon = IosIcons.ShareUp,
+            contentDescription = stateAwareDescription,
+            onClick = { onExpandedChange(!expanded) },
+            tint = Ios.colors.tint,
+            modifier = if (testTag != null) Modifier.testTag(testTag) else Modifier,
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
+            items.forEach { item ->
+                DropdownMenuItem(
+                    modifier = if (item.testTag != null) Modifier.testTag(item.testTag) else Modifier,
+                    onClick = {
+                        item.onClick()
+                        onExpandedChange(false)
                     },
-                    containerColor = ToggleFloatingActionButtonDefaults.containerColor(),
+                    leadingIcon = { Icon(item.icon, contentDescription = null) },
+                    text = { Text(item.label) },
                 )
             }
-        },
-        horizontalAlignment = Alignment.End,
-    ) {
-        items.forEach { item ->
-            FloatingActionButtonMenuItem(
-                modifier = if (item.testTag != null) Modifier.testTag(item.testTag) else Modifier,
-                onClick = {
-                    item.onClick()
-                    onExpandedChange(false)
-                },
-                icon = { Icon(item.icon, contentDescription = null) },
-                text = { Text(item.label) },
-            )
         }
     }
 }
