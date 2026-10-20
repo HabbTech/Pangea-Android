@@ -19,17 +19,21 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import org.jetbrains.compose.resources.stringResource
@@ -41,12 +45,16 @@ import org.meshtastic.core.resources.admin_keys
 import org.meshtastic.core.resources.administration
 import org.meshtastic.core.resources.config_security_private_key
 import org.meshtastic.core.resources.config_security_private_key_remote
+import org.meshtastic.core.resources.copy
 import org.meshtastic.core.resources.direct_message_key
 import org.meshtastic.core.resources.logs
+import org.meshtastic.core.resources.pangea_primary_admin_key
+import org.meshtastic.core.resources.pangea_regenerate_key_desc
+import org.meshtastic.core.resources.pangea_secondary_admin_key
+import org.meshtastic.core.resources.pangea_tertiary_admin_key
 import org.meshtastic.core.resources.redacted
 import org.meshtastic.core.resources.regenerate_keys_confirmation
 import org.meshtastic.core.resources.regenerate_private_key
-import org.meshtastic.core.resources.schema_security_admin_key
 import org.meshtastic.core.resources.schema_security_admin_key_description
 import org.meshtastic.core.resources.schema_security_debug_log_api_enabled
 import org.meshtastic.core.resources.schema_security_debug_log_api_enabled_description
@@ -60,13 +68,17 @@ import org.meshtastic.core.resources.schema_security_serial_enabled_description
 import org.meshtastic.core.resources.security
 import org.meshtastic.core.ui.component.CopyIconButton
 import org.meshtastic.core.ui.component.EditBase64Preference
-import org.meshtastic.core.ui.component.EditListPreference
 import org.meshtastic.core.ui.component.MeshtasticResourceDialog
+import org.meshtastic.core.ui.component.PreferenceActionRow
 import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Warning
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.util.createClipEntry
 import org.meshtastic.feature.settings.lockdown.LockdownModeSetting
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
@@ -128,26 +140,33 @@ fun SecurityConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
         }
         item {
             TitledCard(title = stringResource(Res.string.direct_message_key)) {
-                SecurityPublicKeyPreference(
-                    securityConfig = securityConfig,
-                    formState = formState,
-                    enabled = state.connected,
-                )
+                PreferenceIcon(IosIcons.Key) {
+                    SecurityPublicKeyPreference(
+                        securityConfig = securityConfig,
+                        formState = formState,
+                        enabled = state.connected,
+                    )
+                }
                 PreferenceDivider()
-                SecurityPrivateKeyPreference(
-                    securityConfig = securityConfig,
-                    formState = formState,
-                    enabled = state.connected,
-                    isLocal = state.isLocal,
-                )
+                PreferenceIcon(IosIcons.KeyFill) {
+                    SecurityPrivateKeyPreference(
+                        securityConfig = securityConfig,
+                        formState = formState,
+                        enabled = state.connected,
+                        isLocal = state.isLocal,
+                    )
+                }
                 PreferenceDivider()
-                NodeActionButton(
-                    modifier = Modifier.padding(horizontal = 8.dp),
-                    title = stringResource(Res.string.regenerate_private_key),
-                    enabled = state.connected,
-                    icon = MeshtasticIcons.Warning,
-                    onClick = { showKeyGenerationDialog = true },
-                )
+                PreferenceIcon(IosIcons.ArrowClockwiseCircle) {
+                    PreferenceActionRow(
+                        title = stringResource(Res.string.regenerate_private_key),
+                        summary = stringResource(Res.string.pangea_regenerate_key_desc),
+                        actionIcon = IosIcons.LockRotation,
+                        actionDescription = stringResource(Res.string.regenerate_private_key),
+                        enabled = state.connected,
+                        onAction = { showKeyGenerationDialog = true },
+                    )
+                }
                 // Backup/restore operates on this phone's own key file, so it is meaningless for a remote node
                 // whose private key we never receive.
                 if (state.isLocal) {
@@ -160,44 +179,68 @@ fun SecurityConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Un
             }
         }
         item {
+            // iOS: the three admin key slots as rows, the help text once under them.
             TitledCard(title = stringResource(Res.string.admin_keys)) {
-                EditListPreference(
-                    title = stringResource(Res.string.schema_security_admin_key),
-                    summary = stringResource(Res.string.schema_security_admin_key_description),
-                    list = formState.value.admin_key,
-                    maxCount = 3,
-                    enabled = state.connected,
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    onValuesChanged = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.admin_key = it }.build()
-                    },
+                listOf(
+                    Res.string.pangea_primary_admin_key,
+                    Res.string.pangea_secondary_admin_key,
+                    Res.string.pangea_tertiary_admin_key,
+                )
+                    .forEachIndexed { slot, label ->
+                        if (slot > 0) PreferenceDivider()
+                        PreferenceIcon(IosIcons.KeyViewfinder) {
+                            EditBase64Preference(
+                                title = stringResource(label),
+                                value = formState.value.admin_key.getOrNull(slot) ?: ByteString.EMPTY,
+                                enabled = state.connected,
+                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                onValueChange = { key ->
+                                    formState.value =
+                                        formState.value
+                                            .newBuilder()
+                                            .also { wb -> wb.admin_key = withAdminKey(wb.admin_key, slot, key) }
+                                            .build()
+                                },
+                            )
+                        }
+                    }
+                PreferenceDivider()
+                Text(
+                    text = stringResource(Res.string.schema_security_admin_key_description),
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 )
             }
         }
         item {
             TitledCard(title = stringResource(Res.string.logs)) {
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_security_serial_enabled),
-                    summary = stringResource(Res.string.schema_security_serial_enabled_description),
-                    checked = formState.value.serial_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value = formState.value.newBuilder().also { wb -> wb.serial_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.Terminal) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_security_serial_enabled),
+                        summary = stringResource(Res.string.schema_security_serial_enabled_description),
+                        checked = formState.value.serial_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.serial_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
                 PreferenceDivider()
-                SwitchPreference(
-                    title = stringResource(Res.string.schema_security_debug_log_api_enabled),
-                    summary = stringResource(Res.string.schema_security_debug_log_api_enabled_description),
-                    checked = formState.value.debug_log_api_enabled,
-                    enabled = state.connected,
-                    onCheckedChange = {
-                        formState.value =
-                            formState.value.newBuilder().also { wb -> wb.debug_log_api_enabled = it }.build()
-                    },
-                    containerColor = CardDefaults.cardColors().containerColor,
-                )
+                PreferenceIcon(IosIcons.AntFill) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_security_debug_log_api_enabled),
+                        summary = stringResource(Res.string.schema_security_debug_log_api_enabled_description),
+                        checked = formState.value.debug_log_api_enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value =
+                                formState.value.newBuilder().also { wb -> wb.debug_log_api_enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
             }
         }
         item {
@@ -254,8 +297,15 @@ internal fun SecurityPublicKeyPreference(
     formState: ConfigState<Config.SecurityConfig>,
     enabled: Boolean,
     publicKeyCopyButton: @Composable (ByteString) -> Unit = { publicKey ->
-        CopyIconButton(
-            valueToCopy = publicKey.encodeToString(),
+        // iOS's grey Copy capsule.
+        val clipboard = LocalClipboard.current
+        val scope = rememberCoroutineScope()
+        IosButton(
+            text = stringResource(Res.string.copy),
+            icon = IosIcons.DocOnDoc,
+            style = IosButtonStyle.Gray,
+            enabled = publicKey.size > 0,
+            onClick = { scope.launch { clipboard.setClipEntry(createClipEntry(publicKey.encodeToString())) } },
             modifier = Modifier.testTag(SECURITY_PUBLIC_KEY_COPY_TEST_TAG),
         )
     },
@@ -362,3 +412,13 @@ fun PrivateKeyRegenerateDialog(
 private const val PRIVATE_KEY_SIZE = 32
 
 private const val SECONDS_PER_MINUTE = 60
+
+/**
+ * The admin key list with [slot] set to [key], or that slot dropped when [key] is empty. Slots fill in order: the
+ * firmware reads the list, not fixed positions, so a key typed past the end lands at the end.
+ */
+internal fun withAdminKey(keys: List<ByteString>, slot: Int, key: ByteString): List<ByteString> = when {
+    key.size == 0 -> keys.filterIndexed { i, _ -> i != slot }
+    slot < keys.size -> keys.toMutableList().also { it[slot] = key }
+    else -> keys + key
+}

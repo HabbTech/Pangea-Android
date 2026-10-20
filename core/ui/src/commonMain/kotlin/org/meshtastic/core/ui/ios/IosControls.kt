@@ -91,6 +91,9 @@ enum class IosButtonStyle {
 
     /** Plain tinted text: an escape hatch like "I don't have my radio yet". */
     Plain,
+
+    /** `.bordered` without a tint: grey fill, label-coloured words (Copy, Backup, Restore). */
+    Gray,
 }
 
 /**
@@ -112,7 +115,7 @@ fun IosButton(
     val container =
         when {
             style == IosButtonStyle.Plain -> Color.Transparent
-            !enabled -> c.fieldFill
+            !enabled || style == IosButtonStyle.Gray -> c.fieldFill
             style == IosButtonStyle.Filled -> c.tint
             else -> c.tint.copy(alpha = if (c.isDark) 0.24f else 0.15f)
         }
@@ -120,6 +123,7 @@ fun IosButton(
         when {
             !enabled -> c.tertiaryLabel
             style == IosButtonStyle.Filled -> c.onTint
+            style == IosButtonStyle.Gray -> c.label
             else -> c.tint
         }
     Row(

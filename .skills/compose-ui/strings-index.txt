@@ -1337,6 +1337,7 @@ pangea_all_set_title
 pangea_app_settings
 pangea_appearance
 pangea_appearance_footer
+pangea_backup
 pangea_battery
 pangea_battery_charging
 pangea_bluetooth_desc
@@ -1457,6 +1458,8 @@ pangea_invite_people
 pangea_invite_sent
 pangea_join
 pangea_join_group_prompt
+pangea_key_backup
+pangea_key_backup_desc
 pangea_leave_group
 pangea_leave_group_confirm
 pangea_logging
@@ -1501,6 +1504,7 @@ pangea_photo_connect_radio
 pangea_photo_offer
 pangea_photo_waiting_radio
 pangea_pin
+pangea_primary_admin_key
 pangea_primary_channel
 pangea_profile
 pangea_profile_row_subtitle
@@ -1516,17 +1520,20 @@ pangea_radio_restarting_wait
 pangea_radio_serial
 pangea_radio_status_not_connected
 pangea_reaching
+pangea_regenerate_key_desc
 pangea_region_choose
 pangea_region_footer
 pangea_region_label
 pangea_remove_from_contacts
 pangea_remove_photo
 pangea_replace_channels
+pangea_restore
 pangea_role_value
 pangea_save_contact
 pangea_save_to_radio_failed
 pangea_saving_to_radio
 pangea_scan_qr
+pangea_secondary_admin_key
 pangea_secondary_channel
 pangea_send_message
 pangea_send_notifications
@@ -1568,6 +1575,7 @@ pangea_status_sent
 pangea_status_too_large
 pangea_tab_chats
 pangea_tab_map
+pangea_tertiary_admin_key
 pangea_timing_overrides
 pangea_unpin
 pangea_unreachable

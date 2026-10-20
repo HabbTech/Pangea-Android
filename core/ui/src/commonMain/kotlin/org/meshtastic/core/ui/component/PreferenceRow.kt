@@ -16,6 +16,8 @@
  */
 package org.meshtastic.core.ui.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -26,6 +28,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,12 +37,15 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.iosPressable
 
 /**
  * One row of a settings form, drawn like the Pangea iPhone app's inset-grouped `Form`: the [title] and its [trailing]
@@ -48,7 +54,7 @@ import org.meshtastic.core.ui.ios.Ios
  * gets the rest (inline text fields).
  */
 @Composable
-internal fun PreferenceRow(
+fun PreferenceRow(
     title: String,
     modifier: Modifier = Modifier,
     summary: String? = null,
@@ -109,3 +115,48 @@ fun PreferenceIcon(icon: ImageVector, tint: Color? = null, content: @Composable 
 
 /** How a form row looks while it can't be changed (no radio connected, or another setting rules it out). */
 private const val DISABLED_ALPHA = 0.45f
+
+/**
+ * A setting that is an action, as the iPhone app draws Regenerate Private Key: the title (with its [PreferenceIcon])
+ * and a round grey button with [actionIcon] at the end, the help text under both.
+ */
+@Composable
+fun PreferenceActionRow(
+    title: String,
+    actionIcon: ImageVector,
+    actionDescription: String,
+    enabled: Boolean,
+    onAction: () -> Unit,
+    modifier: Modifier = Modifier,
+    summary: String? = null,
+) {
+    val c = Ios.colors
+    PreferenceRow(
+        title = title,
+        modifier = modifier,
+        enabled = enabled,
+        // iOS sets an action's explanation in footnote, smaller than a setting's.
+        below = {
+            if (summary != null) {
+                Text(
+                    text = summary,
+                    style = Ios.type.footnote,
+                    color = c.secondaryLabel,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        },
+        trailing = {
+            Box(
+                Modifier.size(44.dp)
+                    .clip(CircleShape)
+                    .background(c.fieldFill)
+                    .iosPressable(enabled = enabled, onClick = onAction)
+                    .semantics { contentDescription = actionDescription },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(actionIcon, contentDescription = null, tint = c.secondaryLabel, modifier = Modifier.size(24.dp))
+            }
+        },
+    )
+}

@@ -16,16 +16,14 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,8 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.isSensitiveData
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -52,6 +53,7 @@ import org.meshtastic.core.resources.reset
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 @Suppress("LongMethod", "CyclomaticComplexMethod", "MagicNumber")
@@ -88,64 +90,74 @@ fun EditBase64Preference(
             onGenerateKey != null && !isFocused -> MeshtasticIcons.Refresh to stringResource(Res.string.reset)
             else -> null to null
         }
-    val placeholder: @Composable (() -> Unit)? = placeholderText?.let { text -> { Text(text = text) } }
-    Column(modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        OutlinedTextField(
-            value = valueState,
-            onValueChange = {
-                valueState = it
-                runCatching { it.base64ToByteString() }.onSuccess(onValueChange)
-            },
-            modifier =
-            Modifier.fillMaxWidth()
-                .onFocusChanged { focusState -> isFocused = focusState.isFocused }
-                .semantics { isSensitiveData = true },
-            enabled = enabled,
-            readOnly = readOnly,
-            label = { Text(text = title) },
-            placeholder = placeholder,
-            isError = isError,
-            keyboardOptions =
-            KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-            keyboardActions = keyboardActions,
-            trailingIcon = {
-                if (icon != null) {
-                    IconButton(
-                        onClick = {
-                            if (isError) {
-                                valueState = value.encodeToString()
-                                onValueChange(value)
-                            } else if (onGenerateKey != null && !isFocused) {
-                                onGenerateKey()
-                            }
-                        },
-                        enabled = enabled,
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = description,
-                            tint =
-                            if (isError) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                LocalContentColor.current
-                            },
-                        )
-                    }
-                } else if (trailingIcon != null) {
-                    trailingIcon()
+    // iOS: the name on its own line (with its symbol and any buttons), the key under it in grey monospace, the help
+    // text last. A field with nothing in it shows its name, as iOS's placeholder does.
+    val c = Ios.colors
+    val keyStyle = Ios.type.subheadline.copy(fontFamily = FontFamily.Monospace)
+    PreferenceRow(
+        title = title,
+        modifier = modifier,
+        enabled = enabled,
+        trailing = {
+            if (icon != null) {
+                IconButton(
+                    onClick = {
+                        if (isError) {
+                            valueState = value.encodeToString()
+                            onValueChange(value)
+                        } else if (onGenerateKey != null && !isFocused) {
+                            onGenerateKey()
+                        }
+                    },
+                    enabled = enabled,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = description,
+                        tint = if (isError) c.systemRed else c.tint,
+                    )
                 }
-            },
-        )
-        if (summary != null) {
-            Text(
-                text = summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-    }
+            } else if (trailingIcon != null) {
+                trailingIcon()
+            }
+        },
+        below = {
+            Box(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                if (valueState.isEmpty()) {
+                    Text(text = placeholderText ?: title, style = keyStyle, color = c.tertiaryLabel)
+                }
+                BasicTextField(
+                    value = valueState,
+                    onValueChange = {
+                        valueState = it
+                        runCatching { it.base64ToByteString() }.onSuccess(onValueChange)
+                    },
+                    modifier =
+                    Modifier.fillMaxWidth()
+                        .onFocusChanged { focusState -> isFocused = focusState.isFocused }
+                        .semantics {
+                            isSensitiveData = true
+                            contentDescription = title
+                        },
+                    enabled = enabled,
+                    readOnly = readOnly,
+                    textStyle = keyStyle.copy(color = if (isError) c.systemRed else c.secondaryLabel),
+                    cursorBrush = SolidColor(c.tint),
+                    keyboardOptions =
+                    KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    keyboardActions = keyboardActions,
+                )
+            }
+            if (summary != null) {
+                Text(
+                    text = summary,
+                    style = Ios.type.footnote,
+                    color = c.secondaryLabel,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        },
+    )
 }
 
 @Preview(showBackground = true)

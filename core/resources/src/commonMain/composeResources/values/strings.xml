@@ -1373,6 +1373,7 @@
     <string name="pangea_app_settings">App Settings</string>
     <string name="pangea_appearance">Appearance</string>
     <string name="pangea_appearance_footer">Match Device follows your device's Light or Dark setting.</string>
+    <string name="pangea_backup">Backup</string>
     <string name="pangea_battery">Battery</string>
     <string name="pangea_battery_charging">CHG</string>
     <string name="pangea_bluetooth_desc">Pangea uses Bluetooth to connect to BLE-based accessories. You can update the permissions at any time from settings.</string>
@@ -1493,6 +1494,8 @@
     <string name="pangea_invite_sent">Invited</string>
     <string name="pangea_join">Join</string>
     <string name="pangea_join_group_prompt">Join the group %1$s? Everyone in it can read what you send there.</string>
+    <string name="pangea_key_backup">Key Backup</string>
+    <string name="pangea_key_backup_desc">Back up your private key in this phone's encrypted storage.</string>
     <string name="pangea_leave_group">Leave Group</string>
     <string name="pangea_leave_group_confirm">Leave %1$s? Its messages will be removed from this phone.</string>
     <string name="pangea_logging">Logging</string>
@@ -1537,6 +1540,7 @@
     <string name="pangea_photo_offer">They shared a profile photo.</string>
     <string name="pangea_photo_waiting_radio">Waiting for your radioâ€¦</string>
     <string name="pangea_pin">Pin</string>
+    <string name="pangea_primary_admin_key">Primary Admin Key</string>
     <string name="pangea_primary_channel">Primary channel</string>
     <string name="pangea_profile">Profile</string>
     <string name="pangea_profile_row_subtitle">Photo, name and emoji</string>
@@ -1552,17 +1556,20 @@
     <string name="pangea_radio_serial">Pangea Radio %1$s</string>
     <string name="pangea_radio_status_not_connected">Your radio isn't connected. Messages will send once it's back.</string>
     <string name="pangea_reaching">Saying hello to %1$sâ€¦ This can take a minute.</string>
+    <string name="pangea_regenerate_key_desc">Generate a new private key to replace the one currently in use. The public key will automatically be regenerated from your private key.</string>
     <string name="pangea_region_choose">Choose your country</string>
     <string name="pangea_region_footer">Radios must use the frequencies allowed where you are. We picked this from your phone's settings.</string>
     <string name="pangea_region_label">Where you'll use it</string>
     <string name="pangea_remove_from_contacts">Remove from Contacts</string>
     <string name="pangea_remove_photo">Remove Photo</string>
     <string name="pangea_replace_channels">Replace Channels</string>
+    <string name="pangea_restore">Restore</string>
     <string name="pangea_role_value">Role: %1$s</string>
     <string name="pangea_save_contact">Save to Contacts</string>
     <string name="pangea_save_to_radio_failed">Couldn't save to your radio. Make sure it's still on and nearby, then try again.</string>
     <string name="pangea_saving_to_radio">Saving to your radio…</string>
     <string name="pangea_scan_qr">Scan a QR code</string>
+    <string name="pangea_secondary_admin_key">Secondary Admin Key</string>
     <string name="pangea_secondary_channel">Secondary channel</string>
     <string name="pangea_send_message">Send Message</string>
     <string name="pangea_send_notifications">Send Notifications</string>
@@ -1604,6 +1611,7 @@
     <string name="pangea_status_too_large">This message is too long to send.</string>
     <string name="pangea_tab_chats">Chats</string>
     <string name="pangea_tab_map">Map</string>
+    <string name="pangea_tertiary_admin_key">Tertiary Admin Key</string>
     <string name="pangea_timing_overrides">Timing and Overrides</string>
     <string name="pangea_unpin">Unpin</string>
     <string name="pangea_unreachable">%1$s didn't answer. Make sure their radio is on and in range, then try again.</string>

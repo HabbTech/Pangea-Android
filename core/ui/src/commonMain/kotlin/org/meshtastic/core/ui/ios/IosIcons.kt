@@ -1445,6 +1445,198 @@ object IosIcons {
         }
     }
 
+    /** `key`: Public Key. */
+    val Key: ImageVector by lazy {
+        icon("ios.key") {
+            stroked(width = 1.5f) {
+                circle(8.2f, 8.2f, 4.6f)
+                moveTo(11.5f, 11.5f)
+                lineTo(20.5f, 20.5f)
+                moveTo(17.4f, 17.4f)
+                lineTo(19.4f, 15.4f)
+                moveTo(15f, 15f)
+                lineTo(16.6f, 13.4f)
+            }
+            filled { circle(7.4f, 7.4f, 1.15f) }
+        }
+    }
+
+    /** `key.fill`: Private Key. */
+    val KeyFill: ImageVector by lazy {
+        icon("ios.keyFill") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                circle(8.2f, 8.2f, 5.2f)
+                circle(7.4f, 7.4f, 1.3f)
+            }
+            stroked(width = 2.4f) {
+                moveTo(11.5f, 11.5f)
+                lineTo(20.2f, 20.2f)
+                moveTo(17.4f, 17.4f)
+                lineTo(19.2f, 15.6f)
+                moveTo(15f, 15f)
+                lineTo(16.4f, 13.6f)
+            }
+        }
+    }
+
+    /** `arrow.clockwise.circle`: Regenerate Private Key. */
+    val ArrowClockwiseCircle: ImageVector by lazy {
+        icon("ios.arrowClockwiseCircle") {
+            stroked(width = 1.5f) {
+                circle(12f, 12f, 9.2f)
+                moveTo(16.2f, 12.6f)
+                arcTo(4.3f, 4.3f, 0f, isMoreThanHalf = true, isPositiveArc = true, x1 = 12.6f, y1 = 7.8f)
+            }
+            filled {
+                moveTo(12.4f, 5.6f)
+                lineTo(15.2f, 7.9f)
+                lineTo(12.2f, 9.9f)
+                close()
+            }
+        }
+    }
+
+    /** `lock.rotation`: regenerate (the round button). */
+    val LockRotation: ImageVector by lazy {
+        icon("ios.lockRotation") {
+            stroked(width = 1.5f) {
+                moveTo(19.6f, 8.6f)
+                arcTo(8.4f, 8.4f, 0f, isMoreThanHalf = true, isPositiveArc = false, x1 = 20.4f, y1 = 12.8f)
+                moveTo(10.3f, 11.4f)
+                lineTo(10.3f, 9.9f)
+                arcTo(1.7f, 1.7f, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 13.7f, y1 = 9.9f)
+                lineTo(13.7f, 11.4f)
+            }
+            filled {
+                roundRect(8.9f, 11.2f, 15.1f, 16.2f, 1.2f)
+                moveTo(17.8f, 9.4f)
+                lineTo(21.3f, 9.8f)
+                lineTo(20.2f, 6.4f)
+                close()
+            }
+        }
+    }
+
+    /** `cloud`: Key Backup. */
+    val Cloud: ImageVector by lazy {
+        icon("ios.cloud") {
+            stroked(width = 1.5f) {
+                moveTo(7f, 18.5f)
+                curveTo(4.2f, 18.5f, 2.5f, 16.6f, 2.5f, 14.3f)
+                curveTo(2.5f, 12f, 4.2f, 10.3f, 6.4f, 10.1f)
+                curveTo(7f, 7.2f, 9.4f, 5.2f, 12.3f, 5.2f)
+                curveTo(15.3f, 5.2f, 17.8f, 7.4f, 18.2f, 10.3f)
+                curveTo(20.1f, 10.6f, 21.5f, 12.2f, 21.5f, 14.3f)
+                curveTo(21.5f, 16.6f, 19.7f, 18.5f, 17.4f, 18.5f)
+                close()
+            }
+        }
+    }
+
+    /** `icloud.and.arrow.up`: back up. */
+    val CloudArrowUp: ImageVector by lazy {
+        icon("ios.cloudArrowUp") {
+            stroked(width = 1.5f) {
+                moveTo(7f, 18.5f)
+                curveTo(4.2f, 18.5f, 2.5f, 16.6f, 2.5f, 14.3f)
+                curveTo(2.5f, 12f, 4.2f, 10.3f, 6.4f, 10.1f)
+                curveTo(7f, 7.2f, 9.4f, 5.2f, 12.3f, 5.2f)
+                curveTo(15.3f, 5.2f, 17.8f, 7.4f, 18.2f, 10.3f)
+                curveTo(20.1f, 10.6f, 21.5f, 12.2f, 21.5f, 14.3f)
+                curveTo(21.5f, 16.6f, 19.7f, 18.5f, 17.4f, 18.5f)
+                close()
+                moveTo(12f, 16.4f)
+                lineTo(12f, 10.6f)
+                moveTo(9.7f, 12.9f)
+                lineTo(12f, 10.6f)
+                lineTo(14.3f, 12.9f)
+            }
+        }
+    }
+
+    /** `key.icloud`: restore. */
+    val CloudKey: ImageVector by lazy {
+        icon("ios.cloudKey") {
+            stroked(width = 1.5f) {
+                moveTo(7f, 18.5f)
+                curveTo(4.2f, 18.5f, 2.5f, 16.6f, 2.5f, 14.3f)
+                curveTo(2.5f, 12f, 4.2f, 10.3f, 6.4f, 10.1f)
+                curveTo(7f, 7.2f, 9.4f, 5.2f, 12.3f, 5.2f)
+                curveTo(15.3f, 5.2f, 17.8f, 7.4f, 18.2f, 10.3f)
+                curveTo(20.1f, 10.6f, 21.5f, 12.2f, 21.5f, 14.3f)
+                curveTo(21.5f, 16.6f, 19.7f, 18.5f, 17.4f, 18.5f)
+                close()
+                circle(9.6f, 13.4f, 1.5f)
+                moveTo(11.1f, 13.4f)
+                lineTo(15.4f, 13.4f)
+                moveTo(14.2f, 13.4f)
+                lineTo(14.2f, 14.8f)
+            }
+        }
+    }
+
+    /** `key.viewfinder`: the admin keys. */
+    val KeyViewfinder: ImageVector by lazy {
+        icon("ios.keyViewfinder") {
+            stroked(width = 1.6f) {
+                moveTo(3f, 7.5f)
+                lineTo(3f, 5f)
+                curveTo(3f, 3.9f, 3.9f, 3f, 5f, 3f)
+                lineTo(7.5f, 3f)
+                moveTo(16.5f, 3f)
+                lineTo(19f, 3f)
+                curveTo(20.1f, 3f, 21f, 3.9f, 21f, 5f)
+                lineTo(21f, 7.5f)
+                moveTo(21f, 16.5f)
+                lineTo(21f, 19f)
+                curveTo(21f, 20.1f, 20.1f, 21f, 19f, 21f)
+                lineTo(16.5f, 21f)
+                moveTo(7.5f, 21f)
+                lineTo(5f, 21f)
+                curveTo(3.9f, 21f, 3f, 20.1f, 3f, 19f)
+                lineTo(3f, 16.5f)
+                circle(12f, 9.4f, 2.4f)
+                moveTo(12f, 11.8f)
+                lineTo(12f, 17f)
+                moveTo(12f, 14.6f)
+                lineTo(13.6f, 14.6f)
+            }
+        }
+    }
+
+    /** `ant.fill`: Debug Logs. */
+    val AntFill: ImageVector by lazy {
+        icon("ios.antFill") {
+            filled {
+                circle(12f, 4.9f, 2f)
+                circle(12f, 10.2f, 2.5f)
+                circle(12f, 16.8f, 3.9f)
+            }
+            stroked(width = 1.4f) {
+                moveTo(10f, 9.4f)
+                lineTo(6.5f, 7.6f)
+                lineTo(4.6f, 8.6f)
+                moveTo(14f, 9.4f)
+                lineTo(17.5f, 7.6f)
+                lineTo(19.4f, 8.6f)
+                moveTo(9.8f, 11.4f)
+                lineTo(5.6f, 12.6f)
+                moveTo(14.2f, 11.4f)
+                lineTo(18.4f, 12.6f)
+                moveTo(8.6f, 15.4f)
+                lineTo(5.4f, 17.4f)
+                lineTo(5.4f, 20.2f)
+                moveTo(15.4f, 15.4f)
+                lineTo(18.6f, 17.4f)
+                lineTo(18.6f, 20.2f)
+                moveTo(11f, 3.2f)
+                lineTo(9.6f, 1.6f)
+                moveTo(13f, 3.2f)
+                lineTo(14.4f, 1.6f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {
