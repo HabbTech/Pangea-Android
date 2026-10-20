@@ -16,49 +16,81 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.core.ui.theme.AppTheme
 
+/**
+ * A channel as the iPhone app lists it: the slot number in a tinted circle, the channel's name with an optional
+ * [titleIcon] before it (its lock) and [subtitle] under it ("Primary channel"), then [content] at the end.
+ */
 @Composable
 fun ChannelItem(
     index: Int,
     title: String,
     enabled: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
+    subtitle: String? = null,
+    titleIcon: (@Composable () -> Unit)? = null,
     content: @Composable RowScope.() -> Unit,
 ) {
-    val fontColor = if (index == 0) MaterialTheme.colorScheme.primary else Color.Unspecified
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp).clickable(enabled = enabled) { onClick() }) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(vertical = 4.dp, horizontal = 4.dp),
-        ) {
-            AssistChip(onClick = onClick, label = { Text(text = "$index", color = fontColor) })
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f),
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
-                style = MaterialTheme.typography.titleMediumEmphasized,
-                color = fontColor,
-            )
-            content()
+    val c = Ios.colors
+    Row(
+        modifier =
+        modifier
+            .fillMaxWidth()
+            .iosPressable(enabled = enabled, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(46.dp).clip(CircleShape).background(c.tint), contentAlignment = Alignment.Center) {
+            Text(text = "$index", style = Ios.type.title2, color = c.onTint)
         }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (titleIcon != null) {
+                    // The lock is a tappable explanation; keep its touch target without letting it push the name.
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                        Box(Modifier.size(26.dp), contentAlignment = Alignment.Center) { titleIcon() }
+                    }
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    text = title,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    style = Ios.type.headline,
+                    color = c.label,
+                )
+            }
+            if (subtitle != null) {
+                Text(text = subtitle, style = Ios.type.footnote, color = c.secondaryLabel)
+            }
+        }
+        content()
     }
 }
 

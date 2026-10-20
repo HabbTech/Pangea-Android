@@ -67,6 +67,7 @@ import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActionCapsule
+import org.meshtastic.core.ui.ios.IosBarLayout
 import org.meshtastic.core.ui.ios.IosGlassButton
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
@@ -122,21 +123,9 @@ fun MainAppBar(
             .background(accent?.copy(alpha = EVENT_ACCENT_ALPHA)?.compositeOver(background) ?: background)
             .windowInsetsPadding(WindowInsets.statusBars),
     ) {
-        Box(Modifier.fillMaxWidth().height(TOP_ROW_HEIGHT), contentAlignment = Alignment.Center) {
-            if (inlineTitle) {
-                Text(
-                    text = title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = Ios.type.headline,
-                    color = c.label,
-                    modifier = Modifier.padding(horizontal = 72.dp),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().height(TOP_ROW_HEIGHT).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        IosBarLayout(
+            modifier = Modifier.fillMaxWidth().height(TOP_ROW_HEIGHT).padding(horizontal = 16.dp),
+            leading = {
                 if (canNavigateUp) {
                     IosGlassIconButton(
                         IosIcons.ChevronLeft,
@@ -146,16 +135,31 @@ fun MainAppBar(
                 } else {
                     PangeaLogoButton()
                 }
-                Spacer(Modifier.weight(1f))
-                IosActionCapsule { CompositionLocalProvider(LocalContentColor provides c.label) { actions() } }
-                // iOS's radio chip (Expert Mode only): on the tab roots that ask for it, and on every pushed screen.
-                val chip = LocalIosRadioChip.current
-                if (chip != null && radioChip && (showNodeChip || canNavigateUp)) {
-                    Spacer(Modifier.width(10.dp))
-                    IosRadioChip(chip, onClick = ourNode?.let { node -> { onClickChip(node) } })
+            },
+            title = {
+                if (inlineTitle) {
+                    Text(
+                        text = title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = Ios.type.headline,
+                        color = c.label,
+                    )
                 }
-            }
-        }
+            },
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IosActionCapsule { CompositionLocalProvider(LocalContentColor provides c.label) { actions() } }
+                    // iOS's radio chip (Expert Mode only): on the tab roots that ask for it, and on every pushed
+                    // screen.
+                    val chip = LocalIosRadioChip.current
+                    if (chip != null && radioChip && (showNodeChip || canNavigateUp)) {
+                        Spacer(Modifier.width(10.dp))
+                        IosRadioChip(chip, onClick = ourNode?.let { node -> { onClickChip(node) } })
+                    }
+                }
+            },
+        )
         if (!inlineTitle) LargeTitle(title, subtitle)
         Spacer(Modifier.height(8.dp))
         EventPaletteStrip(palette = eventTheme?.palette.orEmpty(), height = EVENT_BRAND_RULE_HEIGHT)

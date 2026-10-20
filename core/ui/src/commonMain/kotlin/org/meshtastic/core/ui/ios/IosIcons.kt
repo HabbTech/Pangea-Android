@@ -1432,6 +1432,19 @@ object IosIcons {
         }
     }
 
+    /** `plus.square`: add an item. */
+    val PlusSquare: ImageVector by lazy {
+        icon("ios.plusSquare") {
+            stroked(width = 1.5f) {
+                roundRect(3.5f, 3.5f, 20.5f, 20.5f, 3.6f)
+                moveTo(12f, 7.6f)
+                lineTo(12f, 16.4f)
+                moveTo(7.6f, 12f)
+                lineTo(16.4f, 12f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

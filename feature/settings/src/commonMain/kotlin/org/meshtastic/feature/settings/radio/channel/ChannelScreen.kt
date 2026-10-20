@@ -16,31 +16,23 @@
  */
 package org.meshtastic.feature.settings.radio.channel
 
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,8 +46,10 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.launch
@@ -65,37 +59,40 @@ import org.meshtastic.core.model.Channel
 import org.meshtastic.core.model.ConnectionState
 import org.meshtastic.core.model.firstSetupDefaultFor
 import org.meshtastic.core.navigation.Route
-import org.meshtastic.core.navigation.SettingsRoute
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.add
 import org.meshtastic.core.resources.apply
 import org.meshtastic.core.resources.are_you_sure_change_default
 import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.cant_change_no_radio
-import org.meshtastic.core.resources.edit
 import org.meshtastic.core.resources.generate_qr_code
 import org.meshtastic.core.resources.modem_preset
-import org.meshtastic.core.resources.navigate_into_label
-import org.meshtastic.core.resources.replace
+import org.meshtastic.core.resources.pangea_add_channels
+import org.meshtastic.core.resources.pangea_channel
+import org.meshtastic.core.resources.pangea_encrypted
+import org.meshtastic.core.resources.pangea_include
+import org.meshtastic.core.resources.pangea_replace_channels
+import org.meshtastic.core.resources.pangea_share_qr_link
+import org.meshtastic.core.resources.qr_code
 import org.meshtastic.core.resources.reset
 import org.meshtastic.core.resources.reset_to_defaults
 import org.meshtastic.core.resources.share_channels
 import org.meshtastic.core.resources.share_channels_add_hint
 import org.meshtastic.core.resources.share_channels_replace_hint
 import org.meshtastic.core.resources.share_channels_subject
-import org.meshtastic.core.ui.component.AdaptiveTwoPane
-import org.meshtastic.core.ui.component.ChannelSelection
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.component.PreferenceFooter
 import org.meshtastic.core.ui.component.QrDialog
-import org.meshtastic.core.ui.icon.ChevronRight
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.QrCode
+import org.meshtastic.core.ui.component.SecurityIcon
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosSwitch
 import org.meshtastic.core.ui.qr.ScannedQrCodeDialog
+import org.meshtastic.core.ui.util.rememberQrCodePainter
+import org.meshtastic.core.ui.util.rememberShareText
 import org.meshtastic.core.ui.util.rememberShowToastResource
 import org.meshtastic.feature.settings.channel.ChannelViewModel
-import org.meshtastic.feature.settings.navigation.ConfigRoute
 import org.meshtastic.feature.settings.navigation.getNavRouteFrom
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
@@ -250,14 +247,24 @@ fun ChannelScreen(
         )
     }
 
+    val c = Ios.colors
+    val shareText = rememberShareText()
+    val shareSubject = stringResource(Res.string.share_channels_subject)
+    val shareUri = channelShareState.uriString(selectedChannelSet)
+    val qrPainter = rememberQrCodePainter(shareUri, QR_RENDER_PX)
+    // iOS's Generate QR Code page: white, an inline title, the channel table, the replace/add toggle, sharing, and
+    // the code itself. Android keeps Reset at the foot.
     Scaffold(
+        containerColor = c.background,
         topBar = {
             MainAppBar(
-                title = "",
+                title = stringResource(Res.string.generate_qr_code),
                 ourNode = null,
                 showNodeChip = false,
                 canNavigateUp = true,
                 onNavigateUp = onNavigateUp,
+                background = c.background,
+                inlineTitle = true,
                 actions = {},
                 onClickChip = {},
             )
@@ -268,41 +275,42 @@ fun ChannelScreen(
             state = listState,
             modifier = Modifier.padding(innerPadding),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            item {
-                ChannelListView(
-                    enabled = enabled,
-                    channelSet = channelSet,
-                    modemPresetName = modemPresetName,
-                    channelSelections = channelSelections,
-                    onClickEdit = {
-                        isWaiting = true
-                        radioConfigViewModel.setResponseStateLoading(ConfigRoute.CHANNELS)
-                    },
-                    onClickShare = {
-                        viewModel.trackShare()
-                        showShareDialog = true
-                    },
-                )
-            }
-            item {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                    SegmentedButton(
-                        label = { Text(text = stringResource(Res.string.replace)) },
-                        onClick = { channelShareState.shouldAdd = false },
-                        selected = !channelShareState.shouldAdd,
-                        shape = SegmentedButtonDefaults.itemShape(0, 2),
-                    )
-                    SegmentedButton(
-                        label = { Text(text = stringResource(Res.string.add)) },
-                        onClick = { channelShareState.shouldAdd = true },
-                        selected = channelShareState.shouldAdd,
-                        shape = SegmentedButtonDefaults.itemShape(1, 2),
+            item { ChannelTableHeader() }
+            channelSet.settings.forEachIndexed { index, channel ->
+                item {
+                    val channelObj = Channel(channel, channelSet.lora_config ?: Config.LoRaConfig.Builder().build())
+                    ChannelTableRow(
+                        title = channel.name.ifEmpty { modemPresetName },
+                        included = channelSelections[index],
+                        enabled = enabled,
+                        onIncludedChange = {
+                            if (it || selectedChannelSet.settings.size > 1) channelSelections[index] = it
+                        },
+                        channel = channelObj,
                     )
                 }
             }
             item {
-                // Replace is destructive on the recipient's radio, and the two words alone do not say so.
+                IosButton(
+                    text =
+                    stringResource(
+                        if (channelShareState.shouldAdd) {
+                            Res.string.pangea_add_channels
+                        } else {
+                            Res.string.pangea_replace_channels
+                        },
+                    ),
+                    icon = IosIcons.ArrowsCirclepath,
+                    style = IosButtonStyle.Tinted,
+                    textStyle = Ios.type.title3,
+                    onClick = { channelShareState.shouldAdd = !channelShareState.shouldAdd },
+                    modifier = Modifier.padding(top = 24.dp).height(54.dp),
+                )
+            }
+            item {
+                // Replace is destructive on the recipient's radio, and the button's words alone do not say so.
                 Text(
                     text =
                     stringResource(
@@ -312,37 +320,116 @@ fun ChannelScreen(
                             Res.string.share_channels_replace_hint
                         },
                     ),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(top = 18.dp),
+                    style = Ios.type.body,
+                    color = c.secondaryLabel,
+                    textAlign = TextAlign.Center,
                 )
             }
             item {
-                ModemPresetInfo(
-                    modemPresetName = modemPresetName,
-                    // Navigate straight to the LoRa screen: it re-reads the route on entry and renders from the
-                    // connect-time snapshot meanwhile, so pre-fetching behind a progress dialog here bought nothing
-                    // and could strand the user on an empty dialog when the read completed before the dialog
-                    // observed it.
-                    onClick = { onNavigate(SettingsRoute.LoRa) },
-                )
-            }
-            item {
-                PreferenceFooter(
-                    modifier = Modifier,
+                IosButton(
+                    text = stringResource(Res.string.pangea_share_qr_link),
+                    icon = IosIcons.ShareUp,
+                    style = IosButtonStyle.Tinted,
+                    textStyle = Ios.type.title3,
                     enabled = enabled,
-                    negativeText = stringResource(Res.string.reset),
-                    onNegativeClicked = {
+                    onClick = {
+                        viewModel.trackShare()
+                        shareText(shareUri, shareSubject)
+                    },
+                    modifier = Modifier.padding(top = 14.dp).height(54.dp),
+                )
+            }
+            item {
+                Image(
+                    painter = qrPainter,
+                    contentDescription = stringResource(Res.string.qr_code),
+                    modifier =
+                    Modifier.padding(top = 24.dp).size(QR_SIZE).clickable {
+                        viewModel.trackShare()
+                        showShareDialog = true
+                    },
+                )
+            }
+            item {
+                IosButton(
+                    text = stringResource(Res.string.reset),
+                    style = IosButtonStyle.Plain,
+                    enabled = enabled,
+                    onClick = {
                         focusManager.clearFocus()
                         showResetDialog = true
                     },
-                    positiveText = null,
-                    onPositiveClicked = {},
+                    modifier = Modifier.padding(top = 24.dp, bottom = 96.dp),
                 )
             }
         }
     }
 }
+
+/** The column names over iOS's channel table. */
+@Composable
+private fun ChannelTableHeader() {
+    val c = Ios.colors
+    Row(Modifier.fillMaxWidth().padding(horizontal = TABLE_INSET), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            stringResource(Res.string.pangea_include),
+            style = Ios.type.footnote.copy(fontWeight = FontWeight.SemiBold),
+            color = c.label,
+            modifier = Modifier.width(TABLE_INCLUDE),
+        )
+        Text(
+            stringResource(Res.string.pangea_channel),
+            style = Ios.type.footnote.copy(fontWeight = FontWeight.SemiBold),
+            color = c.label,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            stringResource(Res.string.pangea_encrypted),
+            style = Ios.type.footnote.copy(fontWeight = FontWeight.SemiBold),
+            color = c.label,
+            modifier = Modifier.width(TABLE_ENCRYPTED),
+        )
+    }
+}
+
+/** One channel in the table: whether the code includes it, its name, and its lock. */
+@Composable
+private fun ChannelTableRow(
+    title: String,
+    included: Boolean,
+    enabled: Boolean,
+    onIncludedChange: (Boolean) -> Unit,
+    channel: Channel,
+) {
+    val c = Ios.colors
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = TABLE_INSET, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.width(TABLE_INCLUDE + 8.dp)) {
+            IosSwitch(checked = included, onCheckedChange = onIncludedChange, enabled = enabled)
+        }
+        Text(
+            title,
+            style = Ios.type.title3,
+            color = c.label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Box(Modifier.width(TABLE_ENCRYPTED)) {
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) { SecurityIcon(channel) }
+        }
+    }
+}
+
+/** The table's outer columns, and the code's size on screen and when drawn. */
+private val TABLE_INSET = 40.dp
+private val TABLE_INCLUDE = 62.dp
+private val TABLE_ENCRYPTED = 86.dp
+private val QR_SIZE = 330.dp
+private const val QR_RENDER_PX = 840
 
 @Composable
 private fun ChannelShareDialog(uriString: String, onDismiss: () -> Unit) {
@@ -352,84 +439,4 @@ private fun ChannelShareDialog(uriString: String, onDismiss: () -> Unit) {
         onDismiss = onDismiss,
         shareSubject = stringResource(Res.string.share_channels_subject),
     )
-}
-
-@Composable
-private fun ChannelListView(
-    enabled: Boolean,
-    channelSet: ChannelSet,
-    modemPresetName: String,
-    channelSelections: SnapshotStateList<Boolean>,
-    onClickEdit: () -> Unit = {},
-    onClickShare: () -> Unit = {},
-) {
-    val selectedChannelSet =
-        channelSet
-            .newBuilder()
-            .also { wb ->
-                wb.settings = channelSet.settings.filterIndexed { i, _ -> channelSelections.getOrNull(i) == true }
-            }
-            .build()
-
-    AdaptiveTwoPane(
-        first = {
-            channelSet.settings.forEachIndexed { index, channel ->
-                val channelObj = Channel(channel, channelSet.lora_config ?: Config.LoRaConfig.Builder().build())
-                val displayTitle = if (channel.name.isEmpty()) modemPresetName else channel.name
-
-                ChannelSelection(
-                    index = index,
-                    title = displayTitle,
-                    enabled = enabled,
-                    isSelected = channelSelections[index],
-                    onSelected = {
-                        if (it || selectedChannelSet.settings.size > 1) {
-                            channelSelections[index] = it
-                        }
-                    },
-                    channel = channelObj,
-                )
-            }
-            OutlinedButton(
-                onClick = onClickEdit,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = enabled,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-            ) {
-                Text(text = stringResource(Res.string.edit))
-            }
-        },
-        second = {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Button(onClick = onClickShare, modifier = Modifier.padding(16.dp), enabled = enabled) {
-                    Icon(imageVector = MeshtasticIcons.QrCode, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(Res.string.generate_qr_code))
-                }
-            }
-        },
-    )
-}
-
-@Composable
-private fun ModemPresetInfo(modemPresetName: String, onClick: () -> Unit) {
-    Row(
-        modifier =
-        Modifier.padding(top = 12.dp)
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .border(1.dp, MaterialTheme.colorScheme.onBackground, RoundedCornerShape(8.dp)),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(16.dp)) {
-            Text(text = stringResource(Res.string.modem_preset), fontSize = 16.sp)
-            Text(text = modemPresetName, fontSize = 14.sp)
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Icon(
-            imageVector = MeshtasticIcons.ChevronRight,
-            contentDescription = stringResource(Res.string.navigate_into_label),
-            modifier = Modifier.padding(end = 16.dp),
-        )
-    }
 }

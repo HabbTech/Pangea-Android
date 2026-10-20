@@ -63,6 +63,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -105,6 +106,7 @@ fun IosButton(
     enabled: Boolean = true,
     large: Boolean = false,
     icon: ImageVector? = null,
+    textStyle: TextStyle = Ios.type.body,
 ) {
     val c = Ios.colors
     val container =
@@ -132,10 +134,12 @@ fun IosButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(19.dp))
-            Spacer(Modifier.width(6.dp))
+            // The symbol scales with the words, as SF Symbols do.
+            val iconSize = with(LocalDensity.current) { (textStyle.fontSize * ICON_TO_TEXT).toDp() }
+            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(iconSize))
+            Spacer(Modifier.width(iconSize / 3))
         }
-        Text(text, style = Ios.type.body, color = content, textAlign = TextAlign.Center)
+        Text(text, style = textStyle, color = content, textAlign = TextAlign.Center)
     }
 }
 
@@ -460,3 +464,6 @@ fun IosBadge(count: Int, modifier: Modifier = Modifier, color: Color = Ios.color
         )
     }
 }
+
+/** A button symbol's size against its text, about 19 dp beside 17 sp body text. */
+private const val ICON_TO_TEXT = 1.12f

@@ -270,17 +270,17 @@ fun IosTopBar(
             .height(TopBarHeight)
             .padding(horizontal = IosInset),
     ) {
-        // iOS centres the title between the bar's buttons when it fits, and otherwise starts it after the leading
-        // ones.
-        Layout(
+        IosBarLayout(
             modifier = Modifier.fillMaxSize(),
-            content = {
+            leading = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     leading?.invoke(this)
                 }
+            },
+            title = {
                 Box(Modifier.alpha(if (titleContent != null) 1f else titleAlpha)) {
                     if (titleContent != null) {
                         titleContent()
@@ -294,6 +294,8 @@ fun IosTopBar(
                         )
                     }
                 }
+            },
+            trailing = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -302,28 +304,49 @@ fun IosTopBar(
                     chip?.let { IosRadioChip(it) }
                 }
             },
-        ) { measurables, constraints ->
-            val width = constraints.maxWidth
-            val height = constraints.maxHeight
-            val loose = Constraints(maxWidth = width, maxHeight = height)
-            val lead = measurables[0].measure(loose)
-            val trail = measurables[2].measure(loose)
-            val gap = TITLE_GAP.roundToPx()
-            val side = maxOf(lead.width, trail.width, MIN_TITLE_INSET.roundToPx() - gap)
-            val centered = (width - 2 * (side + gap)).coerceAtLeast(0)
-            val free = (width - lead.width - trail.width - 2 * gap).coerceAtLeast(0)
-            val titlePlaceable = measurables[1].measure(Constraints(maxWidth = free, maxHeight = height))
-            layout(width, height) {
-                lead.placeRelative(0, (height - lead.height) / 2)
-                trail.placeRelative(width - trail.width, (height - trail.height) / 2)
-                val x =
-                    if (titlePlaceable.width <= centered) {
-                        (width - titlePlaceable.width) / 2
-                    } else {
-                        lead.width + gap
-                    }
-                titlePlaceable.placeRelative(x, (height - titlePlaceable.height) / 2)
-            }
+        )
+    }
+}
+
+/**
+ * A bar's row as iOS lays it out: [leading] at the start, [trailing] at the end, and [title] centred between them when
+ * it fits, otherwise starting just after [leading] and shortened to the room left.
+ */
+@Composable
+fun IosBarLayout(
+    leading: @Composable () -> Unit,
+    title: @Composable () -> Unit,
+    trailing: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Layout(
+        modifier = modifier,
+        content = {
+            Box { leading() }
+            Box { title() }
+            Box { trailing() }
+        },
+    ) { measurables, constraints ->
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        val loose = Constraints(maxWidth = width, maxHeight = height)
+        val lead = measurables[0].measure(loose)
+        val trail = measurables[2].measure(loose)
+        val gap = TITLE_GAP.roundToPx()
+        val side = maxOf(lead.width, trail.width, MIN_TITLE_INSET.roundToPx() - gap)
+        val centered = (width - 2 * (side + gap)).coerceAtLeast(0)
+        val free = (width - lead.width - trail.width - 2 * gap).coerceAtLeast(0)
+        val titlePlaceable = measurables[1].measure(Constraints(maxWidth = free, maxHeight = height))
+        layout(width, height) {
+            lead.placeRelative(0, (height - lead.height) / 2)
+            trail.placeRelative(width - trail.width, (height - trail.height) / 2)
+            val x =
+                if (titlePlaceable.width <= centered) {
+                    (width - titlePlaceable.width) / 2
+                } else {
+                    lead.width + gap
+                }
+            titlePlaceable.placeRelative(x, (height - titlePlaceable.height) / 2)
         }
     }
 }

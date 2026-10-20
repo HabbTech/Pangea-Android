@@ -18,6 +18,7 @@ package org.meshtastic.feature.settings.radio.channel.component
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Icon
@@ -29,10 +30,12 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.delete
+import org.meshtastic.core.resources.pangea_primary_channel
+import org.meshtastic.core.resources.pangea_secondary_channel
 import org.meshtastic.core.ui.component.ChannelItem
 import org.meshtastic.core.ui.component.SecurityIcon
-import org.meshtastic.core.ui.icon.Close
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.proto.ChannelSettings
 import org.meshtastic.proto.Config
 
@@ -46,12 +49,24 @@ internal fun ChannelCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     sharesLocation: Boolean,
-) = ChannelItem(index = index, title = title, enabled = enabled, onClick = onEditClick) {
+    modifier: Modifier = Modifier,
+) = ChannelItem(
+    modifier = modifier,
+    index = index,
+    title = title,
+    enabled = enabled,
+    onClick = onEditClick,
+    subtitle =
+    stringResource(if (index == 0) Res.string.pangea_primary_channel else Res.string.pangea_secondary_channel),
+    titleIcon = { SecurityIcon(channelSettings, loraConfig) },
+) {
+    // iOS marks the channel that carries your position with a green arrow.
     if (sharesLocation) {
         Icon(
-            imageVector = vectorResource(ChannelIcons.LOCATION.icon),
+            imageVector = IosIcons.LocationFill,
             contentDescription = stringResource(ChannelIcons.LOCATION.descriptionResId),
-            modifier = Modifier.wrapContentSize().padding(horizontal = 5.dp),
+            tint = Ios.colors.systemGreen,
+            modifier = Modifier.padding(horizontal = 5.dp).size(18.dp),
         )
     }
     if (channelSettings.uplink_enabled) {
@@ -68,13 +83,14 @@ internal fun ChannelCard(
             modifier = Modifier.wrapContentSize().padding(horizontal = 5.dp),
         )
     }
-    SecurityIcon(channelSettings, loraConfig)
-    Spacer(modifier = Modifier.width(10.dp))
+    Spacer(modifier = Modifier.width(6.dp))
+    // Android keeps delete on the row (iOS deletes from the channel's own sheet).
     IconButton(onClick = { onDeleteClick() }) {
         Icon(
-            imageVector = MeshtasticIcons.Close,
+            imageVector = IosIcons.Xmark,
             contentDescription = stringResource(Res.string.delete),
-            modifier = Modifier.wrapContentSize(),
+            tint = Ios.colors.tertiaryLabel,
+            modifier = Modifier.size(16.dp),
         )
     }
 }

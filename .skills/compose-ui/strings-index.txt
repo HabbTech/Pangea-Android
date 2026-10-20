@@ -1327,6 +1327,8 @@ packet_authenticity_strict_summary
 packet_authenticity_strict_title
 packet_authenticity_unsupported
 ### PANGEA ###
+pangea_add_channel
+pangea_add_channels
 pangea_add_nickname
 pangea_add_to_contacts
 pangea_all_emoji
@@ -1346,6 +1348,8 @@ pangea_bt_nodes_title
 pangea_buy_radios
 pangea_buy_radios_description
 pangea_canned_messages
+pangea_channel
+pangea_channel_legend
 pangea_chat_icon
 pangea_chat_icon_hint
 pangea_choose_photo
@@ -1382,6 +1386,7 @@ pangea_device_screen
 pangea_device_section
 pangea_display_name
 pangea_edit_profile
+pangea_encrypted
 pangea_error_invalid
 pangea_error_not_connected
 pangea_error_own_code
@@ -1445,6 +1450,7 @@ pangea_help_units_locale
 pangea_help_whats_new
 pangea_hops_away
 pangea_import_configuration
+pangea_include
 pangea_increase
 pangea_invite_from
 pangea_invite_people
@@ -1495,6 +1501,7 @@ pangea_photo_connect_radio
 pangea_photo_offer
 pangea_photo_waiting_radio
 pangea_pin
+pangea_primary_channel
 pangea_profile
 pangea_profile_row_subtitle
 pangea_profile_save_restarts_radio
@@ -1514,11 +1521,13 @@ pangea_region_footer
 pangea_region_label
 pangea_remove_from_contacts
 pangea_remove_photo
+pangea_replace_channels
 pangea_role_value
 pangea_save_contact
 pangea_save_to_radio_failed
 pangea_saving_to_radio
 pangea_scan_qr
+pangea_secondary_channel
 pangea_send_message
 pangea_send_notifications
 pangea_setting_up
@@ -1531,6 +1540,7 @@ pangea_share
 pangea_share_group
 pangea_share_group_subtitle
 pangea_share_qr_code
+pangea_share_qr_link
 pangea_show_qr
 pangea_show_signal_details
 pangea_show_signal_details_summary

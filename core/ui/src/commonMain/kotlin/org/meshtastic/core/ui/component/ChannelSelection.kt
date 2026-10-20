@@ -32,8 +32,7 @@ fun ChannelSelection(
     isSelected: Boolean,
     onSelected: (Boolean) -> Unit,
     channel: Channel,
-) = ChannelItem(index = index, title = title, enabled = enabled) {
-    SecurityIcon(channel)
+) = ChannelItem(index = index, title = title, enabled = enabled, titleIcon = { SecurityIcon(channel) }) {
     Spacer(modifier = Modifier.width(10.dp))
     Checkbox(enabled = enabled, checked = isSelected, onCheckedChange = onSelected)
 }

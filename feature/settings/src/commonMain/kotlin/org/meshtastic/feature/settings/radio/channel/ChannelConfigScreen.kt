@@ -21,18 +21,20 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,10 +47,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.Capabilities
@@ -57,21 +60,24 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.add
 import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.channels
-import org.meshtastic.core.resources.press_and_drag
+import org.meshtastic.core.resources.pangea_add_channel
+import org.meshtastic.core.resources.pangea_channel_legend
 import org.meshtastic.core.resources.send
 import org.meshtastic.core.ui.component.MainAppBar
+import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.PreferenceFooter
 import org.meshtastic.core.ui.component.dragContainer
 import org.meshtastic.core.ui.component.dragDropItemsIndexed
 import org.meshtastic.core.ui.component.rememberDragDropState
-import org.meshtastic.core.ui.icon.Add
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
 import org.meshtastic.feature.settings.radio.ResponseState
 import org.meshtastic.feature.settings.radio.channel.component.ChannelCard
-import org.meshtastic.feature.settings.radio.channel.component.ChannelConfigHeader
-import org.meshtastic.feature.settings.radio.channel.component.ChannelLegend
 import org.meshtastic.feature.settings.radio.channel.component.ChannelLegendDialog
 import org.meshtastic.feature.settings.radio.channel.component.ChannelPskEditState
 import org.meshtastic.feature.settings.radio.channel.component.EditChannelDialog
@@ -201,97 +207,105 @@ private fun ChannelConfigScreen(
                 onClickChip = {},
             )
         },
-        floatingActionButton = {
-            if (maxChannels > settingsListInput.size) {
-                FloatingActionButton(
-                    onClick = {
-                        if (maxChannels > settingsListInput.size) {
-                            settingsListInput.add(Channel.default.settings)
-                            pskEditStatesInput.add(ChannelPskEditState(canGeneratePskForName = true))
-                            showEditChannelDialog = settingsListInput.lastIndex
-                        }
-                    },
-                    modifier = Modifier.padding(16.dp),
-                ) {
-                    Icon(MeshtasticIcons.Add, stringResource(Res.string.add))
-                }
-            }
-        },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column {
-                ChannelConfigHeader(
-                    frequency =
-                    if (loraConfig.override_frequency != 0f) {
-                        loraConfig.override_frequency
-                    } else {
-                        primaryChannel.radioFreq
-                    },
-                    slot =
-                    if (loraConfig.channel_num != 0) {
-                        loraConfig.channel_num
-                    } else {
-                        primaryChannel.channelNum
-                    },
-                )
-                Text(
-                    text = stringResource(Res.string.press_and_drag),
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(start = 16.dp),
-                )
-
-                ChannelLegend { showChannelLegendDialog = true }
-
                 val locationChannel = determineLocationSharingChannel(capabilities, settingsListInput.toList())
 
                 LazyColumn(
                     modifier =
                     Modifier.dragContainer(dragDropState = dragDropState, haptics = LocalHapticFeedback.current),
                     state = listState,
-                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
                 ) {
+                    // One white card, as on iOS: the channels (still drag-to-reorder, Android's own), then Add Channel.
                     dragDropItemsIndexed(items = settingsListInput, dragDropState = dragDropState) {
                             index,
                             channel,
                             isDragging,
                         ->
-                        ChannelCard(
-                            index = index,
-                            title = channel.name.ifEmpty { modemPresetName },
-                            enabled = enabled,
-                            channelSettings = channel,
-                            loraConfig = loraConfig,
-                            onEditClick = { showEditChannelDialog = index },
-                            onDeleteClick = {
-                                settingsListInput.removeAt(index)
-                                pskEditStatesInput.removeAt(index)
-                            },
-                            sharesLocation = locationChannel == index,
-                        )
+                        val shape =
+                            if (index == 0) {
+                                RoundedCornerShape(topStart = CARD_CORNER, topEnd = CARD_CORNER)
+                            } else {
+                                RectangleShape
+                            }
+                        Column(Modifier.clip(shape).background(Ios.colors.groupedRow)) {
+                            if (index > 0) PreferenceDivider(startIndent = 74.dp)
+                            ChannelCard(
+                                index = index,
+                                title = channel.name.ifEmpty { modemPresetName },
+                                enabled = enabled,
+                                channelSettings = channel,
+                                loraConfig = loraConfig,
+                                onEditClick = { showEditChannelDialog = index },
+                                onDeleteClick = {
+                                    settingsListInput.removeAt(index)
+                                    pskEditStatesInput.removeAt(index)
+                                },
+                                sharesLocation = locationChannel == index,
+                            )
+                        }
                     }
-                    item { Spacer(modifier = Modifier.weight(1f)) }
                     item {
-                        PreferenceFooter(
-                            enabled = enabled && isEditing,
-                            negativeText = stringResource(Res.string.cancel),
-                            onNegativeClicked = {
-                                focusManager.clearFocus()
-                                settingsListInput.replaceWith(settingsList)
-                                pskEditStatesInput.replaceAll(settingsList.size, ChannelPskEditState())
-                            },
-                            positiveText = stringResource(Res.string.send),
-                            onPositiveClicked = {
-                                focusManager.clearFocus()
-                                val committedSettings = settingsListInput.toList()
-                                onPositiveClicked(committedSettings)
-                                settingsListInput.replaceWith(committedSettings)
-                                pskEditStatesInput.replaceAll(committedSettings.size, ChannelPskEditState())
-                            },
-                        )
+                        Column(
+                            Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(bottomStart = CARD_CORNER, bottomEnd = CARD_CORNER))
+                                .background(Ios.colors.groupedRow)
+                                .padding(top = 6.dp, bottom = 22.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            PreferenceDivider()
+                            Spacer(Modifier.height(18.dp))
+                            IosButton(
+                                text = stringResource(Res.string.pangea_add_channel),
+                                icon = IosIcons.PlusSquare,
+                                style = IosButtonStyle.Tinted,
+                                textStyle = Ios.type.title3,
+                                // iOS's large control: 50 dp tall.
+                                modifier = Modifier.height(54.dp).widthIn(min = 178.dp),
+                                enabled = enabled && maxChannels > settingsListInput.size,
+                                onClick = {
+                                    settingsListInput.add(Channel.default.settings)
+                                    pskEditStatesInput.add(ChannelPskEditState(canGeneratePskForName = true))
+                                    showEditChannelDialog = settingsListInput.lastIndex
+                                },
+                            )
+                        }
+                    }
+                    // Android sends channel edits together: Cancel and Send appear once something has changed.
+                    if (isEditing) {
+                        item {
+                            PreferenceFooter(
+                                enabled = enabled && isEditing,
+                                negativeText = stringResource(Res.string.cancel),
+                                onNegativeClicked = {
+                                    focusManager.clearFocus()
+                                    settingsListInput.replaceWith(settingsList)
+                                    pskEditStatesInput.replaceAll(settingsList.size, ChannelPskEditState())
+                                },
+                                positiveText = stringResource(Res.string.send),
+                                onPositiveClicked = {
+                                    focusManager.clearFocus()
+                                    val committedSettings = settingsListInput.toList()
+                                    onPositiveClicked(committedSettings)
+                                    settingsListInput.replaceWith(committedSettings)
+                                    pskEditStatesInput.replaceAll(committedSettings.size, ChannelPskEditState())
+                                },
+                            )
+                        }
                     }
                 }
             }
 
+            // iOS's legend button, floating at the bottom left.
+            IosGlassIconButton(
+                icon = IosIcons.QuestionCircle,
+                contentDescription = stringResource(Res.string.pangea_channel_legend),
+                onClick = { showChannelLegendDialog = true },
+                tint = Ios.colors.tint,
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 22.dp),
+            )
             AnimatedVisibility(
                 visible = maxChannels > settingsListInput.size,
                 modifier = Modifier.align(Alignment.BottomEnd),
@@ -374,3 +388,6 @@ private fun determineLocationSharingChannel(capabilities: Capabilities, settings
     }
     return output
 }
+
+/** iOS's inset-grouped card corners. */
+private val CARD_CORNER = 26.dp
