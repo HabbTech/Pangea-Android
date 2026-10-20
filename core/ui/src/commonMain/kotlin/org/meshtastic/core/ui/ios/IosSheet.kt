@@ -18,6 +18,8 @@
 
 package org.meshtastic.core.ui.ios
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -27,13 +29,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 /** iOS 26 sheet corners. */
@@ -43,7 +50,8 @@ private val SheetCorner = 38.dp
  * An iOS sheet at its large detent: rounded top, no drag handle, the [IosSheetHeader] (**Cancel** at the left when
  * [cancelLabel] is set, the [title], an optional emphasized [actionLabel] at the right), then [content]. [grouped]
  * gives the grey background used when the content is white cards (Profile); otherwise the sheet is white. A smaller
- * [heightFraction] is a sheet at iOS's medium detent; [header] replaces the standard one.
+ * [heightFraction] is a sheet at iOS's medium detent; [header] replaces the standard one; [grabber] adds the drag
+ * capsule.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +66,8 @@ fun IosSheet(
     grouped: Boolean = false,
     heightFraction: Float = 0.93f,
     header: (@Composable () -> Unit)? = null,
+    // The grey capsule iOS draws at the top of a sheet that can be dragged between detents (the map's sheets).
+    grabber: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = Ios.colors
@@ -74,6 +84,15 @@ fun IosSheet(
         contentWindowInsets = { WindowInsets(0) },
     ) {
         Column(modifier.fillMaxWidth().fillMaxHeight(heightFraction).navigationBarsPadding().imePadding()) {
+            if (grabber) {
+                Box(
+                    Modifier.padding(top = 5.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .size(width = 36.dp, height = 5.dp)
+                        .clip(CircleShape)
+                        .background(c.tertiaryLabel),
+                )
+            }
             if (header != null) {
                 header()
             } else {

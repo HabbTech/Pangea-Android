@@ -1435,6 +1435,7 @@
     <string name="pangea_display_name">Your name</string>
     <string name="pangea_edit_profile">Edit</string>
     <string name="pangea_encrypted">Encrypted</string>
+    <string name="pangea_encrypted_only">Encrypted</string>
     <string name="pangea_environment_metrics_log">Environment Metrics Log</string>
     <string name="pangea_environment_sensor_options">Environment Sensor Options</string>
     <string name="pangea_error_invalid">That doesn't look like a Pangea code or link.</string>
@@ -1449,6 +1450,7 @@
     <string name="pangea_exchange_user_info">Exchange User Info</string>
     <string name="pangea_expert_mode_footer">Looking for the node list, mesh map, or radio settings? Turn on Expert Mode to see them.</string>
     <string name="pangea_export_configuration">Export Configuration</string>
+    <string name="pangea_favorites">Favorites</string>
     <string name="pangea_find_contact">Find a contact</string>
     <string name="pangea_find_in_conversation">Find in conversation</string>
     <string name="pangea_find_node">Find a node</string>
@@ -1528,7 +1530,11 @@
     <string name="pangea_map_3d">3D</string>
     <string name="pangea_map_empty_body">Radios appear here once someone shares where they are. Yours shows when your phone or radio has a location.</string>
     <string name="pangea_map_empty_title">No Locations Yet</string>
+    <string name="pangea_map_filters">Map Filters</string>
+    <string name="pangea_map_options">Map Options</string>
+    <string name="pangea_map_overlays">Map Overlays</string>
     <string name="pangea_map_report">Map Report</string>
+    <string name="pangea_map_style">Map Style</string>
     <string name="pangea_match_device">Match Device</string>
     <string name="pangea_message_someone">Message Someone</string>
     <string name="pangea_message_someone_title">Message someone</string>
@@ -1553,6 +1559,8 @@
     <string name="pangea_node_section">Node</string>
     <string name="pangea_nodes_count">Nodes (%1$d)</string>
     <string name="pangea_notify_messages_desc">Know right away when someone messages you.</string>
+    <string name="pangea_offline_maps">Offline Maps</string>
+    <string name="pangea_online">Online</string>
     <string name="pangea_open_chat">Message</string>
     <string name="pangea_open_settings">Open Settings</string>
     <string name="pangea_optional_gpio">Optional GPIO</string>
@@ -1650,6 +1658,7 @@
     <string name="pangea_show_signal_details">Show signal on messages</string>
     <string name="pangea_show_signal_details_summary">Show each received message's signal, hops and route under its bubble. The iPhone app keeps these in the message's details.</string>
     <string name="pangea_signal_value">Signal %1$s</string>
+    <string name="pangea_signed">Signed</string>
     <string name="pangea_signed_node">Signed node</string>
     <string name="pangea_start_chat">Start Chat</string>
     <string name="pangea_start_group">Start a Group</string>
@@ -1698,6 +1707,8 @@
     <string name="pangea_verified_contact">Verified contact</string>
     <string name="pangea_verified_in_person">Verified in person</string>
     <string name="pangea_version_line">Version: %1$s</string>
+    <string name="pangea_via_mqtt">Via Mqtt</string>
+    <string name="pangea_waypoints">Waypoints</string>
     <string name="pangea_welcome_offgrid_desc">Pangea radios talk to each other directly, so you can chat where phones have no signal.</string>
     <string name="pangea_welcome_offgrid_title">Message Without Cell Service</string>
     <string name="pangea_welcome_private_desc">Your chats are encrypted, and Pangea doesn't collect personal information.</string>

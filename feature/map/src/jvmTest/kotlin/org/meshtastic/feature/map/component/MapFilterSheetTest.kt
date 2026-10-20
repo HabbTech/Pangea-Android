@@ -21,6 +21,7 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.v2.runComposeUiTest
 import org.meshtastic.feature.map.BaseMapViewModel
 import org.meshtastic.feature.map.LastHeardFilter
@@ -79,7 +80,7 @@ class MapFilterSheetTest {
         val toggled = mutableListOf<Config.DeviceConfig.Role>()
         setContent { MapFilterSheetContent(filterState = state(), actions = actions { toggled += it }) }
 
-        onNodeWithTag(roleFilterChipTestTag(router)).performClick()
+        onNodeWithTag(roleFilterChipTestTag(router)).performScrollTo().performClick()
 
         runOnIdle { assertEquals(listOf(router), toggled) }
     }

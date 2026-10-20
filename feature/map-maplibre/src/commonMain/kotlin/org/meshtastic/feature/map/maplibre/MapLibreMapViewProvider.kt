@@ -70,11 +70,10 @@ import org.meshtastic.feature.map.component.MapFilterSheet
 import org.meshtastic.feature.map.component.OfflineStatusBanner
 import org.meshtastic.feature.map.component.mapFilterActions
 import org.meshtastic.feature.map.layers.LayerOpacityStore
-import org.meshtastic.feature.map.maplibre.component.BasemapButton
 import org.meshtastic.feature.map.maplibre.component.BasemapSelection
 import org.meshtastic.feature.map.maplibre.component.BoxAuthoringBar
 import org.meshtastic.feature.map.maplibre.component.CustomTileSourcesMenuItem
-import org.meshtastic.feature.map.maplibre.component.MapLayersButton
+import org.meshtastic.feature.map.maplibre.component.MapOptionsButton
 import org.meshtastic.feature.map.maplibre.component.MapZoom
 import org.meshtastic.feature.map.maplibre.component.OfflineMapTarget
 import org.meshtastic.feature.map.maplibre.component.WaypointDialogs
@@ -504,9 +503,10 @@ private fun BoxScope.MapToolbar(
                 )
             }
         },
-        mapTypeContent = { BasemapButton(selection = basemaps, extra = basemapMenuExtra) },
-        layersContent = {
-            MapLayersButton(
+        // Pangea: one "Map Options" sheet, as on iOS, holding the map style, overlays and offline maps.
+        mapTypeContent = {
+            MapOptionsButton(
+                selection = basemaps,
                 overlays = overlays,
                 onOverlaysChange = onOverlaysChange,
                 offlineTarget =
@@ -517,7 +517,8 @@ private fun BoxScope.MapToolbar(
                     showRegion = { box -> scope.launch { mapState.animateCameraToBounds(box) } },
                 ),
                 offlineMapsSupported = offlineMapsSupported,
-                extra = layersSheetExtra,
+                basemapExtra = basemapMenuExtra,
+                layersExtra = layersSheetExtra,
             )
         },
         onSitePlannerClick = onSitePlannerClick,

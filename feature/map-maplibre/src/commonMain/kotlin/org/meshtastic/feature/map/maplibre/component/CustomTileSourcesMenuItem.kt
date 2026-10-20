@@ -16,10 +16,8 @@
  */
 package org.meshtastic.feature.map.maplibre.component
 
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,11 +31,14 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.manage_custom_tile_sources
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.feature.map.component.CustomTileProviderManager
 import org.meshtastic.feature.map.tiles.CustomTileProviderRepository
 
 /**
- * The basemap menu's entry for editing custom raster tile sources.
+ * The Map Options sheet's entry for editing custom raster tile sources.
  *
  * Common code, so the desktop map offers it too: the editor and the store behind it are both in `feature/map` now,
  * which is what previously kept this in the Android flavour.
@@ -54,10 +55,13 @@ fun CustomTileSourcesMenuItem(modifier: Modifier = Modifier, onAddLocalMbTiles: 
 
     var sheetVisible by remember { mutableStateOf(false) }
 
-    DropdownMenuItem(
-        text = { Text(text = stringResource(Res.string.manage_custom_tile_sources)) },
-        onClick = { sheetVisible = true },
+    // A row of the Map Options sheet's style section, as an iOS form would put it.
+    IosRow(
+        title = stringResource(Res.string.manage_custom_tile_sources),
+        titleColor = Ios.colors.tint,
+        accessory = IosAccessory.Chevron,
         modifier = modifier,
+        onClick = { sheetVisible = true },
     )
 
     if (sheetVisible) {
