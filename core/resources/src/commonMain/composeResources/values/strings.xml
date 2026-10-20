@@ -1433,6 +1433,15 @@
     <string name="pangea_device_options">Device Options</string>
     <string name="pangea_device_screen">Device Screen</string>
     <string name="pangea_device_section">Device</string>
+    <string name="pangea_discovery_beacon_channels">Beacon Channels</string>
+    <string name="pangea_discovery_beacon_footer">Private channels advertised by beacons. Selecting one tunes the scan to that mesh so its traffic can be decoded.</string>
+    <string name="pangea_discovery_dwell_duration">Dwell Duration</string>
+    <string name="pangea_discovery_dwell_header">Dwell Time Per Preset</string>
+    <string name="pangea_discovery_hero_text">Sweep modem presets to find nearby nodes and meshes, then compare what each preset heard.</string>
+    <string name="pangea_discovery_hero_title">Discover meshes around you</string>
+    <string name="pangea_discovery_legend_beacon">A beacon icon marks a preset a nearby beacon advertised.</string>
+    <string name="pangea_discovery_legend_home">A star marks your home preset, the one your radio uses now.</string>
+    <string name="pangea_discovery_modem_presets">Modem Presets</string>
     <string name="pangea_display_name">Your name</string>
     <string name="pangea_edit_profile">Edit</string>
     <string name="pangea_encrypted">Encrypted</string>

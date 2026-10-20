@@ -16,38 +16,37 @@
  */
 package org.meshtastic.feature.discovery.ui.component
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import org.meshtastic.core.model.schemaLabelRes
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.mesh_beacon_channels_title
 import org.meshtastic.core.resources.mesh_beacon_preset_indicator
-import org.meshtastic.core.ui.icon.CellTower
+import org.meshtastic.core.resources.pangea_discovery_beacon_channels
+import org.meshtastic.core.resources.pangea_discovery_beacon_footer
+import org.meshtastic.core.ui.icon.Lock
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.feature.discovery.BeaconChannel
 
-private val CARD_PADDING = 16.dp
-private val ROW_SPACING = 8.dp
-
 /**
- * Scan-setup section listing distinct custom channels that beacons advertised (Apple 014-mesh-beacons FR-007).
- * Selecting a row adds a custom-channel scan target that tunes the radio's primary channel to that name during its
- * dwell.
+ * Scan-setup section listing distinct custom channels that beacons advertised (Apple 014-mesh-beacons FR-007), drawn as
+ * the iPhone app's: a lock, the channel's name over its preset, the beacon symbol, and a check while chosen. Selecting
+ * a row adds a custom-channel scan target that tunes the radio's primary channel to that name during its dwell.
  */
 @Composable
 fun BeaconChannelsCard(
@@ -57,36 +56,56 @@ fun BeaconChannelsCard(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(CARD_PADDING), verticalArrangement = Arrangement.spacedBy(ROW_SPACING)) {
-            Text(
-                text = stringResource(Res.string.mesh_beacon_channels_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() },
-            )
+    val c = Ios.colors
+    val beaconDesc = stringResource(Res.string.mesh_beacon_preset_indicator)
+    Column(modifier.fillMaxWidth()) {
+        IosSection(
+            footer = stringResource(Res.string.pangea_discovery_beacon_footer),
+            headerContent = {
+                DiscoverySectionHeader(
+                    IosIcons.RadiowavesLeftRight,
+                    stringResource(Res.string.pangea_discovery_beacon_channels),
+                    inset = 12.dp,
+                )
+            },
+        ) {
             channels.forEach { channel ->
                 val selected = channel.id in selectedIds
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onToggle(channel.id) },
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(ROW_SPACING),
-                ) {
-                    Checkbox(checked = selected, onCheckedChange = { onToggle(channel.id) }, enabled = enabled)
-                    Icon(
-                        imageVector = MeshtasticIcons.CellTower,
-                        contentDescription = stringResource(Res.string.mesh_beacon_preset_indicator),
-                    )
-                    Column {
-                        Text(text = channel.name, style = MaterialTheme.typography.bodyMedium)
-                        channel.preset?.let {
-                            Text(
-                                text = it.displayName(),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                IosRow(
+                    title = channel.name,
+                    subtitle =
+                    channel.preset?.let { preset ->
+                        preset.modemPreset.schemaLabelRes()?.let { stringResource(it) } ?: preset.displayName()
+                    },
+                    leading = {
+                        Icon(
+                            MeshtasticIcons.Lock,
+                            contentDescription = null,
+                            tint = c.secondaryLabel,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    },
+                    leadingWidth = 40.dp,
+                    accessory =
+                    IosAccessory.Custom {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                IosIcons.RadiowavesLeftRight,
+                                contentDescription = beaconDesc,
+                                tint = c.systemBlue,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(Modifier.width(16.dp))
+                            Icon(
+                                IosIcons.Checkmark,
+                                contentDescription = null,
+                                tint = if (selected) c.systemBlue else c.systemBlue.copy(alpha = 0f),
+                                modifier = Modifier.padding(end = 4.dp).size(20.dp),
                             )
                         }
-                    }
-                }
+                    },
+                    onClick = if (enabled) ({ onToggle(channel.id) }) else null,
+                )
             }
         }
     }

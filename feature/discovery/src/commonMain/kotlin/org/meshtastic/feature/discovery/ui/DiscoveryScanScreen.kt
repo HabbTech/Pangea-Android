@@ -20,29 +20,10 @@ package org.meshtastic.feature.discovery.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,17 +39,17 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.util.beaconJoinOption
 import org.meshtastic.core.model.util.toJoinChannelSet
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.back
 import org.meshtastic.core.resources.discovery_analysing_results
 import org.meshtastic.core.resources.discovery_cancelling_scan
 import org.meshtastic.core.resources.discovery_connection_warning
-import org.meshtastic.core.resources.discovery_dwell_time
 import org.meshtastic.core.resources.discovery_dwell_time_description
 import org.meshtastic.core.resources.discovery_keep_screen_awake
 import org.meshtastic.core.resources.discovery_keep_screen_awake_description
@@ -89,30 +70,38 @@ import org.meshtastic.core.resources.discovery_start_scan_reason_no_presets
 import org.meshtastic.core.resources.discovery_start_scan_reason_not_connected
 import org.meshtastic.core.resources.discovery_stop_scan
 import org.meshtastic.core.resources.mesh_beacon_invitations_title
+import org.meshtastic.core.resources.pangea_discovery_dwell_duration
+import org.meshtastic.core.resources.pangea_discovery_dwell_header
+import org.meshtastic.core.resources.pangea_discovery_hero_text
+import org.meshtastic.core.resources.pangea_discovery_hero_title
+import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.SwitchPreference
-import org.meshtastic.core.ui.icon.ArrowBack
-import org.meshtastic.core.ui.icon.Close
-import org.meshtastic.core.ui.icon.History
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.PlayArrow
-import org.meshtastic.core.ui.icon.Warning
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosPushedScreen
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.util.KeepScreenOn
 import org.meshtastic.feature.discovery.DiscoveryScanState
 import org.meshtastic.feature.discovery.DiscoveryViewModel
 import org.meshtastic.feature.discovery.ui.component.BeaconChannelsCard
+import org.meshtastic.feature.discovery.ui.component.DiscoverySectionHeader
 import org.meshtastic.feature.discovery.ui.component.DwellProgressIndicator
 import org.meshtastic.feature.discovery.ui.component.MeshBeaconInvitationCard
 import org.meshtastic.feature.discovery.ui.component.PresetPickerCard
 import org.meshtastic.proto.ChannelSet
 
-private val CONTENT_PADDING = 16.dp
-private val SECTION_SPACING = 16.dp
-
 private val DWELL_OPTIONS = listOf(1, 5, 15, 30, 45, 60, 90, 120, 180)
 
-/** Main scan screen for the Local Mesh Discovery feature. */
+/**
+ * Main scan screen for the Local Mesh Discovery feature, laid out as the iPhone app's: a large title with the history
+ * button in the bar, a hero line, the preset grid, beacon channels, the dwell time, and the scan button at the end.
+ */
 @Suppress("LongMethod")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiscoveryScanScreen(
     viewModel: DiscoveryViewModel,
@@ -153,144 +142,140 @@ fun DiscoveryScanScreen(
         }
     }
 
-    Scaffold(
+    IosPushedScreen(
+        title = stringResource(Res.string.discovery_local_mesh),
+        onBack = onNavigateUp,
         modifier = modifier,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(Res.string.discovery_local_mesh)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(
-                            imageVector = MeshtasticIcons.ArrowBack,
-                            contentDescription = stringResource(Res.string.back),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNavigateToHistory) {
-                        Icon(
-                            imageVector = MeshtasticIcons.History,
-                            contentDescription = stringResource(Res.string.discovery_scan_history),
-                        )
-                    }
-                },
+        largeTitle = true,
+        trailing = {
+            IosGlassIconButton(
+                IosIcons.ClockArrowCirclepath,
+                contentDescription = stringResource(Res.string.discovery_scan_history),
+                onClick = onNavigateToHistory,
+                tint = Ios.colors.tint,
             )
         },
-        bottomBar = {
-            androidx.compose.material3.Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp,
-                shadowElevation = 8.dp,
-            ) {
-                androidx.compose.foundation.layout.Box(
-                    modifier = Modifier.padding(horizontal = CONTENT_PADDING, vertical = 16.dp),
-                ) {
-                    ScanButton(
-                        scanState = scanState,
-                        isConnected = isConnected,
-                        hasPresetsSelected = selectedPresets.isNotEmpty() || selectedBeaconChannels.isNotEmpty(),
-                        is24GhzUnsupported = isLora24Region && is24GhzBlocked,
-                        onStart = viewModel::startScan,
-                        onStop = viewModel::stopScan,
+    ) {
+        item(key = "hero") { DiscoveryHero() }
+
+        // Connection warning
+        if (!isConnected) {
+            item(key = "connection_warning") { ConnectionWarningCard() }
+        }
+
+        if (!isScanning) {
+            // Received Mesh Beacon invitations from other meshes
+            if (beaconOffers.isNotEmpty()) {
+                item(key = "invitations_header") {
+                    Text(
+                        text = stringResource(Res.string.mesh_beacon_invitations_title),
+                        style = Ios.type.headline,
+                        color = Ios.colors.secondaryLabel,
+                        modifier =
+                        Modifier.padding(start = 32.dp, end = 32.dp, top = 20.dp, bottom = 8.dp).semantics {
+                            heading()
+                        },
+                    )
+                }
+                items(beaconOffers.size, key = { "invitation_${beaconOffers[it].key}" }) { index ->
+                    val offer = beaconOffers[index]
+                    val joinOption =
+                        remember(offer, currentLora, currentChannels) {
+                            offer.beacon.beaconJoinOption(currentLora, currentChannels)
+                        }
+                    MeshBeaconInvitationCard(
+                        offer = offer,
+                        joinOption = joinOption,
+                        onJoin = { offer.beacon.toJoinChannelSet(joinOption, currentLora)?.let(onJoinOffer) },
+                        onDiscover = { viewModel.discoverOffer(offer) },
+                        onDismiss = { viewModel.dismissOffer(offer) },
+                        modifier = Modifier.padding(horizontal = IosInset, vertical = 4.dp),
                     )
                 }
             }
-        },
-    ) { padding ->
-        LazyColumn(
-            contentPadding = padding,
-            verticalArrangement = Arrangement.spacedBy(SECTION_SPACING),
-            modifier = Modifier.fillMaxSize().padding(horizontal = CONTENT_PADDING).padding(top = SECTION_SPACING),
-        ) {
-            // Connection warning
-            if (!isConnected) {
-                item(key = "connection_warning") { ConnectionWarningCard() }
+
+            // Preset picker
+            item(key = "preset_picker") {
+                PresetPickerCard(
+                    selectedPresets = selectedPresets,
+                    homePreset = homePreset,
+                    onTogglePreset = viewModel::togglePreset,
+                    enabled = true,
+                    beaconPresets = beaconPresets,
+                )
             }
 
-            if (!isScanning) {
-                // Received Mesh Beacon invitations from other meshes
-                if (beaconOffers.isNotEmpty()) {
-                    item(key = "invitations_header") {
-                        Text(
-                            text = stringResource(Res.string.mesh_beacon_invitations_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.semantics { heading() },
-                        )
-                    }
-                    items(beaconOffers, key = { "invitation_${it.key}" }) { offer ->
-                        val joinOption =
-                            remember(offer, currentLora, currentChannels) {
-                                offer.beacon.beaconJoinOption(currentLora, currentChannels)
-                            }
-                        MeshBeaconInvitationCard(
-                            offer = offer,
-                            joinOption = joinOption,
-                            onJoin = { offer.beacon.toJoinChannelSet(joinOption, currentLora)?.let(onJoinOffer) },
-                            onDiscover = { viewModel.discoverOffer(offer) },
-                            onDismiss = { viewModel.dismissOffer(offer) },
-                        )
-                    }
-                }
-
-                // Preset picker
-                item(key = "preset_picker") {
-                    PresetPickerCard(
-                        selectedPresets = selectedPresets,
-                        homePreset = homePreset,
-                        onTogglePreset = viewModel::togglePreset,
-                        enabled = true,
-                        beaconPresets = beaconPresets,
-                    )
-                }
-
-                // Beacon channels — custom channels advertised by beacons (hidden when none recorded)
-                if (beaconChannels.isNotEmpty()) {
-                    item(key = "beacon_channels") {
-                        BeaconChannelsCard(
-                            channels = beaconChannels,
-                            selectedIds = selectedBeaconChannels,
-                            onToggle = viewModel::toggleBeaconChannel,
-                            enabled = true,
-                        )
-                    }
-                }
-
-                // Dwell time picker
-                item(key = "dwell_picker") {
-                    DwellTimePicker(
-                        selectedMinutes = dwellMinutes,
-                        onMinuteSelect = viewModel::setDwellDuration,
+            // Beacon channels — custom channels advertised by beacons (hidden when none recorded)
+            if (beaconChannels.isNotEmpty()) {
+                item(key = "beacon_channels") {
+                    BeaconChannelsCard(
+                        channels = beaconChannels,
+                        selectedIds = selectedBeaconChannels,
+                        onToggle = viewModel::toggleBeaconChannel,
                         enabled = true,
                     )
                 }
+            }
 
-                // Keep awake toggle
-                item(key = "keep_awake_toggle") {
-                    KeepAwakeToggleCard(keepAwake = keepScreenAwake, onToggle = { keepScreenAwake = it })
+            // Dwell time picker
+            item(key = "dwell_picker") {
+                DwellTimePicker(selectedMinutes = dwellMinutes, onMinuteSelect = viewModel::setDwellDuration)
+            }
+
+            // Keep awake toggle
+            item(key = "keep_awake_toggle") {
+                IosSection {
+                    SwitchPreference(
+                        title = stringResource(Res.string.discovery_keep_screen_awake),
+                        summary = stringResource(Res.string.discovery_keep_screen_awake_description),
+                        checked = keepScreenAwake,
+                        enabled = true,
+                        onCheckedChange = { keepScreenAwake = it },
+                    )
                 }
             }
+        }
 
-            // Scan progress section
-            if (isScanning) {
-                item(key = "scan_progress") { ScanProgressSection(scanState = scanState) }
-            }
+        // Scan progress section
+        if (isScanning) {
+            item(key = "scan_progress") { ScanProgressSection(scanState = scanState) }
+        }
 
-            // Bottom spacer
-            item { Spacer(modifier = Modifier.height(SECTION_SPACING)) }
+        item(key = "scan_button") {
+            ScanButton(
+                scanState = scanState,
+                isConnected = isConnected,
+                hasPresetsSelected = selectedPresets.isNotEmpty() || selectedBeaconChannels.isNotEmpty(),
+                is24GhzUnsupported = isLora24Region && is24GhzBlocked,
+                onStart = viewModel::startScan,
+                onStop = viewModel::stopScan,
+                modifier = Modifier.padding(start = IosInset, end = IosInset, top = 24.dp),
+            )
         }
     }
 }
 
+/** The page's opening, as on iOS: the radio-waves symbol, what the screen is for, and how. */
 @Composable
-private fun KeepAwakeToggleCard(keepAwake: Boolean, onToggle: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
-        SwitchPreference(
-            title = stringResource(Res.string.discovery_keep_screen_awake),
-            summary = stringResource(Res.string.discovery_keep_screen_awake_description),
-            checked = keepAwake,
-            enabled = true,
-            onCheckedChange = onToggle,
+private fun DiscoveryHero() {
+    val c = Ios.colors
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(IosIcons.RadiowavesLeftRight, contentDescription = null, tint = c.tint, modifier = Modifier.size(64.dp))
+        Text(
+            stringResource(Res.string.pangea_discovery_hero_title),
+            style = Ios.type.title3.copy(fontWeight = FontWeight.SemiBold),
+            color = c.label,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            stringResource(Res.string.pangea_discovery_hero_text),
+            style = Ios.type.subheadline,
+            color = c.secondaryLabel,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -298,83 +283,43 @@ private fun KeepAwakeToggleCard(keepAwake: Boolean, onToggle: (Boolean) -> Unit,
 @Composable
 private fun ConnectionWarningCard(modifier: Modifier = Modifier) {
     val warningDescription = stringResource(Res.string.discovery_connection_warning)
-    ElevatedCard(
+    IosSection(
         modifier =
-        modifier.fillMaxWidth().semantics(mergeDescendants = true) {
+        modifier.semantics(mergeDescendants = true) {
             contentDescription = warningDescription
             liveRegion = LiveRegionMode.Polite
         },
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(CONTENT_PADDING),
-        ) {
-            Icon(
-                imageVector = MeshtasticIcons.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-            )
-            Column {
-                Text(
-                    text = stringResource(Res.string.discovery_not_connected),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-                Text(
-                    text = stringResource(Res.string.discovery_not_connected_description),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+        IosRow(
+            title = stringResource(Res.string.discovery_not_connected),
+            subtitle = stringResource(Res.string.discovery_not_connected_description),
+            icon = IosIcons.WarningFill,
+            iconTint = Ios.colors.systemOrange,
+            titleColor = Ios.colors.systemOrange,
+        )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** "Dwell Time Per Preset": how long each preset is listened to, as a menu row. */
 @Composable
-private fun DwellTimePicker(
-    selectedMinutes: Int,
-    onMinuteSelect: (Int) -> Unit,
-    enabled: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(CONTENT_PADDING)) {
-            Text(
-                text = stringResource(Res.string.discovery_dwell_time),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() },
+private fun DwellTimePicker(selectedMinutes: Int, onMinuteSelect: (Int) -> Unit) {
+    IosSection(
+        headerContent = {
+            DiscoverySectionHeader(
+                IosIcons.Clock,
+                stringResource(Res.string.pangea_discovery_dwell_header),
+                inset = 12.dp,
             )
-            Text(
-                text = stringResource(Res.string.discovery_dwell_time_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { if (enabled) expanded = it }) {
-                OutlinedTextField(
-                    value = "$selectedMinutes min",
-                    onValueChange = {},
-                    readOnly = true,
-                    enabled = enabled,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-                )
-                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    DWELL_OPTIONS.forEach { minutes ->
-                        DropdownMenuItem(
-                            text = { Text("$minutes min") },
-                            onClick = {
-                                onMinuteSelect(minutes)
-                                expanded = false
-                            },
-                        )
-                    }
-                }
-            }
-        }
+        },
+    ) {
+        DropDownPreference(
+            title = stringResource(Res.string.pangea_discovery_dwell_duration),
+            summary = stringResource(Res.string.discovery_dwell_time_description),
+            enabled = true,
+            items = DWELL_OPTIONS.map { it to "$it min" },
+            selectedItem = selectedMinutes,
+            onItemSelected = onMinuteSelect,
+        )
     }
 }
 
@@ -390,14 +335,14 @@ private fun ScanButton(
 ) {
     val isScanning = scanState !is DiscoveryScanState.Idle
     if (isScanning) {
-        OutlinedButton(
+        IosButton(
+            text = stringResource(Res.string.discovery_stop_scan),
             onClick = onStop,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            style = IosButtonStyle.Tinted,
+            large = true,
+            icon = IosIcons.Xmark,
             modifier = modifier.fillMaxWidth(),
-        ) {
-            Icon(imageVector = MeshtasticIcons.Close, contentDescription = null)
-            Text(stringResource(Res.string.discovery_stop_scan), modifier = Modifier.padding(start = 8.dp))
-        }
+        )
     } else {
         val isEnabled = isConnected && hasPresetsSelected && !is24GhzUnsupported
         val disabledReason =
@@ -415,57 +360,34 @@ private fun ScanButton(
                 Modifier.fillMaxWidth()
             }
         Column(modifier = modifier) {
-            Button(onClick = onStart, enabled = isEnabled, modifier = buttonModifier) {
-                Icon(imageVector = MeshtasticIcons.PlayArrow, contentDescription = null)
-                Text(stringResource(Res.string.discovery_start_scan), modifier = Modifier.padding(start = 8.dp))
-            }
+            IosButton(
+                text = stringResource(Res.string.discovery_start_scan),
+                onClick = onStart,
+                enabled = isEnabled,
+                large = true,
+                modifier = buttonModifier,
+            )
             if (!isEnabled && disabledReason.isNotEmpty()) {
                 Text(
                     text = disabledReason,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
             }
         }
     }
 }
 
-@Suppress("LongMethod")
 @Composable
 private fun ScanProgressSection(scanState: DiscoveryScanState, modifier: Modifier = Modifier) {
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+    IosSection(header = stringResource(Res.string.discovery_scan_progress), modifier = modifier) {
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(CONTENT_PADDING).semantics { liveRegion = LiveRegionMode.Polite },
+            modifier = Modifier.fillMaxWidth().padding(16.dp).semantics { liveRegion = LiveRegionMode.Polite },
         ) {
-            Text(
-                text = stringResource(Res.string.discovery_scan_progress),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() },
-            )
             when (scanState) {
-                is DiscoveryScanState.Preparing -> {
-                    Text(
-                        text = stringResource(Res.string.discovery_preparing),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
-                is DiscoveryScanState.Shifting -> {
-                    Text(
-                        text = stringResource(Res.string.discovery_shifting_to, scanState.presetName),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
-                is DiscoveryScanState.Reconnecting -> {
-                    Text(
-                        text = stringResource(Res.string.discovery_reconnecting, scanState.presetName),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
                 is DiscoveryScanState.Dwell -> {
                     DwellProgressIndicator(
                         presetName = scanState.presetName,
@@ -474,39 +396,40 @@ private fun ScanProgressSection(scanState: DiscoveryScanState, modifier: Modifie
                     )
                 }
 
-                is DiscoveryScanState.Analysis -> {
-                    Text(
-                        text = stringResource(Res.string.discovery_analysing_results),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
-                is DiscoveryScanState.Restoring -> {
-                    Text(
-                        text = stringResource(Res.string.discovery_restoring_preset),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
-                is DiscoveryScanState.Cancelling -> {
-                    Text(
-                        text = stringResource(Res.string.discovery_cancelling_scan),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-
-                is DiscoveryScanState.Failed -> {
-                    Text(
-                        text = stringResource(Res.string.discovery_scan_failed, scanState.reason),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-
                 is DiscoveryScanState.Complete,
                 is DiscoveryScanState.Idle,
                 -> Unit
+
+                else -> ScanStateLine(scanState)
             }
         }
     }
+}
+
+/** A step of the scan that is a line of text rather than a countdown. */
+@Composable
+private fun ScanStateLine(scanState: DiscoveryScanState) {
+    val c = Ios.colors
+    val (text, color) =
+        when (scanState) {
+            is DiscoveryScanState.Preparing -> stringResource(Res.string.discovery_preparing) to c.label
+
+            is DiscoveryScanState.Shifting ->
+                stringResource(Res.string.discovery_shifting_to, scanState.presetName) to c.label
+
+            is DiscoveryScanState.Reconnecting ->
+                stringResource(Res.string.discovery_reconnecting, scanState.presetName) to c.label
+
+            is DiscoveryScanState.Analysis -> stringResource(Res.string.discovery_analysing_results) to c.label
+
+            is DiscoveryScanState.Restoring -> stringResource(Res.string.discovery_restoring_preset) to c.label
+
+            is DiscoveryScanState.Cancelling -> stringResource(Res.string.discovery_cancelling_scan) to c.label
+
+            is DiscoveryScanState.Failed ->
+                stringResource(Res.string.discovery_scan_failed, scanState.reason) to c.systemRed
+
+            else -> return
+        }
+    Text(text = text, style = Ios.type.body, color = color)
 }

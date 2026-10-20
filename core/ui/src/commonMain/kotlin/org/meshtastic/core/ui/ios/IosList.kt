@@ -89,13 +89,17 @@ fun IosSection(
     modifier: Modifier = Modifier,
     header: String? = null,
     footer: String? = null,
+    // Replaces the grey [header] with a header of the screen's own (Local Mesh Discovery's tinted ones).
+    headerContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val separator = Ios.colors.separator
     // Written during layout and read during draw in the same frame; not snapshot state, so it can't loop.
     val lines = remember { ArrayList<Pair<Float, Float>>() }
     Column(modifier.fillMaxWidth().padding(horizontal = IosInset)) {
-        if (header != null) {
+        if (headerContent != null) {
+            headerContent()
+        } else if (header != null) {
             Text(
                 header,
                 style = Ios.type.headline,
