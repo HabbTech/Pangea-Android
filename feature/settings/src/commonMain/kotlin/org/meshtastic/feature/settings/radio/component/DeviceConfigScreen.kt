@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
@@ -56,7 +55,6 @@ import org.meshtastic.core.model.util.isDebug
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.accept
 import org.meshtastic.core.resources.are_you_sure
-import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.clear_time_zone
 import org.meshtastic.core.resources.config_device_ledHeartbeatEnabled_summary
 import org.meshtastic.core.resources.config_device_tripleClickAsAdHocPing_summary
@@ -89,6 +87,7 @@ import org.meshtastic.core.resources.triple_click_adhoc_ping
 import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.component.InsetDivider
+import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
@@ -97,6 +96,7 @@ import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PhoneAndroid
 import org.meshtastic.core.ui.icon.role
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.util.annotatedStringFromHtml
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -353,7 +353,7 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
 }
 
 @Composable
-fun RouterRoleConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+fun RouterRoleConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, modifier: Modifier = Modifier) {
     val dialogTitle = stringResource(Res.string.are_you_sure)
     val annotatedDialogText =
         annotatedStringFromHtml(
@@ -363,24 +363,24 @@ fun RouterRoleConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
 
     var confirmed by rememberSaveable { mutableStateOf(false) }
 
-    AlertDialog(
-        title = { Text(text = dialogTitle) },
+    MeshtasticDialog(
+        modifier = modifier,
+        title = dialogTitle,
         text = {
             Column {
-                Text(text = annotatedDialogText)
+                Text(text = annotatedDialogText, style = Ios.type.subheadline, color = Ios.colors.label)
                 Row(
                     modifier = Modifier.fillMaxWidth().clickable(true) { confirmed = !confirmed },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(checked = confirmed, onCheckedChange = { confirmed = it })
-                    Text(stringResource(Res.string.i_know_what_i_m_doing))
+                    Text(stringResource(Res.string.i_know_what_i_m_doing), style = Ios.type.subheadline)
                 }
             }
         },
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = onConfirm, enabled = confirmed) { Text(stringResource(Res.string.accept)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
+        confirmTextRes = Res.string.accept,
+        confirmEnabled = confirmed,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }

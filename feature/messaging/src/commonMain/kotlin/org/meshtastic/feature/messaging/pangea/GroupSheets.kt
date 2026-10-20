@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -59,7 +58,6 @@ import org.meshtastic.core.repository.PendingGroupInvite
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.done
-import org.meshtastic.core.resources.okay
 import org.meshtastic.core.resources.pangea_create_group
 import org.meshtastic.core.resources.pangea_decline
 import org.meshtastic.core.resources.pangea_error_not_connected
@@ -84,6 +82,7 @@ import org.meshtastic.core.resources.pangea_leave_group_confirm
 import org.meshtastic.core.resources.pangea_new_group
 import org.meshtastic.core.resources.pangea_share_group
 import org.meshtastic.core.resources.pangea_share_group_subtitle
+import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.component.QrDialog
 import org.meshtastic.core.ui.icon.Group
 import org.meshtastic.core.ui.icon.MeshtasticIcons
@@ -244,18 +243,13 @@ fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave:
         )
     }
     if (confirmLeave) {
-        AlertDialog(
-            onDismissRequest = { confirmLeave = false },
-            title = { Text(stringResource(Res.string.pangea_leave_group)) },
-            text = { Text(stringResource(Res.string.pangea_leave_group_confirm, group.name)) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.leave(group.index, onLeave) }) {
-                    Text(stringResource(Res.string.pangea_leave_group))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmLeave = false }) { Text(stringResource(Res.string.cancel)) }
-            },
+        MeshtasticDialog(
+            title = stringResource(Res.string.pangea_leave_group),
+            message = stringResource(Res.string.pangea_leave_group_confirm, group.name),
+            confirmText = stringResource(Res.string.pangea_leave_group),
+            confirmDestructive = true,
+            onConfirm = { viewModel.leave(group.index, onLeave) },
+            onDismiss = { confirmLeave = false },
         )
     }
     GroupErrorDialog(viewModel)
@@ -265,11 +259,7 @@ fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave:
 private fun GroupErrorDialog(viewModel: PangeaChatsViewModel) {
     val error by viewModel.groupError.collectAsStateWithLifecycle()
     val shown = error ?: return
-    AlertDialog(
-        onDismissRequest = viewModel::clearGroupError,
-        text = { Text(stringResource(shown.message)) },
-        confirmButton = { TextButton(onClick = viewModel::clearGroupError) { Text(stringResource(Res.string.okay)) } },
-    )
+    MeshtasticDialog(message = stringResource(shown.message), onConfirm = viewModel::clearGroupError)
 }
 
 val GroupChatError.message: StringResource
@@ -306,20 +296,14 @@ fun PendingPangeaLink(viewModel: PangeaChatsViewModel, onStartChat: () -> Unit, 
         }
         return
     }
-    AlertDialog(
-        onDismissRequest = viewModel::consumeLink,
-        title = { Text(group.name) },
-        text = { Text(stringResource(Res.string.pangea_join_group_prompt, group.name)) },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    viewModel.consumeLink()
-                    viewModel.join(group) { index -> onJoin(viewModel.groupContactKey(index)) }
-                },
-            ) {
-                Text(stringResource(Res.string.pangea_join))
-            }
+    MeshtasticDialog(
+        title = group.name,
+        message = stringResource(Res.string.pangea_join_group_prompt, group.name),
+        confirmText = stringResource(Res.string.pangea_join),
+        onConfirm = {
+            viewModel.consumeLink()
+            viewModel.join(group) { index -> onJoin(viewModel.groupContactKey(index)) }
         },
-        dismissButton = { TextButton(onClick = viewModel::consumeLink) { Text(stringResource(Res.string.cancel)) } },
+        onDismiss = viewModel::consumeLink,
     )
 }

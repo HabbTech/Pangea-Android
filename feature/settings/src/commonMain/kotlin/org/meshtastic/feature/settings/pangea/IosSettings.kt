@@ -22,12 +22,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,7 +52,6 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.about_pangea
 import org.meshtastic.core.resources.ambient_lighting
 import org.meshtastic.core.resources.bottom_nav_settings
-import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.display
 import org.meshtastic.core.resources.expert_mode
 import org.meshtastic.core.resources.expert_mode_summary
@@ -89,6 +86,7 @@ import org.meshtastic.core.resources.theme_dark
 import org.meshtastic.core.resources.theme_light
 import org.meshtastic.core.resources.user
 import org.meshtastic.core.ui.component.AvatarPalette
+import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.PangeaLogoButton
 import org.meshtastic.core.ui.component.rememberAvatarBitmap
@@ -263,23 +261,16 @@ fun IosSettingsScreen(
 
     if (editing) ProfileEditorSheet(state, onSave = profileViewModel::save, onDismiss = { editing = false })
     if (confirmForget) {
-        AlertDialog(
-            onDismissRequest = { confirmForget = false },
-            title = { Text(stringResource(Res.string.pangea_forget_radio_title)) },
-            text = { Text(stringResource(Res.string.pangea_forget_radio_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmForget = false
-                        profileViewModel.forgetRadio()
-                    },
-                ) {
-                    Text(stringResource(Res.string.pangea_forget_radio), color = c.systemRed)
-                }
+        MeshtasticDialog(
+            titleRes = Res.string.pangea_forget_radio_title,
+            messageRes = Res.string.pangea_forget_radio_message,
+            confirmTextRes = Res.string.pangea_forget_radio,
+            confirmDestructive = true,
+            onConfirm = {
+                confirmForget = false
+                profileViewModel.forgetRadio()
             },
-            dismissButton = {
-                TextButton(onClick = { confirmForget = false }) { Text(stringResource(Res.string.cancel)) }
-            },
+            onDismiss = { confirmForget = false },
         )
     }
 }

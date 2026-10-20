@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -38,7 +37,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,7 +54,6 @@ import org.meshtastic.core.common.util.DateFormatter
 import org.meshtastic.core.database.entity.DiscoverySessionEntity
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.back
-import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.delete
 import org.meshtastic.core.resources.discovery_delete_session
 import org.meshtastic.core.resources.discovery_delete_session_confirm
@@ -65,6 +62,7 @@ import org.meshtastic.core.resources.discovery_history
 import org.meshtastic.core.resources.discovery_scan_complete
 import org.meshtastic.core.resources.discovery_scan_incomplete
 import org.meshtastic.core.resources.discovery_unique_nodes
+import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.CheckCircle
 import org.meshtastic.core.ui.icon.Delete
@@ -210,16 +208,13 @@ private fun CompletionStatusIcon(status: String) {
 
 @Composable
 private fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(Res.string.discovery_delete_session)) },
-        text = { Text(stringResource(Res.string.discovery_delete_session_confirm)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
+    MeshtasticDialog(
+        titleRes = Res.string.discovery_delete_session,
+        messageRes = Res.string.discovery_delete_session_confirm,
+        confirmTextRes = Res.string.delete,
+        confirmDestructive = true,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
     )
 }
 

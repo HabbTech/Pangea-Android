@@ -94,6 +94,9 @@ enum class IosButtonStyle {
 
     /** `.bordered` without a tint: grey fill, label-coloured words (Copy, Backup, Restore). */
     Gray,
+
+    /** A destructive action (`role: .destructive`): grey fill, red words (Delete, Forget This Radio). */
+    Destructive,
 }
 
 /**
@@ -115,7 +118,7 @@ fun IosButton(
     val container =
         when {
             style == IosButtonStyle.Plain -> Color.Transparent
-            !enabled || style == IosButtonStyle.Gray -> c.fieldFill
+            !enabled || style == IosButtonStyle.Gray || style == IosButtonStyle.Destructive -> c.fieldFill
             style == IosButtonStyle.Filled -> c.tint
             else -> c.tint.copy(alpha = if (c.isDark) 0.24f else 0.15f)
         }
@@ -124,6 +127,7 @@ fun IosButton(
             !enabled -> c.tertiaryLabel
             style == IosButtonStyle.Filled -> c.onTint
             style == IosButtonStyle.Gray -> c.label
+            style == IosButtonStyle.Destructive -> c.systemRed
             else -> c.tint
         }
     Row(
