@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -49,13 +50,15 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.delete
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 
 /** Shared metric log/list UI components used by TracerouteLog, NeighborInfoLog, HostMetricsLog, and PositionLog. */
 @Composable
 fun MetricLogItem(icon: ImageVector, text: String, contentDescription: String, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier.fillMaxWidth().heightIn(min = 64.dp).padding(vertical = 4.dp, horizontal = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        modifier = modifier.fillMaxWidth().heightIn(min = 64.dp).padding(vertical = 4.dp, horizontal = 16.dp),
+        shape = RoundedCornerShape(CARD_CORNER),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -113,17 +116,15 @@ fun SelectableMetricCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    // An iOS card on the grouped background; a chosen one gets the tint's border and a wash of it.
+    val c = Ios.colors
     Card(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp).clickable { onClick() },
-        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).clickable { onClick() },
+        shape = RoundedCornerShape(CARD_CORNER),
+        border = if (isSelected) BorderStroke(2.dp, c.tint) else null,
         colors =
         CardDefaults.cardColors(
-            containerColor =
-            if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            },
+            containerColor = if (isSelected) c.tint.copy(alpha = SELECTED_WASH) else c.groupedRow,
         ),
     ) {
         SelectionContainer { content() }
@@ -139,3 +140,8 @@ fun MetricValueRow(color: Color, text: String, modifier: Modifier = Modifier) {
         Text(text = text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelLarge)
     }
 }
+
+private val CARD_CORNER = 16.dp
+
+/** How strongly a chosen card is washed with the tint. */
+private const val SELECTED_WASH = 0.12f

@@ -331,8 +331,9 @@ fun IosBarLayout(
         val height = constraints.maxHeight
         val loose = Constraints(maxWidth = width, maxHeight = height)
         val lead = measurables[0].measure(loose)
-        val trail = measurables[2].measure(loose)
         val gap = TITLE_GAP.roundToPx()
+        // The trailing buttons get what the leading ones leave, so a crowded bar never covers the back button.
+        val trail = measurables[2].measure(loose.copy(maxWidth = (width - lead.width - gap).coerceAtLeast(0)))
         val side = maxOf(lead.width, trail.width, MIN_TITLE_INSET.roundToPx() - gap)
         val centered = (width - 2 * (side + gap)).coerceAtLeast(0)
         val free = (width - lead.width - trail.width - 2 * gap).coerceAtLeast(0)

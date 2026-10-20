@@ -16,15 +16,13 @@
  */
 package org.meshtastic.feature.node.metrics
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosSegmentedControl
 import org.meshtastic.feature.node.model.TimeFrame
 
 @Suppress("LambdaParameterEventTrailing")
@@ -37,18 +35,13 @@ fun TimeFrameSelector(
 ) {
     if (availableTimeFrames.size <= 1) return
 
-    // material3's ButtonGroup measures its overflow indicator with constraints.copy(maxWidth = remaining)
-    // without lowering minWidth, so under fillMaxWidth it throws once any chip overflows (#7141).
-    // Unfixed upstream: re-check that branch of ButtonGroup.kt before adopting it again.
-    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
-        availableTimeFrames.forEachIndexed { index, timeFrame ->
-            val text = stringResource(timeFrame.strRes)
-            SegmentedButton(
-                shape = SegmentedButtonDefaults.itemShape(index, availableTimeFrames.size),
-                onClick = { onTimeFrameSelected(timeFrame) },
-                selected = timeFrame == selectedTimeFrame,
-                label = { Text(text = text, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-            )
-        }
-    }
+    // iOS's segmented control, as the iPhone app's metric logs pick a time range.
+    val labels = availableTimeFrames.map { stringResource(it.strRes) }
+    IosSegmentedControl(
+        options = labels,
+        selectedIndex = availableTimeFrames.indexOf(selectedTimeFrame).coerceAtLeast(0),
+        onSelect = { onTimeFrameSelected(availableTimeFrames[it]) },
+        modifier = modifier.height(32.dp),
+        textStyle = Ios.type.subheadline,
+    )
 }

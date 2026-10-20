@@ -19,6 +19,7 @@ package org.meshtastic.feature.node.metrics
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -29,10 +30,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -71,6 +74,7 @@ import org.meshtastic.core.resources.collapse_chart
 import org.meshtastic.core.resources.expand_chart
 import org.meshtastic.core.resources.info
 import org.meshtastic.core.resources.logs
+import org.meshtastic.core.resources.pangea_more
 import org.meshtastic.core.resources.save
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.icon.BarChart
@@ -79,6 +83,8 @@ import org.meshtastic.core.ui.icon.List
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Save
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 
 /** Minimum x-step (in seconds) to prevent the default GCD from producing a value of 1 with irregular timestamps. */
 private const val MIN_X_STEP_SECONDS = 60.0
@@ -273,6 +279,7 @@ fun <T> BaseMetricScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
             MainAppBar(
                 title = nodeName,
@@ -281,38 +288,9 @@ fun <T> BaseMetricScreen(
                 showNodeChip = false,
                 canNavigateUp = true,
                 onNavigateUp = onNavigateUp,
+                // iOS keeps a bar to a few buttons: the screen's own, refresh, then a "…" menu for the rest.
                 actions = {
                     extraActions()
-                    if (onExportCsv != null && data.isNotEmpty()) {
-                        IconButton(onClick = onExportCsv) {
-                            Icon(
-                                imageVector = MeshtasticIcons.Save,
-                                contentDescription = stringResource(Res.string.save),
-                            )
-                        }
-                    }
-                    IconToggleButton(checked = isChartExpanded, onCheckedChange = { isChartExpanded = it }) {
-                        Icon(
-                            imageVector =
-                            if (isChartExpanded) {
-                                MeshtasticIcons.List
-                            } else {
-                                MeshtasticIcons.BarChart
-                            },
-                            contentDescription =
-                            stringResource(
-                                if (isChartExpanded) Res.string.collapse_chart else Res.string.expand_chart,
-                            ),
-                        )
-                    }
-                    if (infoData.isNotEmpty()) {
-                        IconButton(onClick = { displayInfoDialog = true }) {
-                            Icon(
-                                imageVector = MeshtasticIcons.Info,
-                                contentDescription = stringResource(Res.string.info),
-                            )
-                        }
-                    }
                     if (telemetryType != null) {
                         IconButton(
                             onClick = { onRequestTelemetry?.invoke() },
@@ -321,6 +299,12 @@ fun <T> BaseMetricScreen(
                             Icon(imageVector = MeshtasticIcons.Refresh, contentDescription = null)
                         }
                     }
+                    MetricMoreMenu(
+                        onExportCsv = onExportCsv?.takeIf { data.isNotEmpty() },
+                        isChartExpanded = isChartExpanded,
+                        onToggleChart = { isChartExpanded = !isChartExpanded },
+                        onShowInfo = if (infoData.isNotEmpty()) ({ displayInfoDialog = true }) else null,
+                    )
                 },
                 onClickChip = {},
             )
@@ -356,6 +340,59 @@ fun <T> BaseMetricScreen(
             )
 
             bottomContent()
+        }
+    }
+}
+
+/** The metric screens' "…" menu: save as CSV, show the chart or the list, and the legend. */
+@Composable
+private fun MetricMoreMenu(
+    onExportCsv: (() -> Unit)?,
+    isChartExpanded: Boolean,
+    onToggleChart: () -> Unit,
+    onShowInfo: (() -> Unit)?,
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(IosIcons.Ellipsis, contentDescription = stringResource(Res.string.pangea_more), tint = Ios.colors.tint)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            if (onExportCsv != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.save)) },
+                    leadingIcon = { Icon(MeshtasticIcons.Save, contentDescription = null) },
+                    onClick = {
+                        open = false
+                        onExportCsv()
+                    },
+                )
+            }
+            DropdownMenuItem(
+                text = {
+                    Text(stringResource(if (isChartExpanded) Res.string.collapse_chart else Res.string.expand_chart))
+                },
+                leadingIcon = {
+                    Icon(
+                        if (isChartExpanded) MeshtasticIcons.List else MeshtasticIcons.BarChart,
+                        contentDescription = null,
+                    )
+                },
+                onClick = {
+                    open = false
+                    onToggleChart()
+                },
+            )
+            if (onShowInfo != null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(Res.string.info)) },
+                    leadingIcon = { Icon(MeshtasticIcons.Info, contentDescription = null) },
+                    onClick = {
+                        open = false
+                        onShowInfo()
+                    },
+                )
+            }
         }
     }
 }
