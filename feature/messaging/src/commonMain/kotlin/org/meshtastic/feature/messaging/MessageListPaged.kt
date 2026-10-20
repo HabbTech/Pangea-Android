@@ -110,6 +110,7 @@ internal data class MessageListPagedState(
     val searchQuery: String = "",
     val translationAvailable: Boolean = false,
     val showFullMessageTimestamps: Boolean = false,
+    val showSignalDetails: Boolean = false,
     /** False for an archived conversation: existing reactions still render, but none can be added. */
     val canReact: Boolean = true,
     /** False for an archived conversation: its channel is gone, so nothing can be sent or resent into it. */
@@ -423,6 +424,7 @@ private fun RenderPagedChatMessageRow(
         emojis = message.emojis,
         showUserName = showUserName,
         showFullMessageTimestamp = state.showFullMessageTimestamps,
+        showSignalDetails = state.showSignalDetails,
         sendReaction = { emoji ->
             val hasReacted =
                 message.emojis.any { reaction ->

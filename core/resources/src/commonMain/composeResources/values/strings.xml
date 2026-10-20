@@ -1567,6 +1567,8 @@
     <string name="pangea_share_group_subtitle">Anyone who scans this can read and send messages in this group.</string>
     <string name="pangea_share_qr_code">Share QR Code</string>
     <string name="pangea_show_qr">Show QR</string>
+    <string name="pangea_show_signal_details">Show signal on messages</string>
+    <string name="pangea_show_signal_details_summary">Show each received message's signal, hops and route under its bubble. The iPhone app keeps these in the message's details.</string>
     <string name="pangea_start_chat">Start Chat</string>
     <string name="pangea_start_group">Start a Group</string>
     <string name="pangea_start_messaging">Start Messaging</string>

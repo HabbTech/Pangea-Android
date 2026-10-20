@@ -52,7 +52,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -119,7 +121,15 @@ fun IosLargeTitleScreen(
             }
             content()
         }
-        IosTopBar(title = title, showTitle = collapsed, background = background, leading = leading, trailing = trailing)
+        // A tab's root has no radio chip on iOS (Messages, Settings); Nodes, which has one, uses MainAppBar.
+        IosTopBar(
+            title = title,
+            showTitle = collapsed,
+            background = background,
+            leading = leading,
+            trailing = trailing,
+            showRadioChip = false,
+        )
     }
 }
 
@@ -236,7 +246,8 @@ fun IosPushedColumnScreen(
 
 /**
  * The top bar: glass buttons over a fade of the screen's background, and the inline title in the middle once
- * [showTitle] is true. Used by both scaffolds; use it directly for screens that aren't a list (a chat).
+ * [showTitle] is true. Used by both scaffolds; use it directly for screens that aren't a list (a chat). In Expert Mode
+ * the radio chip ends the bar, as on iOS, unless [showRadioChip] is false (the tab roots that have none).
  */
 @Composable
 fun IosTopBar(
@@ -247,8 +258,10 @@ fun IosTopBar(
     titleContent: (@Composable () -> Unit)? = null,
     leading: (@Composable RowScope.() -> Unit)? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
+    showRadioChip: Boolean = true,
 ) {
     val titleAlpha by animateFloatAsState(if (showTitle) 1f else 0f, label = "iosInlineTitle")
+    val chip = LocalIosRadioChip.current?.takeIf { showRadioChip }
     Box(
         modifier
             .fillMaxWidth()
@@ -257,31 +270,69 @@ fun IosTopBar(
             .height(TopBarHeight)
             .padding(horizontal = IosInset),
     ) {
-        Row(Modifier.align(Alignment.CenterStart), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            leading?.invoke(this)
-        }
-        Box(
-            Modifier.align(Alignment.Center)
-                .padding(horizontal = 64.dp)
-                .alpha(if (titleContent != null) 1f else titleAlpha),
-        ) {
-            if (titleContent != null) {
-                titleContent()
-            } else {
-                Text(
-                    title,
-                    style = Ios.type.headline,
-                    color = Ios.colors.label,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+        // iOS centres the title between the bar's buttons when it fits, and otherwise starts it after the leading
+        // ones.
+        Layout(
+            modifier = Modifier.fillMaxSize(),
+            content = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    leading?.invoke(this)
+                }
+                Box(Modifier.alpha(if (titleContent != null) 1f else titleAlpha)) {
+                    if (titleContent != null) {
+                        titleContent()
+                    } else {
+                        Text(
+                            title,
+                            style = Ios.type.headline,
+                            color = Ios.colors.label,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    trailing?.invoke(this)
+                    chip?.let { IosRadioChip(it) }
+                }
+            },
+        ) { measurables, constraints ->
+            val width = constraints.maxWidth
+            val height = constraints.maxHeight
+            val loose = Constraints(maxWidth = width, maxHeight = height)
+            val lead = measurables[0].measure(loose)
+            val trail = measurables[2].measure(loose)
+            val gap = TITLE_GAP.roundToPx()
+            val side = maxOf(lead.width, trail.width, MIN_TITLE_INSET.roundToPx() - gap)
+            val centered = (width - 2 * (side + gap)).coerceAtLeast(0)
+            val free = (width - lead.width - trail.width - 2 * gap).coerceAtLeast(0)
+            val titlePlaceable = measurables[1].measure(Constraints(maxWidth = free, maxHeight = height))
+            layout(width, height) {
+                lead.placeRelative(0, (height - lead.height) / 2)
+                trail.placeRelative(width - trail.width, (height - trail.height) / 2)
+                val x =
+                    if (titlePlaceable.width <= centered) {
+                        (width - titlePlaceable.width) / 2
+                    } else {
+                        lead.width + gap
+                    }
+                titlePlaceable.placeRelative(x, (height - titlePlaceable.height) / 2)
             }
-        }
-        Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            trailing?.invoke(this)
         }
     }
 }
+
+/** Space between the title and the bar's buttons. */
+private val TITLE_GAP = 10.dp
+
+/** The narrowest the title's margins get, so a short title on a bare bar still sits clear of the edges. */
+private val MIN_TITLE_INSET = 64.dp
 
 /**
  * The top of an iOS sheet: **Cancel** at the left (when [cancelLabel] is set), the [title] centred, and an optional

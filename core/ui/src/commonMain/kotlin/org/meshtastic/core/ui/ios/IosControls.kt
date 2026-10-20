@@ -276,6 +276,7 @@ fun IosSearchField(
     placeholder: String,
     modifier: Modifier = Modifier,
     glass: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val c = Ios.colors
     Row(
@@ -308,6 +309,7 @@ fun IosSearchField(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+        trailing?.invoke()
     }
 }
 

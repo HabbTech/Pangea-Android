@@ -16,9 +16,6 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -31,6 +28,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
@@ -72,6 +70,8 @@ import org.meshtastic.core.ui.ios.IosActionCapsule
 import org.meshtastic.core.ui.ios.IosGlassButton
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRadioChip
+import org.meshtastic.core.ui.ios.LocalIosRadioChip
 import org.meshtastic.core.ui.theme.LocalEventTheme
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
@@ -144,19 +144,12 @@ fun MainAppBar(
                     PangeaLogoButton()
                 }
                 Spacer(Modifier.weight(1f))
-                IosActionCapsule {
-                    CompositionLocalProvider(LocalContentColor provides c.label) {
-                        AnimatedVisibility(visible = showNodeChip, enter = fadeIn(), exit = fadeOut()) {
-                            ourNode?.let { node ->
-                                NodeChip(
-                                    modifier = Modifier.padding(horizontal = 8.dp),
-                                    node = node,
-                                    onClick = onClickChip,
-                                )
-                            }
-                        }
-                        actions()
-                    }
+                IosActionCapsule { CompositionLocalProvider(LocalContentColor provides c.label) { actions() } }
+                // iOS's radio chip (Expert Mode only): on the tab roots that ask for it, and on every pushed screen.
+                val chip = LocalIosRadioChip.current
+                if (chip != null && (showNodeChip || canNavigateUp)) {
+                    Spacer(Modifier.width(10.dp))
+                    IosRadioChip(chip, onClick = ourNode?.let { node -> { onClickChip(node) } })
                 }
             }
         }

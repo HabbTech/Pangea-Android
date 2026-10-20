@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.OutputTransformation
@@ -77,6 +76,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontFamily
@@ -130,8 +131,7 @@ import org.meshtastic.feature.messaging.component.DeleteMessageDialog
 import org.meshtastic.feature.messaging.component.FormattingToolbar
 import org.meshtastic.feature.messaging.component.MESSAGE_CHARACTER_LIMIT_BYTES
 import org.meshtastic.feature.messaging.component.MessageMenuAction
-import org.meshtastic.feature.messaging.component.MessageSearchBar
-import org.meshtastic.feature.messaging.component.MessageTopBar
+import org.meshtastic.feature.messaging.component.MessageMoreButton
 import org.meshtastic.feature.messaging.component.QuickChatRow
 import org.meshtastic.feature.messaging.component.ReplySnippet
 import org.meshtastic.feature.messaging.component.ScrollToBottomFab
@@ -218,6 +218,7 @@ fun MessageScreen(
     val messageInputState = rememberTextFieldState(message)
     val showQuickChat by viewModel.showQuickChat.collectAsStateWithLifecycle()
     val showFullMessageTimestamps by viewModel.showFullMessageTimestamps.collectAsStateWithLifecycle()
+    val showSignalDetails by viewModel.showMessageSignalDetails.collectAsStateWithLifecycle()
     val filteredCount by viewModel.filteredCount.collectAsStateWithLifecycle()
     val showFiltered by viewModel.showFiltered.collectAsStateWithLifecycle()
     val filteringDisabled = contactSettings[contactKey]?.filteringDisabled ?: false
@@ -546,7 +547,7 @@ fun MessageScreen(
                             }
                         },
                     )
-                } else if (!pangeaExpert) {
+                } else {
                     val dmNode = if (nodeId == NodeAddress.ID_BROADCAST) null else viewModel.getNode(nodeId)
                     val isEveryoneNearby =
                         channelIndex == 0 && contactKey.endsWith(NodeAddress.ID_BROADCAST) && !isRetiredChannel
@@ -576,59 +577,27 @@ fun MessageScreen(
                             isEveryoneNearby && pangeaViewModel.chatIconKey(0) != null -> ({ showChatIcon = true })
                             else -> null
                         },
-                        bellOn = everyoneBell.takeIf { isEveryoneNearby },
+                        bellOn = everyoneBell.takeIf { isEveryoneNearby && !pangeaExpert },
                         onToggleBell = pangeaViewModel::toggleEveryoneNearbyNotifications,
-                    )
-                } else if (isSearchActive) {
-                    MessageSearchBar(
-                        query = searchQuery,
-                        onQueryChange = viewModel::setSearchQuery,
-                        onClose = viewModel::closeSearch,
-                        resultCount = searchResults.size,
-                        currentIndex = searchResultIndex,
-                        onPrevious = viewModel::navigateToPreviousResult,
-                        onNext = viewModel::navigateToNextResult,
-                    )
-                } else {
-                    MessageTopBar(
-                        title = title,
-                        channelIndex = channelIndex,
-                        mismatchKey = isMismatchKey,
-                        onNavigateBack = { onEvent(MessageScreenEvent.NavigateBack) },
-                        channels = channels,
-                        channelIndexParam = channelIndex,
-                        showQuickChat = showQuickChat,
-                        onToggleQuickChat = viewModel::toggleShowQuickChat,
-                        onNavigateToQuickChatOptions = navigateToQuickChatOptions,
-                        showFilterToggle = messageFilterEnabled,
-                        filteringDisabled = filteringDisabled,
-                        onToggleFilteringDisabled = {
-                            viewModel.setContactFilteringDisabled(contactKey, !filteringDisabled)
-                        },
-                        filteredCount = filteredCount,
-                        showFiltered = showFiltered,
-                        onToggleShowFiltered = viewModel::toggleShowFiltered,
-                        onNavigateToFilterSettings = navigateToFilterSettings,
-                        onSearchClick = viewModel::toggleSearch,
-                        onGroupInfoClick =
-                        pangeaGroups
-                            .firstOrNull {
-                                it.index == channelIndex && contactKey.endsWith(NodeAddress.ID_BROADCAST)
+                        // Expert Mode keeps Android's quick chat and filter options, which iOS has no place for.
+                        menu =
+                        if (pangeaExpert) {
+                            {
+                                MessageMoreButton(
+                                    showQuickChat = showQuickChat,
+                                    onToggleQuickChat = viewModel::toggleShowQuickChat,
+                                    onNavigateToQuickChatOptions = navigateToQuickChatOptions,
+                                    showFilterToggle = messageFilterEnabled,
+                                    filteringDisabled = filteringDisabled,
+                                    onToggleFilteringDisabled = {
+                                        viewModel.setContactFilteringDisabled(contactKey, !filteringDisabled)
+                                    },
+                                    filteredCount = filteredCount,
+                                    showFiltered = showFiltered,
+                                    onToggleShowFiltered = viewModel::toggleShowFiltered,
+                                    onNavigateToFilterSettings = navigateToFilterSettings,
+                                )
                             }
-                            ?.let { { showGroupInfo = true } },
-                        onProfileClick =
-                        if (channelIndex == NodeAddress.PKC_CHANNEL_INDEX) ({ showProfile = true }) else null,
-                        everyoneBellOn =
-                        everyoneBell.takeIf {
-                            !pangeaExpert && channelIndex == 0 && contactKey.endsWith(NodeAddress.ID_BROADCAST)
-                        },
-                        onToggleEveryoneBell = pangeaViewModel::toggleEveryoneNearbyNotifications,
-                        onChatIconClick =
-                        if (
-                            contactKey.endsWith(NodeAddress.ID_BROADCAST) &&
-                            channelIndex?.let(pangeaViewModel::chatIconKey) != null
-                        ) {
-                            { showChatIcon = true }
                         } else {
                             null
                         },
@@ -695,6 +664,7 @@ fun MessageScreen(
                         searchQuery = if (isSearchActive) searchQuery else "",
                         translationAvailable = translationAvailable,
                         showFullMessageTimestamps = showFullMessageTimestamps,
+                        showSignalDetails = showSignalDetails,
                         canReact = !isRetiredChannel,
                         canSend = !isRetiredChannel,
                     ),
@@ -1036,6 +1006,7 @@ internal fun MessageInput(
     }
 
     var isFocused by remember { mutableStateOf(false) }
+    val typeMessageLabel = stringResource(Res.string.type_a_message)
 
     Column(modifier = modifier.fillMaxWidth()) {
         if (mentionActive) {
@@ -1046,6 +1017,7 @@ internal fun MessageInput(
             Modifier.fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 6.dp)
                 .onFocusChanged { isFocused = it.isFocused }
+                .semantics { contentDescription = typeMessageLabel }
                 // Tunnel phase, not bubble: a multi-line field consumes Enter to insert its newline, so an
                 // Enter-to-send shortcut has to claim the event before the field ever sees it.
                 .onPreviewKeyEvent { keyEvent ->
@@ -1064,20 +1036,20 @@ internal fun MessageInput(
             outputTransformation = mentionOutput,
             lineLimits = TextFieldLineLimits.MultiLine(1, MAX_LINES),
             enabled = isEnabled,
-            shape = CircleShape,
+            // iOS's message field: 20 pt corners and a hairline border, not a capsule.
+            shape = RoundedCornerShape(20.dp),
             textStyle = Ios.type.body,
             colors =
             OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Ios.colors.separator,
-                unfocusedBorderColor = Ios.colors.separator,
-                disabledBorderColor = Ios.colors.separator,
+                focusedBorderColor = Ios.colors.tertiaryLabel,
+                unfocusedBorderColor = Ios.colors.tertiaryLabel,
+                disabledBorderColor = Ios.colors.tertiaryLabel,
                 focusedContainerColor = Ios.colors.background,
                 unfocusedContainerColor = Ios.colors.background,
                 disabledContainerColor = Ios.colors.background,
                 cursorColor = Ios.colors.tint,
             ),
             isError = isOverLimit,
-            placeholder = { Text(stringResource(Res.string.type_a_message)) },
             // A multi-line field must keep its Enter key: Compose only sets IME_FLAG_NO_ENTER_ACTION for
             // ImeAction.Default, and without it an IME may swap Enter for the action, leaving no way to type a newline.
             keyboardOptions =
@@ -1104,18 +1076,23 @@ internal fun MessageInput(
             // The current approach (show error, disable send) is generally preferred for UX.
             // If strict real-time byte trimming is required, it needs careful handling of
             // cursor position and multi-byte characters, likely outside simple inputTransformation.
-            trailingIcon = {
-                // Colour, not just enablement, carries "this will send" — a greyed-out icon reads as broken rather
-                // than as waiting for input.
-                val sendEnabled = isEnabled && (canSend || mentionActive)
-                IconButton(onClick = onSendAction, enabled = sendEnabled) {
-                    Icon(
-                        imageVector = IosIcons.Send,
-                        contentDescription = stringResource(Res.string.send),
-                        modifier = Modifier.size(30.dp),
-                        tint = if (sendEnabled) Ios.colors.tint else Ios.colors.systemGray4,
-                    )
+            // As on iOS, the send button appears once there is something to send. Colour, not just enablement, carries
+            // "this will send" (over the byte limit it stays, greyed).
+            trailingIcon =
+            if (currentText.isNotEmpty() || mentionActive) {
+                {
+                    val sendEnabled = isEnabled && (canSend || mentionActive)
+                    IconButton(onClick = onSendAction, enabled = sendEnabled) {
+                        Icon(
+                            imageVector = IosIcons.Send,
+                            contentDescription = stringResource(Res.string.send),
+                            modifier = Modifier.size(30.dp),
+                            tint = if (sendEnabled) Ios.colors.tint else Ios.colors.systemGray4,
+                        )
+                    }
                 }
+            } else {
+                null
             },
         )
         // Markdown formatting toolbar — shown once the field is focused and holds enough text to format (iOS parity).

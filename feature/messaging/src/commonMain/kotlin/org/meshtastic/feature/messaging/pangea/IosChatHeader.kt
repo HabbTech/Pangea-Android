@@ -59,6 +59,7 @@ internal fun IosChatHeader(
     onTitleClick: (() -> Unit)? = null,
     bellOn: Boolean? = null,
     onToggleBell: () -> Unit = {},
+    menu: (@Composable () -> Unit)? = null,
 ) {
     val c = Ios.colors
     Column(modifier) {
@@ -106,11 +107,13 @@ internal fun IosChatHeader(
                 }
             },
         )
+        // Android's extra thread options ride at the end of the search capsule, leaving the bar as iOS has it.
         IosSearchField(
             value = searchQuery,
             onValueChange = onSearchChange,
             placeholder = stringResource(Res.string.pangea_find_in_conversation),
             modifier = Modifier.padding(horizontal = IosInset, vertical = 4.dp),
+            trailing = menu,
         )
     }
 }

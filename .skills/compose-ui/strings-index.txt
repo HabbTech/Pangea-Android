@@ -1531,6 +1531,8 @@ pangea_share_group
 pangea_share_group_subtitle
 pangea_share_qr_code
 pangea_show_qr
+pangea_show_signal_details
+pangea_show_signal_details_summary
 pangea_start_chat
 pangea_start_group
 pangea_start_messaging

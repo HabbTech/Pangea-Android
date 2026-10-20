@@ -19,6 +19,8 @@ package org.meshtastic.feature.settings.component
 import androidx.compose.runtime.Composable
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.pangea_show_signal_details
+import org.meshtastic.core.resources.pangea_show_signal_details_summary
 import org.meshtastic.core.resources.show_full_message_timestamps
 import org.meshtastic.core.resources.show_full_message_timestamps_summary
 import org.meshtastic.core.ui.component.SwitchPreference
@@ -28,6 +30,18 @@ internal fun FullMessageTimestampsSetting(checked: Boolean, onCheckedChange: (Bo
     SwitchPreference(
         title = stringResource(Res.string.show_full_message_timestamps),
         summary = stringResource(Res.string.show_full_message_timestamps_summary),
+        checked = checked,
+        enabled = true,
+        onCheckedChange = onCheckedChange,
+    )
+}
+
+/** Pangea Expert Mode: Android's signal, hops and route line under received messages, which the iPhone app omits. */
+@Composable
+internal fun MessageSignalDetailsSetting(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    SwitchPreference(
+        title = stringResource(Res.string.pangea_show_signal_details),
+        summary = stringResource(Res.string.pangea_show_signal_details_summary),
         checked = checked,
         enabled = true,
         onCheckedChange = onCheckedChange,

@@ -1352,6 +1352,32 @@ object IosIcons {
         }
     }
 
+    /** `arrow.up`, small: the chip's send light. */
+    val ArrowUpThin: ImageVector by lazy {
+        icon("ios.arrowUpThin") {
+            stroked(width = 2.2f) {
+                moveTo(12f, 21f)
+                lineTo(12f, 3.5f)
+                moveTo(5.5f, 10f)
+                lineTo(12f, 3.5f)
+                lineTo(18.5f, 10f)
+            }
+        }
+    }
+
+    /** `arrow.down`, small: the chip's receive light. */
+    val ArrowDownThin: ImageVector by lazy {
+        icon("ios.arrowDownThin") {
+            stroked(width = 2.2f) {
+                moveTo(12f, 3f)
+                lineTo(12f, 20.5f)
+                moveTo(5.5f, 14f)
+                lineTo(12f, 20.5f)
+                lineTo(18.5f, 14f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

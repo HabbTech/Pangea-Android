@@ -25,6 +25,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.koin.core.annotation.KoinViewModel
@@ -293,6 +295,12 @@ class UIViewModel(
     val unreadMessageCount =
         packetRepository.getUnreadCountTotal().map { it.coerceAtLeast(0) }.stateInWhileSubscribed(initialValue = 0)
 
+    /** Our radio's short name, for the Expert Mode radio chip. */
+    val ourShortName: StateFlow<String> =
+        nodeDB.ourNodeInfo
+            .map { it?.user?.short_name.orEmpty() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(SHORT_NAME_STOP_TIMEOUT_MS), "")
+
     // hardware info about our local device (can be null)
     val myNodeInfo: StateFlow<MyNodeInfo?>
         get() = nodeDB.myNodeInfo
@@ -419,3 +427,5 @@ internal fun CommonUri.toSanitizedImportSummary(): String {
         "pathSegmentCount=${pathSegments.size} hasFragment=$hasFragment " +
         "fragmentLength=$fragmentLength queryParameterCount=$queryParameterCount"
 }
+
+private const val SHORT_NAME_STOP_TIMEOUT_MS = 5_000L

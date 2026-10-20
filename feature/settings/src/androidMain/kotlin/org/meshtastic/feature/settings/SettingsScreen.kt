@@ -193,7 +193,8 @@ fun SettingsScreen(
                     stringResource(Res.string.remotely_administrating, remoteName)
                 },
                 ourNode = ourNode,
-                showNodeChip = ourNode != null && isConnected && state.isLocal,
+                // iOS's Settings has no radio chip at its root.
+                showNodeChip = false,
                 canNavigateUp = showBack,
                 onNavigateUp = { onBack?.invoke() },
                 actions = {},

@@ -74,6 +74,7 @@ class MessageItemTest {
                 onLongClick = {},
                 onStatusClick = {},
                 ourNode = testNode,
+                showSignalDetails = true,
             )
         }
 
@@ -118,6 +119,7 @@ class MessageItemTest {
                 onLongClick = {},
                 onStatusClick = {},
                 ourNode = testNode,
+                showSignalDetails = true,
             )
         }
 

@@ -64,6 +64,7 @@ import org.meshtastic.feature.settings.SettingsViewModel
 import org.meshtastic.feature.settings.component.AppInfoSection
 import org.meshtastic.feature.settings.component.AppearanceSettingsContent
 import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.feature.settings.component.MessageSignalDetailsSetting
 import org.meshtastic.feature.settings.component.PermissionsSettingsContent
 import org.meshtastic.feature.settings.component.PersistenceSettingsContent
 import org.meshtastic.feature.settings.component.PrivacySettingsContent
@@ -86,6 +87,7 @@ actual fun AppSettingsExtras(onNavigate: (Route) -> Unit, modifier: Modifier) {
     val appFunctionsAvailable: Boolean = koinInject(qualifier = named(GOOGLE_SERVICES_AVAILABLE))
     val hiddenFeaturesUnlocked by settingsViewModel.hiddenFeaturesUnlocked.collectAsStateWithLifecycle()
     val showFullMessageTimestamps by settingsViewModel.showFullMessageTimestamps.collectAsStateWithLifecycle()
+    val showSignalDetails by settingsViewModel.showMessageSignalDetails.collectAsStateWithLifecycle()
     val ourNode by settingsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
 
     var showLanguagePickerDialog by rememberSaveable { mutableStateOf(false) }
@@ -130,6 +132,10 @@ actual fun AppSettingsExtras(onNavigate: (Route) -> Unit, modifier: Modifier) {
                 onShowThemePicker = null,
                 unitsSummary = stringResource(UnitsOption.entries.first { it.override == unitsOverride }.label),
                 onShowUnitsPicker = { showUnitsPickerDialog = true },
+            )
+            MessageSignalDetailsSetting(
+                checked = showSignalDetails,
+                onCheckedChange = settingsViewModel::setShowMessageSignalDetails,
             )
             PersistenceSettingsContent(
                 cacheLimit = settingsViewModel.dbCacheLimit.collectAsStateWithLifecycle().value,

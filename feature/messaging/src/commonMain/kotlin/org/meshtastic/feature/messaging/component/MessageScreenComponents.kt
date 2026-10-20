@@ -139,6 +139,9 @@ import org.meshtastic.core.ui.icon.Visibility
 import org.meshtastic.core.ui.icon.VisibilityOff
 import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.feature.messaging.DeliveryInfo
 import org.meshtastic.feature.messaging.TranslationDialogState
 import org.meshtastic.feature.messaging.pangea.LocalPangeaPlainWording
@@ -541,6 +544,49 @@ private fun MessageTopBarActions(
         IconButton(onClick = { expanded = true }, enabled = true) {
             Icon(imageVector = MeshtasticIcons.More, contentDescription = stringResource(Res.string.overflow_menu))
         }
+        OverFlowMenu(
+            expanded = expanded,
+            onDismiss = { expanded = false },
+            showQuickChat = showQuickChat,
+            onToggleQuickChat = onToggleQuickChat,
+            onNavigateToQuickChatOptions = onNavigateToQuickChatOptions,
+            showFilterToggle = showFilterToggle,
+            filteringDisabled = filteringDisabled,
+            onToggleFilteringDisabled = onToggleFilteringDisabled,
+            filteredCount = filteredCount,
+            showFiltered = showFiltered,
+            onToggleShowFiltered = onToggleShowFiltered,
+            onNavigateToFilterSettings = onNavigateToFilterSettings,
+        )
+    }
+}
+
+/**
+ * Android's thread options that the iPhone app has no place for (quick chat and the message filters), as a "…" at the
+ * end of the conversation's search capsule in Expert Mode.
+ */
+@Composable
+fun MessageMoreButton(
+    showQuickChat: Boolean,
+    onToggleQuickChat: () -> Unit,
+    onNavigateToQuickChatOptions: () -> Unit,
+    showFilterToggle: Boolean,
+    filteringDisabled: Boolean,
+    onToggleFilteringDisabled: () -> Unit,
+    filteredCount: Int,
+    showFiltered: Boolean,
+    onToggleShowFiltered: () -> Unit,
+    onNavigateToFilterSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Icon(
+            IosIcons.Ellipsis,
+            contentDescription = stringResource(Res.string.overflow_menu),
+            tint = Ios.colors.tint,
+            modifier = Modifier.size(28.dp).iosPressable { expanded = true }.padding(2.dp),
+        )
         OverFlowMenu(
             expanded = expanded,
             onDismiss = { expanded = false },

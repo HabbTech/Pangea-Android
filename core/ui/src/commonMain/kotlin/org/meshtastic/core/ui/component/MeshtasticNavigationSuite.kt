@@ -59,10 +59,12 @@ import org.meshtastic.core.resources.pangea_status_reconnect
 import org.meshtastic.core.resources.pangea_tab_chats
 import org.meshtastic.core.resources.pangea_tab_map
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRadioChipState
 import org.meshtastic.core.ui.ios.IosStatusPill
 import org.meshtastic.core.ui.ios.IosTab
 import org.meshtastic.core.ui.ios.IosTabBar
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
+import org.meshtastic.core.ui.ios.LocalIosRadioChip
 import org.meshtastic.core.ui.ios.LocalIosUnderTabBar
 import org.meshtastic.core.ui.navigation.icon
 import org.meshtastic.core.ui.util.LocalOpenPairRadio
@@ -89,6 +91,7 @@ fun MeshtasticNavigationSuite(
     val unreadMessageCount by uiViewModel.unreadMessageCount.collectAsStateWithLifecycle()
     val selectedDevice by uiViewModel.currentDeviceAddressFlow.collectAsStateWithLifecycle()
     val expertModeEnabled by uiViewModel.expertModeEnabled.collectAsStateWithLifecycle()
+    val ourShortName by uiViewModel.ourShortName.collectAsStateWithLifecycle()
     val hasRadio = DeviceAddress.parse(selectedDevice) != null
     val destinations = visibleDestinations(expertModeEnabled)
 
@@ -147,6 +150,18 @@ fun MeshtasticNavigationSuite(
         if (pairSheet != null) pairing = true else multiBackstack.navigateTopLevel(TopLevelDestination.Connect.route)
     }
 
+    // iOS's radio chip at the top right of Expert Mode screens; none in standard mode, which has the status pill.
+    val radioChip =
+        if (expertModeEnabled) {
+            IosRadioChipState(
+                shortName = ourShortName,
+                connected = connectionState == ConnectionState.Connected,
+                activity = uiViewModel.meshActivity,
+            )
+        } else {
+            null
+        }
+
     val density = LocalDensity.current
     var chromeHeight by remember { mutableStateOf(0.dp) }
     val underTabBar = remember { mutableIntStateOf(0) }
@@ -155,6 +170,7 @@ fun MeshtasticNavigationSuite(
             LocalIosBottomInset provides chromeHeight,
             LocalIosUnderTabBar provides underTabBar,
             LocalOpenPairRadio provides openPairRadio,
+            LocalIosRadioChip provides radioChip,
         ) {
             // Older screens stop above the bar; iOS-style screens scroll under it (IosDrawsUnderTabBar).
             val navigationBar = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()

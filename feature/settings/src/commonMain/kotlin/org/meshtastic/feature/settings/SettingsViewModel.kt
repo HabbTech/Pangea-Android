@@ -171,9 +171,14 @@ class SettingsViewModel(
     }
 
     val showFullMessageTimestamps = uiPrefs.showFullMessageTimestamps
+    val showMessageSignalDetails = uiPrefs.showMessageSignalDetails
 
     fun setShowFullMessageTimestamps(show: Boolean) {
         uiPrefs.setShowFullMessageTimestamps(show)
+    }
+
+    fun setShowMessageSignalDetails(show: Boolean) {
+        uiPrefs.setShowMessageSignalDetails(show)
     }
 
     /** Set the application locale. Empty string means system default. */

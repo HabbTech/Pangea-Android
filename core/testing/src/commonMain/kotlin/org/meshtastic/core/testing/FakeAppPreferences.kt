@@ -158,6 +158,12 @@ class FakeUiPrefs : UiPrefs {
         showFullMessageTimestamps.value = show
     }
 
+    override val showMessageSignalDetails = MutableStateFlow(false)
+
+    override fun setShowMessageSignalDetails(show: Boolean) {
+        showMessageSignalDetails.value = show
+    }
+
     override val eventThemeEnabled = MutableStateFlow(true)
 
     override fun setEventThemeEnabled(enabled: Boolean) {

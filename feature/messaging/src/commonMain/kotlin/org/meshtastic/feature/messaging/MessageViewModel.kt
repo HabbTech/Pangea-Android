@@ -194,6 +194,7 @@ class MessageViewModel(
     val showQuickChat = uiPrefs.showQuickChat
 
     val showFullMessageTimestamps = uiPrefs.showFullMessageTimestamps
+    val showMessageSignalDetails = uiPrefs.showMessageSignalDetails
 
     val messageFilterEnabled = filterPrefs.filterEnabled
 

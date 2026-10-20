@@ -138,6 +138,8 @@ fun MessageItem(
     onShowReactions: () -> Unit = {},
     showUserName: Boolean = true,
     showFullMessageTimestamp: Boolean = false,
+    /** Android's signal, hops and route line under received bubbles; off by default, as the iPhone app has none. */
+    showSignalDetails: Boolean = false,
     emojis: List<Reaction> = emptyList(),
     quickEmojis: List<String> = listOf("👍", "👎", "😂", "🔥", "❤️", "😮"),
     /** False for an archived conversation: existing reactions still render, but none can be added. */
@@ -171,12 +173,13 @@ fun MessageItem(
     modifier
         .fillMaxWidth()
         // Wider gap between sender groups, tight spacing within a group, so runs read as one unit.
+        // The gap between groups is the iPhone app's.
         .padding(
             top =
             if (hasSamePrev) {
                 4.dp
             } else {
-                14.dp
+                28.dp
             },
         ),
 ) {
@@ -293,17 +296,21 @@ fun MessageItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            // Expert Mode names the sender with their node ID, as iOS does ("Madrona Tower (!0a014911)"). The time
+            // shows only when "Show full message timestamps" asks for it.
             Text(
-                text = node.user.long_name,
+                text = if (plainWording) node.user.long_name else "${node.user.long_name} (${node.user.id})",
                 modifier = Modifier.weight(1f, fill = false),
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
                 style = Ios.type.footnote,
                 color = ios.secondaryLabel,
             )
-            if (!plainWording) Text(text = timestamp, style = Ios.type.footnote, color = ios.secondaryLabel)
+            if (!plainWording && showFullMessageTimestamp) {
+                Text(text = timestamp, style = Ios.type.footnote, color = ios.secondaryLabel)
+            }
         }
-    } else if (showUserName && !plainWording) {
+    } else if (showUserName && !plainWording && showFullMessageTimestamp) {
         Text(
             text = timestamp,
             modifier = Modifier.align(Alignment.End).padding(end = 16.dp, bottom = 3.dp),
@@ -485,7 +492,9 @@ fun MessageItem(
                             )
                         }
 
-                        val showDiagnostics = !message.fromLocal && !plainWording
+                        // iOS keeps a message's signal, hops and signature in its details; Android's line under the
+                        // bubble is an Expert Mode option.
+                        val showDiagnostics = !message.fromLocal && !plainWording && showSignalDetails
                         if (showDiagnostics || containsBel || message.filtered || showsTranslation) {
                             Row(
                                 modifier = Modifier.padding(top = 4.dp),

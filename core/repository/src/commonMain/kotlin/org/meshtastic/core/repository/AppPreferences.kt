@@ -150,6 +150,11 @@ interface UiPrefs {
 
     fun setShowFullMessageTimestamps(show: Boolean)
 
+    /** Whether received messages show their signal, hops and route under the bubble (Pangea Expert Mode option). */
+    val showMessageSignalDetails: StateFlow<Boolean>
+
+    fun setShowMessageSignalDetails(show: Boolean)
+
     /**
      * Whether to apply an event edition's ambient theme (accent wash + custom typeface) app-wide (opt-out; default on).
      */
