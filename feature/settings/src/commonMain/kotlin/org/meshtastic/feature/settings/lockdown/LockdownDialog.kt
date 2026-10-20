@@ -18,19 +18,10 @@ package org.meshtastic.feature.settings.lockdown
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,9 +29,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.service.LockdownState
@@ -48,39 +36,33 @@ import org.meshtastic.core.repository.LockdownPassphraseStore
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.disconnect
 import org.meshtastic.core.resources.lockdown_backoff
-import org.meshtastic.core.resources.lockdown_boots_remaining
-import org.meshtastic.core.resources.lockdown_confirm_passphrase
 import org.meshtastic.core.resources.lockdown_enter_passphrase
-import org.meshtastic.core.resources.lockdown_hide_passphrase
-import org.meshtastic.core.resources.lockdown_hours_until_expiry
 import org.meshtastic.core.resources.lockdown_incorrect_passphrase
 import org.meshtastic.core.resources.lockdown_lock_reason
-import org.meshtastic.core.resources.lockdown_passphrase
-import org.meshtastic.core.resources.lockdown_passphrases_do_not_match
-import org.meshtastic.core.resources.lockdown_session_minutes
-import org.meshtastic.core.resources.lockdown_session_minutes_help
 import org.meshtastic.core.resources.lockdown_set_passphrase
-import org.meshtastic.core.resources.lockdown_show_passphrase
 import org.meshtastic.core.resources.lockdown_submit
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Visibility
-import org.meshtastic.core.ui.icon.VisibilityOff
+import org.meshtastic.core.ui.ios.IosSheet
+import org.meshtastic.core.ui.ios.IosSheetHeader
 
 /**
- * Non-dismissable lockdown authentication dialog.
+ * Non-dismissable lockdown authentication sheet.
  *
- * Shown while the connected device requires passphrase input or retry. The dialog blocks app interaction while shown.
+ * Shown while the connected device requires passphrase input or retry. The sheet blocks app interaction while shown.
  * After a passphrase command is admitted to the active transport, [LockdownState.AwaitingResponse] hides it until
- * firmware reports the next status. A rejected dispatch leaves the retryable state and dialog in place; a locked,
- * provisioning, or failed response shows it again, while successful authentication leaves it dismissed. Back gestures
- * are suppressed whenever the dialog is visible.
+ * firmware reports the next status. A rejected dispatch leaves the retryable state and sheet in place; a locked,
+ * provisioning, or failed response shows it again, while successful authentication leaves it dismissed. Swipes, Back
+ * and taps outside are ignored whenever it is visible; Disconnect is the way out.
+ *
+ * Drawn as the iPhone app's lockdown sheet: the passphrase card (with the reason or the error above the field), the
+ * session limits, and Submit in a card of its own.
  */
-@Suppress("LongMethod", "CyclomaticComplexMethod")
+@Suppress("LongMethod")
 @Composable
 fun LockdownDialog(
     lockdownState: LockdownState,
     onSubmit: (passphrase: String, boots: Int, hours: Int, sessionMinutes: Int) -> Unit,
     onDisconnect: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val shouldShow =
         when (lockdownState) {
@@ -103,138 +85,61 @@ fun LockdownDialog(
     val title =
         stringResource(if (isProvisioning) Res.string.lockdown_set_passphrase else Res.string.lockdown_enter_passphrase)
     val inBackoff = lockdownState is LockdownState.UnlockBackoff
-    val passphraseValid = passphrase.isNotEmpty() && passphrase.encodeToByteArray().size <= MAX_PASSPHRASE_LEN
+    val passphraseValid = passphrase.isNotEmpty() && passphrase.encodeToByteArray().size <= MAX_PASSPHRASE_BYTES
     val confirmValid = !isProvisioning || passphrase == confirmPassphrase
     val isValid = passphraseValid && confirmValid && !inBackoff
 
-    AlertDialog(
-        onDismissRequest = {}, // Non-dismissable
-        title = { Text(text = title) },
-        text = {
-            Column {
-                when (lockdownState) {
-                    is LockdownState.UnlockFailed -> {
-                        Text(
-                            text = stringResource(Res.string.lockdown_incorrect_passphrase),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Spacer(modifier = Modifier.height(SPACING_DP.dp))
-                    }
+    val note =
+        when (lockdownState) {
+            is LockdownState.UnlockFailed -> stringResource(Res.string.lockdown_incorrect_passphrase)
 
-                    is LockdownState.UnlockBackoff -> {
-                        Text(
-                            text = stringResource(Res.string.lockdown_backoff, lockdownState.backoffSeconds),
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                        Spacer(modifier = Modifier.height(SPACING_DP.dp))
-                    }
+            is LockdownState.UnlockBackoff -> stringResource(Res.string.lockdown_backoff, lockdownState.backoffSeconds)
 
-                    is LockdownState.Locked -> {
-                        if (lockdownState.lockReason.isNotEmpty()) {
-                            Text(text = stringResource(Res.string.lockdown_lock_reason, lockdownState.lockReason))
-                            Spacer(modifier = Modifier.height(SPACING_DP.dp))
-                        }
-                    }
+            is LockdownState.Locked ->
+                lockdownState.lockReason
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { stringResource(Res.string.lockdown_lock_reason, it) }
 
-                    else -> {}
-                }
+            else -> null
+        }
 
-                OutlinedTextField(
-                    value = passphrase,
-                    onValueChange = { if (it.encodeToByteArray().size <= MAX_PASSPHRASE_LEN) passphrase = it },
-                    label = { Text(stringResource(Res.string.lockdown_passphrase)) },
-                    singleLine = true,
-                    visualTransformation =
-                    if (passwordVisible) {
-                        VisualTransformation.None
-                    } else {
-                        PasswordVisualTransformation()
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector =
-                                if (passwordVisible) {
-                                    MeshtasticIcons.VisibilityOff
-                                } else {
-                                    MeshtasticIcons.Visibility
-                                },
-                                contentDescription =
-                                stringResource(
-                                    if (passwordVisible) {
-                                        Res.string.lockdown_hide_passphrase
-                                    } else {
-                                        Res.string.lockdown_show_passphrase
-                                    },
-                                ),
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
-                if (isProvisioning) {
-                    Spacer(modifier = Modifier.height(SPACING_DP.dp))
-                    OutlinedTextField(
-                        value = confirmPassphrase,
-                        onValueChange = {
-                            if (it.encodeToByteArray().size <= MAX_PASSPHRASE_LEN) confirmPassphrase = it
-                        },
-                        label = { Text(stringResource(Res.string.lockdown_confirm_passphrase)) },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        isError = confirmPassphrase.isNotEmpty() && passphrase != confirmPassphrase,
-                        supportingText =
-                        if (confirmPassphrase.isNotEmpty() && passphrase != confirmPassphrase) {
-                            { Text(stringResource(Res.string.lockdown_passphrases_do_not_match)) }
-                        } else {
-                            null
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                Spacer(modifier = Modifier.height(SPACING_DP.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    OutlinedTextField(
-                        value = boots.toString(),
-                        onValueChange = { str -> str.toIntOrNull()?.let { boots = it.coerceIn(1, MAX_BYTE_VALUE) } },
-                        label = { Text(stringResource(Res.string.lockdown_boots_remaining)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(modifier = Modifier.width(SPACING_DP.dp))
-                    OutlinedTextField(
-                        value = hours.toString(),
-                        onValueChange = { str -> str.toIntOrNull()?.let { hours = it.coerceAtLeast(0) } },
-                        label = { Text(stringResource(Res.string.lockdown_hours_until_expiry)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Spacer(modifier = Modifier.height(SPACING_DP.dp))
-                OutlinedTextField(
-                    value = sessionMinutes.toString(),
-                    onValueChange = { str -> str.toIntOrNull()?.let { sessionMinutes = it.coerceAtLeast(0) } },
-                    label = { Text(stringResource(Res.string.lockdown_session_minutes)) },
-                    supportingText = { Text(stringResource(Res.string.lockdown_session_minutes_help)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
+    IosSheet(
+        title = title,
+        onDismissRequest = {},
+        modifier = modifier,
+        grouped = true,
+        dismissable = false,
+        header = {
+            IosSheetHeader(title = title, cancelLabel = stringResource(Res.string.disconnect), onCancel = onDisconnect)
         },
-        confirmButton = {
-            TextButton(onClick = { onSubmit(passphrase, boots, hours, sessionMinutes) }, enabled = isValid) {
-                Text(stringResource(Res.string.lockdown_submit))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDisconnect) { Text(stringResource(Res.string.disconnect)) } },
-    )
+    ) {
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            LockdownPassphraseSection(
+                passphrase = passphrase,
+                onPassphraseChange = { passphrase = it },
+                visible = passwordVisible,
+                onToggleVisible = { passwordVisible = !passwordVisible },
+                note = note,
+                noteIsError = lockdownState is LockdownState.UnlockFailed || inBackoff,
+                confirm = if (isProvisioning) confirmPassphrase else null,
+                onConfirmChange = { confirmPassphrase = it },
+            )
+            LockdownSessionSection(
+                boots = boots,
+                onBootsChange = { boots = it },
+                hours = hours,
+                onHoursChange = { hours = it },
+                minutes = sessionMinutes,
+                onMinutesChange = { sessionMinutes = it },
+            )
+            LockdownSubmitSection(
+                label = stringResource(Res.string.lockdown_submit),
+                enabled = isValid,
+                onClick = { onSubmit(passphrase, boots, hours, sessionMinutes) },
+            )
+        }
+    }
 }
-
-// Firmware maximum: AdminMessage.lockdown_auth.passphrase is limited to 64 bytes.
-private const val MAX_PASSPHRASE_LEN = 64
-private const val MAX_BYTE_VALUE = 255
-private const val SPACING_DP = 8

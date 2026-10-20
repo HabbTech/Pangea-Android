@@ -2710,6 +2710,68 @@ object IosIcons {
         }
     }
 
+    /** `circle.dashed`: a geofence's radius. */
+    val CircleDashed: ImageVector by lazy {
+        icon("ios.circleDashed") {
+            stroked(width = 1.6f) {
+                val dashes = 12
+                val r = 8.6f
+                for (i in 0 until dashes) {
+                    val a0 = i * 2 * PI.toFloat() / dashes
+                    val a1 = a0 + PI.toFloat() / dashes
+                    moveTo(12f + r * cos(a0), 12f + r * sin(a0))
+                    arcTo(
+                        r,
+                        r,
+                        0f,
+                        isMoreThanHalf = false,
+                        isPositiveArc = true,
+                        x1 = 12f + r * cos(a1),
+                        y1 = 12f + r * sin(a1),
+                    )
+                }
+            }
+        }
+    }
+
+    /** `rectangle.dashed`: a geofence's bounding box. */
+    val RectangleDashed: ImageVector by lazy {
+        icon("ios.rectangleDashed") {
+            stroked(width = 1.6f) {
+                dashed(3.2f, 5.6f, 20.8f, 5.6f)
+                dashed(20.8f, 5.6f, 20.8f, 18.4f)
+                dashed(20.8f, 18.4f, 3.2f, 18.4f)
+                dashed(3.2f, 18.4f, 3.2f, 5.6f)
+            }
+        }
+    }
+
+    /** `x.circle`: Cancel in the waypoint editor. */
+    val XmarkCircle: ImageVector by lazy {
+        icon("ios.xmarkCircle") {
+            stroked(width = 1.6f) {
+                circle(12f, 12f, 9.2f)
+                moveTo(9f, 9f)
+                lineTo(15f, 15f)
+                moveTo(15f, 9f)
+                lineTo(9f, 15f)
+            }
+        }
+    }
+
+    /** A straight dashed stroke from ([x0], [y0]) to ([x1], [y1]), its dashes evenly spread with one at each end. */
+    private fun PathBuilder.dashed(x0: Float, y0: Float, x1: Float, y1: Float, dash: Float = 2.2f) {
+        val length = kotlin.math.hypot(x1 - x0, y1 - y0)
+        val count = (length / (dash * 2)).toInt().coerceAtLeast(1)
+        val step = (length - dash) / count
+        for (i in 0..count) {
+            val t0 = i * step / length
+            val t1 = (i * step + dash) / length
+            moveTo(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0)
+            lineTo(x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1)
+        }
+    }
+
     private fun icon(name: String, size: Float = 24f, viewport: Float = 24f, block: ImageVector.Builder.() -> Unit) =
         ImageVector.Builder(name, size.dp, size.dp, viewport, viewport).apply(block).build()
 

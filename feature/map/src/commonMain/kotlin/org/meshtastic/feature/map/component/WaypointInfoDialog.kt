@@ -96,8 +96,6 @@ fun WaypointInfoDialog(
         modifier = modifier,
         grouped = true,
         grabber = true,
-        // iOS opens a waypoint at the medium detent, half the screen, with the map still in view above it.
-        heightFraction = MEDIUM_DETENT,
         header = { WaypointInfoBar(title = title, onEdit = onEdit, onDeleteForMe = onDeleteForMe) },
     ) {
         Column(
@@ -107,7 +105,7 @@ fun WaypointInfoDialog(
             Column {
                 WaypointTitle(emoji = emoji, name = title)
                 if (waypoint.description.isNotBlank()) {
-                    IosSection { IosRow(title = waypoint.description, icon = IosIcons.DocText, showSeparator = false) }
+                    IosSection { IosRow(title = waypoint.description, icon = IosIcons.DocText) }
                 }
             }
             IosSection(header = stringResource(Res.string.pangea_waypoint_location)) {
@@ -118,7 +116,6 @@ fun WaypointInfoDialog(
                         NumberFormatter.format((waypoint.longitude_i ?: 0) * COORDINATE_SCALE, COORDINATE_DECIMALS),
                     titleColor = Ios.colors.secondaryLabel,
                     icon = IosIcons.MapPin,
-                    showSeparator = false,
                 )
             }
             if (waypoint.geofence_radius > 0 || waypoint.bounding_box != null) {
@@ -127,11 +124,10 @@ fun WaypointInfoDialog(
                         IosRow(
                             title = stringResource(Res.string.geofence_radius),
                             value = waypoint.geofence_radius.toDistanceString(displayUnits),
-                            showSeparator = waypoint.bounding_box != null,
                         )
                     }
                     if (waypoint.bounding_box != null) {
-                        IosRow(title = stringResource(Res.string.pangea_waypoint_area), showSeparator = false)
+                        IosRow(title = stringResource(Res.string.pangea_waypoint_area))
                     }
                 }
             }
@@ -141,7 +137,6 @@ fun WaypointInfoDialog(
                     title = stringResource(Res.string.geofence_alerts_opt_in),
                     icon = IosIcons.Bell,
                     accessory = IosAccessory.Switch(checked = alertsEnabled, onCheckedChange = onToggleAlerts),
-                    showSeparator = false,
                 )
             }
             if (waypoint.expire.isExpirySet()) {
@@ -150,7 +145,6 @@ fun WaypointInfoDialog(
                         title = stringResource(Res.string.expires),
                         icon = IosIcons.Clock,
                         value = DateFormatter.formatDateTimeShort(waypoint.expire * MILLIS_PER_SECOND),
-                        showSeparator = false,
                     )
                 }
             }
@@ -210,5 +204,3 @@ private const val COORDINATE_SCALE = 1e-7
 private const val COORDINATE_DECIMALS = 6
 
 private const val MILLIS_PER_SECOND = 1000L
-
-private const val MEDIUM_DETENT = 0.5f

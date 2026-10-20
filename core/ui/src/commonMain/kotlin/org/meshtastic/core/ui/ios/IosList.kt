@@ -69,7 +69,10 @@ private val IconTextStart = 56.dp
 /** Marks a section child with where its top separator starts; [IosRow] sets it for you. */
 data class IosSeparatorInset(val start: Dp)
 
-/** For custom children of an [IosSection]: draw the separator above this child from [start]. */
+/**
+ * For custom children of an [IosSection]: draw a separator above this child. [start] is where this child's text begins;
+ * the line under it (above the next child) starts there, as iOS insets a row's separator to its own text.
+ */
 fun Modifier.iosRowSeparator(start: Dp = IosInset): Modifier = layoutId(IosSeparatorInset(start))
 
 /**
@@ -126,7 +129,12 @@ fun IosSection(
             var y = 0
             placeables.forEachIndexed { i, p ->
                 val inset = measurables[i].layoutId as? IosSeparatorInset
-                if (i > 0 && inset != null) lines.add(y.toFloat() to inset.start.toPx())
+                if (i > 0 && inset != null) {
+                    // iOS draws a row's separator under it, from that row's own text, so the line above this child
+                    // starts where the previous row's text does (a row without an icon above one with an icon).
+                    val above = measurables[i - 1].layoutId as? IosSeparatorInset ?: inset
+                    lines.add(y.toFloat() to above.start.toPx())
+                }
                 y += p.height
             }
             layout(constraints.maxWidth, y) {

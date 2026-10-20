@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -69,6 +70,8 @@ fun IosSheet(
     header: (@Composable () -> Unit)? = null,
     // The grey capsule iOS draws at the top of a sheet that can be dragged between detents (the map's sheets).
     grabber: Boolean = false,
+    // False for a sheet that must be answered (lockdown): swiping, Back and taps outside leave it open.
+    dismissable: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     // In Dark Mode a sheet is drawn in iOS's elevated greys, for its own background and everything on it.
@@ -80,6 +83,12 @@ fun IosSheet(
             rememberBottomSheetState(
                 initialValue = SheetValue.Hidden,
                 enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+                confirmValueChange = { dismissable || it != SheetValue.Hidden },
+            ),
+            properties =
+            ModalBottomSheetProperties(
+                shouldDismissOnBackPress = dismissable,
+                shouldDismissOnClickOutside = dismissable,
             ),
             shape = RoundedCornerShape(topStart = SheetCorner, topEnd = SheetCorner),
             containerColor = if (grouped) c.groupedBackground else c.background,

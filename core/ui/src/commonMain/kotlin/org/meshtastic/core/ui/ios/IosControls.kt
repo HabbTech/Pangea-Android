@@ -69,6 +69,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -336,6 +337,8 @@ fun IosTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     textAlign: TextAlign = TextAlign.Start,
     containerColor: Color = Ios.colors.fieldFill,
+    // `PasswordVisualTransformation` makes it iOS's SecureField.
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     trailing: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val c = Ios.colors
@@ -366,6 +369,7 @@ fun IosTextField(
                 textStyle = textStyle.copy(color = c.label, textAlign = textAlign),
                 cursorBrush = SolidColor(c.tint),
                 keyboardOptions = keyboardOptions,
+                visualTransformation = visualTransformation,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

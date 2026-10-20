@@ -17,18 +17,27 @@
 package org.meshtastic.feature.map.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,72 +46,183 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.jetbrains.compose.resources.stringResource
-import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.name
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.iosPressable
+import org.meshtastic.core.ui.ios.iosRowSeparator
 
-/** The name row: the waypoint's emoji in a grey circle (tap to change it), then the name, inline. */
+/**
+ * A labelled text row of iOS's form: the [label], then the field taking the rest of the row, its words in grey as iOS's
+ * `.foregroundColor(.gray)` draws them. A [multiline] field grows downward, as `axis: .vertical` does.
+ */
 @Composable
-internal fun WaypointNameRow(name: String, emoji: String, onNameChange: (String) -> Unit, onPickEmoji: () -> Unit) {
+internal fun WaypointFieldRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    multiline: Boolean = false,
+) {
     val c = Ios.colors
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        Modifier.iosRowSeparator()
+            .fillMaxWidth()
+            .heightIn(min = 52.dp)
+            .padding(horizontal = IosInset, vertical = 13.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        Box(
-            Modifier.size(44.dp).clip(CircleShape).background(c.fieldFill).iosPressable(onClick = onPickEmoji),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(emoji, fontSize = 22.sp)
+        Text(label, style = Ios.type.body, color = c.label)
+        Spacer(Modifier.width(8.dp))
+        Box(Modifier.weight(1f)) {
+            if (value.isEmpty()) Text(label, style = Ios.type.body, color = c.tertiaryLabel)
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = !multiline,
+                maxLines = if (multiline) DESCRIPTION_LINES else 1,
+                textStyle = Ios.type.body.copy(color = c.secondaryLabel),
+                cursorBrush = SolidColor(c.tint),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
-        Spacer(Modifier.width(12.dp))
-        WaypointTextField(
-            value = name,
-            placeholder = stringResource(Res.string.name),
-            onValueChange = onNameChange,
-            singleLine = true,
-            modifier = Modifier.weight(1f),
-        )
     }
 }
 
-/** A text row of the form: the value inline on the card, its placeholder in grey. */
+/** The Icon row: its label, then the emoji at iOS's 34 pt; tapping it opens the picker. */
 @Composable
-internal fun WaypointTextRow(value: String, placeholder: String, onValueChange: (String) -> Unit) {
-    WaypointTextField(
-        value = value,
-        placeholder = placeholder,
-        onValueChange = onValueChange,
-        singleLine = false,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp),
+internal fun WaypointIconRow(label: String, emoji: String, onPickEmoji: () -> Unit) {
+    Row(
+        Modifier.iosRowSeparator()
+            .fillMaxWidth()
+            .iosPressable(onClick = onPickEmoji)
+            .padding(horizontal = IosInset, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = Ios.type.body, color = Ios.colors.label)
+        Spacer(Modifier.width(8.dp))
+        Text(emoji, fontSize = EMOJI_SIZE.sp)
+    }
+}
+
+/** iOS's compact date picker: the label, then the date and the time each in a grey chip that opens its picker. */
+@Composable
+internal fun WaypointExpireRow(
+    label: String,
+    date: String,
+    time: String,
+    onPickDate: () -> Unit,
+    onPickTime: () -> Unit,
+) {
+    IosRow(
+        title = label,
+        titleStyle = Ios.type.callout,
+        accessory =
+        IosAccessory.Custom {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                DateChip(date, onPickDate)
+                DateChip(time, onPickTime)
+            }
+        },
     )
 }
 
+/**
+ * iOS's menu picker for the geofence radius: the label with its symbol, the choice in grey with up/down chevrons, and
+ * the choices in a menu from there.
+ */
 @Composable
-private fun WaypointTextField(
-    value: String,
-    placeholder: String,
-    onValueChange: (String) -> Unit,
-    singleLine: Boolean,
+internal fun <T> WaypointRadiusRow(label: String, choices: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    IosRow(
+        title = label,
+        icon = IosIcons.CircleDashed,
+        value = choices.firstOrNull { it.first == selected }?.second,
+        onClick = { open = true },
+        accessory =
+        IosAccessory.Custom {
+            Box {
+                Icon(
+                    IosIcons.ChevronUpDown,
+                    contentDescription = null,
+                    tint = Ios.colors.secondaryLabel,
+                    modifier = Modifier.padding(start = 6.dp).size(14.dp),
+                )
+                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                    choices.forEach { (value, text) ->
+                        DropdownMenuItem(
+                            text = { Text(text) },
+                            trailingIcon =
+                            if (value == selected) {
+                                { Icon(IosIcons.Checkmark, contentDescription = null, tint = Ios.colors.tint) }
+                            } else {
+                                null
+                            },
+                            onClick = {
+                                open = false
+                                onSelect(value)
+                            },
+                        )
+                    }
+                }
+            }
+        },
+    )
+}
+
+/**
+ * The buttons under iOS's waypoint form: Send, Cancel and, for a saved waypoint, Delete, as bordered capsules in a
+ * centred row.
+ */
+@Suppress("LongParameterList")
+@Composable
+internal fun WaypointFormActions(
+    sendLabel: String,
+    sendEnabled: Boolean,
+    onSend: () -> Unit,
+    cancelLabel: String,
+    onCancel: () -> Unit,
+    deleteLabel: String?,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val c = Ios.colors
-    Box(modifier) {
-        if (value.isEmpty()) Text(placeholder, style = Ios.type.body, color = c.tertiaryLabel)
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = singleLine,
-            maxLines = if (singleLine) 1 else WAYPOINT_DESCRIPTION_LINES,
-            textStyle = Ios.type.body.copy(color = c.label),
-            cursorBrush = SolidColor(c.tint),
-            keyboardOptions =
-            KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
-            modifier = Modifier.fillMaxWidth(),
+    Row(
+        modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+    ) {
+        IosButton(
+            text = sendLabel,
+            onClick = onSend,
+            style = IosButtonStyle.Tinted,
+            enabled = sendEnabled,
+            icon = IosIcons.ArrowUp,
         )
+        IosButton(text = cancelLabel, onClick = onCancel, style = IosButtonStyle.Tinted, icon = IosIcons.XmarkCircle)
+        if (deleteLabel != null) {
+            IosButton(text = deleteLabel, onClick = onDelete, style = IosButtonStyle.Destructive, icon = IosIcons.Trash)
+        }
     }
 }
 
-private const val WAYPOINT_DESCRIPTION_LINES = 3
+@Composable
+private fun DateChip(text: String, onClick: () -> Unit) {
+    Text(
+        text,
+        style = Ios.type.callout,
+        color = Ios.colors.label,
+        modifier =
+        Modifier.clip(RoundedCornerShape(8.dp))
+            .background(Ios.colors.fieldFill)
+            .iosPressable(onClick = onClick)
+            .padding(horizontal = 11.dp, vertical = 6.dp),
+    )
+}
+
+private const val DESCRIPTION_LINES = 3
+
+/** iOS draws the Icon field's emoji at 34 pt. */
+private const val EMOJI_SIZE = 34

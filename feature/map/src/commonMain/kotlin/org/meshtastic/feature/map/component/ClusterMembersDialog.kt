@@ -63,14 +63,13 @@ fun ClusterMembersDialog(
                 // Deduped by node number: a node can reach the map from two sources, or arrive as a `num = 0`
                 // placeholder.
                 val rows = members.distinctBy { it.nodeNum }
-                rows.forEachIndexed { index, member ->
+                rows.forEach { member ->
                     IosRow(
                         title = member.title,
                         subtitle = member.subtitle.takeIf { it.isNotBlank() },
                         leading = member.node?.let { { NodeChip(node = it) } },
                         leadingWidth = if (member.node != null) CHIP_COLUMN.dp else null,
                         accessory = IosAccessory.Chevron,
-                        showSeparator = index < rows.lastIndex,
                         onClick = { onMemberClick(member.nodeNum) },
                     )
                 }

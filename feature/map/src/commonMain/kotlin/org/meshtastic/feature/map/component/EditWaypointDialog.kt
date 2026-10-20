@@ -18,8 +18,9 @@ package org.meshtastic.feature.map.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
@@ -39,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -64,22 +66,25 @@ import org.meshtastic.core.resources.delete
 import org.meshtastic.core.resources.description
 import org.meshtastic.core.resources.expires
 import org.meshtastic.core.resources.geofence
-import org.meshtastic.core.resources.geofence_edit_area
-import org.meshtastic.core.resources.geofence_favorites_only
-import org.meshtastic.core.resources.geofence_notify_on_enter
-import org.meshtastic.core.resources.geofence_notify_on_exit
 import org.meshtastic.core.resources.geofence_off
 import org.meshtastic.core.resources.geofence_radius
-import org.meshtastic.core.resources.geofence_remove_area
-import org.meshtastic.core.resources.geofence_set_area
 import org.meshtastic.core.resources.locked
 import org.meshtastic.core.resources.name
+import org.meshtastic.core.resources.pangea_waypoint_create
+import org.meshtastic.core.resources.pangea_waypoint_edit_box
+import org.meshtastic.core.resources.pangea_waypoint_editing
+import org.meshtastic.core.resources.pangea_waypoint_expire
+import org.meshtastic.core.resources.pangea_waypoint_favorites_only
+import org.meshtastic.core.resources.pangea_waypoint_icon
+import org.meshtastic.core.resources.pangea_waypoint_notify_enter
+import org.meshtastic.core.resources.pangea_waypoint_notify_exit
+import org.meshtastic.core.resources.pangea_waypoint_options
+import org.meshtastic.core.resources.pangea_waypoint_radius
+import org.meshtastic.core.resources.pangea_waypoint_remove_box
+import org.meshtastic.core.resources.pangea_waypoint_set_box
 import org.meshtastic.core.resources.save
 import org.meshtastic.core.resources.send
 import org.meshtastic.core.resources.time
-import org.meshtastic.core.resources.waypoint_edit
-import org.meshtastic.core.resources.waypoint_new
-import org.meshtastic.core.ui.component.DropDownPreference
 import org.meshtastic.core.ui.emoji.EmojiPickerDialog
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosAccessory
@@ -112,7 +117,7 @@ fun EditWaypointDialog(
     onBeginBoxAuthoring: (Waypoint) -> Unit = {},
 ) {
     var waypointInput by remember { mutableStateOf(waypoint) }
-    val title = if (waypoint.id == 0) Res.string.waypoint_new else Res.string.waypoint_edit
+    val title = if (waypoint.id == 0) Res.string.pangea_waypoint_create else Res.string.pangea_waypoint_editing
     val defaultEmoji = PUSHPIN_CODE_POINT
     val currentEmojiCodepoint = if (waypointInput.icon == 0) defaultEmoji else waypointInput.icon
     var showEmojiPickerView by remember { mutableStateOf(false) }
@@ -142,59 +147,37 @@ fun EditWaypointDialog(
     }
 
     if (!showEmojiPickerView) {
-        // iOS's waypoint form: a sheet with Cancel and Send, the name with its emoji, then the switches, the
-        // geofence and (for a saved waypoint) Delete.
+        // iOS's waypoint form: a full-height sheet titled Create or Editing Waypoint, the Waypoint Options and
+        // Geofence sections, and Send, Cancel and (for a saved waypoint) Delete as capsules beneath.
         IosSheet(
             title = stringResource(title),
             onDismissRequest = onDismissRequest,
             modifier = modifier,
-            cancelLabel = stringResource(Res.string.cancel),
-            actionLabel = stringResource(Res.string.send),
-            actionEnabled = waypointInput.name.isNotBlank(),
-            onAction = { onSend(waypointInput) },
             grouped = true,
+            grabber = true,
         ) {
-            Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-                IosSection {
-                    WaypointNameRow(
-                        name = waypointInput.name,
-                        emoji = currentEmojiCodepoint.toCodePointString(),
-                        onNameChange = {
+            Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
+                IosSection(header = stringResource(Res.string.pangea_waypoint_options)) {
+                    WaypointFieldRow(
+                        label = stringResource(Res.string.name),
+                        value = waypointInput.name,
+                        onValueChange = {
                             waypointInput = waypointInput.newBuilder().also { wb -> wb.name = it.take(29) }.build()
                         },
-                        onPickEmoji = { showEmojiPickerView = true },
                     )
-                    WaypointTextRow(
+                    WaypointFieldRow(
+                        label = stringResource(Res.string.description),
                         value = waypointInput.description,
-                        placeholder = stringResource(Res.string.description),
+                        multiline = true,
                         onValueChange = {
                             waypointInput =
                                 waypointInput.newBuilder().also { wb -> wb.description = it.take(99) }.build()
                         },
                     )
-                }
-                IosSection {
-                    IosRow(
-                        title = stringResource(Res.string.locked),
-                        icon = IosIcons.Key,
-                        accessory =
-                        IosAccessory.Switch(
-                            checked = waypointInput.isLocked,
-                            // Lock to our own node so we (and only we) can later edit or remove it; unlock clears
-                            // the owner. locked_to must be a real node number - a placeholder locks the waypoint to
-                            // a
-                            // phantom node and blocks even the creator (see #6343). Disabled until our node number
-                            // is
-                            // known.
-                            enabled = myNodeNum != null,
-                            onCheckedChange = { locked ->
-                                waypointInput =
-                                    waypointInput
-                                        .newBuilder()
-                                        .also { wb -> wb.locked_to = if (locked) myNodeNum ?: 0 else 0 }
-                                        .build()
-                            },
-                        ),
+                    WaypointIconRow(
+                        label = stringResource(Res.string.pangea_waypoint_icon),
+                        emoji = currentEmojiCodepoint.toCodePointString(),
+                        onPickEmoji = { showEmojiPickerView = true },
                     )
                     IosRow(
                         title = stringResource(Res.string.expires),
@@ -221,19 +204,36 @@ fun EditWaypointDialog(
                         ),
                     )
                     if (isExpiryEnabled) {
-                        IosRow(
-                            title = stringResource(Res.string.date),
-                            value = selectedDateString,
-                            accessory = IosAccessory.Chevron,
-                            onClick = { showDatePicker = true },
-                        )
-                        IosRow(
-                            title = stringResource(Res.string.time),
-                            value = selectedTimeString,
-                            accessory = IosAccessory.Chevron,
-                            onClick = { showTimePicker = true },
+                        WaypointExpireRow(
+                            label = stringResource(Res.string.pangea_waypoint_expire),
+                            date = selectedDateString,
+                            time = selectedTimeString,
+                            onPickDate = { showDatePicker = true },
+                            onPickTime = { showTimePicker = true },
                         )
                     }
+                    IosRow(
+                        title = stringResource(Res.string.locked),
+                        icon = IosIcons.LockOutline,
+                        accessory =
+                        IosAccessory.Switch(
+                            checked = waypointInput.isLocked,
+                            // Lock to our own node so we (and only we) can later edit or remove it; unlock clears
+                            // the
+                            // owner. locked_to must be a real node number - a placeholder locks the waypoint to a
+                            // phantom node and blocks even the creator (see #6343). Disabled until our node number
+                            // is
+                            // known.
+                            enabled = myNodeNum != null,
+                            onCheckedChange = { locked ->
+                                waypointInput =
+                                    waypointInput
+                                        .newBuilder()
+                                        .also { wb -> wb.locked_to = if (locked) myNodeNum ?: 0 else 0 }
+                                        .build()
+                            },
+                        ),
+                    )
                 }
                 GeofenceSection(
                     waypoint = waypointInput,
@@ -241,18 +241,17 @@ fun EditWaypointDialog(
                     onWaypointChange = { waypointInput = it },
                     onBeginBoxAuthoring = { onBeginBoxAuthoring(waypointInput) },
                 )
-                if (waypoint.id != 0) {
-                    IosSection {
-                        IosRow(
-                            title = stringResource(Res.string.delete),
-                            icon = IosIcons.Trash,
-                            iconTint = Ios.colors.systemRed,
-                            titleColor = Ios.colors.systemRed,
-                            onClick = { onDelete(waypointInput) },
-                        )
-                    }
-                }
+                Spacer(Modifier.height(16.dp))
             }
+            WaypointFormActions(
+                sendLabel = stringResource(Res.string.send),
+                sendEnabled = waypointInput.name.isNotBlank(),
+                onSend = { onSend(waypointInput) },
+                cancelLabel = stringResource(Res.string.cancel),
+                onCancel = onDismissRequest,
+                deleteLabel = if (waypoint.id != 0) stringResource(Res.string.delete) else null,
+                onDelete = { onDelete(waypointInput) },
+            )
         }
         if (isExpiryEnabled) {
             val ldt = waypointInput.expire.expiryInstantOrDefault().toLocalDateTime(tz)
@@ -328,12 +327,12 @@ private fun GeofenceSection(
     val c = Ios.colors
 
     IosSection(header = stringResource(Res.string.geofence)) {
-        DropDownPreference(
-            title = stringResource(Res.string.geofence_radius),
-            enabled = true,
-            items = presets.map { meters -> meters to if (meters == 0) off else meters.toDistanceString(displayUnits) },
-            selectedItem = selectedRadius,
-            onItemSelected = { meters ->
+        WaypointRadiusRow(
+            label = stringResource(Res.string.pangea_waypoint_radius),
+            choices =
+            presets.map { meters -> meters to if (meters == 0) off else meters.toDistanceString(displayUnits) },
+            selected = selectedRadius,
+            onSelect = { meters ->
                 onWaypointChange(
                     waypoint
                         .newBuilder()
@@ -344,13 +343,17 @@ private fun GeofenceSection(
             },
         )
         IosRow(
-            title = stringResource(if (hasBox) Res.string.geofence_edit_area else Res.string.geofence_set_area),
+            title =
+            stringResource(if (hasBox) Res.string.pangea_waypoint_edit_box else Res.string.pangea_waypoint_set_box),
+            icon = IosIcons.RectangleDashed,
             titleColor = c.tint,
             onClick = onBeginBoxAuthoring,
         )
         if (hasBox) {
             IosRow(
-                title = stringResource(Res.string.geofence_remove_area),
+                title = stringResource(Res.string.pangea_waypoint_remove_box),
+                icon = IosIcons.Trash,
+                iconTint = c.systemRed,
                 titleColor = c.systemRed,
                 onClick = {
                     onWaypointChange(
@@ -371,7 +374,8 @@ private fun GeofenceSection(
 @Composable
 private fun GeofenceNotificationRows(waypoint: Waypoint, onWaypointChange: (Waypoint) -> Unit) {
     GeofenceToggleRow(
-        label = stringResource(Res.string.geofence_notify_on_enter),
+        label = stringResource(Res.string.pangea_waypoint_notify_enter),
+        icon = IosIcons.Bell,
         checked = waypoint.notify_on_enter,
         onCheckedChange = {
             onWaypointChange(
@@ -380,7 +384,8 @@ private fun GeofenceNotificationRows(waypoint: Waypoint, onWaypointChange: (Wayp
         },
     )
     GeofenceToggleRow(
-        label = stringResource(Res.string.geofence_notify_on_exit),
+        label = stringResource(Res.string.pangea_waypoint_notify_exit),
+        icon = IosIcons.BellSlash,
         checked = waypoint.notify_on_exit,
         onCheckedChange = {
             onWaypointChange(
@@ -390,7 +395,8 @@ private fun GeofenceNotificationRows(waypoint: Waypoint, onWaypointChange: (Wayp
     )
     if (waypoint.notify_on_enter || waypoint.notify_on_exit) {
         GeofenceToggleRow(
-            label = stringResource(Res.string.geofence_favorites_only),
+            label = stringResource(Res.string.pangea_waypoint_favorites_only),
+            icon = IosIcons.Star,
             checked = waypoint.notify_favorites_only,
             onCheckedChange = {
                 onWaypointChange(waypoint.newBuilder().also { wb -> wb.notify_favorites_only = it }.build())
@@ -399,10 +405,14 @@ private fun GeofenceNotificationRows(waypoint: Waypoint, onWaypointChange: (Wayp
     }
 }
 
-/** A switch row; the whole row is the toggle, so its label names the switch to a screen reader. */
+/** A switch row with its symbol; the whole row is the toggle, so its label names the switch to a screen reader. */
 @Composable
-private fun GeofenceToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    IosRow(title = label, accessory = IosAccessory.Switch(checked = checked, onCheckedChange = onCheckedChange))
+private fun GeofenceToggleRow(label: String, icon: ImageVector, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    IosRow(
+        title = label,
+        icon = icon,
+        accessory = IosAccessory.Switch(checked = checked, onCheckedChange = onCheckedChange),
+    )
 }
 
 /**
