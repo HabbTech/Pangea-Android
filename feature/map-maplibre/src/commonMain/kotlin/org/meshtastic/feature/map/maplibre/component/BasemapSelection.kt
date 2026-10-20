@@ -33,8 +33,7 @@ import org.meshtastic.core.repository.MapPrefs
 import org.meshtastic.core.repository.MapTileProviderPrefs
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.map_tile_source
-import org.meshtastic.core.ui.icon.Map
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.map.component.BasemapChoice
 import org.meshtastic.feature.map.component.BasemapMenu
 import org.meshtastic.feature.map.component.MapButton
@@ -134,7 +133,7 @@ internal fun BasemapButton(selection: BasemapSelection, extra: @Composable () ->
 
     Box {
         MapButton(
-            icon = MeshtasticIcons.Map,
+            icon = IosIcons.MapOutline,
             contentDescription = stringResource(Res.string.map_tile_source),
             onClick = { expanded = true },
         )

@@ -51,11 +51,11 @@ import org.meshtastic.core.repository.UiPrefs
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.pangea_map_empty_body
 import org.meshtastic.core.resources.pangea_map_empty_title
-import org.meshtastic.core.ui.component.NodeChip
 import org.meshtastic.core.ui.component.PangeaLogoButton
 import org.meshtastic.core.ui.ios.Ios
-import org.meshtastic.core.ui.ios.IosActionCapsule
 import org.meshtastic.core.ui.ios.IosDrawsUnderTabBar
+import org.meshtastic.core.ui.ios.IosRadioChip
+import org.meshtastic.core.ui.ios.LocalIosRadioChip
 import org.meshtastic.core.ui.util.LocalMapPlainMode
 import org.meshtastic.core.ui.util.LocalMapTopInset
 import org.meshtastic.core.ui.util.LocalMapViewProvider
@@ -150,15 +150,11 @@ private fun ExpertMap(
         ) {
             PangeaLogoButton()
             Spacer(Modifier.weight(1f))
-            val node = ourNodeInfo
-            if (node != null && isConnected) {
-                IosActionCapsule {
-                    NodeChip(
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                        node = node,
-                        onClick = { onClickNodeChip(it.num) },
-                    )
-                }
+            // iOS's radio chip; it shows a broken link while no radio is connected.
+            val chip = LocalIosRadioChip.current
+            if (chip != null) {
+                val node = ourNodeInfo?.takeIf { isConnected }
+                IosRadioChip(chip, onClick = node?.let { { onClickNodeChip(it.num) } })
             }
         }
     }

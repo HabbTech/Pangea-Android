@@ -1454,6 +1454,7 @@ pangea_join_group_prompt
 pangea_leave_group
 pangea_leave_group_confirm
 pangea_logging
+pangea_map_3d
 pangea_map_empty_body
 pangea_map_empty_title
 pangea_match_device

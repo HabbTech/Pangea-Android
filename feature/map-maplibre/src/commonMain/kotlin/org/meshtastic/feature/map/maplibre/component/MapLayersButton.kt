@@ -37,7 +37,7 @@ import org.koin.compose.koinInject
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.manage_map_layers
 import org.meshtastic.core.ui.icon.Layers
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.map.component.MapButton
 import org.meshtastic.feature.map.component.RasterOverlayToggles
 import org.meshtastic.feature.map.layers.LayerOpacityStore
@@ -71,7 +71,7 @@ internal fun MapLayersButton(
     val opacity by opacityStore.opacity.collectAsState()
 
     MapButton(
-        icon = MeshtasticIcons.Layers,
+        icon = IosIcons.Layers,
         contentDescription = stringResource(Res.string.manage_map_layers),
         onClick = { sheetVisible = true },
     )

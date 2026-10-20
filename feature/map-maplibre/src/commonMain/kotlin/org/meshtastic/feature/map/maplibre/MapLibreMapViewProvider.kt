@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.maplibre.compose.camera.CameraAnimation
@@ -48,7 +49,11 @@ import org.maplibre.compose.location.rememberDefaultLocationProvider
 import org.maplibre.compose.location.rememberLocationState
 import org.maplibre.compose.location.rememberSystemSettingsLauncher
 import org.maplibre.compose.map.MapState
+import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.pangea_map_3d
+import org.meshtastic.core.resources.toggle_my_position
 import org.meshtastic.core.ui.ios.IosGlassMapButton
+import org.meshtastic.core.ui.ios.IosGlassMapTextButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.util.KeepScreenOn
@@ -197,12 +202,13 @@ class MapLibreMapViewProvider(
             if (plain) {
                 PlainLocationButton(location)
             } else {
-                // Under the floating tab bar (Expert Mode), the zoom pair sits above the bottom row of controls.
-                MapZoom(
-                    mapState = mapState,
-                    basemap = basemaps.current,
-                    bottomInset = if (underTabBar) LocalIosBottomInset.current + TOOLBAR_ROW else 0.dp,
-                )
+                // Under the floating tab bar (Expert Mode) the map is iOS's: no zoom buttons (pinch, or double-tap),
+                // and the locate and 3D buttons stacked at the right.
+                if (underTabBar) {
+                    ExpertSideButtons(location, mapState)
+                } else {
+                    MapZoom(mapState = mapState, basemap = basemaps.current)
+                }
                 OfflineIndicator(viewModel, topInset)
             }
 
@@ -242,6 +248,42 @@ class MapLibreMapViewProvider(
         }
     }
 }
+
+/**
+ * Expert Mode's right-hand controls, as on iOS: "locate me" over **3D**, which tilts the map to look across it and
+ * back.
+ */
+@Composable
+private fun BoxScope.ExpertSideButtons(location: LocationControls, mapState: MapState) {
+    val scope = rememberCoroutineScope()
+    val bottom = LocalIosBottomInset.current
+    val tilted = mapState.cameraPosition.tilt > 1.0
+    IosGlassMapButton(
+        icon = if (location.following) IosIcons.LocationFill else IosIcons.Location,
+        contentDescription = stringResource(Res.string.toggle_my_position),
+        onClick = location.onToggleFollow,
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottom + LOCATE_ABOVE_BAR),
+    )
+    IosGlassMapTextButton(
+        text = stringResource(Res.string.pangea_map_3d),
+        selected = tilted,
+        contentDescription = stringResource(Res.string.pangea_map_3d),
+        onClick = {
+            scope.launch {
+                mapState.animateCameraPosition(
+                    mapState.cameraPosition.copy(tilt = if (tilted) 0.0 else TILT_3D),
+                    animation = CameraAnimation.Ease(),
+                )
+            }
+        },
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottom + TILT_ABOVE_BAR),
+    )
+}
+
+/** Where iOS stacks its locate and 3D buttons above the tab bar, and how far 3D tilts the map. */
+private val LOCATE_ABOVE_BAR = 126.dp
+private val TILT_ABOVE_BAR = 71.dp
+private const val TILT_3D = 60.0
 
 /** The plain map's one control, as on iOS: a glass "locate me" button at the bottom right, above the tab bar. */
 @Composable
@@ -429,7 +471,8 @@ private fun BoxScope.MapToolbar(
     MapControlsOverlay(
         modifier =
         if (bottomInset > 0.dp) {
-            Modifier.align(Alignment.BottomCenter).padding(bottom = bottomInset + 12.dp)
+            // Right-aligned as on iOS, leaving the bottom-left corner to the attribution.
+            Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottomInset + 6.dp)
         } else {
             Modifier.align(Alignment.TopCenter).padding(top = TOOLBAR_INSET.dp)
         },
@@ -479,7 +522,8 @@ private fun BoxScope.MapToolbar(
         },
         onSitePlannerClick = onSitePlannerClick,
         isLocationTrackingEnabled = location.following,
-        onToggleLocationTracking = location.onToggleFollow,
+        // Under the tab bar the locate button is one of the right-hand pair instead (ExpertSideButtons).
+        onToggleLocationTracking = if (bottomInset > 0.dp) null else location.onToggleFollow,
     )
 }
 

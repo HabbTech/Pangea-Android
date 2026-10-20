@@ -1392,6 +1392,46 @@ object IosIcons {
         }
     }
 
+    /** `map`, outlined: the map style button. */
+    val MapOutline: ImageVector by lazy {
+        icon("ios.mapOutline") {
+            stroked(width = 1.5f) {
+                moveTo(3f, 6.2f)
+                lineTo(9f, 4f)
+                lineTo(15f, 6.2f)
+                lineTo(21f, 4f)
+                lineTo(21f, 17.8f)
+                lineTo(15f, 20f)
+                lineTo(9f, 17.8f)
+                lineTo(3f, 20f)
+                close()
+                moveTo(9f, 4f)
+                lineTo(9f, 17.8f)
+                moveTo(15f, 6.2f)
+                lineTo(15f, 20f)
+            }
+        }
+    }
+
+    /** `square.3.layers.3d`: map layers. */
+    val Layers: ImageVector by lazy {
+        icon("ios.layers") {
+            stroked(width = 1.5f) {
+                moveTo(12f, 3f)
+                lineTo(21f, 7.5f)
+                lineTo(12f, 12f)
+                lineTo(3f, 7.5f)
+                close()
+                moveTo(3f, 12f)
+                lineTo(12f, 16.5f)
+                lineTo(21f, 12f)
+                moveTo(3f, 16.5f)
+                lineTo(12f, 21f)
+                lineTo(21f, 16.5f)
+            }
+        }
+    }
+
     /** `chevron.left`, for the back button. */
     val ChevronLeft: ImageVector by lazy {
         icon("ios.chevron.left") {

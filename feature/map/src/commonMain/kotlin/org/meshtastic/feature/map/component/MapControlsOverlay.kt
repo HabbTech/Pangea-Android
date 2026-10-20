@@ -37,13 +37,10 @@ import org.meshtastic.core.resources.orient_north
 import org.meshtastic.core.resources.refresh
 import org.meshtastic.core.resources.site_planner
 import org.meshtastic.core.resources.toggle_my_position
-import org.meshtastic.core.ui.icon.CellTower
-import org.meshtastic.core.ui.icon.LocationDisabled
 import org.meshtastic.core.ui.icon.MapCompass
 import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.MyLocation
 import org.meshtastic.core.ui.icon.Refresh
-import org.meshtastic.core.ui.icon.Tune
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.StatusColors.StatusBlue
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
 
@@ -87,21 +84,32 @@ fun MapControlsOverlay(
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
 ) {
-    // Pangea: a row of iOS glass buttons rather than a Material toolbar.
+    // Pangea: a row of iOS glass buttons rather than a Material toolbar, in the iPhone app's order: coverage, filters,
+    // map style (then Android's layers). Its compass shows only once the map is turned, as iOS's does.
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Compass
-        CompassButton(onClick = onCompassClick, bearing = bearing, isFollowing = followPhoneBearing)
+        if (bearing != 0f || followPhoneBearing) {
+            CompassButton(onClick = onCompassClick, bearing = bearing, isFollowing = followPhoneBearing)
+        }
+
+        // Site Planner coverage estimate (optional; provided by the Google flavor)
+        onSitePlannerClick?.let { onClick ->
+            MapButton(
+                icon = IosIcons.Antenna,
+                contentDescription = stringResource(Res.string.site_planner),
+                onClick = onClick,
+            )
+        }
 
         // Filter button + dropdown (optional)
         onToggleFilterMenu?.let { onClick ->
             Box {
                 BadgedBox(badge = { if (filtersActive) Badge() }) {
                     MapButton(
-                        icon = MeshtasticIcons.Tune,
+                        icon = IosIcons.FilterCircle,
                         contentDescription = stringResource(Res.string.map_filter),
                         onClick = onClick,
                     )
@@ -115,15 +123,6 @@ fun MapControlsOverlay(
 
         // Layers button (flavor-specific)
         layersContent()
-
-        // Site Planner coverage estimate (optional; provided by the Google flavor)
-        onSitePlannerClick?.let { onClick ->
-            MapButton(
-                icon = MeshtasticIcons.CellTower,
-                contentDescription = stringResource(Res.string.site_planner),
-                onClick = onClick,
-            )
-        }
 
         // Refresh button (optional)
         if (showRefresh) {
@@ -140,10 +139,10 @@ fun MapControlsOverlay(
             }
         }
 
-        // Location tracking button (optional)
+        // Location tracking button (optional; Pangea's Expert map puts it at the right, as on iOS)
         onToggleLocationTracking?.let { onClick ->
             MapButton(
-                icon = if (isLocationTrackingEnabled) MeshtasticIcons.LocationDisabled else MeshtasticIcons.MyLocation,
+                icon = if (isLocationTrackingEnabled) IosIcons.LocationFill else IosIcons.Location,
                 contentDescription = stringResource(Res.string.toggle_my_position),
                 onClick = onClick,
             )

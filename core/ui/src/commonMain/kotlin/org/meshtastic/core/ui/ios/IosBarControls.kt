@@ -164,3 +164,35 @@ fun IosGlassMapButton(
         Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
     }
 }
+
+/** A map control with a word in it rather than a symbol, as iOS's **3D** button; [selected] draws it in the tint. */
+@Composable
+fun IosGlassMapTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    contentDescription: String? = null,
+) {
+    val c = Ios.colors
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier =
+        modifier
+            .size(50.dp)
+            .shadow(12.dp, shape, ambientColor = c.chromeShadow, spotColor = c.chromeShadow)
+            .clip(shape)
+            .background(c.chrome)
+            .iosPressable(onClick = onClick)
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else {
+                    Modifier
+                },
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, style = Ios.type.title3, color = if (selected) c.tint else c.label)
+    }
+}
