@@ -22,56 +22,50 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.NodeSortOption
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.node_filter_exclude_infrastructure
-import org.meshtastic.core.resources.node_filter_exclude_mqtt
 import org.meshtastic.core.resources.node_filter_exclude_unheard
 import org.meshtastic.core.resources.node_filter_ignored
 import org.meshtastic.core.resources.node_filter_include_unknown
 import org.meshtastic.core.resources.node_filter_only_direct
-import org.meshtastic.core.resources.node_filter_only_encrypted
-import org.meshtastic.core.resources.node_filter_only_online
-import org.meshtastic.core.resources.node_filter_only_signed
 import org.meshtastic.core.resources.node_filter_show_ignored
-import org.meshtastic.core.resources.node_filter_title
 import org.meshtastic.core.resources.node_sort_button
 import org.meshtastic.core.resources.node_sort_title
+import org.meshtastic.core.resources.pangea_encrypted_only
 import org.meshtastic.core.resources.pangea_find_node
+import org.meshtastic.core.resources.pangea_node_filters
+import org.meshtastic.core.resources.pangea_online
+import org.meshtastic.core.resources.pangea_signed
+import org.meshtastic.core.resources.pangea_via_mqtt
 import org.meshtastic.core.ui.component.MeshtasticSearchBar
-import org.meshtastic.core.ui.component.SignedNodeIcon
 import org.meshtastic.core.ui.icon.Lock
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Sort
 import org.meshtastic.core.ui.ios.Ios
-import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.IosSheet
 
 /**
  * The node list's search field: a Material 3 [MeshtasticSearchBar] whose expanded surface shows the matching nodes,
@@ -114,14 +108,14 @@ fun NodeFilterSearchBar(
             Box(
                 modifier =
                 Modifier.fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceDim)
+                    .background(Ios.colors.fieldFill)
                     .clickable { toggles.onToggleShowIgnored() }
-                    .padding(vertical = 16.dp, horizontal = 24.dp),
+                    .padding(vertical = 12.dp, horizontal = 24.dp),
             ) {
                 Text(
                     text = stringResource(Res.string.node_filter_ignored),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = Ios.type.subheadline,
+                    color = Ios.colors.tint,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                 )
@@ -156,8 +150,10 @@ data class NodeFilterToggles(
 )
 
 /**
- * The sort and filter menu, opened from [button] (by default the sort icon in the search field). [extraItems] adds
- * Android's own entries at the top, such as Pangea's hop histogram now that the bar has no room for it.
+ * The sort and filters, as the iPhone app's "Node Filters" sheet opened from [button] (by default the sort icon in the
+ * search field): switches with their symbols in iOS's order and words where it has them, then Android's own filters,
+ * then how the list is sorted. [extraItems] adds Android's own rows in a card of their own, such as Pangea's hop
+ * histogram now that the bar has no room for it.
  */
 @Suppress("LongMethod")
 @Composable
@@ -173,7 +169,7 @@ fun NodeSortButton(
                 imageVector = MeshtasticIcons.Sort,
                 contentDescription = stringResource(Res.string.node_sort_button),
                 modifier = Modifier.heightIn(max = 48.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = Ios.colors.label,
             )
         }
     },
@@ -182,139 +178,106 @@ fun NodeSortButton(
 
     button { expanded = true }
 
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false },
-        modifier = Modifier.background(MaterialTheme.colorScheme.background.copy(alpha = 1f)),
-    ) {
-        if (extraItems != null) {
-            DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) { extraItems { expanded = false } }
-        }
-        DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-            DropdownMenuTitle(text = stringResource(Res.string.node_sort_title))
+    if (expanded) {
+        IosSheet(
+            title = stringResource(Res.string.pangea_node_filters),
+            onDismissRequest = { expanded = false },
+            grouped = true,
+            grabber = true,
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+            ) {
+                IosSection {
+                    // iOS asks which nodes to include, so "Via Mqtt" on is Android's "Exclude MQTT" off.
+                    FilterSwitch(
+                        label = stringResource(Res.string.pangea_via_mqtt),
+                        icon = IosIcons.DotRadiowavesUpForward,
+                        checked = !toggles.excludeMqtt,
+                        onToggle = toggles.onToggleExcludeMqtt,
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.pangea_online),
+                        icon = IosIcons.CheckCircleFill,
+                        checked = toggles.onlyOnline,
+                        onToggle = toggles.onToggleOnlyOnline,
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.node_filter_exclude_unheard),
+                        icon = IosIcons.EyeSlash,
+                        checked = toggles.excludeUnheard,
+                        onToggle = toggles.onToggleExcludeUnheard,
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.pangea_signed),
+                        icon = IosIcons.CheckSeal,
+                        checked = toggles.onlySigned,
+                        onToggle = toggles.onToggleOnlySigned,
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.pangea_encrypted_only),
+                        icon = MeshtasticIcons.Lock,
+                        checked = toggles.onlyEncrypted,
+                        onToggle = toggles.onToggleOnlyEncrypted,
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.node_filter_show_ignored),
+                        icon = IosIcons.MinusCircle,
+                        checked = toggles.showIgnored,
+                        onToggle = toggles.onToggleShowIgnored,
+                        value = toggles.ignoredNodeCount.takeIf { it > 0 }?.toString(),
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.node_filter_only_direct),
+                        icon = IosIcons.Antenna,
+                        checked = toggles.onlyDirect,
+                        onToggle = toggles.onToggleOnlyDirect,
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.node_filter_include_unknown),
+                        icon = IosIcons.QuestionCircle,
+                        checked = toggles.includeUnknown,
+                        onToggle = toggles.onToggleIncludeUnknown,
+                    )
+                    FilterSwitch(
+                        label = stringResource(Res.string.node_filter_exclude_infrastructure),
+                        icon = IosIcons.Repeat,
+                        checked = toggles.excludeInfrastructure,
+                        onToggle = toggles.onToggleExcludeInfrastructure,
+                    )
+                }
 
-            NodeSortOption.entries.forEach { sort ->
-                DropdownMenuRadio(
-                    text = stringResource(sort.stringRes),
-                    selected = sort == currentSortOption,
-                    onClick = { onSortSelect(sort) },
-                )
-            }
-        }
-
-        DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-            DropdownMenuTitle(text = stringResource(Res.string.node_filter_title))
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_exclude_infrastructure),
-                checked = toggles.excludeInfrastructure,
-                onClick = toggles.onToggleExcludeInfrastructure,
-            )
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_include_unknown),
-                checked = toggles.includeUnknown,
-                onClick = toggles.onToggleIncludeUnknown,
-            )
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_only_online),
-                checked = toggles.onlyOnline,
-                onClick = toggles.onToggleOnlyOnline,
-            )
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_only_direct),
-                checked = toggles.onlyDirect,
-                onClick = toggles.onToggleOnlyDirect,
-            )
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_show_ignored),
-                checked = toggles.showIgnored,
-                onClick = toggles.onToggleShowIgnored,
-                trailing =
-                if (toggles.ignoredNodeCount > 0) {
-                    {
-                        Text(
-                            text = " (${toggles.ignoredNodeCount})",
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp),
+                IosSection(header = stringResource(Res.string.node_sort_title)) {
+                    NodeSortOption.entries.forEach { sort ->
+                        IosRow(
+                            title = stringResource(sort.stringRes),
+                            accessory =
+                            if (sort == currentSortOption) IosAccessory.Checkmark else IosAccessory.None,
+                            onClick = { onSortSelect(sort) },
                         )
                     }
-                } else {
-                    null
-                },
-            )
+                }
 
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_only_signed),
-                checked = toggles.onlySigned,
-                onClick = toggles.onToggleOnlySigned,
-                trailing = { SignedNodeIcon(Modifier.size(20.dp)) },
-            )
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_only_encrypted),
-                checked = toggles.onlyEncrypted,
-                onClick = toggles.onToggleOnlyEncrypted,
-                trailing = {
-                    Icon(
-                        imageVector = MeshtasticIcons.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.StatusGreen,
-                        modifier = Modifier.size(20.dp),
-                    )
-                },
-            )
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_exclude_mqtt),
-                checked = toggles.excludeMqtt,
-                onClick = toggles.onToggleExcludeMqtt,
-            )
-
-            DropdownMenuCheck(
-                text = stringResource(Res.string.node_filter_exclude_unheard),
-                checked = toggles.excludeUnheard,
-                onClick = toggles.onToggleExcludeUnheard,
-            )
+                if (extraItems != null) {
+                    IosSection { extraItems { expanded = false } }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun DropdownMenuTitle(text: String) {
-    Text(
-        text = text,
-        modifier =
-        Modifier.height(48.dp)
-            .padding(MenuDefaults.DropdownMenuItemContentPadding)
-            .wrapContentHeight(align = Alignment.CenterVertically),
-        fontWeight = FontWeight.ExtraBold,
-    )
-}
-
-@Composable
-private fun DropdownMenuRadio(text: String, selected: Boolean, onClick: () -> Unit) {
-    DropdownMenuItem(
-        onClick = onClick,
-        leadingIcon = { RadioButton(selected = selected, onClick = null) },
-        text = { Text(text = text) },
-    )
-}
-
-@Composable
-private fun DropdownMenuCheck(
-    text: String,
+private fun FilterSwitch(
+    label: String,
+    icon: ImageVector,
     checked: Boolean,
-    onClick: () -> Unit,
-    trailing: @Composable (() -> Unit)? = null,
+    onToggle: () -> Unit,
+    value: String? = null,
 ) {
-    DropdownMenuItem(
-        onClick = onClick,
-        leadingIcon = { Checkbox(checked = checked, onCheckedChange = null) },
-        trailingIcon = trailing,
-        text = { Text(text = text) },
+    IosRow(
+        title = label,
+        icon = icon,
+        value = value,
+        accessory = IosAccessory.Switch(checked = checked, onCheckedChange = { onToggle() }),
     )
 }

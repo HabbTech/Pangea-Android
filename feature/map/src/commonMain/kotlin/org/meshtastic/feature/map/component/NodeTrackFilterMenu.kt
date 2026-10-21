@@ -18,7 +18,6 @@ package org.meshtastic.feature.map.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +30,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.last_heard_filter_label
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.core.ui.ios.IosSlider
 import org.meshtastic.feature.map.LastHeardFilter
 import kotlin.math.roundToInt
@@ -49,7 +49,7 @@ fun NodeTrackFilterMenu(
     selected: LastHeardFilter,
     onSelect: (LastHeardFilter) -> Unit,
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
+    IosMenu(expanded = expanded, onDismissRequest = onDismissRequest) {
         LastHeardSlider(selected = selected, onSelect = onSelect)
     }
 }

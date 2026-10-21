@@ -35,7 +35,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
@@ -63,6 +62,7 @@ import org.meshtastic.core.resources.host_metrics_log
 import org.meshtastic.core.resources.load_indexed
 import org.meshtastic.core.resources.uptime
 import org.meshtastic.core.resources.user_string
+import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.core.ui.theme.GraphColors
 import org.meshtastic.proto.Telemetry
 
@@ -149,7 +149,7 @@ private fun HostMetricsCard(telemetry: Telemetry, isSelected: Boolean, onClick: 
         ) {
             HostMetricsCardContent(time = time, hostMetrics = hostMetrics)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) { DeleteItem { expanded = false } }
+        IosMenu(expanded = expanded, onDismissRequest = { expanded = false }) { DeleteItem { expanded = false } }
     }
 }
 

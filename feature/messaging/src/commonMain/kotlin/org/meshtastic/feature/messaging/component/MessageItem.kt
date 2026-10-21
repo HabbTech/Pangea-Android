@@ -592,8 +592,6 @@ fun MessageItem(
             ),
         reactions = if (message.fromLocal) emojis.reversed() else emojis,
         myId = ourNode.user.id,
-        canReact = canReact,
-        onSendReaction = sendReaction,
         onShowReactions = onShowReactions,
     )
 }

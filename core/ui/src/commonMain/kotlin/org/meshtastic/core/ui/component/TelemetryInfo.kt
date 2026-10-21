@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -68,16 +67,13 @@ import org.meshtastic.core.ui.icon.Role
 import org.meshtastic.core.ui.icon.SoilMoisture
 import org.meshtastic.core.ui.icon.Temperature
 import org.meshtastic.core.ui.icon.role
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.proto.Config
 
 private const val SIZE_ICON = 14
 
 @Composable
-fun TemperatureInfo(
-    temp: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun TemperatureInfo(temp: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.Temperature,
@@ -89,11 +85,7 @@ fun TemperatureInfo(
 }
 
 @Composable
-fun HumidityInfo(
-    humidity: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun HumidityInfo(humidity: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.Humidity,
@@ -105,11 +97,7 @@ fun HumidityInfo(
 }
 
 @Composable
-fun PressureInfo(
-    pressure: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun PressureInfo(pressure: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.Pressure,
@@ -121,11 +109,7 @@ fun PressureInfo(
 }
 
 @Composable
-fun SoilTemperatureInfo(
-    temp: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun SoilTemperatureInfo(temp: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     OverlayIconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.SoilMoisture,
@@ -138,11 +122,7 @@ fun SoilTemperatureInfo(
 }
 
 @Composable
-fun SoilMoistureInfo(
-    moisture: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun SoilMoistureInfo(moisture: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     OverlayIconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.SoilMoisture,
@@ -155,11 +135,7 @@ fun SoilMoistureInfo(
 }
 
 @Composable
-fun PaxcountInfo(
-    pax: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun PaxcountInfo(pax: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.PeopleCount,
@@ -171,11 +147,7 @@ fun PaxcountInfo(
 }
 
 @Composable
-fun AirQualityInfo(
-    iaq: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun AirQualityInfo(iaq: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.AirQuality,
@@ -191,7 +163,7 @@ fun PowerInfo(
     value: String,
     modifier: Modifier = Modifier,
     label: String? = null,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = Ios.colors.label,
 ) {
     IconInfo(
         modifier = modifier,
@@ -204,11 +176,7 @@ fun PowerInfo(
 }
 
 @Composable
-fun UptimeInfo(
-    uptime: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun UptimeInfo(uptime: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.ArrowCircleUp,
@@ -224,7 +192,7 @@ fun HardwareInfo(
     hwModel: String,
     modifier: Modifier = Modifier,
     deviceImageUrl: String? = null,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = Ios.colors.label,
 ) {
     Row(
         modifier = modifier,
@@ -250,7 +218,7 @@ fun HardwareInfo(
         }
         Text(
             text = hwModel,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+            style = Ios.type.caption2.copy(fontWeight = FontWeight.SemiBold),
             color = contentColor.copy(alpha = 0.95f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -259,41 +227,37 @@ fun HardwareInfo(
 }
 
 @Composable
-fun RoleInfo(
-    role: Config.DeviceConfig.Role,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun RoleInfo(role: Config.DeviceConfig.Role, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.role(role),
         contentDescription = stringResource(Res.string.role),
         text = stringResource(role.label),
-        style = MaterialTheme.typography.labelSmall,
+        style = Ios.type.caption2,
         contentColor = contentColor,
     )
 }
 
 @Composable
-fun RoleInfo(role: String, modifier: Modifier = Modifier, contentColor: Color = MaterialTheme.colorScheme.onSurface) {
+fun RoleInfo(role: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.Role,
         contentDescription = stringResource(Res.string.role),
         text = role,
-        style = MaterialTheme.typography.labelSmall,
+        style = Ios.type.caption2,
         contentColor = contentColor,
     )
 }
 
 @Composable
-fun NodeIdInfo(id: String, modifier: Modifier = Modifier, contentColor: Color = MaterialTheme.colorScheme.onSurface) {
+fun NodeIdInfo(id: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.NodeId,
         contentDescription = stringResource(Res.string.node_id),
         text = id,
-        style = MaterialTheme.typography.labelSmall,
+        style = Ios.type.caption2,
         contentColor = contentColor,
     )
 }
@@ -307,8 +271,8 @@ fun OverlayIconInfo(
     modifier: Modifier = Modifier,
     label: String? = null,
     text: String? = null,
-    style: TextStyle = MaterialTheme.typography.labelMedium,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    style: TextStyle = Ios.type.caption1,
+    contentColor: Color = Ios.colors.label,
 ) {
     Row(
         modifier = modifier,
@@ -332,7 +296,7 @@ fun OverlayIconInfo(
         label?.let {
             Text(
                 text = it,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = 0.sp),
+                style = Ios.type.caption2.copy(fontSize = 10.sp, letterSpacing = 0.sp),
                 color = contentColor.copy(alpha = 0.55f),
                 maxLines = 1,
                 overflow = TextOverflow.Clip,

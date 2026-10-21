@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -54,7 +53,7 @@ import org.meshtastic.core.resources.node_layout_preview
 import org.meshtastic.core.resources.node_layout_relative_last_heard
 import org.meshtastic.core.resources.node_layout_section_title
 import org.meshtastic.core.resources.node_layout_signal_direct_only
-import org.meshtastic.core.ui.component.NodeItem
+import org.meshtastic.core.ui.component.IosNodeRow
 import org.meshtastic.core.ui.component.NodeItemCompact
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.ios.Ios
@@ -104,8 +103,8 @@ fun NodeLayoutSettings(
         // Live preview — positioned above toggles so it doesn't jump with list size changes
         Text(
             text = stringResource(Res.string.node_layout_preview),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.caption1,
+            color = Ios.colors.secondaryLabel,
             modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
         )
 
@@ -114,14 +113,13 @@ fun NodeLayoutSettings(
 
         Box(modifier = Modifier.animateContentSize().padding(bottom = 8.dp)) {
             when (state.density) {
+                // The list's full rows are the iPhone app's, so the preview shows one of those.
                 NodeListDensity.COMPLETE ->
-                    NodeItem(
+                    IosNodeRow(
                         thisNode = localNode,
                         thatNode = previewNode,
                         distanceUnits = MeasurementSystem.METRIC,
-                        tempInFahrenheit = false,
                         connectionState = ConnectionState.Connected,
-                        showTelemetry = state.showTelemetry,
                     )
 
                 NodeListDensity.COMPACT ->
@@ -156,8 +154,8 @@ fun NodeLayoutSettings(
         if (state.density == NodeListDensity.COMPLETE) {
             Text(
                 text = stringResource(Res.string.node_layout_complete_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         } else {
@@ -165,13 +163,13 @@ fun NodeLayoutSettings(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
             Text(
                 text = stringResource(Res.string.node_layout_compact_fields_header),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.caption1,
+                color = Ios.colors.secondaryLabel,
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 8.dp),
             )
             Card(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
             ) {
                 SwitchPreference(
                     title = stringResource(Res.string.node_layout_power),

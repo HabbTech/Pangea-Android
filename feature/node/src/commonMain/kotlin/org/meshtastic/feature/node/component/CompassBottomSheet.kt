@@ -20,14 +20,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,9 +65,9 @@ import org.meshtastic.core.resources.compass_uncertainty_unknown
 import org.meshtastic.core.resources.elevation_suffix
 import org.meshtastic.core.resources.exchange_position
 import org.meshtastic.core.resources.last_position_update
-import org.meshtastic.core.ui.icon.ErrorOutline
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.MyLocation
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.node.compass.CompassUiState
 import org.meshtastic.feature.node.compass.CompassWarning
 import kotlin.math.PI
@@ -98,10 +96,10 @@ fun CompassSheetContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = stringResource(Res.string.compass_title), style = MaterialTheme.typography.headlineSmall)
+        Text(text = stringResource(Res.string.compass_title), style = Ios.type.headline, color = Ios.colors.label)
         Text(
             text = uiState.targetName,
-            style = MaterialTheme.typography.titleMediumEmphasized,
+            style = Ios.type.title3.copy(fontWeight = FontWeight.SemiBold),
             color = uiState.targetColor,
         )
 
@@ -117,13 +115,15 @@ fun CompassSheetContent(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(Res.string.compass_distance, uiState.distanceText ?: "--"),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = Ios.type.body,
+                    color = Ios.colors.label,
                 )
                 Text(
                     text =
                     uiState.bearingText?.let { stringResource(Res.string.compass_bearing, it) }
                         ?: stringResource(Res.string.compass_bearing_na),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = Ios.type.body,
+                    color = Ios.colors.label,
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -135,14 +135,15 @@ fun CompassSheetContent(
                             val angle = uiState.angularErrorDeg?.let { formatString("%.0f°", it) } ?: "?"
                             stringResource(Res.string.compass_uncertainty, radius, angle)
                         } ?: stringResource(Res.string.compass_uncertainty_unknown),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
+                        color = Ios.colors.secondaryLabel,
                     )
                     uiState.targetAltitude?.let { altitude ->
                         ElevationInfo(
                             altitude = altitude,
                             system = uiState.displayUnits,
                             suffix = stringResource(Res.string.elevation_suffix),
-                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            contentColor = Ios.colors.secondaryLabel,
                         )
                     }
                 }
@@ -152,14 +153,17 @@ fun CompassSheetContent(
         uiState.lastUpdateText?.let {
             Text(
                 text = stringResource(Res.string.last_position_update) + ": $it",
-                style = MaterialTheme.typography.bodyMedium,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
             )
             // Quick way to re-request a fresh fix without leaving the compass sheet
-            Button(onClick = onRequestPosition, modifier = Modifier.fillMaxWidth()) {
-                Icon(imageVector = MeshtasticIcons.MyLocation, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(Res.string.exchange_position))
-            }
+            IosButton(
+                text = stringResource(Res.string.exchange_position),
+                onClick = onRequestPosition,
+                icon = IosIcons.LocationFill,
+                large = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         if (uiState.warnings.isNotEmpty()) {
@@ -182,9 +186,8 @@ private fun WarningList(
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         warnings.forEach { warning ->
             Surface(
-                tonalElevation = 2.dp,
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.errorContainer,
+                shape = RoundedCornerShape(12.dp),
+                color = Ios.colors.systemRed.copy(alpha = 0.12f),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
@@ -192,32 +195,28 @@ private fun WarningList(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(
-                        imageVector = MeshtasticIcons.ErrorOutline,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                    )
-                    Text(
-                        text = warningText(warning),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    Icon(imageVector = IosIcons.WarningFill, contentDescription = null, tint = Ios.colors.systemRed)
+                    Text(text = warningText(warning), color = Ios.colors.label, style = Ios.type.subheadline)
                 }
             }
         }
 
         if (warnings.contains(CompassWarning.NO_LOCATION_PERMISSION)) {
-            Button(onClick = onRequestPermission, modifier = Modifier.fillMaxWidth()) {
-                Icon(imageVector = MeshtasticIcons.MyLocation, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(Res.string.compass_no_location_permission))
-            }
+            IosButton(
+                text = stringResource(Res.string.compass_no_location_permission),
+                onClick = onRequestPermission,
+                icon = IosIcons.LocationFill,
+                large = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
         } else if (warnings.contains(CompassWarning.LOCATION_DISABLED)) {
-            Button(onClick = onOpenLocationSettings, modifier = Modifier.fillMaxWidth()) {
-                Icon(imageVector = MeshtasticIcons.MyLocation, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(Res.string.compass_location_disabled))
-            }
+            IosButton(
+                text = stringResource(Res.string.compass_location_disabled),
+                onClick = onOpenLocationSettings,
+                icon = IosIcons.LocationFill,
+                large = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -239,12 +238,12 @@ private fun CompassDial(
     modifier: Modifier = Modifier,
     markerColor: Color = Color(0xFF2196F3),
 ) {
-    val compassRoseColor = MaterialTheme.colorScheme.primary
-    val tickColor = MaterialTheme.colorScheme.onSurface
-    val cardinalColor = MaterialTheme.colorScheme.primary
-    val degreeTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-    val northPointerColor = Color.Red
-    val headingIndicatorColor = MaterialTheme.colorScheme.secondary
+    val compassRoseColor = Ios.colors.tint
+    val tickColor = Ios.colors.label
+    val cardinalColor = Ios.colors.label
+    val degreeTextColor = Ios.colors.secondaryLabel
+    val northPointerColor = Ios.colors.systemRed
+    val headingIndicatorColor = Ios.colors.systemGray
 
     val textMeasurer = rememberTextMeasurer()
     val cardinalStyle = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)

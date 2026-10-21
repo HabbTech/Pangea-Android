@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -94,6 +92,8 @@ import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosAccessory
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosLargeTitleScreen
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.IosPushedScreen
 import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.IosSection
@@ -365,11 +365,11 @@ fun IosAppSettingsScreen(
                                     modifier = Modifier.padding(start = 4.dp).size(16.dp),
                                 )
                             }
-                            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                            IosMenu(expanded = menu, onDismissRequest = { menu = false }) {
                                 PowerMode.entries.forEach { mode ->
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(mode.labelRes)) },
-                                        leadingIcon = { Icon(mode.icon, contentDescription = null) },
+                                    IosMenuItem(
+                                        text = stringResource(mode.labelRes),
+                                        icon = mode.icon,
                                         onClick = {
                                             menu = false
                                             powerModeManager.setSelectedMode(mode)

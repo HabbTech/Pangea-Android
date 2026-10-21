@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -90,16 +89,17 @@ import org.meshtastic.core.ui.component.NodeItemCompact
 import org.meshtastic.core.ui.component.ScrollToTopEvent
 import org.meshtastic.core.ui.component.SharedContactDialog
 import org.meshtastic.core.ui.component.smartScrollToTop
-import org.meshtastic.core.ui.icon.BarChart
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.Nodes
 import org.meshtastic.core.ui.icon.SignalOff
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.feature.node.component.LocalNodeContextMenu
 import org.meshtastic.feature.node.component.NodeContextMenu
@@ -410,7 +410,7 @@ fun NodeListScreen(
                 item { Spacer(modifier = Modifier.height(88.dp)) }
             }
             // iOS's two floating glass buttons above the tab bar: the legend at the left, sort and filters at the
-            // right. Android's hop histogram rides at the top of the filter menu.
+            // right. Android's hop histogram rides at the bottom of the filter sheet.
             IosGlassIconButton(
                 icon = IosIcons.QuestionCircle,
                 contentDescription = stringResource(Res.string.node_list_help_title),
@@ -424,9 +424,10 @@ fun NodeListScreen(
                 toggles = filterToggles,
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 22.dp),
                 extraItems = { dismiss ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.hop_histogram_title)) },
-                        leadingIcon = { Icon(MeshtasticIcons.BarChart, contentDescription = null) },
+                    IosRow(
+                        title = stringResource(Res.string.hop_histogram_title),
+                        icon = IosIcons.ChartBar,
+                        accessory = IosAccessory.Chevron,
                         onClick = {
                             dismiss()
                             showHopHistogram = true

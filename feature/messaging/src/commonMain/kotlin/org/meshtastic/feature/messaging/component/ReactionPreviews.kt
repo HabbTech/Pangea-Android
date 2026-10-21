@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.Reaction
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.proto.User
@@ -32,9 +33,8 @@ import org.meshtastic.proto.User
 fun ReactionItemPreview() {
     AppTheme {
         Column(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-            ReactionItem(emoji = "+1")
-            ReactionItem(emoji = "+1", emojiCount = 2)
-            AddReactionButton()
+            ReactionItem(emoji = "\uD83D\uDC4D", shortName = "RVSD")
+            ReactionItem(emoji = "\uD83D\uDE42", shortName = "OAKR", status = MessageStatus.ENROUTE)
         }
     }
 }

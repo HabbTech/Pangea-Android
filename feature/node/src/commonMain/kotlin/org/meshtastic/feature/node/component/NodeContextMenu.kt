@@ -16,16 +16,7 @@
  */
 package org.meshtastic.feature.node.component
 
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.resources.Res
@@ -39,17 +30,11 @@ import org.meshtastic.core.resources.remove_ignored
 import org.meshtastic.core.resources.trace_route
 import org.meshtastic.core.resources.unmute
 import org.meshtastic.core.resources.update_status
-import org.meshtastic.core.ui.icon.DeleteNode
-import org.meshtastic.core.ui.icon.DoDisturb
-import org.meshtastic.core.ui.icon.Favorite
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Message
-import org.meshtastic.core.ui.icon.NotFavorite
-import org.meshtastic.core.ui.icon.Notes
-import org.meshtastic.core.ui.icon.Route
-import org.meshtastic.core.ui.icon.VolumeOff
-import org.meshtastic.core.ui.icon.VolumeUp
-import org.meshtastic.core.ui.theme.StatusColors.StatusRed
+import org.meshtastic.core.ui.ios.IosContextMenuOffset
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuDivider
+import org.meshtastic.core.ui.ios.IosMenuItem
 
 /**
  * Shared context menu for node actions (favorite, mute, message, trace route, ignore, remove).
@@ -68,146 +53,111 @@ fun NodeContextMenu(
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-            FavoriteMenuItem(node, onFavorite, onDismiss)
-            if (node.capabilities.canMuteNode) {
-                MuteMenuItem(node, onMute, onDismiss)
-            }
-            MessageMenuItem(node, onMessage, onDismiss)
-            TraceRouteMenuItem(node, onTraceRoute, onDismiss)
+    IosMenu(expanded = expanded, onDismissRequest = onDismiss, offset = IosContextMenuOffset) {
+        FavoriteMenuItem(node, onFavorite, onDismiss)
+        if (node.capabilities.canMuteNode) {
+            MuteMenuItem(node, onMute, onDismiss)
         }
-        DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-            IgnoreMenuItem(node, onIgnore, onDismiss)
-            RemoveMenuItem(node, onRemove, onDismiss)
-        }
+        MessageMenuItem(node, onMessage, onDismiss)
+        TraceRouteMenuItem(node, onTraceRoute, onDismiss)
+        IosMenuDivider()
+        IgnoreMenuItem(node, onIgnore, onDismiss)
+        RemoveMenuItem(node, onRemove, onDismiss)
     }
 }
 
 /** A menu of its own: favoriting, muting, messaging or removing yourself is meaningless (design#115). */
 @Composable
 fun LocalNodeContextMenu(expanded: Boolean, onUpdateStatus: () -> Unit, onDismiss: () -> Unit) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-            DropdownMenuItem(
-                onClick = {
-                    onUpdateStatus()
-                    onDismiss()
-                },
-                leadingIcon = { Icon(imageVector = MeshtasticIcons.Notes, contentDescription = null) },
-                text = { Text(text = stringResource(Res.string.update_status)) },
-            )
-        }
+    IosMenu(expanded = expanded, onDismissRequest = onDismiss, offset = IosContextMenuOffset) {
+        IosMenuItem(
+            onClick = {
+                onUpdateStatus()
+                onDismiss()
+            },
+            icon = IosIcons.TextAlignLeft,
+            text = stringResource(Res.string.update_status),
+        )
     }
 }
 
 @Composable
 private fun FavoriteMenuItem(node: Node, onFavorite: () -> Unit, onDismiss: () -> Unit) {
     val isFavorite = node.isFavorite
-    DropdownMenuItem(
+    IosMenuItem(
         onClick = {
             onFavorite()
             onDismiss()
         },
         enabled = !node.isIgnored,
-        leadingIcon = {
-            Icon(
-                imageVector = if (isFavorite) MeshtasticIcons.Favorite else MeshtasticIcons.NotFavorite,
-                contentDescription = null,
-            )
-        },
-        text = { Text(stringResource(if (isFavorite) Res.string.remove_favorite else Res.string.add_favorite)) },
+        icon = if (isFavorite) IosIcons.StarFill else IosIcons.Star,
+        text = stringResource(if (isFavorite) Res.string.remove_favorite else Res.string.add_favorite),
     )
 }
 
 @Composable
 private fun IgnoreMenuItem(node: Node, onIgnore: () -> Unit, onDismiss: () -> Unit) {
     val isIgnored = node.isIgnored
-    DropdownMenuItem(
+    IosMenuItem(
         onClick = {
             onIgnore()
             onDismiss()
         },
-        leadingIcon = {
-            Icon(
-                imageVector = if (isIgnored) MeshtasticIcons.DoDisturb else MeshtasticIcons.DoDisturb,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.StatusRed,
-            )
-        },
-        text = {
-            Text(
-                text = stringResource(if (isIgnored) Res.string.remove_ignored else Res.string.ignore),
-                color = MaterialTheme.colorScheme.StatusRed,
-            )
-        },
+        icon = IosIcons.MinusCircle,
+        destructive = true,
+        text = stringResource(if (isIgnored) Res.string.remove_ignored else Res.string.ignore),
     )
 }
 
 @Composable
 private fun MuteMenuItem(node: Node, onMute: () -> Unit, onDismiss: () -> Unit) {
     val isMuted = node.isMuted
-    DropdownMenuItem(
+    IosMenuItem(
         onClick = {
             onMute()
             onDismiss()
         },
-        leadingIcon = {
-            Icon(
-                imageVector = if (isMuted) MeshtasticIcons.VolumeOff else MeshtasticIcons.VolumeUp,
-                contentDescription = null,
-            )
-        },
-        text = { Text(text = stringResource(if (isMuted) Res.string.unmute else Res.string.mute_notifications)) },
+        icon = if (isMuted) IosIcons.Bell else IosIcons.BellSlash,
+        text = stringResource(if (isMuted) Res.string.unmute else Res.string.mute_notifications),
     )
 }
 
 @Composable
 private fun MessageMenuItem(node: Node, onMessage: () -> Unit, onDismiss: () -> Unit) {
-    DropdownMenuItem(
+    IosMenuItem(
         onClick = {
             onMessage()
             onDismiss()
         },
         enabled = !node.isIgnored,
-        leadingIcon = { Icon(imageVector = MeshtasticIcons.Message, contentDescription = null) },
-        text = { Text(text = stringResource(Res.string.message)) },
+        icon = IosIcons.Bubble,
+        text = stringResource(Res.string.message),
     )
 }
 
 @Composable
 private fun TraceRouteMenuItem(node: Node, onTraceRoute: () -> Unit, onDismiss: () -> Unit) {
-    DropdownMenuItem(
+    IosMenuItem(
         onClick = {
             onTraceRoute()
             onDismiss()
         },
         enabled = !node.isIgnored,
-        leadingIcon = { Icon(imageVector = MeshtasticIcons.Route, contentDescription = null) },
-        text = { Text(text = stringResource(Res.string.trace_route)) },
+        icon = IosIcons.PointsConnected,
+        text = stringResource(Res.string.trace_route),
     )
 }
 
 @Composable
 private fun RemoveMenuItem(node: Node, onRemove: () -> Unit, onDismiss: () -> Unit) {
-    DropdownMenuItem(
+    IosMenuItem(
         onClick = {
             onRemove()
             onDismiss()
         },
         enabled = !node.isIgnored,
-        leadingIcon = {
-            Icon(
-                imageVector = MeshtasticIcons.DeleteNode,
-                contentDescription = null,
-                tint = if (node.isIgnored) LocalContentColor.current else MaterialTheme.colorScheme.StatusRed,
-            )
-        },
-        text = {
-            Text(
-                text = stringResource(Res.string.remove),
-                color = if (node.isIgnored) Color.Unspecified else MaterialTheme.colorScheme.StatusRed,
-            )
-        },
+        icon = IosIcons.Trash,
+        destructive = true,
+        text = stringResource(Res.string.remove),
     )
 }

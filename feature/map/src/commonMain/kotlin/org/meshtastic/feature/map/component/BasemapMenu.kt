@@ -16,19 +16,16 @@
  */
 package org.meshtastic.feature.map.component
 
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MenuDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.selected_map_type
-import org.meshtastic.core.ui.icon.Check
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuDivider
+import org.meshtastic.core.ui.ios.IosMenuItem
 
 /**
  * The menu that picks what the map draws underneath the mesh.
@@ -51,16 +48,15 @@ fun BasemapMenu(
     modifier: Modifier = Modifier,
     trailingContent: @Composable () -> Unit = {},
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest, modifier = modifier) {
+    IosMenu(expanded = expanded, onDismissRequest = onDismissRequest, modifier = modifier) {
         groups
             .filter { it.isNotEmpty() }
-            .forEach { group ->
-                DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-                    group.forEach { choice ->
-                        BasemapMenuItem(choice = choice, selected = choice.id == selectedId) {
-                            onSelect(choice)
-                            onDismissRequest()
-                        }
+            .forEachIndexed { index, group ->
+                if (index > 0) IosMenuDivider()
+                group.forEach { choice ->
+                    BasemapMenuItem(choice = choice, selected = choice.id == selectedId) {
+                        onSelect(choice)
+                        onDismissRequest()
                     }
                 }
             }
@@ -70,14 +66,17 @@ fun BasemapMenu(
 
 @Composable
 private fun BasemapMenuItem(choice: BasemapChoice, selected: Boolean, onClick: () -> Unit) {
-    DropdownMenuItem(
-        text = { Text(text = choice.label) },
+    val selectedLabel = stringResource(Res.string.selected_map_type)
+    IosMenuItem(
+        text = choice.label,
         onClick = onClick,
-        trailingIcon =
+        checked = selected,
+        checkable = true,
+        modifier =
         if (selected) {
-            { Icon(MeshtasticIcons.Check, contentDescription = stringResource(Res.string.selected_map_type)) }
+            Modifier.semantics { stateDescription = selectedLabel }
         } else {
-            null
+            Modifier
         },
     )
 }

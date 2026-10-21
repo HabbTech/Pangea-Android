@@ -23,12 +23,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -111,6 +111,8 @@ import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.pangea.SetupProfilePrompt
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.core.ui.util.rememberShowToastResource
@@ -457,6 +459,8 @@ private fun MuteNotificationsDialog(
                             }
                         Text(
                             text = stringResource(Res.string.currently) + " " + statusText,
+                            style = Ios.type.footnote,
+                            color = Ios.colors.secondaryLabel,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
                     }
@@ -469,11 +473,23 @@ private fun MuteNotificationsDialog(
                         modifier =
                         Modifier.fillMaxWidth()
                             .selectable(selected = isSelected, onClick = { selectedOptionIndex = index })
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = isSelected, onClick = { selectedOptionIndex = index })
-                        Text(text = text, modifier = Modifier.padding(start = 8.dp))
+                        Text(
+                            text = text,
+                            style = Ios.type.body,
+                            color = Ios.colors.label,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (isSelected) {
+                            Icon(
+                                IosIcons.Checkmark,
+                                contentDescription = null,
+                                tint = Ios.colors.tint,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
                     }
                 }
             }

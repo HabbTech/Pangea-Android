@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +52,7 @@ import org.meshtastic.core.resources.signal
 import org.meshtastic.core.resources.signal_quality
 import org.meshtastic.core.resources.snr
 import org.meshtastic.core.resources.unknown
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
@@ -95,7 +95,7 @@ fun LoraSignalIndicator(
     snr: Float?,
     modifier: Modifier = Modifier,
     modemPreset: ModemPreset? = LocalModemPreset.current,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = Ios.colors.label,
 ) {
     val quality = snr?.let { determineSignalQuality(it, modemPreset) }
     Column(
@@ -107,11 +107,11 @@ fun LoraSignalIndicator(
             modifier = Modifier.size(SIZE_ICON_DP.dp),
             imageVector = vectorResource(quality?.icon ?: Res.drawable.ic_signal_cellular_alt),
             contentDescription = stringResource(Res.string.signal_quality),
-            tint = quality?.color?.invoke() ?: MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = quality?.color?.invoke() ?: Ios.colors.secondaryLabel,
         )
         Text(
             text = "${stringResource(Res.string.signal)} " + stringResource(quality?.nameRes ?: Res.string.unknown),
-            style = MaterialTheme.typography.labelSmall,
+            style = Ios.type.caption2,
             color = contentColor,
         )
     }
@@ -127,7 +127,7 @@ fun Snr(snr: Float?, modifier: Modifier = Modifier, modemPreset: ModemPreset? = 
         modifier = modifier,
         text = "${stringResource(Res.string.snr)} ${MetricFormatter.snr(snr, decimalPlaces = 2)}",
         color = color,
-        style = MaterialTheme.typography.labelSmall,
+        style = Ios.type.caption2,
     )
 }
 
@@ -142,12 +142,7 @@ fun Rssi(rssi: Int?, modifier: Modifier = Modifier, label: String = stringResour
             rssi > RSSI_BAD_THRESHOLD -> Quality.BAD.color.invoke()
             else -> Quality.NONE.color.invoke()
         }
-    Text(
-        modifier = modifier,
-        text = "$label ${MetricFormatter.rssi(rssi)}",
-        color = color,
-        style = MaterialTheme.typography.labelSmall,
-    )
+    Text(modifier = modifier, text = "$label ${MetricFormatter.rssi(rssi)}", color = color, style = Ios.type.caption2)
 }
 
 /**

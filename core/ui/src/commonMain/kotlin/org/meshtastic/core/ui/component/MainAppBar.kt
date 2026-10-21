@@ -31,10 +31,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -62,7 +58,6 @@ import org.meshtastic.core.resources.navigate_back
 import org.meshtastic.core.resources.pangea_logo
 import org.meshtastic.core.resources.power_mode_quick_access
 import org.meshtastic.core.ui.icon.CalendarMonth
-import org.meshtastic.core.ui.icon.Check
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
@@ -71,6 +66,9 @@ import org.meshtastic.core.ui.ios.IosBarLayout
 import org.meshtastic.core.ui.ios.IosGlassButton
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuDivider
+import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.IosRadioChip
 import org.meshtastic.core.ui.ios.LocalIosRadioChip
 import org.meshtastic.core.ui.theme.LocalEventTheme
@@ -247,27 +245,22 @@ private fun PowerModeMenu(
     onDismiss: () -> Unit,
     onShowEventInfo: (() -> Unit)?,
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+    IosMenu(expanded = expanded, onDismissRequest = onDismiss) {
         PowerMode.entries.forEach { mode ->
-            DropdownMenuItem(
-                text = { Text(stringResource(mode.labelRes)) },
-                leadingIcon = { Icon(imageVector = mode.icon, contentDescription = null) },
-                trailingIcon =
-                if (mode == state.currentMode) {
-                    { Icon(imageVector = MeshtasticIcons.Check, contentDescription = null) }
-                } else {
-                    null
-                },
+            IosMenuItem(
+                text = stringResource(mode.labelRes),
+                icon = mode.icon,
+                checked = mode == state.currentMode,
                 onClick = {
                     state.onSelectMode(mode)
                     onDismiss()
                 },
             )
         }
-        HorizontalDivider()
-        DropdownMenuItem(
-            text = { Text(stringResource(Res.string.about_pangea)) },
-            leadingIcon = { Icon(imageVector = MeshtasticIcons.Info, contentDescription = null) },
+        IosMenuDivider()
+        IosMenuItem(
+            text = stringResource(Res.string.about_pangea),
+            icon = MeshtasticIcons.Info,
             onClick = {
                 state.onAboutClick()
                 onDismiss()
@@ -276,9 +269,9 @@ private fun PowerModeMenu(
         // EVENT-INFO ENTRY — delete this block (and the onShowEventInfo parameter plumbing above) to remove the
         // Event info menu item entirely; the event info sheet remains reachable nowhere else once removed.
         if (onShowEventInfo != null) {
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.event_info)) },
-                leadingIcon = { Icon(imageVector = MeshtasticIcons.CalendarMonth, contentDescription = null) },
+            IosMenuItem(
+                text = stringResource(Res.string.event_info),
+                icon = MeshtasticIcons.CalendarMonth,
                 onClick = {
                     onShowEventInfo()
                     onDismiss()

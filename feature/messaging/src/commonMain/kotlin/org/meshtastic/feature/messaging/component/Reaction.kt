@@ -17,30 +17,31 @@
 package org.meshtastic.feature.messaging.component
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,10 +51,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.NodeAddress
@@ -64,140 +65,96 @@ import org.meshtastic.core.model.isAckProofForged
 import org.meshtastic.core.model.isMessageStatusRetryable
 import org.meshtastic.core.model.util.getShortDateTime
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.react
 import org.meshtastic.core.resources.security_signed_verified
 import org.meshtastic.core.resources.you
 import org.meshtastic.core.ui.component.Rssi
 import org.meshtastic.core.ui.component.Snr
-import org.meshtastic.core.ui.emoji.EmojiPickerDialog
-import org.meshtastic.core.ui.icon.AddReaction
 import org.meshtastic.core.ui.icon.HopCount
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.ShieldCheck
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
-import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
-import org.meshtastic.core.ui.theme.StatusColors.StatusYellow
+import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.feature.messaging.DeliveryInfo
 
+/**
+ * One reaction as the iPhone app draws it under a message: the emoji over its sender's short name, at a fixed width so
+ * the pill around a row of them can be sized without measuring.
+ */
 @Composable
 internal fun ReactionItem(
-    modifier: Modifier = Modifier,
     emoji: String,
-    emojiCount: Int = 1,
+    modifier: Modifier = Modifier,
+    shortName: String = "",
     status: MessageStatus = MessageStatus.UNKNOWN,
     isWarning: Boolean = false,
-    onClick: () -> Unit = {},
-    onLongClick: () -> Unit = {},
 ) {
     val isSending = status == MessageStatus.QUEUED || status == MessageStatus.ENROUTE
-    val isError = status == MessageStatus.ERROR
-
-    Surface(
-        modifier =
-        modifier
-            // Clickable wraps the M3 touch-target expansion, so the hit area meets the 44dp
-            // minimum while the drawn pill stays compact.
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .minimumInteractiveComponentSize()
-            .then(if (isSending) Modifier.graphicsLayer(alpha = 0.5f) else Modifier),
-        color =
+    val nameColor =
         when {
-            isError -> MaterialTheme.colorScheme.errorContainer
-            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-        },
-        shape = if (emojiCount > 1) MaterialTheme.shapes.small else CircleShape,
-        border =
-        BorderStroke(
-            width = 1.dp,
-            color =
-            when {
-                isError -> MaterialTheme.colorScheme.error
-                isWarning -> MaterialTheme.colorScheme.StatusYellow
-                else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-            },
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(text = emoji, style = MaterialTheme.typography.labelMedium)
-            if (emojiCount > 1) {
-                Text(
-                    text = emojiCount.toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            status == MessageStatus.ERROR -> Ios.colors.systemRed
+            isWarning -> Ios.colors.systemOrange
+            else -> Ios.colors.systemGray
         }
+    Column(
+        modifier =
+        modifier.width(REACTION_ITEM_WIDTH).then(if (isSending) Modifier.graphicsLayer(alpha = 0.5f) else Modifier),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Text(text = emoji, fontSize = 20.sp, maxLines = 1, overflow = TextOverflow.Clip)
+        Text(text = shortName.ifEmpty { "?" }, style = Ios.type.caption2, color = nameColor, maxLines = 1)
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * The reactions under a message, as the iPhone app's pill: every reaction with who sent it, one row for a handful and
+ * two once there are several, scrolling sideways rather than overflowing the column. A tap or long press opens who
+ * reacted with what; reacting is in the message's actions, as on iOS.
+ */
 @Composable
 internal fun ReactionRow(
     modifier: Modifier = Modifier,
     reactions: List<Reaction> = emptyList(),
     myId: String? = null,
-    /** False for an archived conversation: existing reactions still show, but nothing new can be added. */
-    canReact: Boolean = true,
-    onSendReaction: (String) -> Unit = {},
     onShowReactions: () -> Unit = {},
 ) {
-    val emojiGroups = reactions.groupBy { it.emoji }
-
-    AnimatedVisibility(emojiGroups.isNotEmpty(), modifier = modifier) {
-        LazyRow(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            items(emojiGroups.entries.toList(), key = { it.key }) { entry ->
-                val emoji = entry.key
-                val reactions = entry.value
-                val localReaction = reactions.find { it.user.id == NodeAddress.ID_LOCAL || it.user.id == myId }
+    AnimatedVisibility(reactions.isNotEmpty(), modifier = modifier) {
+        val rows = if (reactions.size > TWO_ROW_THRESHOLD) 2 else 1
+        val columns = (reactions.size + rows - 1) / rows
+        val contentWidth =
+            REACTION_ITEM_WIDTH * columns + REACTION_ITEM_SPACING * (columns - 1).coerceAtLeast(0) + PILL_PADDING * 2
+        val pillHeight = REACTION_ROW_HEIGHT * rows + REACTION_ROW_SPACING * (rows - 1) + PILL_PADDING * 2
+        LazyHorizontalGrid(
+            rows = GridCells.Fixed(rows),
+            modifier =
+            Modifier.width(contentWidth)
+                .height(pillHeight)
+                .clip(PillShape)
+                .border(1.dp, Ios.colors.systemGray, PillShape)
+                .combinedClickable(onClick = onShowReactions, onLongClick = onShowReactions),
+            contentPadding = PaddingValues(PILL_PADDING),
+            horizontalArrangement = Arrangement.spacedBy(REACTION_ITEM_SPACING),
+            verticalArrangement = Arrangement.spacedBy(REACTION_ROW_SPACING),
+        ) {
+            items(reactions, key = { "${it.user.id}:${it.emoji}:${it.timestamp}" }) { reaction ->
+                val isLocal = reaction.user.id == NodeAddress.ID_LOCAL || reaction.user.id == myId
                 ReactionItem(
-                    emoji = emoji,
-                    emojiCount = reactions.size,
-                    status = localReaction?.status ?: MessageStatus.RECEIVED,
-                    isWarning = localReaction != null && isAckProofForged(localReaction.ackProofStatus),
-                    onClick = { if (canReact) onSendReaction(emoji) },
-                    onLongClick = onShowReactions,
+                    emoji = reaction.emoji,
+                    shortName = reaction.user.short_name,
+                    status = if (isLocal) reaction.status else MessageStatus.RECEIVED,
+                    isWarning = isLocal && isAckProofForged(reaction.ackProofStatus),
+                    modifier = Modifier.height(REACTION_ROW_HEIGHT),
                 )
-            }
-            if (canReact) {
-                item { AddReactionButton(onSendReaction = onSendReaction) }
             }
         }
     }
 }
 
-@Composable
-internal fun AddReactionButton(modifier: Modifier = Modifier, onSendReaction: (String) -> Unit = {}) {
-    var showEmojiPickerDialog by remember { mutableStateOf(false) }
-    if (showEmojiPickerDialog) {
-        EmojiPickerDialog(
-            onConfirm = { selectedEmoji ->
-                showEmojiPickerDialog = false
-                onSendReaction(selectedEmoji)
-            },
-            onDismiss = { showEmojiPickerDialog = false },
-        )
-    }
-    Surface(
-        onClick = { showEmojiPickerDialog = true },
-        modifier = modifier.size(28.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        shape = CircleShape,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)),
-    ) {
-        Icon(
-            imageVector = MeshtasticIcons.AddReaction,
-            contentDescription = stringResource(Res.string.react),
-            modifier = Modifier.padding(6.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
-
+/**
+ * Who reacted with what, as an iOS sheet: the emoji to filter by along the top, then a card with a row per reaction
+ * (name, how it arrived and when, and the emoji at the end).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod", "CyclomaticComplexity", "CyclomaticComplexMethod")
 @Composable
@@ -215,6 +172,7 @@ internal fun ReactionDialog(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     ),
+    grouped = true,
 ) {
     val groupedEmojis = reactions.groupBy { it.emoji }
     var selectedEmoji by remember { mutableStateOf<String?>(null) }
@@ -246,117 +204,134 @@ internal fun ReactionDialog(
         )
     }
 
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+    ) {
         items(groupedEmojis.entries.toList(), key = { it.key }) { entry ->
             val emoji = entry.key
-            val reactions = entry.value
-            val localReaction = reactions.find { it.user.id == NodeAddress.ID_LOCAL || it.user.id == myId }
+            val emojiReactions = entry.value
+            val localReaction = emojiReactions.find { it.user.id == NodeAddress.ID_LOCAL || it.user.id == myId }
             val isSending =
                 localReaction?.status == MessageStatus.QUEUED || localReaction?.status == MessageStatus.ENROUTE
             Text(
-                text = "$emoji${reactions.size}",
+                text = "$emoji ${emojiReactions.size}",
                 modifier =
                 Modifier.clip(CircleShape)
-                    .background(
-                        if (selectedEmoji == emoji) {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
-                        } else {
-                            Color.Transparent
-                        },
-                    )
+                    .background(if (selectedEmoji == emoji) Ios.colors.fieldFill else Ios.colors.groupedRow)
                     .then(if (isSending) Modifier.graphicsLayer(alpha = 0.5f) else Modifier)
-                    .padding(8.dp)
-                    .clickable { selectedEmoji = if (selectedEmoji == emoji) null else emoji },
-                style = MaterialTheme.typography.bodyMedium,
+                    .clickable { selectedEmoji = if (selectedEmoji == emoji) null else emoji }
+                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                style = Ios.type.subheadline,
+                color = Ios.colors.label,
             )
         }
     }
 
-    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-
-    LazyColumn(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        items(filteredReactions, key = { reaction -> "${reaction.user.id}:${reaction.emoji}" }) { reaction ->
-            Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val isLocal = reaction.user.id == myId || reaction.user.id == NodeAddress.ID_LOCAL
-                    val displayName =
-                        if (isLocal) {
-                            "${reaction.user.long_name} (${stringResource(Res.string.you)})"
-                        } else {
-                            reaction.user.long_name
-                        }
-                    Row(
-                        modifier = Modifier.weight(1f, fill = false),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = displayName,
-                            modifier = Modifier.weight(1f, fill = false),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        // Set only on verified broadcasts, so a DM reaction never shows it.
-                        if (!isLocal && reaction.xeddsaSigned) {
-                            Icon(
-                                imageVector = MeshtasticIcons.ShieldCheck,
-                                contentDescription = stringResource(Res.string.security_signed_verified),
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.StatusGreen,
-                            )
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isLocal) {
-                            MessageStatusButton(
-                                status = reaction.status,
-                                fromLocal = true,
-                                isWarning = isAckProofForged(reaction.ackProofStatus),
-                                onStatusClick = { showStatusDialog = reaction },
-                            )
-                        }
-                        Text(text = reaction.emoji, style = MaterialTheme.typography.titleLarge)
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 0.dp, bottom = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // Local reactions now carry a null rssi; pre-schema-51 rows stored 0, so a legacy
-                    // 0 dBm reading stays indistinguishable from "no reading" and remains hidden.
-                    val isLocalOrPreDbUpdateReaction = reaction.rssi == null || reaction.rssi == 0
-                    if (!isLocalOrPreDbUpdateReaction) {
-                        if (reaction.hopsAway == 0) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Snr(reaction.snr)
-                                Rssi(reaction.rssi)
-                            }
-                        } else {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                Icon(
-                                    imageVector = MeshtasticIcons.HopCount,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
-                                Text(
-                                    text = reaction.hopsAway.toString(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(text = getShortDateTime(reaction.timestamp), style = MaterialTheme.typography.labelSmall)
+    LazyColumn(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(bottom = 24.dp)) {
+        item {
+            IosSection {
+                filteredReactions.forEach { reaction ->
+                    ReactionDetailRow(reaction, myId) { showStatusDialog = it }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun ReactionDetailRow(reaction: Reaction, myId: String?, onStatusClick: (Reaction) -> Unit) {
+    val isLocal = reaction.user.id == myId || reaction.user.id == NodeAddress.ID_LOCAL
+    val displayName =
+        if (isLocal) {
+            "${reaction.user.long_name} (${stringResource(Res.string.you)})"
+        } else {
+            reaction.user.long_name
+        }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = displayName,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = Ios.type.body,
+                    color = Ios.colors.label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                // Set only on verified broadcasts, so a DM reaction never shows it.
+                if (!isLocal && reaction.xeddsaSigned) {
+                    Icon(
+                        imageVector = MeshtasticIcons.ShieldCheck,
+                        contentDescription = stringResource(Res.string.security_signed_verified),
+                        modifier = Modifier.size(14.dp),
+                        tint = Ios.colors.systemGreen,
+                    )
+                }
+            }
+            ReactionArrival(reaction)
+        }
+        if (isLocal) {
+            MessageStatusButton(
+                status = reaction.status,
+                fromLocal = true,
+                isWarning = isAckProofForged(reaction.ackProofStatus),
+                onStatusClick = { onStatusClick(reaction) },
+            )
+        }
+        Text(text = reaction.emoji, fontSize = 26.sp, modifier = Modifier.padding(start = 8.dp))
+    }
+}
+
+/** How a reaction arrived (signal when heard directly, else its hop count) and when. */
+@Composable
+private fun ReactionArrival(reaction: Reaction) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(top = 2.dp),
+    ) {
+        // Local reactions now carry a null rssi; pre-schema-51 rows stored 0, so a legacy
+        // 0 dBm reading stays indistinguishable from "no reading" and remains hidden.
+        val isLocalOrPreDbUpdateReaction = reaction.rssi == null || reaction.rssi == 0
+        if (!isLocalOrPreDbUpdateReaction) {
+            if (reaction.hopsAway == 0) {
+                Snr(reaction.snr)
+                Rssi(reaction.rssi)
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Icon(
+                        imageVector = MeshtasticIcons.HopCount,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = Ios.colors.secondaryLabel,
+                    )
+                    Text(
+                        text = reaction.hopsAway.toString(),
+                        style = Ios.type.footnote,
+                        color = Ios.colors.secondaryLabel,
+                    )
+                }
+            }
+        }
+        Text(text = getShortDateTime(reaction.timestamp), style = Ios.type.footnote, color = Ios.colors.secondaryLabel)
+    }
+}
+
+/** iOS's reaction pill geometry: fixed-width items, so the pill's width is arithmetic. */
+private val REACTION_ITEM_WIDTH = 40.dp
+private val REACTION_ITEM_SPACING = 12.dp
+private val REACTION_ROW_HEIGHT = 38.dp
+private val REACTION_ROW_SPACING = 4.dp
+private val PILL_PADDING = 10.dp
+private val PillShape = RoundedCornerShape(18.dp)
+
+/** More reactions than this wrap onto a second row. */
+private const val TWO_ROW_THRESHOLD = 6

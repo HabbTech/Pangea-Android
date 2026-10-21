@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,7 +39,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
@@ -97,6 +95,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PhoneAndroid
 import org.meshtastic.core.ui.icon.role
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCheckCircle
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.util.annotatedStringFromHtml
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -358,7 +357,7 @@ fun RouterRoleConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, m
     val annotatedDialogText =
         annotatedStringFromHtml(
             html = stringResource(Res.string.router_role_confirmation_text),
-            linkStyles = TextLinkStyles(style = SpanStyle(color = Color.Blue)),
+            linkStyles = TextLinkStyles(style = SpanStyle(color = Ios.colors.link)),
         )
 
     var confirmed by rememberSaveable { mutableStateOf(false) }
@@ -370,11 +369,16 @@ fun RouterRoleConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, m
             Column {
                 Text(text = annotatedDialogText, style = Ios.type.subheadline, color = Ios.colors.label)
                 Row(
-                    modifier = Modifier.fillMaxWidth().clickable(true) { confirmed = !confirmed },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp).clickable(true) { confirmed = !confirmed },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Checkbox(checked = confirmed, onCheckedChange = { confirmed = it })
-                    Text(stringResource(Res.string.i_know_what_i_m_doing), style = Ios.type.subheadline)
+                    IosCheckCircle(checked = confirmed)
+                    Text(
+                        stringResource(Res.string.i_know_what_i_m_doing),
+                        style = Ios.type.subheadline,
+                        color = Ios.colors.label,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
                 }
             }
         },

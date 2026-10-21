@@ -29,8 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,6 +50,8 @@ import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.core.ui.ios.iosRowSeparator
@@ -152,16 +152,12 @@ internal fun <T> WaypointRadiusRow(label: String, choices: List<Pair<T, String>>
                     tint = Ios.colors.secondaryLabel,
                     modifier = Modifier.padding(start = 6.dp).size(14.dp),
                 )
-                DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                IosMenu(expanded = open, onDismissRequest = { open = false }) {
                     choices.forEach { (value, text) ->
-                        DropdownMenuItem(
-                            text = { Text(text) },
-                            trailingIcon =
-                            if (value == selected) {
-                                { Icon(IosIcons.Checkmark, contentDescription = null, tint = Ios.colors.tint) }
-                            } else {
-                                null
-                            },
+                        IosMenuItem(
+                            text = text,
+                            checked = value == selected,
+                            checkable = true,
                             onClick = {
                                 open = false
                                 onSelect(value)

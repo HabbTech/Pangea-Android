@@ -1574,6 +1574,7 @@
     <string name="pangea_no_public_key">No Public Key</string>
     <string name="pangea_no_public_key_text">This node has not shared a public key, so direct messages to it cannot be sent. Exchange User Info asks for one.</string>
     <string name="pangea_no_radio_paired">No radio paired</string>
+    <string name="pangea_node_filters">Node Filters</string>
     <string name="pangea_node_section">Node</string>
     <string name="pangea_nodes_count">Nodes (%1$d)</string>
     <string name="pangea_notify_messages_desc">Know right away when someone messages you.</string>

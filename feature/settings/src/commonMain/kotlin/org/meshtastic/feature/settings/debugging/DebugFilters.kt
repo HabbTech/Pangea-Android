@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +65,7 @@ import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.FilterAlt
 import org.meshtastic.core.ui.icon.FilterAltOff
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.feature.settings.debugging.DebugViewModel.UiMeshLog
 
 @Composable
@@ -199,7 +199,7 @@ fun DebugFilterBar(
                     )
                 }
             }
-            DropdownMenu(
+            IosMenu(
                 expanded = showFilterMenu,
                 onDismissRequest = { showFilterMenu = false },
                 offset = DpOffset(0.dp, 8.dp),

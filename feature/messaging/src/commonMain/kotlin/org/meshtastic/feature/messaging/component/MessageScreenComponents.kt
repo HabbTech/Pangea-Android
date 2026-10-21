@@ -37,9 +37,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuGroup
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
@@ -47,7 +44,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -139,6 +135,9 @@ import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuDivider
+import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.feature.messaging.DeliveryInfo
@@ -629,20 +628,17 @@ private fun OverFlowMenu(
     onNavigateToFilterSettings: () -> Unit,
 ) {
     if (expanded) {
-        DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-            DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-                QuickChatToggleMenuItem(showQuickChat, onDismiss, onToggleQuickChat)
-                QuickChatOptionsMenuItem(onDismiss, onNavigateToQuickChatOptions)
+        IosMenu(expanded = expanded, onDismissRequest = onDismiss) {
+            QuickChatToggleMenuItem(showQuickChat, onDismiss, onToggleQuickChat)
+            QuickChatOptionsMenuItem(onDismiss, onNavigateToQuickChatOptions)
+            IosMenuDivider()
+            if (filteredCount > 0 && !filteringDisabled) {
+                FilteredMessagesMenuItem(showFiltered, filteredCount, onDismiss, onToggleShowFiltered)
             }
-            DropdownMenuGroup(shapes = MenuDefaults.groupShapes()) {
-                if (filteredCount > 0 && !filteringDisabled) {
-                    FilteredMessagesMenuItem(showFiltered, filteredCount, onDismiss, onToggleShowFiltered)
-                }
-                if (showFilterToggle) {
-                    FilterToggleMenuItem(filteringDisabled, onDismiss, onToggleFilteringDisabled)
-                }
-                FilterSettingsMenuItem(onDismiss, onNavigateToFilterSettings)
+            if (showFilterToggle) {
+                FilterToggleMenuItem(filteringDisabled, onDismiss, onToggleFilteringDisabled)
             }
+            FilterSettingsMenuItem(onDismiss, onNavigateToFilterSettings)
         }
     }
 }
@@ -650,49 +646,39 @@ private fun OverFlowMenu(
 @Composable
 private fun QuickChatToggleMenuItem(showQuickChat: Boolean, onDismiss: () -> Unit, onToggle: () -> Unit) {
     val title = stringResource(if (showQuickChat) Res.string.quick_chat_hide else Res.string.quick_chat_show)
-    DropdownMenuItem(
-        text = { Text(title) },
+    IosMenuItem(
+        text = title,
         onClick = {
             onDismiss()
             onToggle()
         },
-        leadingIcon = {
-            Icon(
-                imageVector = if (showQuickChat) MeshtasticIcons.Muted else MeshtasticIcons.Unmuted,
-                contentDescription = title,
-            )
-        },
+        icon = if (showQuickChat) MeshtasticIcons.Muted else MeshtasticIcons.Unmuted,
     )
 }
 
 @Composable
 private fun QuickChatOptionsMenuItem(onDismiss: () -> Unit, onNavigate: () -> Unit) {
     val title = stringResource(Res.string.quick_chat)
-    DropdownMenuItem(
-        text = { Text(title) },
+    IosMenuItem(
+        text = title,
         onClick = {
             onDismiss()
             onNavigate()
         },
-        leadingIcon = { Icon(imageVector = MeshtasticIcons.ChatBubbleOutline, contentDescription = title) },
+        icon = MeshtasticIcons.ChatBubbleOutline,
     )
 }
 
 @Composable
 private fun FilteredMessagesMenuItem(showFiltered: Boolean, count: Int, onDismiss: () -> Unit, onToggle: () -> Unit) {
     val title = stringResource(if (showFiltered) Res.string.filter_hide_count else Res.string.filter_show_count, count)
-    DropdownMenuItem(
-        text = { Text(title) },
+    IosMenuItem(
+        text = title,
         onClick = {
             onDismiss()
             onToggle()
         },
-        leadingIcon = {
-            Icon(
-                imageVector = if (showFiltered) MeshtasticIcons.VisibilityOff else MeshtasticIcons.Visibility,
-                contentDescription = title,
-            )
-        },
+        icon = if (showFiltered) MeshtasticIcons.VisibilityOff else MeshtasticIcons.Visibility,
     )
 }
 
@@ -702,31 +688,26 @@ private fun FilterToggleMenuItem(filteringDisabled: Boolean, onDismiss: () -> Un
         stringResource(
             if (filteringDisabled) Res.string.filter_enable_for_contact else Res.string.filter_disable_for_contact,
         )
-    DropdownMenuItem(
-        text = { Text(title) },
+    IosMenuItem(
+        text = title,
         onClick = {
             onDismiss()
             onToggle()
         },
-        leadingIcon = {
-            Icon(
-                imageVector = if (filteringDisabled) MeshtasticIcons.FilterList else MeshtasticIcons.FilterListOff,
-                contentDescription = title,
-            )
-        },
+        icon = if (filteringDisabled) MeshtasticIcons.FilterList else MeshtasticIcons.FilterListOff,
     )
 }
 
 @Composable
 private fun FilterSettingsMenuItem(onDismiss: () -> Unit, onNavigate: () -> Unit) {
     val title = stringResource(Res.string.filter_settings)
-    DropdownMenuItem(
-        text = { Text(title) },
+    IosMenuItem(
+        text = title,
         onClick = {
             onDismiss()
             onNavigate()
         },
-        leadingIcon = { Icon(imageVector = MeshtasticIcons.Settings, contentDescription = title) },
+        icon = MeshtasticIcons.Settings,
     )
 }
 

@@ -29,8 +29,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,6 +56,8 @@ import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosLargeTitleScreen
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.ios.iosPressable
 
@@ -101,18 +101,20 @@ internal fun IosExpertMessagesScreen(
                         onClick = { more = true },
                         tint = Ios.colors.tint,
                     )
-                    DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
+                    IosMenu(expanded = more, onDismissRequest = { more = false }) {
                         if (unreadCount > 0) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.mark_as_read)) },
+                            IosMenuItem(
+                                text = stringResource(Res.string.mark_as_read),
+                                icon = IosIcons.CheckCircle,
                                 onClick = {
                                     more = false
                                     onMarkAllRead()
                                 },
                             )
                         }
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.filter_settings)) },
+                        IosMenuItem(
+                            text = stringResource(Res.string.filter_settings),
+                            icon = IosIcons.FilterCircle,
                             onClick = {
                                 more = false
                                 onFilterSettings()

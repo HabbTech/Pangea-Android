@@ -1538,6 +1538,7 @@ pangea_no_chats_yet
 pangea_no_public_key
 pangea_no_public_key_text
 pangea_no_radio_paired
+pangea_node_filters
 pangea_node_section
 pangea_nodes_count
 pangea_notify_messages_desc

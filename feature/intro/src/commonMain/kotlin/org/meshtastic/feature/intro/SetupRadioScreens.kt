@@ -30,8 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,6 +74,8 @@ import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.feature.intro.SetupProfileViewModel.Phase
@@ -196,10 +196,10 @@ private fun RegionCard(region: RegionCode?, onRegion: (RegionCode) -> Unit, fill
                     modifier = Modifier.padding(start = 6.dp).size(14.dp),
                 )
             }
-            DropdownMenu(expanded = choosing, onDismissRequest = { choosing = false }) {
+            IosMenu(expanded = choosing, onDismissRequest = { choosing = false }) {
                 regions.forEach { info ->
-                    DropdownMenuItem(
-                        text = { Text(info.description) },
+                    IosMenuItem(
+                        text = info.description,
                         onClick = {
                             onRegion(info.regionCode)
                             choosing = false

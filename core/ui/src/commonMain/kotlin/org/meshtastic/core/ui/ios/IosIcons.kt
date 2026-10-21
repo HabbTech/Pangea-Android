@@ -1332,6 +1332,24 @@ object IosIcons {
         }
     }
 
+    /** `pin`: pin a chat to the top of the list. */
+    val Pin: ImageVector by lazy {
+        icon("ios.pin") {
+            stroked(width = 1.5f) {
+                moveTo(8.2f, 3.5f)
+                lineTo(15.8f, 3.5f)
+                moveTo(9.4f, 3.5f)
+                lineTo(9.4f, 9.6f)
+                lineTo(6.4f, 13.8f)
+                lineTo(17.6f, 13.8f)
+                lineTo(14.6f, 9.6f)
+                lineTo(14.6f, 3.5f)
+                moveTo(12f, 13.8f)
+                lineTo(12f, 21f)
+            }
+        }
+    }
+
     /** `cpu`: Remote Hardware. */
     val Cpu: ImageVector by lazy {
         icon("ios.cpu") {

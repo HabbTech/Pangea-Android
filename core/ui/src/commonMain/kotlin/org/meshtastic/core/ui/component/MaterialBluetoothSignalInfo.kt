@@ -46,6 +46,7 @@ import org.meshtastic.core.ui.icon.SignalCellular2Bar
 import org.meshtastic.core.ui.icon.SignalCellular3Bar
 import org.meshtastic.core.ui.icon.SignalCellular4Bar
 import org.meshtastic.core.ui.icon.SignalOff
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
@@ -83,7 +84,7 @@ fun MaterialSignalInfo(
                 2 -> MeshtasticIcons.SignalCellular2Bar to MaterialTheme.colorScheme.StatusOrange
                 3 -> MeshtasticIcons.SignalCellular3Bar to MaterialTheme.colorScheme.StatusYellow
                 4 -> MeshtasticIcons.SignalCellular4Bar to MaterialTheme.colorScheme.StatusGreen
-                else -> MeshtasticIcons.SignalOff to MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MeshtasticIcons.SignalOff to Ios.colors.secondaryLabel
             }
 
         val foregroundPainter = typeIcon?.let { rememberVectorPainter(typeIcon) }
@@ -104,9 +105,7 @@ fun MaterialSignalInfo(
             },
         )
 
-        signalStrengthValue?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelLarge)
-        }
+        signalStrengthValue?.let { Text(text = it, color = Ios.colors.label, style = Ios.type.subheadline) }
     }
 }
 

@@ -30,12 +30,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -85,6 +82,8 @@ import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Save
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuItem
 
 /** Minimum x-step (in seconds) to prevent the default GCD from producing a value of 1 with irregular timestamps. */
 private const val MIN_X_STEP_SECONDS = 60.0
@@ -357,36 +356,29 @@ private fun MetricMoreMenu(
         IconButton(onClick = { open = true }) {
             Icon(IosIcons.Ellipsis, contentDescription = stringResource(Res.string.pangea_more), tint = Ios.colors.tint)
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        IosMenu(expanded = open, onDismissRequest = { open = false }) {
             if (onExportCsv != null) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(Res.string.save)) },
-                    leadingIcon = { Icon(MeshtasticIcons.Save, contentDescription = null) },
+                IosMenuItem(
+                    text = stringResource(Res.string.save),
+                    icon = MeshtasticIcons.Save,
                     onClick = {
                         open = false
                         onExportCsv()
                     },
                 )
             }
-            DropdownMenuItem(
-                text = {
-                    Text(stringResource(if (isChartExpanded) Res.string.collapse_chart else Res.string.expand_chart))
-                },
-                leadingIcon = {
-                    Icon(
-                        if (isChartExpanded) MeshtasticIcons.List else MeshtasticIcons.BarChart,
-                        contentDescription = null,
-                    )
-                },
+            IosMenuItem(
+                text = stringResource(if (isChartExpanded) Res.string.collapse_chart else Res.string.expand_chart),
+                icon = if (isChartExpanded) MeshtasticIcons.List else MeshtasticIcons.BarChart,
                 onClick = {
                     open = false
                     onToggleChart()
                 },
             )
             if (onShowInfo != null) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(Res.string.info)) },
-                    leadingIcon = { Icon(MeshtasticIcons.Info, contentDescription = null) },
+                IosMenuItem(
+                    text = stringResource(Res.string.info),
+                    icon = MeshtasticIcons.Info,
                     onClick = {
                         open = false
                         onShowInfo()

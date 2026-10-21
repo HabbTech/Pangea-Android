@@ -44,6 +44,7 @@ import org.meshtastic.core.ui.icon.BatteryEmpty
 import org.meshtastic.core.ui.icon.BatteryUnknown
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PowerSupply
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
@@ -57,7 +58,7 @@ fun MaterialBatteryInfo(
     modifier: Modifier = Modifier,
     level: Int?,
     voltage: Float? = null,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = Ios.colors.label,
     unknownLabel: String = stringResource(Res.string.unknown),
 ) {
     val levelString = level?.let { MetricFormatter.percent(it) } ?: unknownLabel
@@ -85,7 +86,7 @@ fun MaterialBatteryInfo(
             Text(
                 text = "PWR",
                 color = contentColor.copy(alpha = 0.95f),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
+                style = Ios.type.caption1.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
             )
         } else {
             // Map battery percentage to color
@@ -124,7 +125,7 @@ fun MaterialBatteryInfo(
             Text(
                 text = levelString,
                 color = contentColor.copy(alpha = 0.95f),
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
+                style = Ios.type.caption1.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
             )
         }
         voltage
@@ -133,7 +134,7 @@ fun MaterialBatteryInfo(
                 Text(
                     text = MetricFormatter.voltage(it),
                     color = contentColor.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                    style = Ios.type.caption1.copy(fontSize = 12.sp),
                 )
             }
     }

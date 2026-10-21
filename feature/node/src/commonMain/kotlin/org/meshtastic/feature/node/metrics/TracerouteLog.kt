@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -80,6 +79,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PersonOff
 import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Route
+import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.core.ui.theme.GraphColors
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
@@ -239,7 +239,7 @@ private fun TracerouteCard(
         ) {
             TracerouteCardContent(time = time, summaryText = summaryText, icon = icon, point = point)
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        IosMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DeleteItem {
                 onLongClick()
                 expanded = false

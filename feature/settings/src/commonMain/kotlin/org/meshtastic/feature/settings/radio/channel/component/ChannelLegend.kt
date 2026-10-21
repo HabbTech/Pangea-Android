@@ -26,7 +26,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -60,6 +59,7 @@ import org.meshtastic.core.resources.uplink_feature_description
 import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 
 @Composable
 internal fun ChannelLegend(onClick: () -> Unit) {
@@ -71,13 +71,13 @@ internal fun ChannelLegend(onClick: () -> Unit) {
             Icon(imageVector = MeshtasticIcons.Info, contentDescription = stringResource(Res.string.info))
             Text(
                 text = stringResource(Res.string.primary),
-                color = MaterialTheme.colorScheme.primary,
+                color = Ios.colors.tint,
                 modifier = Modifier.padding(start = 16.dp),
             )
         }
         Text(
             text = stringResource(Res.string.secondary),
-            color = MaterialTheme.colorScheme.onBackground,
+            color = Ios.colors.label,
             modifier = Modifier.padding(start = 16.dp),
         )
     }
@@ -116,25 +116,17 @@ internal fun ChannelLegendDialog(capabilities: Capabilities, onDismiss: () -> Un
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState()),
             ) {
-                Text(
-                    text = stringResource(Res.string.primary),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Text(text = stringResource(Res.string.primary), color = Ios.colors.tint, style = Ios.type.headline)
                 Text(
                     text = "- ${stringResource(Res.string.primary_channel_feature)}",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = Ios.colors.tint,
+                    style = Ios.type.subheadline,
                 )
-                Text(
-                    text = stringResource(Res.string.secondary),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Text(text = stringResource(Res.string.secondary), color = Ios.colors.label, style = Ios.type.headline)
                 Text(
                     text = "- ${stringResource(Res.string.secondary_no_telemetry)}",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
                 Text(
                     text =
@@ -144,8 +136,8 @@ internal fun ChannelLegendDialog(capabilities: Capabilities, onDismiss: () -> Un
                     } else {
                         "- ${stringResource(Res.string.manual_position_request)}"
                     },
-                    color = MaterialTheme.colorScheme.onBackground,
-                    style = MaterialTheme.typography.bodyMedium,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
                 IconDefinitions()
             }
@@ -155,13 +147,13 @@ internal fun ChannelLegendDialog(capabilities: Capabilities, onDismiss: () -> Un
 
 @Composable
 private fun IconDefinitions() {
-    Text(text = stringResource(Res.string.icon_meanings), style = MaterialTheme.typography.titleLarge)
+    Text(text = stringResource(Res.string.icon_meanings), style = Ios.type.title3)
     ChannelIcons.entries.forEach { icon ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(imageVector = vectorResource(icon.icon), contentDescription = stringResource(icon.descriptionResId))
             Column(modifier = Modifier.padding(start = 16.dp)) {
-                Text(text = stringResource(icon.descriptionResId), style = MaterialTheme.typography.titleMedium)
-                Text(text = stringResource(icon.additionalInfoResId), style = MaterialTheme.typography.bodyMedium)
+                Text(text = stringResource(icon.descriptionResId), style = Ios.type.headline)
+                Text(text = stringResource(icon.additionalInfoResId), style = Ios.type.subheadline)
             }
         }
         if (icon != ChannelIcons.entries.lastOrNull()) {

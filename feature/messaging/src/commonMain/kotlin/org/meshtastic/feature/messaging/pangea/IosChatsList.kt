@@ -37,8 +37,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -84,10 +82,13 @@ import org.meshtastic.core.ui.component.rememberAvatarBitmap
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosContextMenuOffset
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosLargeTitleScreen
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.IosSearchField
 import org.meshtastic.feature.messaging.ui.contact.SwipeableContactRow
 import org.meshtastic.proto.ChannelSet
@@ -190,16 +191,18 @@ private fun composeButton(onCompose: () -> Unit, onComposeGroup: () -> Unit): @C
             onClick = { composeMenu = true },
             tint = Ios.colors.tint,
         )
-        DropdownMenu(expanded = composeMenu, onDismissRequest = { composeMenu = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.pangea_new_message)) },
+        IosMenu(expanded = composeMenu, onDismissRequest = { composeMenu = false }) {
+            IosMenuItem(
+                text = stringResource(Res.string.pangea_new_message),
+                icon = IosIcons.Compose,
                 onClick = {
                     composeMenu = false
                     onCompose()
                 },
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.pangea_new_group)) },
+            IosMenuItem(
+                text = stringResource(Res.string.pangea_new_group),
+                icon = IosIcons.People,
                 onClick = {
                     composeMenu = false
                     onComposeGroup()
@@ -342,25 +345,27 @@ private fun IosChatRow(
             }
             Rule(start = if (expert) IosInset else RowTextStart)
         }
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(if (contact.isMuted) Res.string.unmute else Res.string.pangea_mute)) },
+        IosMenu(expanded = menu, onDismissRequest = { menu = false }, offset = IosContextMenuOffset) {
+            IosMenuItem(
+                text = stringResource(if (contact.isMuted) Res.string.unmute else Res.string.pangea_mute),
+                icon = if (contact.isMuted) IosIcons.Bell else IosIcons.BellSlash,
                 onClick = {
                     menu = false
                     onToggleMute()
                 },
             )
-            DropdownMenuItem(
-                text = {
-                    Text(stringResource(if (contact.isPinned) Res.string.pangea_unpin else Res.string.pangea_pin))
-                },
+            IosMenuItem(
+                text = stringResource(if (contact.isPinned) Res.string.pangea_unpin else Res.string.pangea_pin),
+                icon = IosIcons.Pin,
                 onClick = {
                     menu = false
                     onTogglePin()
                 },
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.delete), color = c.systemRed) },
+            IosMenuItem(
+                text = stringResource(Res.string.delete),
+                icon = IosIcons.Trash,
+                destructive = true,
                 onClick = {
                     menu = false
                     onDelete()

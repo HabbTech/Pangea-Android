@@ -88,6 +88,7 @@ import org.meshtastic.core.ui.icon.Pressure
 import org.meshtastic.core.ui.icon.Temperature
 import org.meshtastic.core.ui.icon.Unmessageable
 import org.meshtastic.core.ui.icon.role
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusYellow
 import org.meshtastic.core.ui.util.LocalModemPreset
 
@@ -133,7 +134,7 @@ fun NodeItemCompact(
             }
         }
 
-    val contentColor = MaterialTheme.colorScheme.onSurface
+    val contentColor = Ios.colors.label
     val nodeColor =
         (if (isThisNode) thisNode?.colors?.second else thatNode.colors.second)?.let { Color(it) } ?: Color.Transparent
     val cardColors = CardDefaults.cardColors(containerColor = nodeTintedContainer(nodeColor))
@@ -273,7 +274,7 @@ private fun CompactNameRow(
         NodeSecurityIcons(thatNode, iconSize = 18.dp, isThisNode = isThisNode)
         Text(
             text = longName,
-            style = MaterialTheme.typography.titleMediumEmphasized.copy(fontStyle = style),
+            style = Ios.type.headline.copy(fontStyle = style),
             textDecoration = TextDecoration.LineThrough.takeIf { isIgnored },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -284,7 +285,7 @@ private fun CompactNameRow(
                 imageVector = MeshtasticIcons.PersonQuestion,
                 contentDescription = stringResource(Res.string.node_incomplete),
                 modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.outline,
+                tint = Ios.colors.separator,
             )
         }
         if (unmessageable) {
@@ -292,7 +293,7 @@ private fun CompactNameRow(
                 imageVector = MeshtasticIcons.Unmessageable,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.outline,
+                tint = Ios.colors.separator,
             )
         }
         if (isFavorite) {
@@ -401,7 +402,7 @@ private fun CompactFooterRow(
     showRole: Boolean,
     deviceImageUrl: String?,
 ) {
-    val tertiaryColor = MaterialTheme.colorScheme.outline
+    val tertiaryColor = Ios.colors.separator
     val segments =
         buildList<@Composable () -> Unit> {
             if (showRole) {
@@ -562,7 +563,7 @@ private fun HardwareModelInfo(hwModelName: String, deviceImageUrl: String?, cont
         }
         Text(
             text = hwModelName,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
+            style = Ios.type.caption1.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
             color = contentColor.copy(alpha = 0.95f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
