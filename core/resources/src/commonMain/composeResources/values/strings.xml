@@ -1395,6 +1395,7 @@
     <string name="pangea_canned_messages">Canned Messages</string>
     <string name="pangea_canned_messages_placeholder">Messages separate with |</string>
     <string name="pangea_channel">Channel</string>
+    <string name="pangea_channel_details">Channel Details</string>
     <string name="pangea_channel_legend">What the channel icons mean</string>
     <string name="pangea_chat_icon">Chat Icon</string>
     <string name="pangea_chat_icon_hint">Only you see this icon.</string>

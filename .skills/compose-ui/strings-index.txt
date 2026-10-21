@@ -1359,6 +1359,7 @@ pangea_buy_radios_description
 pangea_canned_messages
 pangea_canned_messages_placeholder
 pangea_channel
+pangea_channel_details
 pangea_channel_legend
 pangea_chat_icon
 pangea_chat_icon_hint
