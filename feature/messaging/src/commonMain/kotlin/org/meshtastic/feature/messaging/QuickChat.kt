@@ -16,6 +16,8 @@
  */
 package org.meshtastic.feature.messaging
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -24,24 +26,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,10 +46,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
@@ -75,12 +74,21 @@ import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.component.dragContainer
 import org.meshtastic.core.ui.component.dragDropItemsIndexed
 import org.meshtastic.core.ui.component.rememberDragDropState
-import org.meshtastic.core.ui.icon.Add
 import org.meshtastic.core.ui.icon.DragHandle
-import org.meshtastic.core.ui.icon.Edit
 import org.meshtastic.core.ui.icon.FastForward
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosSwitch
+import org.meshtastic.core.ui.ios.IosTextField
 
+/**
+ * The quick chat buttons, drawn as an iOS inset list: one row per action (its short name, the message under it, edit
+ * and the drag handle at the end), with "+" in the bar to add one.
+ */
 @Composable
 fun QuickChatScreen(modifier: Modifier = Modifier, viewModel: QuickChatViewModel, onNavigateUp: () -> Unit) {
     val actions by viewModel.quickChatActions.collectAsStateWithLifecycle()
@@ -94,6 +102,7 @@ fun QuickChatScreen(modifier: Modifier = Modifier, viewModel: QuickChatViewModel
         }
 
     Scaffold(
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
             MainAppBar(
                 title = stringResource(Res.string.quick_chat),
@@ -101,7 +110,12 @@ fun QuickChatScreen(modifier: Modifier = Modifier, viewModel: QuickChatViewModel
                 showNodeChip = false,
                 canNavigateUp = true,
                 onNavigateUp = onNavigateUp,
-                actions = {},
+                actions = {
+                    // iOS adds from the bar, where Android had a floating button.
+                    IconButton(onClick = { showActionDialog = QuickChatAction(position = actions.size) }) {
+                        Icon(IosIcons.Plus, contentDescription = stringResource(Res.string.add), tint = Ios.colors.tint)
+                    }
+                },
                 onClickChip = {},
             )
         },
@@ -120,22 +134,20 @@ fun QuickChatScreen(modifier: Modifier = Modifier, viewModel: QuickChatViewModel
             LazyColumn(
                 modifier = Modifier.dragContainer(dragDropState = dragDropState, haptics = LocalHapticFeedback.current),
                 state = listState,
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(horizontal = IosInset, vertical = 20.dp),
             ) {
                 dragDropItemsIndexed(items = actions, dragDropState = dragDropState, key = { _, item -> item.uuid }) {
-                        _,
+                        index,
                         action,
-                        isDragging,
+                        _,
                     ->
-                    QuickChatItem(action = action, onEdit = { showActionDialog = it })
+                    QuickChatItem(
+                        action = action,
+                        onEdit = { showActionDialog = it },
+                        isFirst = index == 0,
+                        isLast = index == actions.lastIndex,
+                    )
                 }
-            }
-
-            FloatingActionButton(
-                onClick = { showActionDialog = QuickChatAction(position = actions.size) },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            ) {
-                Icon(imageVector = MeshtasticIcons.Add, contentDescription = stringResource(Res.string.add))
             }
         }
     }
@@ -152,6 +164,7 @@ private fun getMessageName(message: String): String = if (message.length <= 3) {
     }
 }
 
+/** Adding or editing a quick chat button: an iOS alert with the two fields, the instant switch, and Delete. */
 @OptIn(ExperimentalLayoutApi::class)
 @Suppress("LongMethod")
 @Composable
@@ -183,27 +196,17 @@ internal fun EditQuickChatDialog(
         },
         dismissText = stringResource(Res.string.cancel),
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextFieldWithCounter(
-                    label = stringResource(Res.string.name),
-                    value = actionInput.name,
-                    maxSize = 5,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                FieldWithCounter(placeholder = stringResource(Res.string.name), value = actionInput.name, maxSize = 5) {
                     actionInput = actionInput.copy(name = it.uppercase())
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextFieldWithCounter(
-                    label = stringResource(Res.string.message),
+                FieldWithCounter(
+                    placeholder = stringResource(Res.string.message),
                     value = actionInput.message,
                     maxSize = 200,
                     getSize = { it.encodeToByteArray().size + 1 },
-                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    modifier = Modifier.padding(top = 8.dp).focusRequester(focusRequester),
                 ) {
                     actionInput = actionInput.copy(message = it)
                     if (newQuickChat) {
@@ -211,118 +214,141 @@ internal fun EditQuickChatDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                val (text, icon) =
+                val text = if (isInstant) Res.string.quick_chat_instant else Res.string.quick_chat_append
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     if (isInstant) {
-                        Res.string.quick_chat_instant to MeshtasticIcons.FastForward
-                    } else {
-                        Res.string.quick_chat_append to MeshtasticIcons.Add
+                        Icon(
+                            imageVector = MeshtasticIcons.FastForward,
+                            contentDescription = null,
+                            tint = Ios.colors.tint,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.width(10.dp))
                     }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isInstant) {
-                        Icon(imageVector = icon, contentDescription = stringResource(text))
-                        Spacer(Modifier.width(12.dp))
-                    }
-
-                    Text(text = stringResource(text), modifier = Modifier.weight(1f))
-
-                    Switch(
+                    Text(
+                        text = stringResource(text),
+                        style = Ios.type.body,
+                        color = Ios.colors.label,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IosSwitch(
                         checked = isInstant,
                         onCheckedChange = { checked ->
                             actionInput =
                                 actionInput.copy(
-                                    mode =
-                                    when (checked) {
-                                        true -> QuickChatAction.Mode.Instant
-                                        false -> QuickChatAction.Mode.Append
-                                    },
+                                    mode = if (checked) QuickChatAction.Mode.Instant else QuickChatAction.Mode.Append,
                                 )
                         },
                     )
                 }
 
                 if (!newQuickChat) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TextButton(
-                        modifier = Modifier.fillMaxWidth(),
+                    IosButton(
+                        text = stringResource(Res.string.delete),
                         onClick = {
                             onDelete(actionInput)
                             onDismiss()
                         },
-                    ) {
-                        Text(text = stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
-                    }
+                        style = IosButtonStyle.Destructive,
+                        modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+                    )
                 }
             }
         },
     )
 }
 
+/** An iOS field with its byte or character count under it while it has focus. */
 @Composable
-private fun OutlinedTextFieldWithCounter(
-    label: String,
+private fun FieldWithCounter(
+    placeholder: String,
     value: String,
-    modifier: Modifier = Modifier,
-    singleLine: Boolean = false,
     maxSize: Int,
+    modifier: Modifier = Modifier,
     getSize: (String) -> Int = { it.length },
     onValueChange: (String) -> Unit = {},
 ) = Column(modifier) {
     var isFocused by remember { mutableStateOf(false) }
-    OutlinedTextField(
+    IosTextField(
         value = value,
         onValueChange = {
             if (getSize(it) <= maxSize) {
                 onValueChange(it)
             }
         },
+        placeholder = placeholder,
         modifier = Modifier.onFocusEvent { isFocused = it.isFocused },
-        label = { Text(text = label) },
-        singleLine = singleLine,
     )
     if (isFocused) {
         Text(
             text = "${getSize(value)}/$maxSize",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.align(Alignment.End).padding(top = 4.dp, end = 16.dp),
+            style = Ios.type.caption1,
+            color = Ios.colors.secondaryLabel,
+            textAlign = TextAlign.End,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, end = 6.dp),
         )
     }
 }
 
+/**
+ * One quick chat button as a row of an iOS inset list. [isFirst] and [isLast] round the card's ends; rows in between
+ * are joined by a hairline, as one section.
+ */
 @Composable
 internal fun QuickChatItem(
     action: QuickChatAction,
     modifier: Modifier = Modifier,
     onEdit: (QuickChatAction) -> Unit = {},
+    isFirst: Boolean = true,
+    isLast: Boolean = true,
 ) {
-    Card(modifier = modifier.fillMaxWidth().padding(8.dp), shape = RoundedCornerShape(12.dp)) {
-        ListItem(
-            leadingContent = {
+    val c = Ios.colors
+    val corner = 26.dp
+    val shape =
+        RoundedCornerShape(
+            topStart = if (isFirst) corner else 0.dp,
+            topEnd = if (isFirst) corner else 0.dp,
+            bottomStart = if (isLast) corner else 0.dp,
+            bottomEnd = if (isLast) corner else 0.dp,
+        )
+    Column(modifier.fillMaxWidth().clip(shape).background(c.groupedRow)) {
+        if (!isFirst) {
+            HorizontalDivider(thickness = 0.5.dp, color = c.separator, modifier = Modifier.padding(start = 56.dp))
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp).padding(end = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.width(56.dp), contentAlignment = Alignment.Center) {
                 if (action.mode == QuickChatAction.Mode.Instant) {
                     Icon(
                         imageVector = MeshtasticIcons.FastForward,
                         contentDescription = stringResource(Res.string.quick_chat_instant),
+                        tint = c.tint,
+                        modifier = Modifier.size(24.dp),
                     )
                 }
-            },
-            headlineContent = { Text(text = action.name) },
-            supportingContent = { Text(text = action.message) },
-            trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { onEdit(action) }, modifier = Modifier.size(48.dp)) {
-                        Icon(
-                            imageVector = MeshtasticIcons.Edit,
-                            contentDescription = stringResource(Res.string.quick_chat_edit),
-                        )
-                    }
-                    Icon(
-                        imageVector = MeshtasticIcons.DragHandle,
-                        contentDescription = stringResource(Res.string.quick_chat),
-                    )
-                }
-            },
-        )
+            }
+            Column(Modifier.weight(1f).padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(text = action.name, style = Ios.type.body.copy(fontWeight = FontWeight.SemiBold), color = c.label)
+                Text(text = action.message, style = Ios.type.subheadline, color = c.secondaryLabel)
+            }
+            IconButton(onClick = { onEdit(action) }) {
+                Icon(
+                    imageVector = IosIcons.Compose,
+                    contentDescription = stringResource(Res.string.quick_chat_edit),
+                    tint = c.tint,
+                )
+            }
+            Icon(
+                imageVector = MeshtasticIcons.DragHandle,
+                contentDescription = stringResource(Res.string.quick_chat),
+                tint = c.tertiaryLabel,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+        }
     }
 }
