@@ -18,7 +18,9 @@
 
 package org.meshtastic.core.ui.theme
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme.Companion.expressive
 import androidx.compose.material3.darkColorScheme
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFontFamilyResolver
 import co.touchlab.kermit.Logger
 import org.meshtastic.core.ui.ios.DarkIosColors
+import org.meshtastic.core.ui.ios.IosHighlight
 import org.meshtastic.core.ui.ios.LightIosColors
 import org.meshtastic.core.ui.ios.LocalIosColors
 import org.meshtastic.core.ui.ios.LocalIosTypography
@@ -167,7 +170,15 @@ fun AppTheme(
     }
 
     MaterialExpressiveTheme(colorScheme = colorScheme, typography = typography, motionScheme = expressive()) {
-        CompositionLocalProvider(LocalIosColors provides iosColors, LocalIosTypography provides iosType) { content() }
+        // iOS's touch feedback everywhere: a dimming wash while pressed, no Material ripple.
+        CompositionLocalProvider(
+            LocalIosColors provides iosColors,
+            LocalIosTypography provides iosType,
+            LocalIndication provides IosHighlight(darkTheme),
+            LocalRippleConfiguration provides null,
+        ) {
+            content()
+        }
     }
 }
 
