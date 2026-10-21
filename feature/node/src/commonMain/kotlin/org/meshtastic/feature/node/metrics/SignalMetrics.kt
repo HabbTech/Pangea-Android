@@ -31,10 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -82,10 +79,9 @@ import org.meshtastic.core.resources.signal_quality
 import org.meshtastic.core.resources.snr
 import org.meshtastic.core.resources.snr_definition
 import org.meshtastic.core.ui.component.LoraSignalIndicator
-import org.meshtastic.core.ui.icon.Delete
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Refresh
-import org.meshtastic.core.ui.icon.Save
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.GraphColors.Blue
 import org.meshtastic.core.ui.theme.GraphColors.Gold
 import org.meshtastic.core.ui.theme.GraphColors.Green
@@ -279,28 +275,31 @@ private fun LocalStatsActionButtons(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // iOS's capsule buttons: Clear in red, Request and Save in the tint.
         if (hasLocalStats) {
-            OutlinedButton(
-                modifier = Modifier.weight(1f),
+            IosButton(
+                text = stringResource(Res.string.clear),
                 onClick = onClear,
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) {
-                Icon(imageVector = MeshtasticIcons.Delete, contentDescription = stringResource(Res.string.clear))
-                Spacer(Modifier.width(8.dp))
-                Text(text = stringResource(Res.string.clear), maxLines = 1)
-            }
+                style = IosButtonStyle.Destructive,
+                icon = IosIcons.Trash,
+                modifier = Modifier.weight(1f),
+            )
         }
-        OutlinedButton(modifier = Modifier.weight(1f), onClick = onRequest) {
-            Icon(imageVector = MeshtasticIcons.Refresh, contentDescription = stringResource(Res.string.request))
-            Spacer(Modifier.width(8.dp))
-            Text(text = stringResource(Res.string.request), maxLines = 1)
-        }
+        IosButton(
+            text = stringResource(Res.string.request),
+            onClick = onRequest,
+            style = IosButtonStyle.Tinted,
+            icon = IosIcons.ArrowsCirclepath,
+            modifier = Modifier.weight(1f),
+        )
         if (hasVisibleLocalStats) {
-            OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = onSave) {
-                Icon(imageVector = MeshtasticIcons.Save, contentDescription = stringResource(Res.string.save))
-                Spacer(Modifier.width(8.dp))
-                Text(text = stringResource(Res.string.save), maxLines = 1)
-            }
+            IosButton(
+                text = stringResource(Res.string.save),
+                onClick = onSave,
+                style = IosButtonStyle.Tinted,
+                icon = IosIcons.ShareDown,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
