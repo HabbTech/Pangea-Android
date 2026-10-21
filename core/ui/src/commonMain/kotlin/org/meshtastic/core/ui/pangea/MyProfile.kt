@@ -38,7 +38,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -198,11 +197,9 @@ fun MyProfileSection(modifier: Modifier = Modifier, viewModel: MyProfileViewMode
                 size = 56.dp,
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(Res.string.pangea_my_profile), style = MaterialTheme.typography.labelMedium)
-                Text(name, style = MaterialTheme.typography.titleMedium)
-                state.code?.let {
-                    Text(it, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
-                }
+                Text(stringResource(Res.string.pangea_my_profile), style = Ios.type.caption1)
+                Text(name, style = Ios.type.headline)
+                state.code?.let { Text(it, fontFamily = FontFamily.Monospace, style = Ios.type.footnote) }
             }
             TextButton(onClick = { editing = true }) { Text(stringResource(Res.string.pangea_edit_profile)) }
         }
@@ -355,7 +352,7 @@ private fun EmojiQuickPicks(selected: String, onPick: (String) -> Unit, onAll: (
                         .clip(shape)
                         .then(
                             if (item == selected) {
-                                Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+                                Modifier.border(2.dp, Ios.colors.tint, shape)
                             } else {
                                 Modifier
                             },
@@ -373,7 +370,7 @@ private fun EmojiQuickPicks(selected: String, onPick: (String) -> Unit, onAll: (
 private fun ColorDots(selected: Int, onPick: (Int) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         AvatarPalette.colors.forEachIndexed { index, color ->
-            val ring = if (index == selected) MaterialTheme.colorScheme.onSurface else Color.Transparent
+            val ring = if (index == selected) Ios.colors.label else Color.Transparent
             Box(
                 modifier =
                 Modifier.size(34.dp).clip(CircleShape).border(3.dp, ring, CircleShape).clickable { onPick(index) },
@@ -403,11 +400,11 @@ fun SetupProfilePrompt(modifier: Modifier = Modifier, viewModel: MyProfileViewMo
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(Res.string.pangea_setup_profile), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(Res.string.pangea_setup_profile), style = Ios.type.headline)
                     Text(
                         stringResource(Res.string.pangea_setup_profile_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = Ios.type.footnote,
+                        color = Ios.colors.secondaryLabel,
                     )
                 }
                 Button(onClick = { editing = true }) { Text(stringResource(Res.string.pangea_edit_profile)) }

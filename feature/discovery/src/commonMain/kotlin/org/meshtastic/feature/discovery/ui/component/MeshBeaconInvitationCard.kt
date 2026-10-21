@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +47,7 @@ import org.meshtastic.core.resources.mesh_beacon_offer_preset
 import org.meshtastic.core.resources.mesh_beacon_offer_region
 import org.meshtastic.core.resources.mesh_beacon_offer_signal
 import org.meshtastic.core.resources.mesh_beacon_offer_title
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.proto.Config.LoRaConfig.RegionCode
 
 /**
@@ -70,33 +70,30 @@ internal fun MeshBeaconInvitationCard(
     val region = offer.beacon.offer_region
     ElevatedCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(Res.string.mesh_beacon_offer_title),
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Text(text = stringResource(Res.string.mesh_beacon_offer_title), style = Ios.type.headline)
 
             val body = offer.message.ifBlank { stringResource(Res.string.mesh_beacon_offer_from_unknown) }
-            Text(text = body, style = MaterialTheme.typography.bodyMedium)
+            Text(text = body, style = Ios.type.subheadline)
 
             offer.channelName?.let {
                 Text(
                     text = stringResource(Res.string.mesh_beacon_offer_channel, it),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.caption1,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
             if (region != RegionCode.UNSET) {
                 Text(
                     text = stringResource(Res.string.mesh_beacon_offer_region, region.name),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.caption1,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
             presetOption?.let {
                 Text(
                     text = stringResource(Res.string.mesh_beacon_offer_preset, it.displayName()),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.caption1,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
             if (offer.rssi != null || offer.snr != null) {
@@ -107,8 +104,8 @@ internal fun MeshBeaconInvitationCard(
                         MetricFormatter.snr(offer.snr),
                         MetricFormatter.rssi(offer.rssi),
                     ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.caption1,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
 

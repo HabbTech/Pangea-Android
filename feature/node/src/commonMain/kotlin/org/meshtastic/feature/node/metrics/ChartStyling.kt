@@ -49,6 +49,7 @@ import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * Utility object for chart styling and component creation. Provides reusable styled lines, points, and axes for Vico
@@ -215,28 +216,20 @@ object ChartStyling {
     ): CartesianMarker {
         val labelBackground =
             rememberShapeComponent(
-                fill = Fill(MaterialTheme.colorScheme.surfaceContainerHigh),
+                fill = Fill(Ios.colors.fieldFill),
                 shape = MarkerCornerBasedShape(MaterialTheme.shapes.extraSmall),
-                strokeFill = Fill(MaterialTheme.colorScheme.outlineVariant),
+                strokeFill = Fill(Ios.colors.separator),
                 strokeThickness = 1.dp,
             )
         val label =
             rememberTextComponent(
-                style =
-                TextStyle(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp,
-                ),
+                style = TextStyle(color = Ios.colors.label, fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
                 background = labelBackground,
                 padding = Insets(horizontal = 8.dp, vertical = 4.dp),
                 margins = Insets(bottom = 4.dp),
             )
         val guideline =
-            rememberLineComponent(
-                fill = Fill(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)),
-                thickness = 1.dp,
-            )
+            rememberLineComponent(fill = Fill(Ios.colors.secondaryLabel.copy(alpha = 0.2f)), thickness = 1.dp)
 
         val indicator =
             if (showIndicator) {
@@ -286,7 +279,7 @@ object ChartStyling {
      * labels.
      */
     @Composable
-    fun rememberAxisLabel(color: Color = MaterialTheme.colorScheme.onSurfaceVariant): TextComponent =
+    fun rememberAxisLabel(color: Color = Ios.colors.secondaryLabel): TextComponent =
         rememberTextComponent(style = TextStyle(color = color, fontSize = 10.sp, fontWeight = FontWeight.Medium))
 }
 

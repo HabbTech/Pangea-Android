@@ -45,7 +45,6 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -912,21 +911,17 @@ private fun mentionOutputTransformation(candidatesById: () -> Map<String, Mentio
  */
 @Composable
 internal fun RetiredChannelNotice(modifier: Modifier = Modifier) {
-    Surface(modifier = modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+    Surface(modifier = modifier.fillMaxWidth(), color = Ios.colors.fieldFill) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(
-                imageVector = MeshtasticIcons.History,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Icon(imageVector = MeshtasticIcons.History, contentDescription = null, tint = Ios.colors.secondaryLabel)
             Text(
                 text = stringResource(Res.string.archived_channel_read_only),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
             )
         }
     }
@@ -1060,12 +1055,12 @@ internal fun MessageInput(
                 if (isEnabled && currentByteLength >= maxByteSize - COUNTER_VISIBLE_WITHIN_BYTES) {
                     Text(
                         text = "$currentByteLength/$maxByteSize",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = Ios.type.footnote,
                         color =
                         if (isOverLimit) {
-                            MaterialTheme.colorScheme.error
+                            Ios.colors.systemRed
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            Ios.colors.secondaryLabel
                         },
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.End,
@@ -1119,14 +1114,10 @@ private fun MentionSuggestions(suggestions: List<MentionCandidate>, onPick: (Men
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        text = candidate.shortName,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Text(text = candidate.shortName, style = Ios.type.subheadline, fontWeight = FontWeight.Bold)
                     Text(
                         text = candidate.longName,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

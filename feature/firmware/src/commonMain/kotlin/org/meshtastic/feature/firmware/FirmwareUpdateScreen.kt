@@ -42,7 +42,6 @@ import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -290,27 +289,27 @@ private fun LocalFirmwareFileConfirmationDialog(
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(Res.string.firmware_update_confirm_file_message),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                 )
                 Spacer(Modifier.height(12.dp))
                 SelectionContainer {
                     Text(
                         text = pendingFile.fileName,
                         modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
                         fontFamily = FontFamily.Monospace,
                     )
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = stringResource(Res.string.firmware_update_device, pendingFile.deviceName),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
                 Text(
                     text = stringResource(Res.string.firmware_update_target, pendingFile.platformioTarget),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
         },
@@ -497,12 +496,12 @@ private fun FirmwareUpdateContent(
 internal fun VerifyingState() {
     CircularWavyProgressIndicator(modifier = Modifier.size(64.dp))
     Spacer(Modifier.height(24.dp))
-    Text(stringResource(Res.string.firmware_update_verifying), style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(Res.string.firmware_update_verifying), style = Ios.type.headline)
     Spacer(Modifier.height(8.dp))
     Text(
         stringResource(Res.string.firmware_update_waiting_reconnect),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = Ios.type.subheadline,
+        color = Ios.colors.secondaryLabel,
     )
     Spacer(Modifier.height(16.dp))
     CyclingMessages()
@@ -512,7 +511,7 @@ internal fun VerifyingState() {
 internal fun CheckingState() {
     CircularWavyProgressIndicator(modifier = Modifier.size(64.dp))
     Spacer(Modifier.height(24.dp))
-    Text(stringResource(Res.string.firmware_update_checking), style = MaterialTheme.typography.bodyLarge)
+    Text(stringResource(Res.string.firmware_update_checking), style = Ios.type.body)
 }
 
 @Composable
@@ -577,8 +576,8 @@ private fun ReadyState(
     if (state.isRecovery) {
         Text(
             text = stringResource(Res.string.firmware_recovery_explanation),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.subheadline,
+            color = Ios.colors.secondaryLabel,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(16.dp))
@@ -600,13 +599,13 @@ private fun UnsupportedTransportState() {
             MeshtasticIcons.Warning,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = Ios.colors.secondaryLabel,
         )
         Spacer(Modifier.height(16.dp))
         Text(
             stringResource(Res.string.firmware_update_unsupported_transport),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.body,
+            color = Ios.colors.secondaryLabel,
             textAlign = TextAlign.Center,
         )
     }
@@ -633,14 +632,14 @@ internal fun DisclaimerDialog(
                     Icon(
                         MeshtasticIcons.Warning,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = Ios.colors.systemRed,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         stringResource(Res.string.firmware_update_disconnect_warning),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.error,
+                        style = Ios.type.caption1,
+                        color = Ios.colors.systemRed,
                     )
                 }
                 if (wipeDevice) {
@@ -649,14 +648,14 @@ internal fun DisclaimerDialog(
                         Icon(
                             MeshtasticIcons.Warning,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
+                            tint = Ios.colors.systemRed,
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
                             stringResource(Res.string.firmware_update_wipe_confirm_warning),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.error,
+                            style = Ios.type.caption1,
+                            color = Ios.colors.systemRed,
                         )
                     }
                 }
@@ -768,18 +767,15 @@ internal fun WipeDeviceToggle(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(Res.string.firmware_update_wipe_label),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                    Text(text = stringResource(Res.string.firmware_update_wipe_label), style = Ios.type.body)
                     Text(
                         text =
                         when (updateMethod) {
                             FirmwareUpdateMethod.Usb -> stringResource(Res.string.firmware_update_wipe_usb_detail)
                             else -> stringResource(Res.string.firmware_update_wipe_ble_detail)
                         },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = Ios.type.footnote,
+                        color = Ios.colors.secondaryLabel,
                     )
                 }
                 Spacer(Modifier.width(8.dp))
@@ -787,11 +783,7 @@ internal fun WipeDeviceToggle(
             }
             refusal?.let {
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = usbMaintenanceRefusalText(it),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(text = usbMaintenanceRefusalText(it), style = Ios.type.footnote, color = Ios.colors.secondaryLabel)
             }
         }
     }
@@ -801,7 +793,7 @@ internal fun WipeDeviceToggle(
 private fun ChirpyCard() {
     Card(
         modifier = Modifier.fillMaxWidth().padding(4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill),
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
@@ -809,7 +801,7 @@ private fun ChirpyCard() {
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = spacedBy(4.dp),
             ) {
-                Text(text = "🪜", modifier = Modifier.size(48.dp), style = MaterialTheme.typography.headlineLarge)
+                Text(text = "🪜", modifier = Modifier.size(48.dp), style = Ios.type.title1)
                 Image(
                     painter = painterResource(Res.drawable.img_chirpy),
                     contentScale = ContentScale.Fit,
@@ -819,7 +811,7 @@ private fun ChirpyCard() {
             }
             Text(
                 text = stringResource(Res.string.firmware_update_disclaimer_chirpy_says),
-                style = MaterialTheme.typography.labelSmall,
+                style = Ios.type.caption2,
                 textAlign = TextAlign.Center,
             )
         }
@@ -847,13 +839,10 @@ private fun DeviceHardwareImage(deviceHardware: DeviceHardware, modifier: Modifi
 private fun ReleaseNotesCard(releaseNotes: String) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().animateContentSize(),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.elevatedCardColors(containerColor = Ios.colors.background),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(Res.string.firmware_update_release_notes),
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Text(text = stringResource(Res.string.firmware_update_release_notes), style = Ios.type.headline)
             Spacer(modifier = Modifier.height(12.dp))
             Markdown(content = releaseNotes, modifier = Modifier.fillMaxWidth())
         }
@@ -871,7 +860,7 @@ private fun DeviceInfoCard(
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().animateContentSize(),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.elevatedCardColors(containerColor = Ios.colors.groupedRow),
     ) {
         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
@@ -883,15 +872,15 @@ private fun DeviceInfoCard(
 
                 Text(
                     stringResource(Res.string.firmware_update_device, deviceHardware.displayName),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = Ios.type.title3,
                     textAlign = TextAlign.Center,
                 )
             }
             Spacer(Modifier.height(8.dp))
             Text(
                 stringResource(Res.string.firmware_update_target, target),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
             )
             Spacer(Modifier.height(4.dp))
             val currentVersionString =
@@ -912,8 +901,8 @@ private fun DeviceInfoCard(
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 text = "$label$version",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary,
+                style = Ios.type.body,
+                color = Ios.colors.tint,
             )
         }
     }
@@ -973,22 +962,18 @@ private fun BootloaderWarningCard(deviceHardware: DeviceHardware, onDismissForDe
         modifier = Modifier.fillMaxWidth().animateContentSize(),
         colors =
         CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+            containerColor = Ios.colors.systemRed.copy(alpha = 0.12f),
+            contentColor = Ios.colors.systemRed,
         ),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = MeshtasticIcons.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
+                Icon(imageVector = MeshtasticIcons.Warning, contentDescription = null, tint = Ios.colors.systemRed)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text =
                     stringResource(Res.string.firmware_update_usb_bootloader_warning, deviceHardware.displayName),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                 )
             }
 
@@ -997,7 +982,7 @@ private fun BootloaderWarningCard(deviceHardware: DeviceHardware, onDismissForDe
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = stringResource(Res.string.firmware_update_rak4631_bootloader_hint),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Ios.type.footnote,
                 )
             }
 
@@ -1055,7 +1040,7 @@ private fun ProgressContent(
                 MeshtasticIcons.CloudDownload,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = Ios.colors.tint,
             )
         } else {
             CircularWavyProgressIndicator(
@@ -1066,19 +1051,15 @@ private fun ProgressContent(
 
         Spacer(Modifier.height(24.dp))
 
-        Text(
-            progressState.message.asString(),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-        )
+        Text(progressState.message.asString(), style = Ios.type.headline, textAlign = TextAlign.Center)
 
         val details = progressState.details
         if (details != null) {
             Spacer(Modifier.height(4.dp))
             Text(
                 text = details,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
                 textAlign = TextAlign.Center,
             )
         }
@@ -1088,8 +1069,8 @@ private fun ProgressContent(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = hint.asString(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                style = Ios.type.footnote,
+                color = Ios.colors.tint,
                 textAlign = TextAlign.Center,
             )
         }
@@ -1151,7 +1132,7 @@ internal fun AwaitingFileSaveState(
     Spacer(Modifier.height(24.dp))
     Text(
         stringResource(Res.string.firmware_update_save_dfu_file),
-        style = MaterialTheme.typography.titleMedium,
+        style = Ios.type.headline,
         textAlign = TextAlign.Center,
     )
 
@@ -1159,8 +1140,8 @@ internal fun AwaitingFileSaveState(
         Spacer(Modifier.height(12.dp))
         Text(
             text = retry.asString(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
+            style = Ios.type.subheadline,
+            color = Ios.colors.systemRed,
             textAlign = TextAlign.Center,
         )
     }
@@ -1192,8 +1173,8 @@ private fun CyclingMessages() {
 
     Text(
         messages[currentMessageIndex],
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = Ios.type.subheadline,
+        color = Ios.colors.secondaryLabel,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().height(48.dp),
     )
@@ -1205,13 +1186,13 @@ private fun VerificationFailedState(onRetry: () -> Unit, onIgnore: () -> Unit) {
         MeshtasticIcons.Warning,
         contentDescription = null,
         modifier = Modifier.size(64.dp),
-        tint = MaterialTheme.colorScheme.error,
+        tint = Ios.colors.systemRed,
     )
     Spacer(Modifier.height(24.dp))
     Text(
         stringResource(Res.string.firmware_update_verification_failed),
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodyLarge,
+        color = Ios.colors.systemRed,
+        style = Ios.type.body,
         textAlign = TextAlign.Center,
     )
     Spacer(Modifier.height(32.dp))
@@ -1231,13 +1212,13 @@ internal fun ErrorState(error: UiText, onRetry: () -> Unit) {
         MeshtasticIcons.Dangerous,
         contentDescription = null,
         modifier = Modifier.size(64.dp),
-        tint = MaterialTheme.colorScheme.error,
+        tint = Ios.colors.systemRed,
     )
     Spacer(Modifier.height(24.dp))
     Text(
         stringResource(Res.string.firmware_update_error, error.asString()),
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodyLarge,
+        color = Ios.colors.systemRed,
+        style = Ios.type.body,
         textAlign = TextAlign.Center,
     )
     Spacer(Modifier.height(32.dp))
@@ -1259,21 +1240,21 @@ internal fun SuccessState(wasLowSpeedTransfer: Boolean = false, deviceWasWiped: 
             MeshtasticIcons.CheckCircle,
             contentDescription = null,
             modifier = Modifier.size(100.dp),
-            tint = MaterialTheme.colorScheme.primary,
+            tint = Ios.colors.tint,
         )
         Spacer(Modifier.height(24.dp))
         Text(
             stringResource(Res.string.firmware_update_success),
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.headlineLarge,
+            color = Ios.colors.tint,
+            style = Ios.type.title1,
             textAlign = TextAlign.Center,
         )
         if (deviceWasWiped) {
             Spacer(Modifier.height(16.dp))
             Text(
                 text = stringResource(Res.string.firmware_update_success_wiped),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
                 textAlign = TextAlign.Center,
             )
         }
@@ -1283,8 +1264,8 @@ internal fun SuccessState(wasLowSpeedTransfer: Boolean = false, deviceWasWiped: 
             Spacer(Modifier.height(16.dp))
             Text(
                 text = stringResource(Res.string.firmware_update_slow_bootloader_hint),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
                 textAlign = TextAlign.Center,
             )
             TextButton(onClick = { openUrl(OTAFIX_BOOTLOADER_URL) }) { Text(stringResource(Res.string.learn_more)) }

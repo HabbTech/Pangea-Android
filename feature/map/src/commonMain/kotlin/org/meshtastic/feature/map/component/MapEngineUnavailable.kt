@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,6 +37,7 @@ import org.meshtastic.core.resources.map_engine_unavailable
 import org.meshtastic.core.resources.map_engine_unavailable_detail
 import org.meshtastic.core.ui.icon.ErrorOutline
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 /**
@@ -57,21 +57,21 @@ fun MapEngineUnavailable(modifier: Modifier = Modifier) {
             imageVector = MeshtasticIcons.ErrorOutline,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.outlineVariant,
+            tint = Ios.colors.separator,
         )
         Text(
             text = stringResource(Res.string.map_engine_unavailable),
             modifier = Modifier.padding(top = 16.dp),
-            style = MaterialTheme.typography.titleMedium,
+            style = Ios.type.headline,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = Ios.colors.label,
         )
         Text(
             text = stringResource(Res.string.map_engine_unavailable_detail),
             modifier = Modifier.padding(top = 8.dp),
-            style = MaterialTheme.typography.bodyMedium,
+            style = Ios.type.subheadline,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.outline,
+            color = Ios.colors.separator,
         )
     }
 }
@@ -80,7 +80,5 @@ fun MapEngineUnavailable(modifier: Modifier = Modifier) {
 @Composable
 @Suppress("PreviewPublic")
 fun MapEngineUnavailablePreview() {
-    AppTheme {
-        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) { MapEngineUnavailable() }
-    }
+    AppTheme { Box(modifier = Modifier.fillMaxSize().background(Ios.colors.background)) { MapEngineUnavailable() } }
 }

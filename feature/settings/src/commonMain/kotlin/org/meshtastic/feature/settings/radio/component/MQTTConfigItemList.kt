@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -388,14 +387,13 @@ private val GreenColor = Color(0xFF4CAF50)
 private fun MqttStatusRow(state: MqttConnectionState) {
     val (label, color) =
         when (state) {
-            is MqttConnectionState.Inactive ->
-                stringResource(Res.string.mqtt_status_inactive) to MaterialTheme.colorScheme.outline
+            is MqttConnectionState.Inactive -> stringResource(Res.string.mqtt_status_inactive) to Ios.colors.separator
 
             is MqttConnectionState.Disconnected -> {
                 val text =
                     state.reason?.let { stringResource(Res.string.mqtt_status_disconnected_with_reason, it) }
                         ?: stringResource(Res.string.mqtt_status_disconnected)
-                text to MaterialTheme.colorScheme.error
+                text to Ios.colors.systemRed
             }
 
             is MqttConnectionState.Connecting -> stringResource(Res.string.mqtt_status_connecting) to AmberColor
@@ -405,7 +403,7 @@ private fun MqttStatusRow(state: MqttConnectionState) {
             is MqttConnectionState.SubscriptionRefused -> {
                 val topics = state.refused.entries.joinToString { (topic, reason) -> "$topic ($reason)" }
                 if (state.granted == 0) {
-                    stringResource(Res.string.mqtt_status_topics_refused_all, topics) to MaterialTheme.colorScheme.error
+                    stringResource(Res.string.mqtt_status_topics_refused_all, topics) to Ios.colors.systemRed
                 } else {
                     stringResource(Res.string.mqtt_status_topics_refused_some, topics) to AmberColor
                 }
@@ -491,8 +489,7 @@ private fun MqttProbeRow(enabled: Boolean, status: MqttProbeStatus?, onTestClick
 private fun MqttProbeStatus?.toLabel(): Pair<String, Color>? = when (this) {
     null -> null
 
-    is MqttProbeStatus.Probing ->
-        stringResource(Res.string.mqtt_probe_running) to MaterialTheme.colorScheme.onSurfaceVariant
+    is MqttProbeStatus.Probing -> stringResource(Res.string.mqtt_probe_running) to Ios.colors.secondaryLabel
 
     is MqttProbeStatus.Success -> {
         val text =
@@ -502,21 +499,17 @@ private fun MqttProbeStatus?.toLabel(): Pair<String, Color>? = when (this) {
     }
 
     is MqttProbeStatus.Rejected ->
-        stringResource(Res.string.mqtt_probe_rejected, reason ?: reasonCode.toString()) to
-            MaterialTheme.colorScheme.error
+        stringResource(Res.string.mqtt_probe_rejected, reason ?: reasonCode.toString()) to Ios.colors.systemRed
 
-    is MqttProbeStatus.DnsFailure ->
-        stringResource(Res.string.mqtt_probe_dns_failure) to MaterialTheme.colorScheme.error
+    is MqttProbeStatus.DnsFailure -> stringResource(Res.string.mqtt_probe_dns_failure) to Ios.colors.systemRed
 
-    is MqttProbeStatus.TcpFailure ->
-        stringResource(Res.string.mqtt_probe_tcp_failure) to MaterialTheme.colorScheme.error
+    is MqttProbeStatus.TcpFailure -> stringResource(Res.string.mqtt_probe_tcp_failure) to Ios.colors.systemRed
 
     is MqttProbeStatus.TlsFailure ->
-        stringResource(Res.string.mqtt_probe_tls_failure, message ?: "unknown") to MaterialTheme.colorScheme.error
+        stringResource(Res.string.mqtt_probe_tls_failure, message ?: "unknown") to Ios.colors.systemRed
 
     is MqttProbeStatus.Timeout ->
-        stringResource(Res.string.mqtt_probe_timeout, timeoutMs.toInt()) to MaterialTheme.colorScheme.error
+        stringResource(Res.string.mqtt_probe_timeout, timeoutMs.toInt()) to Ios.colors.systemRed
 
-    is MqttProbeStatus.Other ->
-        stringResource(Res.string.mqtt_probe_other_failure) to MaterialTheme.colorScheme.error
+    is MqttProbeStatus.Other -> stringResource(Res.string.mqtt_probe_other_failure) to Ios.colors.systemRed
 }

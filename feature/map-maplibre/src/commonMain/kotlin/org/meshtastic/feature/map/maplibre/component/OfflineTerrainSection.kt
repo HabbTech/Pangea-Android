@@ -26,7 +26,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,6 +56,7 @@ import org.meshtastic.core.resources.offline_terrain_manager
 import org.meshtastic.core.resources.offline_terrain_regional_detail
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.map.maplibre.terrain.OfflineTerrainRegion
 import org.meshtastic.feature.map.maplibre.terrain.OfflineTerrainRepository
 import org.meshtastic.feature.map.maplibre.terrain.estimateTerrainTiles
@@ -95,14 +95,14 @@ internal fun OfflineTerrainSection(target: OfflineMapTarget, onShowRegion: (Boun
     val isDownloading = downloadState is TerrainDownloadState.InProgress
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(text = stringResource(Res.string.offline_terrain_manager), style = MaterialTheme.typography.titleMedium)
+        Text(text = stringResource(Res.string.offline_terrain_manager), style = Ios.type.headline)
 
         val downloaded = region
         if (downloaded == null) {
             Text(
                 text = stringResource(Res.string.offline_terrain_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
             )
         } else {
             DownloadedTerrainRow(
@@ -141,10 +141,7 @@ private fun TerrainDownloadControls(
     // emit from a single source at its own top level, same as every other section composable in this file.
     Column {
         Column(modifier = Modifier.padding(top = 8.dp)) {
-            Text(
-                text = stringResource(Res.string.map_select_download_region),
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            Text(text = stringResource(Res.string.map_select_download_region), style = Ios.type.subheadline)
             Text(
                 text =
                 stringResource(
@@ -153,14 +150,14 @@ private fun TerrainDownloadControls(
                     stringResource(Res.string.map_cache_tiles, estimate.toInt()),
                     stringResource(Res.string.map_zoom_levels, 0, maxZoom),
                 ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
             )
             if (overLimit) {
                 Text(
                     text = stringResource(Res.string.map_tile_limit_reached, TerrainRegionExtractor.MAX_TILES),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.systemRed,
                 )
             }
         }
@@ -204,13 +201,13 @@ private fun DownloadedTerrainRow(region: OfflineTerrainRegion, onShow: () -> Uni
                     stringResource(Res.string.map_cache_megabytes, region.byteSize.megabytes()),
                     stringResource(Res.string.map_cache_tiles, region.tileCount.toInt()),
                 ),
-                style = MaterialTheme.typography.bodyMedium,
+                style = Ios.type.subheadline,
             )
             if (region.hasRegionalDetail) {
                 Text(
                     text = stringResource(Res.string.offline_terrain_regional_detail),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
         }

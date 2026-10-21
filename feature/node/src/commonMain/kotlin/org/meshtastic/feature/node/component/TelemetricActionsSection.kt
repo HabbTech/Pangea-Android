@@ -29,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipAnchorPosition
@@ -63,6 +62,7 @@ import org.meshtastic.core.resources.telemetry
 import org.meshtastic.core.resources.userinfo
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.node.model.LogsType
 import org.meshtastic.feature.node.model.NodeDetailAction
 import org.meshtastic.proto.Telemetry
@@ -250,18 +250,14 @@ private fun FeatureRow(node: Node, feature: TelemetricFeature, hasLogs: Boolean,
         ListItem(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
             leadingContent = {
-                Icon(
-                    imageVector = vectorResource(feature.icon),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
+                Icon(imageVector = vectorResource(feature.icon), contentDescription = null, tint = Ios.colors.tint)
             },
             headlineContent = {
                 Text(
                     text = stringResource(feature.titleRes),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = Ios.type.body,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = Ios.colors.label,
                 )
             },
             trailingContent = {
@@ -285,7 +281,7 @@ private fun FeatureRow(node: Node, feature: TelemetricFeature, hasLogs: Boolean,
                                     imageVector = vectorResource(feature.logsType?.icon ?: feature.icon),
                                     modifier = Modifier.size(24.dp),
                                     contentDescription = logsDescription,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = Ios.colors.tint,
                                 )
                             }
                         }
@@ -310,7 +306,7 @@ private fun FeatureRow(node: Node, feature: TelemetricFeature, hasLogs: Boolean,
                                 Icon(
                                     imageVector = MeshtasticIcons.Refresh,
                                     contentDescription = requestDescription,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = Ios.colors.tint,
                                 )
                             }
                         }

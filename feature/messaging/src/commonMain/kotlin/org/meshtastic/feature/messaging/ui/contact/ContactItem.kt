@@ -37,7 +37,6 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -67,6 +66,7 @@ import org.meshtastic.core.ui.icon.History
 import org.meshtastic.core.ui.icon.Keep
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.VolumeOff
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.feature.messaging.pangea.LocalPangeaAvatars
 import org.meshtastic.proto.ChannelSet
@@ -89,7 +89,7 @@ fun ContactItem(
         if (isOutlined) {
             CardDefaults.outlinedCardColors(containerColor = Color.Transparent)
         } else {
-            val containerColor = if (selected) Color.Gray else MaterialTheme.colorScheme.surfaceVariant
+            val containerColor = if (selected) Color.Gray else Ios.colors.fieldFill
             CardDefaults.cardColors(containerColor = containerColor)
         }
 
@@ -155,7 +155,7 @@ private fun ContactHeader(
                     Text(
                         text = contact.shortName,
                         modifier = Modifier.fillMaxWidth(),
-                        style = MaterialTheme.typography.labelLarge,
+                        style = Ios.type.subheadline,
                         textAlign = TextAlign.Center,
                     )
                 },
@@ -171,7 +171,7 @@ private fun ContactHeader(
             Icon(
                 imageVector = MeshtasticIcons.History,
                 contentDescription = stringResource(Res.string.archived_channel),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Ios.colors.secondaryLabel,
                 modifier = Modifier.size(16.dp),
             )
         } else if (isBroadcast && channels != null) {
@@ -180,7 +180,7 @@ private fun ContactHeader(
 
         Text(
             modifier = Modifier.padding(start = 8.dp).weight(1f),
-            style = MaterialTheme.typography.bodyLargeEmphasized,
+            style = Ios.type.headline,
             fontWeight = FontWeight.Medium,
             overflow = TextOverflow.Ellipsis,
             maxLines = 1,
@@ -188,8 +188,8 @@ private fun ContactHeader(
         )
         Text(
             text = contact.lastMessageTime?.let { DateFormatter.formatShortDate(it) }.orEmpty(),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.labelSmall,
+            color = Ios.colors.secondaryLabel,
+            style = Ios.type.caption2,
             modifier = Modifier,
         )
     }
@@ -214,8 +214,8 @@ private fun ChatMetadata(contact: Contact, modifier: Modifier = Modifier) {
                 contact.lastMessageText.orEmpty()
             },
             modifier = Modifier.weight(1f).semantics { isSensitiveData = true },
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (hasDraft) MaterialTheme.colorScheme.tertiary else Color.Unspecified,
+            style = Ios.type.subheadline,
+            color = if (hasDraft) Ios.colors.systemBlue else Color.Unspecified,
             overflow = TextOverflow.Ellipsis,
             maxLines = 2,
         )
@@ -224,7 +224,7 @@ private fun ChatMetadata(contact: Contact, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(start = 4.dp).size(18.dp),
                 imageVector = MeshtasticIcons.Keep,
                 contentDescription = stringResource(Res.string.contact_pinned),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = Ios.colors.tint,
             )
         }
         AnimatedVisibility(visible = contact.isMuted) {
@@ -245,12 +245,12 @@ private fun ChatMetadata(contact: Contact, modifier: Modifier = Modifier) {
             Text(
                 text = text,
                 modifier =
-                Modifier.background(MaterialTheme.colorScheme.primary, shape = CircleShape)
+                Modifier.background(Ios.colors.tint, shape = CircleShape)
                     .defaultMinSize(minWidth = 20.dp)
                     .padding(horizontal = 6.dp, vertical = 2.dp),
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.labelSmall,
+                color = Ios.colors.onTint,
+                style = Ios.type.caption2,
                 maxLines = 1,
             )
         }

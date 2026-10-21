@@ -79,6 +79,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PersonOff
 import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Route
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.core.ui.theme.GraphColors
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
@@ -226,14 +227,14 @@ private fun TracerouteCard(
                         onShowDetail()
                     },
                 ),
-            border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+            border = if (isSelected) BorderStroke(2.dp, Ios.colors.tint) else null,
             colors =
             CardDefaults.cardColors(
                 containerColor =
                 if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer
+                    Ios.colors.tintContainer
                 } else {
-                    MaterialTheme.colorScheme.surfaceVariant
+                    Ios.colors.fieldFill
                 },
             ),
         ) {
@@ -257,15 +258,11 @@ private fun TracerouteCardContent(time: String, summaryText: String, icon: Image
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = time, style = MaterialTheme.typography.titleMediumEmphasized, fontWeight = FontWeight.Bold)
-            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = time, style = Ios.type.headline, fontWeight = FontWeight.Bold)
+            Icon(imageVector = icon, contentDescription = null, tint = Ios.colors.secondaryLabel)
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = summaryText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Text(text = summaryText, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel)
         TracerouteCardMetrics(point)
     }
 }
@@ -288,7 +285,7 @@ private fun TracerouteCardMetrics(point: TraceroutePoint) {
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = formatString("%s: %d", stringResource(Res.string.traceroute_forward_hops), hops),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                 )
             }
         }
@@ -298,7 +295,7 @@ private fun TracerouteCardMetrics(point: TraceroutePoint) {
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = formatString("%s: %d", stringResource(Res.string.traceroute_return_hops), hops),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                 )
             }
         }
@@ -308,7 +305,7 @@ private fun TracerouteCardMetrics(point: TraceroutePoint) {
                 Spacer(Modifier.width(4.dp))
                 Text(
                     text = formatString("%s: %.1f s", stringResource(Res.string.traceroute_round_trip), rtt),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                 )
             }
         }

@@ -32,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -454,26 +453,23 @@ private fun TakServerStatusRow(status: TakServerStatus, clientCount: Int) {
     val (description, color) =
         when (status) {
             TakServerStatus.Unavailable ->
-                stringResource(Res.string.tak_server_status_unavailable) to MaterialTheme.colorScheme.onSurfaceVariant
+                stringResource(Res.string.tak_server_status_unavailable) to Ios.colors.secondaryLabel
 
-            TakServerStatus.Off ->
-                stringResource(Res.string.tak_server_status_off) to MaterialTheme.colorScheme.onSurfaceVariant
+            TakServerStatus.Off -> stringResource(Res.string.tak_server_status_off) to Ios.colors.secondaryLabel
 
             TakServerStatus.Starting ->
-                stringResource(Res.string.tak_server_status_starting) to MaterialTheme.colorScheme.onSurfaceVariant
+                stringResource(Res.string.tak_server_status_starting) to Ios.colors.secondaryLabel
 
-            TakServerStatus.WaitingForClient ->
-                stringResource(Res.string.tak_server_status_waiting) to MaterialTheme.colorScheme.primary
+            TakServerStatus.WaitingForClient -> stringResource(Res.string.tak_server_status_waiting) to Ios.colors.tint
 
             TakServerStatus.Connected ->
                 pluralStringResource(Res.plurals.tak_server_status_connected, clientCount, clientCount) to
-                    MaterialTheme.colorScheme.primary
+                    Ios.colors.tint
 
-            TakServerStatus.Failed ->
-                stringResource(Res.string.tak_server_status_failed) to MaterialTheme.colorScheme.error
+            TakServerStatus.Failed -> stringResource(Res.string.tak_server_status_failed) to Ios.colors.systemRed
 
             TakServerStatus.NotRunning ->
-                stringResource(Res.string.tak_server_status_not_running) to MaterialTheme.colorScheme.onSurfaceVariant
+                stringResource(Res.string.tak_server_status_not_running) to Ios.colors.secondaryLabel
         }
 
     Row(
@@ -542,7 +538,7 @@ internal fun TakMeshTestCardContent(
                     } else {
                         stringResource(Res.string.tak_server_test_idle, fixtureCount)
                     },
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = Ios.type.body,
                 )
             }
             if (isRunning) {
@@ -586,7 +582,7 @@ private fun TakProtocolResultsSection(titleRes: StringResource, results: List<Ta
     Column {
         PreferenceDivider()
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-            Text(text = stringResource(titleRes), style = MaterialTheme.typography.titleSmall)
+            Text(text = stringResource(titleRes), style = Ios.type.subheadline)
             Text(
                 text =
                 stringResource(
@@ -597,12 +593,12 @@ private fun TakProtocolResultsSection(titleRes: StringResource, results: List<Ta
                     results.size,
                     fixtureCount,
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = Ios.type.footnote,
                 color =
                 if (unexpectedFailed > 0) {
-                    MaterialTheme.colorScheme.error
+                    Ios.colors.systemRed
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    Ios.colors.secondaryLabel
                 },
             )
         }
@@ -616,7 +612,7 @@ private fun TakProtocolResultsSection(titleRes: StringResource, results: List<Ta
             ) {
                 Text(
                     text = result.fixtureName.removeSuffix(".xml"),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Ios.type.footnote,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
@@ -629,12 +625,12 @@ private fun TakProtocolResultsSection(titleRes: StringResource, results: List<Ta
 
                         else -> result.error ?: stringResource(Res.string.tak_server_test_result_unknown_error)
                     },
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Ios.type.footnote,
                     color =
                     when {
-                        result.passed -> MaterialTheme.colorScheme.primary
-                        result.expectedDrop -> MaterialTheme.colorScheme.onSurfaceVariant
-                        else -> MaterialTheme.colorScheme.error
+                        result.passed -> Ios.colors.tint
+                        result.expectedDrop -> Ios.colors.secondaryLabel
+                        else -> Ios.colors.systemRed
                     },
                 )
             }

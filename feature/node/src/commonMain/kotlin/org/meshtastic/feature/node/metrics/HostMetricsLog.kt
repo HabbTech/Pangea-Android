@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,6 +61,7 @@ import org.meshtastic.core.resources.host_metrics_log
 import org.meshtastic.core.resources.load_indexed
 import org.meshtastic.core.resources.uptime
 import org.meshtastic.core.resources.user_string
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.core.ui.theme.GraphColors
 import org.meshtastic.proto.Telemetry
@@ -136,14 +136,14 @@ private fun HostMetricsCard(telemetry: Telemetry, isSelected: Boolean, onClick: 
             Modifier.fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 4.dp)
                 .combinedClickable(onClick = onClick, onLongClick = { expanded = true }),
-            border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+            border = if (isSelected) BorderStroke(2.dp, Ios.colors.tint) else null,
             colors =
             CardDefaults.cardColors(
                 containerColor =
                 if (isSelected) {
-                    MaterialTheme.colorScheme.primaryContainer
+                    Ios.colors.tintContainer
                 } else {
-                    MaterialTheme.colorScheme.surfaceVariant
+                    Ios.colors.fieldFill
                 },
             ),
         ) {
@@ -157,7 +157,7 @@ private fun HostMetricsCard(telemetry: Telemetry, isSelected: Boolean, onClick: 
 @Composable
 private fun HostMetricsCardContent(time: String, hostMetrics: org.meshtastic.proto.HostMetrics?) {
     Column(modifier = Modifier.padding(12.dp)) {
-        Text(text = time, style = MaterialTheme.typography.titleMediumEmphasized, fontWeight = FontWeight.Bold)
+        Text(text = time, style = Ios.type.headline, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
 
         hostMetrics?.uptime_seconds?.let {
@@ -191,8 +191,8 @@ private fun HostMetricsCardContent(time: String, hostMetrics: org.meshtastic.pro
 
         hostMetrics?.user_string?.let {
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = stringResource(Res.string.user_string), style = MaterialTheme.typography.bodyMedium)
-            Text(text = it, style = MaterialTheme.typography.bodySmall)
+            Text(text = stringResource(Res.string.user_string), style = Ios.type.subheadline)
+            Text(text = it, style = Ios.type.footnote)
         }
     }
 }
@@ -205,7 +205,7 @@ private fun LoadRow(label: String, value: Int, color: androidx.compose.ui.graphi
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = formatString("%s: %.2f", label, value / 100.0),
-            style = MaterialTheme.typography.labelLarge,
+            style = Ios.type.subheadline,
             modifier = Modifier.weight(1f),
         )
     }

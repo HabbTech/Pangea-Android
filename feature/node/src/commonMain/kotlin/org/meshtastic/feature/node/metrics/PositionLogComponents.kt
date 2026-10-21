@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -49,6 +48,7 @@ import org.meshtastic.core.resources.longitude
 import org.meshtastic.core.resources.sats
 import org.meshtastic.core.resources.speed_kmh
 import org.meshtastic.core.resources.speed_mph
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.GraphColors
 import org.meshtastic.proto.Position
 
@@ -67,11 +67,7 @@ fun PositionCard(position: Position, displayUnits: MeasurementSystem, isSelected
     SelectableMetricCard(isSelected = isSelected, onClick = onClick) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             /* Timestamp */
-            Text(
-                text = DateFormatter.formatDateTime(time),
-                style = MaterialTheme.typography.titleMediumEmphasized,
-                fontWeight = FontWeight.Bold,
-            )
+            Text(text = DateFormatter.formatDateTime(time), style = Ios.type.headline, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -94,8 +90,8 @@ fun PositionCard(position: Position, displayUnits: MeasurementSystem, isSelected
                 }
                 Text(
                     text = "${stringResource(Res.string.sats)}: ${position.sats_in_view}",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
             }
 
@@ -141,8 +137,8 @@ fun PositionCard(position: Position, displayUnits: MeasurementSystem, isSelected
                         "${stringResource(Res.string.heading)}: ${
                             formatString("%.0f", (position.ground_track ?: 0) * HEADING_DEG)
                         }\u00B0",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Ios.colors.label,
+                        style = Ios.type.subheadline,
                     )
                 }
             }

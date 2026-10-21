@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -51,6 +50,7 @@ import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.SwitchListItem
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.SettingsRemote
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 @Composable
@@ -129,8 +129,8 @@ private fun MasterToggleSection(masterEnabled: Boolean, onToggle: () -> Unit) {
     )
     Text(
         text = stringResource(Res.string.app_functions_master_summary),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = Ios.type.footnote,
+        color = Ios.colors.secondaryLabel,
         modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 8.dp),
     )
 }
@@ -139,8 +139,8 @@ private fun MasterToggleSection(masterEnabled: Boolean, onToggle: () -> Unit) {
 private fun WriteFunctionsSection(masterEnabled: Boolean, sendMessage: Boolean, onToggleSendMessage: () -> Unit) {
     Text(
         text = stringResource(Res.string.app_functions_write_section),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
+        style = Ios.type.subheadline,
+        color = Ios.colors.tint,
         modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
     )
     SwitchListItem(
@@ -174,8 +174,8 @@ private fun ReadFunctionsSection(
 ) {
     Text(
         text = stringResource(Res.string.app_functions_read_section),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
+        style = Ios.type.subheadline,
+        color = Ios.colors.tint,
         modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
     )
     SwitchListItem(

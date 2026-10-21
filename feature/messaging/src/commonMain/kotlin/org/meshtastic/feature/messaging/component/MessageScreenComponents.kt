@@ -43,7 +43,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -230,7 +229,7 @@ fun ReplySnippet(originalMessage: Message?, onClearReply: () -> Unit, ourNode: N
                 modifier =
                 Modifier.fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .background(Ios.colors.fieldFill.copy(alpha = 0.5f))
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -238,16 +237,16 @@ fun ReplySnippet(originalMessage: Message?, onClearReply: () -> Unit, ourNode: N
                 Icon(
                     imageVector = MeshtasticIcons.Reply,
                     contentDescription = stringResource(Res.string.reply),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = Ios.colors.secondaryLabel,
                 )
                 Text(
                     text = stringResource(Res.string.replying_to, replyingToNodeUser?.short_name ?: unknownUserText),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = Ios.type.caption1,
                 )
                 Text(
                     modifier = Modifier.weight(1f).semantics { isSensitiveData = true },
                     text = message.text.ellipsize(SNIPPET_CHARACTER_LIMIT),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Ios.type.footnote,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -797,11 +796,7 @@ fun UnreadMessagesDivider(modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         HorizontalDivider(modifier = Modifier.weight(1f))
-        Text(
-            text = stringResource(Res.string.new_messages_below),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        Text(text = stringResource(Res.string.new_messages_below), style = Ios.type.caption1, color = Ios.colors.tint)
         HorizontalDivider(modifier = Modifier.weight(1f))
     }
 }
@@ -917,11 +912,9 @@ fun MessageSearchBar(
                 value = query,
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(text = stringResource(Res.string.search_messages), style = MaterialTheme.typography.bodyLarge)
-                },
+                placeholder = { Text(text = stringResource(Res.string.search_messages), style = Ios.type.body) },
                 singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge,
+                textStyle = Ios.type.body,
                 colors =
                 TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
@@ -935,8 +928,8 @@ fun MessageSearchBar(
             if (query.isNotEmpty() && resultCount > 0) {
                 Text(
                     text = "${currentIndex + 1} / $resultCount",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                     modifier = Modifier.padding(end = 4.dp),
                 )
                 IconButton(onClick = onPrevious) {

@@ -33,7 +33,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +62,7 @@ import org.meshtastic.core.resources.show_iaq_legend
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.ThumbUp
 import org.meshtastic.core.ui.icon.Warning
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.IAQColors.IAQDangerouslyPolluted
 import org.meshtastic.core.ui.theme.IAQColors.IAQExcellent
@@ -245,7 +245,7 @@ fun IAQScale(modifier: Modifier = Modifier) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(20.dp, 15.dp).clip(RoundedCornerShape(5.dp)).background(iaq.color))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(getIaqDescriptionWithRange(iaq), style = MaterialTheme.typography.bodyMedium)
+                Text(getIaqDescriptionWithRange(iaq), style = Ios.type.subheadline)
             }
             Spacer(modifier = Modifier.height(4.dp))
         }
@@ -268,7 +268,7 @@ private fun IndoorAirQualityPreview() {
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(stringResource(Res.string.preview_pill), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(Res.string.preview_pill), style = Ios.type.title3)
             Row {
                 IndoorAirQuality(iaq = 6)
                 IndoorAirQuality(iaq = 51)
@@ -282,7 +282,7 @@ private fun IndoorAirQualityPreview() {
                 IndoorAirQuality(iaq = 351)
             }
 
-            Text(stringResource(Res.string.preview_dot), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(Res.string.preview_dot), style = Ios.type.title3)
             Row {
                 IndoorAirQuality(iaq = 6, displayMode = IaqDisplayMode.Dot)
                 IndoorAirQuality(iaq = 51, displayMode = IaqDisplayMode.Dot)
@@ -292,7 +292,7 @@ private fun IndoorAirQualityPreview() {
                 IndoorAirQuality(iaq = 351, displayMode = IaqDisplayMode.Dot)
             }
 
-            Text(stringResource(Res.string.preview_text), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(Res.string.preview_text), style = Ios.type.title3)
             Row {
                 IndoorAirQuality(iaq = 6, displayMode = IaqDisplayMode.Text)
                 IndoorAirQuality(iaq = 51, displayMode = IaqDisplayMode.Text)
@@ -304,7 +304,7 @@ private fun IndoorAirQualityPreview() {
                 IndoorAirQuality(iaq = 500, displayMode = IaqDisplayMode.Text)
             }
 
-            Text(stringResource(Res.string.preview_gauge), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(Res.string.preview_gauge), style = Ios.type.title3)
             Row {
                 IndoorAirQuality(iaq = 6, displayMode = IaqDisplayMode.Gauge)
                 IndoorAirQuality(iaq = 51, displayMode = IaqDisplayMode.Gauge)
@@ -322,7 +322,7 @@ private fun IndoorAirQualityPreview() {
                 IndoorAirQuality(iaq = 500, displayMode = IaqDisplayMode.Gauge)
             }
 
-            Text(stringResource(Res.string.preview_gradient), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(Res.string.preview_gradient), style = Ios.type.title3)
             IndoorAirQuality(iaq = 6, displayMode = IaqDisplayMode.Gradient)
             IndoorAirQuality(iaq = 51, displayMode = IaqDisplayMode.Gradient)
             IndoorAirQuality(iaq = 101, displayMode = IaqDisplayMode.Gradient)

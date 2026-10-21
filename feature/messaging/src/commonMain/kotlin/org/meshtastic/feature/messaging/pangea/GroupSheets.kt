@@ -30,7 +30,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -99,7 +98,7 @@ fun GroupInvitesSection(viewModel: PangeaChatsViewModel, onJoin: (String) -> Uni
     val pending by viewModel.pendingInvites.collectAsStateWithLifecycle()
     if (pending.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(stringResource(Res.string.pangea_group_invites), style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(Res.string.pangea_group_invites), style = Ios.type.subheadline)
         pending.forEach { item ->
             InviteCard(
                 item = item,
@@ -116,11 +115,11 @@ fun GroupInvitesSection(viewModel: PangeaChatsViewModel, onJoin: (String) -> Uni
 private fun InviteCard(item: PendingGroupInvite, sender: String, onJoin: () -> Unit, onDecline: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(item.invite.name, style = MaterialTheme.typography.titleMedium)
+            Text(item.invite.name, style = Ios.type.headline)
             Text(
                 stringResource(Res.string.pangea_invite_from, sender),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
                 Button(onClick = onJoin) { Text(stringResource(Res.string.pangea_join)) }
@@ -211,17 +210,14 @@ fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave:
                     }
                 }
             }
-            item { Text(stringResource(Res.string.pangea_invite_people), style = MaterialTheme.typography.titleSmall) }
+            item { Text(stringResource(Res.string.pangea_invite_people), style = Ios.type.subheadline) }
             items(people.filter { it.canMessage }, key = { it.num }) { person ->
                 val sent = person.num in invited.value
                 ListItem(
                     headlineContent = { Text(person.name) },
                     trailingContent = {
                         if (sent) {
-                            Text(
-                                stringResource(Res.string.pangea_invite_sent),
-                                style = MaterialTheme.typography.labelMedium,
-                            )
+                            Text(stringResource(Res.string.pangea_invite_sent), style = Ios.type.caption1)
                         } else {
                             TextButton(
                                 onClick = { viewModel.sendInvite(group, person.num) { invited.value += person.num } },

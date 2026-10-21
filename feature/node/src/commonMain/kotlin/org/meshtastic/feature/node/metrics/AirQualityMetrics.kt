@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -75,6 +74,7 @@ import org.meshtastic.core.resources.pm_status_unknown_flags
 import org.meshtastic.core.resources.ppm
 import org.meshtastic.core.ui.component.Co2Severity
 import org.meshtastic.core.ui.component.PmAqiSeverity
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.GraphColors.Blue
 import org.meshtastic.core.ui.theme.GraphColors.Cyan
@@ -354,9 +354,9 @@ private fun AqiText(aqi: Int) {
             ?: aqi.toString()
     Text(
         text = "${stringResource(Res.string.aqi)}: $value",
-        style = MaterialTheme.typography.bodySmall,
+        style = Ios.type.footnote,
         fontWeight = FontWeight.Medium,
-        color = severity?.color() ?: MaterialTheme.colorScheme.onSurface,
+        color = severity?.color() ?: Ios.colors.label,
     )
 }
 
@@ -375,9 +375,9 @@ private fun PmStatusText(flags: Int) {
     val isFault = faults.any { !it.isWarning }
     Text(
         text = "${stringResource(Res.string.pm_sensor_status)}: ${parts.joinToString()}",
-        style = MaterialTheme.typography.bodySmall,
+        style = Ios.type.footnote,
         fontWeight = FontWeight.Medium,
-        color = if (isFault) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (isFault) Ios.colors.systemRed else Ios.colors.secondaryLabel,
     )
 }
 
@@ -397,11 +397,7 @@ private fun AirQualityMetricsCard(
         // SelectableMetricCard's SelectionContainer imposes no layout of its own,
         // so the card content must bring its own Column (matches EnvironmentMetricsContent).
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-            Text(
-                text = time,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(text = time, style = Ios.type.caption2, color = Ios.colors.secondaryLabel)
             Spacer(modifier = Modifier.height(4.dp))
             val ugm3 = stringResource(Res.string.micrograms_per_cubic_meter)
             val ppmUnit = stringResource(Res.string.ppm)
@@ -414,7 +410,7 @@ private fun AirQualityMetricsCard(
                         aq.pm100_standard?.let { Res.string.pm10 to it },
                     )
                         .forEach { (label, value) ->
-                            Text("${stringResource(label)}: $value $ugm3", style = MaterialTheme.typography.bodySmall)
+                            Text("${stringResource(label)}: $value $ugm3", style = Ios.type.footnote)
                         }
                     sample.aqi?.let { AqiText(it) }
                 }
@@ -423,9 +419,9 @@ private fun AirQualityMetricsCard(
                         val severity = Co2Severity.fromPpm(co2)
                         Text(
                             text = "${stringResource(Res.string.co2)}: $co2 $ppmUnit",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = Ios.type.footnote,
                             fontWeight = FontWeight.Medium,
-                            color = severity?.color ?: MaterialTheme.colorScheme.onSurface,
+                            color = severity?.color ?: Ios.colors.label,
                         )
                     }
                     // SCD4x CO₂ sensors also report temperature/humidity (#5873); present-and-zero is valid, so only
@@ -433,13 +429,13 @@ private fun AirQualityMetricsCard(
                     aq.co2_temperature?.let {
                         Text(
                             "${stringResource(Res.string.co2_temperature)}: ${it.toTempString(isFahrenheit)}",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = Ios.type.footnote,
                         )
                     }
                     aq.co2_humidity?.let {
                         Text(
                             "${stringResource(Res.string.co2_humidity)}: ${NumberFormatter.format(it, 0)}%",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = Ios.type.footnote,
                         )
                     }
                 }

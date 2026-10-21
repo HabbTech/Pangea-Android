@@ -59,6 +59,7 @@ import org.meshtastic.core.ui.icon.Icecream
 import org.meshtastic.core.ui.icon.Memory
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Settings
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
@@ -158,8 +159,8 @@ private fun RemoteAdminListItem(
                         colors =
                         if (sessionStatus is SessionStatus.Active) {
                             AssistChipDefaults.assistChipColors(
-                                labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                labelColor = Ios.colors.onTintContainer,
+                                containerColor = Ios.colors.tintContainer,
                             )
                         } else {
                             AssistChipDefaults.assistChipColors()
@@ -174,8 +175,8 @@ private fun RemoteAdminListItem(
                 LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
                 androidx.compose.material3.Text(
                     text = stringResource(Res.string.establishing_session),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
@@ -281,6 +282,6 @@ private fun DeviceVersion.determineFirmwareStatusColor(
         this == stableVersion -> MaterialTheme.colorScheme.StatusGreen
         this in stableVersion..alphaVersion -> MaterialTheme.colorScheme.StatusYellow
         this > alphaVersion -> MaterialTheme.colorScheme.StatusOrange
-        else -> MaterialTheme.colorScheme.onSurface
+        else -> Ios.colors.label
     }
 }

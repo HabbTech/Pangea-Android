@@ -33,7 +33,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +63,7 @@ import org.meshtastic.core.ui.component.MeshtasticResourceDialog
 import org.meshtastic.core.ui.icon.FileDownload
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
+import org.meshtastic.core.ui.ios.Ios
 
 /** Logcat priority levels the user can toggle. Fatal/assert lines carry an unknown code and are always shown. */
 enum class LogLevel(val code: Char) {
@@ -98,11 +98,11 @@ private fun logcatLineColor(line: String): Color = when (logcatLineLevel(line)) 
     'E',
     'F',
     'A',
-    -> MaterialTheme.colorScheme.error
+    -> Ios.colors.systemRed
 
-    'W' -> MaterialTheme.colorScheme.tertiary
+    'W' -> Ios.colors.systemBlue
 
-    else -> MaterialTheme.colorScheme.onSurface
+    else -> Ios.colors.label
 }
 
 /** Simple in-app viewer for the app's own logcat: search box, level chips, refresh, and export to a file. */
@@ -168,7 +168,7 @@ fun LogcatContent(modifier: Modifier = Modifier) {
         }
         if (lines.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(Res.string.debug_logcat_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(Res.string.debug_logcat_empty), color = Ios.colors.secondaryLabel)
             }
         } else {
             SelectionContainer {
@@ -181,7 +181,7 @@ fun LogcatContent(modifier: Modifier = Modifier) {
                             fontSize = 11.sp,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                         )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        HorizontalDivider(color = Ios.colors.separator)
                     }
                 }
             }

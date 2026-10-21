@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,6 +45,7 @@ import org.meshtastic.core.resources.chirpy_checking
 import org.meshtastic.core.resources.chirpy_downloading_progress
 import org.meshtastic.core.resources.chirpy_ready
 import org.meshtastic.core.resources.img_chirpy
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.docs.model.ModelReadiness
 import org.meshtastic.core.resources.Res as CoreRes
 
@@ -97,8 +97,8 @@ private fun AvailableFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     FloatingActionButton(
         onClick = onClick,
         modifier = modifier.scale(scale),
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        containerColor = Ios.colors.tintContainer,
+        contentColor = Ios.colors.onTintContainer,
         elevation = FloatingActionButtonDefaults.elevation(),
     ) {
         Image(
@@ -124,14 +124,14 @@ private fun CheckingFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     FloatingActionButton(
         onClick = onClick,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        containerColor = Ios.colors.fieldFill,
+        contentColor = Ios.colors.label,
     ) {
         Box(contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
                 modifier = Modifier.size(FAB_PROGRESS_SIZE.dp).graphicsLayer { rotationZ = rotation },
                 strokeWidth = PROGRESS_STROKE_WIDTH.dp,
-                color = MaterialTheme.colorScheme.tertiary,
+                color = Ios.colors.systemBlue,
                 strokeCap = StrokeCap.Round,
             )
             Image(
@@ -157,8 +157,8 @@ private fun DownloadingFab(readiness: ModelReadiness.Downloading, onClick: () ->
     FloatingActionButton(
         onClick = onClick,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        containerColor = Ios.colors.fieldFill,
+        contentColor = Ios.colors.label,
     ) {
         Box(contentAlignment = Alignment.Center) {
             if (targetProgress > 0f) {
@@ -166,15 +166,15 @@ private fun DownloadingFab(readiness: ModelReadiness.Downloading, onClick: () ->
                     progress = { animatedProgress },
                     modifier = Modifier.size(FAB_PROGRESS_SIZE.dp),
                     strokeWidth = PROGRESS_STROKE_WIDTH.dp,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    color = Ios.colors.systemBlue,
+                    trackColor = Ios.colors.fieldFill,
                     strokeCap = StrokeCap.Round,
                 )
             } else {
                 CircularProgressIndicator(
                     modifier = Modifier.size(FAB_PROGRESS_SIZE.dp),
                     strokeWidth = PROGRESS_STROKE_WIDTH.dp,
-                    color = MaterialTheme.colorScheme.tertiary,
+                    color = Ios.colors.systemBlue,
                     strokeCap = StrokeCap.Round,
                 )
             }

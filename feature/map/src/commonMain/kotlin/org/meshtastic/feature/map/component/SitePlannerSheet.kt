@@ -105,6 +105,7 @@ import org.meshtastic.core.ui.icon.Map
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.MyLocation
 import org.meshtastic.core.ui.icon.PinDrop
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.ios.IosSwitch
 
@@ -215,13 +216,13 @@ private fun SiteFormContent(
     ) {
         Text(
             text = stringResource(Res.string.site_planner),
-            style = MaterialTheme.typography.headlineSmall,
+            style = Ios.type.title3,
             modifier = Modifier.semantics { heading() },
         )
         Text(
             text = stringResource(Res.string.site_planner_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.subheadline,
+            color = Ios.colors.secondaryLabel,
         )
         // Sections mirror the planner's own panel order + default-open state (Site Parameters drawer):
         // Site / Transmitter (open) → Receiver → Simulation Options → Display (open).
@@ -231,14 +232,14 @@ private fun SiteFormContent(
         DisplaySection(state)
         note?.let {
             Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = Ios.colors.fieldFill,
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                     modifier = Modifier.padding(12.dp),
                 )
             }
@@ -263,7 +264,7 @@ private fun FormSection(title: String, defaultExpanded: Boolean, content: @Compo
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.semantics { heading() })
+            Text(title, style = Ios.type.subheadline, modifier = Modifier.semantics { heading() })
             Icon(if (expanded) MeshtasticIcons.ExpandLess else MeshtasticIcons.ExpandMore, contentDescription = null)
         }
         if (expanded) content()

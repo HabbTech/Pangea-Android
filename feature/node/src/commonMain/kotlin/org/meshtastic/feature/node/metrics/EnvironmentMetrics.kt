@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,6 +79,7 @@ import org.meshtastic.core.resources.wind_lull
 import org.meshtastic.core.resources.wind_speed
 import org.meshtastic.core.ui.component.IaqDisplayMode
 import org.meshtastic.core.ui.component.IndoorAirQuality
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.rememberSaveFileLauncher
 import org.meshtastic.proto.Telemetry
@@ -178,8 +178,8 @@ private fun TemperatureDisplay(
                         stringResource(Res.string.temperature),
                         "${NumberFormatter.format(temperature, 1)}$unit",
                     ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
             }
         }
@@ -206,8 +206,8 @@ private fun HumidityAndBarometricPressureDisplay(envMetrics: org.meshtastic.prot
                         "${stringResource(
                             Res.string.humidity,
                         )} ${MetricFormatter.percent(humidity, decimalPlaces = 2)}",
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Ios.colors.label,
+                        style = Ios.type.subheadline,
                         modifier = Modifier.padding(vertical = 0.dp),
                     )
                 }
@@ -219,8 +219,8 @@ private fun HumidityAndBarometricPressureDisplay(envMetrics: org.meshtastic.prot
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = MetricFormatter.pressure(pressure, decimalPlaces = 2),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Ios.colors.label,
+                        style = Ios.type.subheadline,
                         modifier = Modifier.padding(vertical = 0.dp),
                     )
                 }
@@ -252,8 +252,8 @@ private fun SoilMetricsDisplay(
                                 stringResource(Res.string.soil_moisture),
                                 soilMoistureValue,
                             ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.labelLarge,
+                            color = Ios.colors.label,
+                            style = Ios.type.subheadline,
                         )
                     }
                 }
@@ -273,8 +273,8 @@ private fun SoilMetricsDisplay(
                                     1,
                                 )}${degreeUnit(environmentDisplayFahrenheit)}",
                             ),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.labelLarge,
+                            color = Ios.colors.label,
+                            style = Ios.type.subheadline,
                         )
                     }
                 }
@@ -297,8 +297,8 @@ private fun LuxUVLuxDisplay(envMetrics: org.meshtastic.proto.EnvironmentMetrics)
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = formatString("%s %.0f lx", stringResource(Res.string.lux), luxValue),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Ios.colors.label,
+                        style = Ios.type.subheadline,
                     )
                 }
             }
@@ -309,8 +309,8 @@ private fun LuxUVLuxDisplay(envMetrics: org.meshtastic.proto.EnvironmentMetrics)
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = formatString("%s %.0f UVlx", stringResource(Res.string.uv_lux), uvLuxValue),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Ios.colors.label,
+                        style = Ios.type.subheadline,
                     )
                 }
             }
@@ -329,8 +329,8 @@ private fun VoltageCurrentDisplay(envMetrics: org.meshtastic.proto.EnvironmentMe
                 val voltage = envMetrics.voltage!!
                 Text(
                     text = "${stringResource(Res.string.voltage)} ${MetricFormatter.voltage(voltage)}",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
             }
             if (hasCurrent) {
@@ -340,8 +340,8 @@ private fun VoltageCurrentDisplay(envMetrics: org.meshtastic.proto.EnvironmentMe
                     "${stringResource(
                         Res.string.current,
                     )} ${MetricFormatter.current(currentValue, decimalPlaces = 2)}",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
             }
         }
@@ -359,11 +359,7 @@ private fun GasCompositionDisplay(envMetrics: org.meshtastic.proto.EnvironmentMe
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     MetricIndicator(Environment.IAQ.color)
                     Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(Res.string.iaq),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+                    Text(text = stringResource(Res.string.iaq), color = Ios.colors.label, style = Ios.type.subheadline)
                     Spacer(Modifier.width(4.dp))
                     IndoorAirQuality(iaq = iaqValue, displayMode = IaqDisplayMode.Dot)
                 }
@@ -374,8 +370,8 @@ private fun GasCompositionDisplay(envMetrics: org.meshtastic.proto.EnvironmentMe
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = formatString("%s %.2f Ohm", stringResource(Res.string.gas_resistance), gasResistance),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Ios.colors.label,
+                        style = Ios.type.subheadline,
                     )
                 }
             }
@@ -393,8 +389,8 @@ private fun RadiationDisplay(envMetrics: org.meshtastic.proto.EnvironmentMetrics
                     Spacer(Modifier.width(4.dp))
                     Text(
                         text = formatString("%s %.2f µR/h", stringResource(Res.string.radiation), radiation),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Ios.colors.label,
+                        style = Ios.type.subheadline,
                     )
                 }
             }
@@ -438,11 +434,7 @@ private fun WindSpeedRow(envMetrics: org.meshtastic.proto.EnvironmentMetrics, is
                         MetricFormatter.windSpeed(envMetrics.wind_speed!!, isImperial),
                     )
                 }
-            Text(
-                text = dirText,
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.labelLarge,
-            )
+            Text(text = dirText, color = Ios.colors.label, style = Ios.type.subheadline)
         }
     }
 }
@@ -461,8 +453,8 @@ private fun WindGustLullRow(
                 "${stringResource(Res.string.wind_gust)} ${
                     MetricFormatter.windSpeed(envMetrics.wind_gust!!, isImperial)
                 }",
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.labelLarge,
+                color = Ios.colors.label,
+                style = Ios.type.subheadline,
             )
         }
         if (hasLull) {
@@ -471,8 +463,8 @@ private fun WindGustLullRow(
                 "${stringResource(Res.string.wind_lull)} ${
                     MetricFormatter.windSpeed(envMetrics.wind_lull!!, isImperial)
                 }",
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.labelLarge,
+                color = Ios.colors.label,
+                style = Ios.type.subheadline,
             )
         }
     }
@@ -491,8 +483,8 @@ private fun RainfallDisplay(envMetrics: org.meshtastic.proto.EnvironmentMetrics,
                     "${stringResource(
                         Res.string.rainfall_1h,
                     )} ${MetricFormatter.rainfall(envMetrics.rainfall_1h!!, isImperial)}",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
             }
             if (has24h) {
@@ -501,8 +493,8 @@ private fun RainfallDisplay(envMetrics: org.meshtastic.proto.EnvironmentMetrics,
                     "${stringResource(
                         Res.string.rainfall_24h,
                     )} ${MetricFormatter.rainfall(envMetrics.rainfall_24h!!, isImperial)}",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
             }
         }
@@ -524,8 +516,8 @@ private fun LightningDisplay(envMetrics: org.meshtastic.proto.EnvironmentMetrics
         strikes?.let {
             Text(
                 text = formatString(LABELLED_VALUE, stringResource(Res.string.lightning_strikes_1h), it.toString()),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.labelLarge,
+                color = Ios.colors.label,
+                style = Ios.type.subheadline,
             )
         }
         distanceKm?.let {
@@ -536,8 +528,8 @@ private fun LightningDisplay(envMetrics: org.meshtastic.proto.EnvironmentMetrics
                     stringResource(Res.string.lightning_distance),
                     it.toStormDistanceString(system),
                 ),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.labelLarge,
+                color = Ios.colors.label,
+                style = Ios.type.subheadline,
             )
         }
     }
@@ -590,8 +582,8 @@ private fun ChannelMetricRow(color: Color, label: String, channelNumber: Int, va
                 stringResource(Res.string.metric_channel_label, label, channelNumber),
                 value,
             ),
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.labelLarge,
+            color = Ios.colors.label,
+            style = Ios.type.subheadline,
         )
     }
 }
@@ -623,7 +615,7 @@ private fun EnvironmentMetricsContent(
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
                 text = timeTextOverride ?: DateFormatter.formatDateTime(time),
-                style = MaterialTheme.typography.titleMediumEmphasized,
+                style = Ios.type.headline,
                 fontWeight = FontWeight.Bold,
             )
             TemperatureDisplay(envMetrics, environmentDisplayFahrenheit)

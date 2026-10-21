@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.meshtastic.core.common.util.MetricFormatter
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.settings.radio.ResponseState
 
 private const val LOADING_OVERLAY_ALPHA = 0.8f
@@ -51,10 +51,9 @@ fun LoadingOverlay(state: ResponseState<*>, modifier: Modifier = Modifier) {
     AnimatedVisibility(visible = loading?.showOverlay == true, enter = fadeIn(), exit = fadeOut()) {
         Box(
             modifier =
-            modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = LOADING_OVERLAY_ALPHA))
-                .clickable(enabled = false) {},
+            modifier.fillMaxSize().background(Ios.colors.background.copy(alpha = LOADING_OVERLAY_ALPHA)).clickable(
+                enabled = false,
+            ) {},
             contentAlignment = Alignment.Center,
         ) {
             Column(
@@ -71,11 +70,11 @@ fun LoadingOverlay(state: ResponseState<*>, modifier: Modifier = Modifier) {
                         CircularProgressIndicator(
                             progress = { progress },
                             modifier = Modifier.size(80.dp),
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            trackColor = Ios.colors.fieldFill,
                         )
                         Text(
                             text = MetricFormatter.percent(progress * PERCENTAGE_FACTOR, decimalPlaces = 0),
-                            style = MaterialTheme.typography.titleMedium,
+                            style = Ios.type.headline,
                             fontWeight = FontWeight.Bold,
                         )
                     }
@@ -83,9 +82,9 @@ fun LoadingOverlay(state: ResponseState<*>, modifier: Modifier = Modifier) {
                     loading.status?.let { status ->
                         Text(
                             text = status,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = Ios.type.body,
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Ios.colors.secondaryLabel,
                         )
                     }
                 }

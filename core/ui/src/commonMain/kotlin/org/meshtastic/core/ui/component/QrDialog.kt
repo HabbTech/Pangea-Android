@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
@@ -69,6 +68,7 @@ import org.meshtastic.core.ui.icon.Copy
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Nfc
 import org.meshtastic.core.ui.icon.Share
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.SemanticColors
 import org.meshtastic.core.ui.util.LocalNfcEmulationSupported
 import org.meshtastic.core.ui.util.LocalNfcEmulatorProvider
@@ -139,7 +139,7 @@ fun QrDialog(
             onDismiss = { writeSucceeded = null },
             titleRes = Res.string.write_nfc,
             messageRes = if (success) Res.string.write_nfc_success else Res.string.write_nfc_failed,
-            messageColor = if (success) SemanticColors.Success else MaterialTheme.colorScheme.error,
+            messageColor = if (success) SemanticColors.Success else Ios.colors.systemRed,
             onConfirm = { writeSucceeded = null },
             confirmTextRes = Res.string.okay,
         )
@@ -160,7 +160,7 @@ fun QrDialog(
                     Text(
                         text = it,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                        style = MaterialTheme.typography.titleSmall,
+                        style = Ios.type.subheadline,
                         textAlign = TextAlign.Center,
                     )
                 }
@@ -175,8 +175,8 @@ fun QrDialog(
                 Text(
                     text = stringResource(Res.string.share_qr_subtext),
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
 
                 Row(
@@ -186,7 +186,7 @@ fun QrDialog(
                     Text(
                         text = uriString,
                         modifier = Modifier.weight(1f).semantics { isSensitiveData = true },
-                        style = MaterialTheme.typography.bodySmall,
+                        style = Ios.type.footnote,
                         overflow = TextOverflow.Visible,
                         softWrap = true,
                     )
@@ -240,8 +240,8 @@ fun QrDialog(
                         )
                             .joinToString(" "),
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = Ios.type.footnote,
+                        color = Ios.colors.secondaryLabel,
                     )
                 }
             }

@@ -90,6 +90,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Search
 import org.meshtastic.core.ui.icon.Usb
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.feature.connections.model.DeviceListEntry
 
@@ -387,7 +388,7 @@ private fun DeviceCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill),
     ) {
         DeviceListItem(
             connectionState =
@@ -432,19 +433,14 @@ private fun SectionEmptyState(
             imageVector = imageVector,
             contentDescription = null,
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = Ios.colors.secondaryLabel,
         )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        Text(text = text, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel, textAlign = TextAlign.Center)
         if (supportingText != null) {
             Text(
                 text = supportingText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
                 textAlign = TextAlign.Center,
             )
         }

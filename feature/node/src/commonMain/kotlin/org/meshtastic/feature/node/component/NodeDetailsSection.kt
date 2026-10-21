@@ -105,6 +105,7 @@ import org.meshtastic.core.ui.icon.Person
 import org.meshtastic.core.ui.icon.Rssi
 import org.meshtastic.core.ui.icon.Snr
 import org.meshtastic.core.ui.icon.role
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusYellow
 import org.meshtastic.core.ui.util.LocalModemPreset
 import org.meshtastic.core.ui.util.LocalNoiseFloor
@@ -145,29 +146,25 @@ fun NodeDetailsSection(
 @Composable
 private fun MismatchKeyWarning(modifier: Modifier = Modifier) {
     Surface(
-        color = MaterialTheme.colorScheme.errorContainer,
+        color = Ios.colors.systemRed.copy(alpha = 0.12f),
         shape = MaterialTheme.shapes.large,
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = MeshtasticIcons.KeyOff,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
+                Icon(imageVector = MeshtasticIcons.KeyOff, contentDescription = null, tint = Ios.colors.systemRed)
                 Spacer(Modifier.width(12.dp))
                 Text(
                     text = stringResource(Res.string.encryption_error),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = Ios.type.headline,
+                    color = Ios.colors.systemRed,
                 )
             }
             Spacer(Modifier.height(4.dp))
             Text(
                 text = stringResource(Res.string.encryption_error_text),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = Ios.type.footnote,
+                color = Ios.colors.systemRed,
                 textAlign = TextAlign.Center,
             )
         }
@@ -410,24 +407,24 @@ private fun PublicKeyItem(publicKeyBytes: ByteArray) {
                 modifier = Modifier.size(14.dp),
                 tint =
                 if (isMismatch) {
-                    MaterialTheme.colorScheme.error
+                    Ios.colors.systemRed
                 } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    Ios.colors.tint.copy(alpha = 0.8f)
                 },
             )
             Spacer(Modifier.width(6.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isMismatch) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.caption2,
+                color = if (isMismatch) Ios.colors.systemRed else Ios.colors.secondaryLabel,
                 fontWeight = FontWeight.Bold,
             )
         }
         Spacer(Modifier.height(4.dp))
         Text(
             text = publicKeyBase64,
-            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-            color = if (isMismatch) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            style = Ios.type.footnote.copy(fontFamily = FontFamily.Monospace),
+            color = if (isMismatch) Ios.colors.systemRed else Ios.colors.label,
         )
     }
 }
@@ -460,13 +457,13 @@ private fun NoPublicKeyItem(onRequestUserInfo: (() -> Unit)?) {
             Spacer(Modifier.width(6.dp))
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.caption2,
+                color = Ios.colors.secondaryLabel,
                 fontWeight = FontWeight.Bold,
             )
         }
         Spacer(Modifier.height(4.dp))
-        Text(text = body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = body, style = Ios.type.footnote, color = Ios.colors.label)
         if (onRequestUserInfo != null) {
             TextButton(onClick = onRequestUserInfo, contentPadding = PaddingValues(0.dp)) {
                 Text(stringResource(Res.string.request_user_info))

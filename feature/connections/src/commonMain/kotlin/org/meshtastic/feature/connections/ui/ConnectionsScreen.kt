@@ -39,7 +39,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -835,26 +834,16 @@ private fun FirmwareUpdateNoticeCard(notice: FirmwareUpdateNotice, onAction: () 
             notice.stableVersion,
         )
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
+    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill)) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.Top) {
-            Icon(
-                imageVector = MeshtasticIcons.SystemUpdate,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
+            Icon(imageVector = MeshtasticIcons.SystemUpdate, contentDescription = null, tint = Ios.colors.tint)
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(
-                    text = stringResource(Res.string.firmware_update_available),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Text(text = stringResource(Res.string.firmware_update_available), style = Ios.type.headline)
                 Text(
                     text = message,
                     modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.subheadline,
+                    color = Ios.colors.secondaryLabel,
                 )
                 Button(modifier = Modifier.padding(top = 12.dp), onClick = onAction) {
                     Icon(imageVector = MeshtasticIcons.SystemUpdate, contentDescription = null)
@@ -935,14 +924,14 @@ private fun NoDeviceContent() {
             imageVector = MeshtasticIcons.NoDevice,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.outlineVariant,
+            tint = Ios.colors.separator,
         )
         Text(
             text = stringResource(Res.string.no_device_selected),
             modifier = Modifier.padding(top = 16.dp),
-            style = MaterialTheme.typography.bodyLarge,
+            style = Ios.type.body,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.outline,
+            color = Ios.colors.separator,
         )
     }
 }

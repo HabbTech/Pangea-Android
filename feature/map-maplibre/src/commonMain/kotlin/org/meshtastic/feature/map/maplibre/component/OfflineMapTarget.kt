@@ -26,7 +26,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -67,6 +66,7 @@ import org.meshtastic.core.resources.offline_maps_empty
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PlayArrow
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.map.maplibre.tileCount
 import kotlin.math.roundToInt
 
@@ -100,7 +100,7 @@ internal fun OfflineMapsSection(target: OfflineMapTarget, onShowRegion: (Boundin
     val usage = rememberCacheUsage(packs)
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(text = stringResource(Res.string.map_cache_manager), style = MaterialTheme.typography.titleMedium)
+        Text(text = stringResource(Res.string.map_cache_manager), style = Ios.type.headline)
 
         CacheUsageLine(storedBytes = usage.bytes, storedTiles = usage.tiles)
         DownloadEstimateLines(estimate = estimate, range = range)
@@ -116,8 +116,8 @@ internal fun OfflineMapsSection(target: OfflineMapTarget, onShowRegion: (Boundin
         if (packs.isEmpty()) {
             Text(
                 text = stringResource(Res.string.offline_maps_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
             )
         } else {
             packs.forEach { pack ->
@@ -144,7 +144,7 @@ internal fun OfflineMapsSection(target: OfflineMapTarget, onShowRegion: (Boundin
 @Composable
 private fun DownloadEstimateLines(estimate: Long, range: IntRange) {
     Column(modifier = Modifier.padding(top = 8.dp)) {
-        Text(text = stringResource(Res.string.map_select_download_region), style = MaterialTheme.typography.bodyMedium)
+        Text(text = stringResource(Res.string.map_select_download_region), style = Ios.type.subheadline)
         Text(
             text =
             stringResource(Res.string.map_tile_download_estimate) +
@@ -152,8 +152,8 @@ private fun DownloadEstimateLines(estimate: Long, range: IntRange) {
                 stringResource(Res.string.map_cache_tiles, estimate.toInt()) +
                 "  " +
                 stringResource(Res.string.map_zoom_levels, range.first, range.last),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
         )
     }
 }
@@ -178,18 +178,14 @@ private fun OfflinePackRow(
             Modifier.fillMaxWidth(PACK_ROW_TEXT_FRACTION)
                 .then(if (bounds != null) Modifier.clickable { onShow(bounds) } else Modifier),
         ) {
-            Text(text = pack.label(), style = MaterialTheme.typography.bodyLarge)
+            Text(text = pack.label(), style = Ios.type.body)
             if (progress is DownloadProgress.Healthy && progress.status != DownloadStatus.Complete) {
                 LinearProgressIndicator(
                     progress = { progress.fraction() },
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )
             } else {
-                Text(
-                    text = progress.summary(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(text = progress.summary(), style = Ios.type.footnote, color = Ios.colors.secondaryLabel)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

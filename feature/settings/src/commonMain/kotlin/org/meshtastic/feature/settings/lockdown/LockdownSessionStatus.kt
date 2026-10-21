@@ -18,7 +18,6 @@ package org.meshtastic.feature.settings.lockdown
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -30,6 +29,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.lockdown_session_boots_remaining
 import org.meshtastic.core.resources.lockdown_session_expires
 import org.meshtastic.core.resources.lockdown_session_no_time_limit
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * Displays lockdown session token status: remaining boots and expiry information. Visible only when the session is
@@ -42,8 +42,8 @@ fun LockdownSessionStatus(tokenInfo: LockdownTokenInfo?, modifier: Modifier = Mo
     Column(modifier = modifier.padding(horizontal = PADDING_DP.dp, vertical = PADDING_VERTICAL_DP.dp)) {
         Text(
             text = stringResource(Res.string.lockdown_session_boots_remaining, tokenInfo.bootsRemaining),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
         )
         if (tokenInfo.expiryEpoch > 0L) {
             Text(
@@ -52,14 +52,14 @@ fun LockdownSessionStatus(tokenInfo: LockdownTokenInfo?, modifier: Modifier = Mo
                     Res.string.lockdown_session_expires,
                     DateFormatter.formatDateTime(tokenInfo.expiryEpoch * MILLIS_PER_SECOND),
                 ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
             )
         } else {
             Text(
                 text = stringResource(Res.string.lockdown_session_no_time_limit),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
             )
         }
     }

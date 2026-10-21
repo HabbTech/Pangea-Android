@@ -76,6 +76,7 @@ import org.meshtastic.core.ui.icon.MapCompass
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Notes
 import org.meshtastic.core.ui.icon.SignalOff
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.util.LocalModemPreset
@@ -111,7 +112,7 @@ fun NodeItem(
         }
     val bearingDegrees = remember(thisNode, thatNode) { thisNode?.bearing(thatNode) }
 
-    val contentColor = MaterialTheme.colorScheme.onSurface
+    val contentColor = Ios.colors.label
     val nodeColor =
         (if (isThisNode) thisNode?.colors?.second else thatNode.colors.second)?.let { Color(it) } ?: Color.Transparent
     val cardColors = CardDefaults.cardColors(containerColor = nodeTintedContainer(nodeColor))
@@ -203,11 +204,11 @@ fun NodeItem(
                         imageVector = MeshtasticIcons.Notes,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.outline,
+                        tint = Ios.colors.separator,
                     )
                     Text(
                         text = status,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
                         color = contentColor,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -232,7 +233,7 @@ fun NodeItem(
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            HorizontalDivider(color = Ios.colors.separator.copy(alpha = 0.3f))
 
             NodeItemFooter(thatNode = thatNode, contentColor = contentColor, deviceImageUrl = deviceImageUrl)
         }
@@ -544,7 +545,7 @@ private fun NodeItemHeader(
             ) {
                 Text(
                     text = longName,
-                    style = MaterialTheme.typography.titleMediumEmphasized.copy(fontStyle = style),
+                    style = Ios.type.headline.copy(fontStyle = style),
                     textDecoration = TextDecoration.LineThrough.takeIf { isIgnored },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

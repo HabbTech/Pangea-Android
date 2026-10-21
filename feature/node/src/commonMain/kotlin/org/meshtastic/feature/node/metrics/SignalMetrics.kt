@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,6 +78,7 @@ import org.meshtastic.core.resources.signal_quality
 import org.meshtastic.core.resources.snr
 import org.meshtastic.core.resources.snr_definition
 import org.meshtastic.core.ui.component.LoraSignalIndicator
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosIcons
@@ -218,8 +218,8 @@ fun SignalMetricsScreen(viewModel: MetricsViewModel, onNavigateUp: () -> Unit, m
                 Box(modifier = contentModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = stringResource(Res.string.no_local_stats),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = Ios.type.body,
+                        color = Ios.colors.secondaryLabel,
                     )
                 }
             } else {
@@ -460,10 +460,10 @@ private fun SignalMetricsChart(
 
 @Composable
 private fun noiseFloorTextColor(value: Int?): Color = when {
-    value == null -> MaterialTheme.colorScheme.onSurfaceVariant
+    value == null -> Ios.colors.secondaryLabel
     value < QUIET_NOISE_FLOOR_DBM -> SignalMetric.SNR.color
     value < BUSY_FLOOR_DBM -> Orange
-    else -> MaterialTheme.colorScheme.error
+    else -> Ios.colors.systemRed
 }
 
 @Suppress("LongMethod")
@@ -476,11 +476,7 @@ private fun LocalStatsCard(telemetry: Telemetry, isSelected: Boolean, onClick: (
     SelectableMetricCard(isSelected = isSelected, onClick = onClick) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = DateFormatter.formatDateTime(time),
-                    style = MaterialTheme.typography.titleMediumEmphasized,
-                    fontWeight = FontWeight.Bold,
-                )
+                Text(text = DateFormatter.formatDateTime(time), style = Ios.type.headline, fontWeight = FontWeight.Bold)
 
                 Text(
                     text =
@@ -489,7 +485,7 @@ private fun LocalStatsCard(telemetry: Telemetry, isSelected: Boolean, onClick: (
                     } else {
                         stringResource(Res.string.noise_floor_no_reading)
                     },
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                     fontWeight = FontWeight.SemiBold,
                     color = noiseFloorTextColor(noiseFloor),
                 )
@@ -513,7 +509,7 @@ private fun LocalStatsCard(telemetry: Telemetry, isSelected: Boolean, onClick: (
                         localStats?.num_packets_rx ?: 0,
                         localStats?.num_rx_dupe ?: 0,
                     ),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                 )
                 Text(
                     text =
@@ -522,7 +518,7 @@ private fun LocalStatsCard(telemetry: Telemetry, isSelected: Boolean, onClick: (
                         localStats?.num_tx_relay ?: 0,
                         localStats?.num_tx_relay_canceled ?: 0,
                     ),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                 )
             }
 
@@ -543,11 +539,11 @@ private fun LocalStatsCard(telemetry: Telemetry, isSelected: Boolean, onClick: (
                         localStats?.num_online_nodes ?: 0,
                         localStats?.num_total_nodes ?: 0,
                     ),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                 )
                 Text(
                     text = stringResource(Res.string.local_stats_uptime, formatUptime(localStats?.uptime_seconds ?: 0)),
-                    style = MaterialTheme.typography.labelLarge,
+                    style = Ios.type.subheadline,
                 )
             }
 
@@ -555,8 +551,8 @@ private fun LocalStatsCard(telemetry: Telemetry, isSelected: Boolean, onClick: (
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(Res.string.local_stats_bad, localStats?.num_packets_rx_bad ?: 0),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.error,
+                    style = Ios.type.subheadline,
+                    color = Ios.colors.systemRed,
                 )
             }
         }
@@ -575,7 +571,7 @@ private fun SignalMetricsCard(meshPacket: MeshPacket, isSelected: Boolean, onCli
                     Row(horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(
                             text = DateFormatter.formatDateTime(time),
-                            style = MaterialTheme.typography.titleMediumEmphasized,
+                            style = Ios.type.headline,
                             fontWeight = FontWeight.Bold,
                         )
                     }

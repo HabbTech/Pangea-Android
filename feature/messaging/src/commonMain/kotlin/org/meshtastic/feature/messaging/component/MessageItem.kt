@@ -627,7 +627,7 @@ private fun ReplySwipeAffordance(progress: Float, modifier: Modifier = Modifier)
         imageVector = MeshtasticIcons.Reply,
         contentDescription = null,
         modifier = modifier.padding(horizontal = 14.dp).size(20.dp).alpha(progress),
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        tint = Ios.colors.secondaryLabel,
     )
 }
 
@@ -715,7 +715,7 @@ private fun OriginalMessageSnippet(
         // header still reads as distinct from the bubble body below it.
         val replyContainerColor =
             nodeTintedContainer(Color(originalMessageNode.colors.second), fraction = NODE_TINT_EMPHASIZED)
-        val replyContentColor = MaterialTheme.colorScheme.onSurface
+        val replyContentColor = Ios.colors.label
         // Rectangle shape — the outer message bubble's Surface clips to its
         // rounded corners, so the reply header inherits the correct top radii
         // automatically and stays square on the bottom where body text follows.
@@ -742,14 +742,14 @@ private fun OriginalMessageSnippet(
                 )
                 Text(
                     text = originalMessageNode.user.short_name,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = Ios.type.caption1,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = originalMessage.text,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Ios.type.footnote,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

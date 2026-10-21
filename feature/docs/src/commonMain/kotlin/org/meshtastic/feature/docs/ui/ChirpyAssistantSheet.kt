@@ -79,6 +79,7 @@ import org.meshtastic.core.resources.chirpy_thinking
 import org.meshtastic.core.resources.img_chirpy
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Send
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.feature.docs.model.AIDocAssistantSessionState
 import org.meshtastic.feature.docs.model.ChirpyMessage
@@ -138,7 +139,7 @@ private fun ChirpyChatSheet(
         Column(modifier = Modifier.fillMaxSize().imePadding().padding(16.dp)) {
             Text(
                 text = stringResource(CoreRes.string.chirpy_assistant_title),
-                style = MaterialTheme.typography.titleMedium,
+                style = Ios.type.headline,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
 
@@ -196,7 +197,7 @@ private fun ChirpyCheckingSheet(onDismiss: () -> Unit, modifier: Modifier = Modi
         Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.height(16.dp))
-            Text(stringResource(CoreRes.string.chirpy_checking), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(CoreRes.string.chirpy_checking), style = Ios.type.subheadline)
         }
     }
 }
@@ -223,7 +224,7 @@ private fun ChirpyDownloadingSheet(
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 stringResource(CoreRes.string.chirpy_downloading),
-                style = MaterialTheme.typography.titleMedium,
+                style = Ios.type.headline,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -236,8 +237,8 @@ private fun ChirpyDownloadingSheet(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     "${(progress * PERCENT_MULTIPLIER).toInt()}%",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.caption2,
+                    color = Ios.colors.secondaryLabel,
                 )
             } else {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp))
@@ -245,8 +246,8 @@ private fun ChirpyDownloadingSheet(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 stringResource(CoreRes.string.chirpy_downloading_subtitle),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
                 textAlign = TextAlign.Center,
             )
         }
@@ -283,19 +284,19 @@ private fun ChirpyMessageBubble(
 
 @Composable
 private fun UserBubble(message: ChirpyMessage, modifier: Modifier = Modifier) {
-    val bubbleColor = MaterialTheme.colorScheme.primaryContainer
-    val borderColor = MaterialTheme.colorScheme.primary
+    val bubbleColor = Ios.colors.tintContainer
+    val borderColor = Ios.colors.tint
 
     Column(modifier = modifier.fillMaxWidth().padding(start = 48.dp), horizontalAlignment = Alignment.End) {
         Surface(
             shape = UserBubbleShape,
             color = bubbleColor,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = Ios.colors.label,
             border = BorderStroke(BUBBLE_BORDER_WIDTH, borderColor),
         ) {
             Text(
                 text = message.text,
-                style = MaterialTheme.typography.bodyMedium,
+                style = Ios.type.subheadline,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
             )
         }
@@ -308,11 +309,7 @@ private fun ChirpyChip(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.height(CHIRPY_CHIP_HEIGHT),
         shape = MaterialTheme.shapes.small,
-        colors =
-        CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill, contentColor = Ios.colors.label),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -324,12 +321,7 @@ private fun ChirpyChip(modifier: Modifier = Modifier) {
                 modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Chirpy",
-                fontSize = MaterialTheme.typography.labelLarge.fontSize,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-            )
+            Text(text = "Chirpy", fontSize = Ios.type.subheadline.fontSize, textAlign = TextAlign.Center, maxLines = 1)
         }
     }
 }
@@ -339,8 +331,8 @@ private val CHIRPY_CHIP_HEIGHT = 28.dp
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AssistantBubble(message: ChirpyMessage, onNavigateToPage: (String) -> Unit, modifier: Modifier = Modifier) {
-    val bubbleColor = MaterialTheme.colorScheme.surfaceVariant
-    val borderColor = MaterialTheme.colorScheme.outline
+    val bubbleColor = Ios.colors.fieldFill
+    val borderColor = Ios.colors.separator
 
     Column(modifier = modifier.fillMaxWidth().padding(end = 48.dp), horizontalAlignment = Alignment.Start) {
         // NodeChip-style sender label above the bubble (like MessageItem)
@@ -355,7 +347,7 @@ private fun AssistantBubble(message: ChirpyMessage, onNavigateToPage: (String) -
         Surface(
             shape = ChirpyBubbleShape,
             color = bubbleColor,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = Ios.colors.label,
             border = BorderStroke(BUBBLE_BORDER_WIDTH, borderColor),
             modifier = Modifier.padding(horizontal = 8.dp),
         ) {
@@ -370,13 +362,13 @@ private fun AssistantBubble(message: ChirpyMessage, onNavigateToPage: (String) -
                 message.sources.forEach { source ->
                     SuggestionChip(
                         onClick = { onNavigateToPage(source.id) },
-                        label = { Text(text = source.title, style = MaterialTheme.typography.labelSmall) },
+                        label = { Text(text = source.title, style = Ios.type.caption2) },
                         colors =
                         SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            containerColor = Ios.colors.fieldFill,
+                            labelColor = Ios.colors.label,
                         ),
-                        border = BorderStroke(BUBBLE_BORDER_WIDTH, MaterialTheme.colorScheme.outline),
+                        border = BorderStroke(BUBBLE_BORDER_WIDTH, Ios.colors.separator),
                     )
                 }
             }
@@ -397,8 +389,8 @@ private fun ThinkingBubble(modifier: Modifier = Modifier) {
             label = "thinkingAlpha",
         )
 
-    val bubbleColor = MaterialTheme.colorScheme.surfaceVariant
-    val borderColor = MaterialTheme.colorScheme.outline
+    val bubbleColor = Ios.colors.fieldFill
+    val borderColor = Ios.colors.separator
 
     Column(modifier = modifier.fillMaxWidth().padding(end = 48.dp), horizontalAlignment = Alignment.Start) {
         Row(
@@ -411,13 +403,13 @@ private fun ThinkingBubble(modifier: Modifier = Modifier) {
         Surface(
             shape = ChirpyBubbleShape,
             color = bubbleColor,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = Ios.colors.label,
             border = BorderStroke(BUBBLE_BORDER_WIDTH, borderColor),
             modifier = Modifier.padding(horizontal = 8.dp),
         ) {
             Text(
                 text = stringResource(CoreRes.string.chirpy_thinking),
-                style = MaterialTheme.typography.bodyMedium,
+                style = Ios.type.subheadline,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp).alpha(alpha),
             )
         }

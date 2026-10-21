@@ -35,7 +35,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -66,22 +65,21 @@ fun MetricLogItem(icon: ImageVector, text: String, contentDescription: String, m
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Box(
-                modifier =
-                Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(Ios.colors.tintContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = contentDescription,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = Ios.colors.onTintContainer,
                     modifier = Modifier.size(24.dp),
                 )
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.titleMediumEmphasized,
+                style = Ios.type.headline,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Ios.colors.secondaryLabel,
             )
         }
     }
@@ -96,10 +94,10 @@ fun DeleteItem(onClick: () -> Unit) {
                 Icon(
                     imageVector = MeshtasticIcons.Delete,
                     contentDescription = stringResource(Res.string.delete),
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = Ios.colors.systemRed,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = stringResource(Res.string.delete), color = MaterialTheme.colorScheme.error)
+                Text(text = stringResource(Res.string.delete), color = Ios.colors.systemRed)
             }
         },
     )
@@ -137,7 +135,7 @@ fun MetricValueRow(color: Color, text: String, modifier: Modifier = Modifier) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         MetricIndicator(color)
         Spacer(Modifier.width(4.dp))
-        Text(text = text, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelLarge)
+        Text(text = text, color = Ios.colors.label, style = Ios.type.subheadline)
     }
 }
 

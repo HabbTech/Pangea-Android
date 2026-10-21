@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +49,7 @@ import org.meshtastic.core.resources.pangea_radio_connected
 import org.meshtastic.core.resources.pangea_radio_connecting
 import org.meshtastic.core.resources.pangea_radio_not_connected
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.pangea.MyProfileViewModel
 
 /** My radio: its name and whether it's connected, with Pair and Forget (Pangea-Apple MyRadioSection). */
@@ -65,10 +65,10 @@ fun MyRadioSection(
     val paired = state.code != null
     Card(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(Res.string.pangea_my_radio), style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(Res.string.pangea_my_radio), style = Ios.type.caption1)
             Text(
                 state.radioName.ifEmpty { stringResource(Res.string.pangea_no_radio_paired) },
-                style = MaterialTheme.typography.titleMedium,
+                style = Ios.type.headline,
             )
             Text(
                 stringResource(
@@ -78,12 +78,12 @@ fun MyRadioSection(
                         else -> Res.string.pangea_radio_not_connected
                     },
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = Ios.type.footnote,
                 color =
                 if (connection == ConnectionState.Connected) {
-                    MaterialTheme.colorScheme.primary
+                    Ios.colors.tint
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    Ios.colors.secondaryLabel
                 },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -50,6 +50,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.a11y_label_value
 import org.meshtastic.core.resources.copy
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.createClipEntry
 import org.meshtastic.core.ui.util.thenIf
 
@@ -62,7 +63,7 @@ fun InfoCard(
     icon: ImageVector? = null,
     iconRes: DrawableResource? = null,
     rotateIcon: Float = 0f,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    valueColor: Color = Ios.colors.label,
 ) {
     val clipboard: Clipboard = LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
@@ -83,7 +84,7 @@ fun InfoCard(
             )
             .semantics(mergeDescendants = true) { contentDescription = contentDescriptionText },
         shape = shape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
     ) {
         Row(
             modifier = Modifier.padding(vertical = 8.dp, horizontal = 12.dp),
@@ -91,7 +92,7 @@ fun InfoCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val iconModifier = Modifier.size(20.dp).thenIf(rotateIcon != 0f) { rotate(rotateIcon) }
-            val iconTint = MaterialTheme.colorScheme.primary
+            val iconTint = Ios.colors.tint
             if (icon != null) {
                 Icon(imageVector = icon, contentDescription = null, modifier = iconModifier, tint = iconTint)
             }
@@ -104,12 +105,8 @@ fun InfoCard(
                 )
             }
             Column {
-                Text(
-                    text,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(value, style = MaterialTheme.typography.labelLarge, color = valueColor)
+                Text(text, style = Ios.type.caption2, color = Ios.colors.secondaryLabel)
+                Text(value, style = Ios.type.subheadline, color = valueColor)
             }
         }
     }
@@ -122,7 +119,7 @@ internal fun DrawableInfoCard(
     value: String,
     modifier: Modifier = Modifier,
     rotateIcon: Float = 0f,
-    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    valueColor: Color = Ios.colors.label,
 ) {
     InfoCard(
         iconRes = iconRes,
