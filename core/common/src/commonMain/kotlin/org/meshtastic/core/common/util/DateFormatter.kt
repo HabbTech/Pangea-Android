@@ -48,4 +48,7 @@ expect object DateFormatter {
 
     /** The weekdays' short names in the user's language, Sunday first ("Sun", "Mon", …): a calendar's column heads. */
     fun shortWeekdayNames(): List<String>
+
+    /** Whether the user's clock is 24-hour, so a time picker offers 0–23 rather than 1–12 with AM and PM. */
+    fun is24HourClock(): Boolean
 }

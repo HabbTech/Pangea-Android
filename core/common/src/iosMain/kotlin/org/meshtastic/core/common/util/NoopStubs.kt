@@ -40,6 +40,8 @@ actual object DateFormatter {
     actual fun formatMonthYear(timestampMillis: Long): String = ""
 
     actual fun shortWeekdayNames(): List<String> = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+    actual fun is24HourClock(): Boolean = false
 }
 
 actual fun getSystemMeasurementSystem(): MeasurementSystem = MeasurementSystem.METRIC

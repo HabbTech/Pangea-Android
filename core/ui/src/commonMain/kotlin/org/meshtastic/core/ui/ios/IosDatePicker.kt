@@ -163,12 +163,14 @@ private fun DayCell(day: Int, isSelected: Boolean, isToday: Boolean, onClick: ()
 
 /**
  * iOS's wheel time picker, as a compact time `DatePicker` opens it: an hours wheel and a minutes wheel turning past a
- * grey selection band. The time is reported when the card closes (a tap outside it), as iOS's popover does.
+ * grey selection band, with an AM/PM wheel when the user's clock is 12-hour. The time (always 0–23) is reported when
+ * the card closes (a tap outside it), as iOS's popover does.
  */
 @Composable
 fun IosTimeWheelDialog(hour: Int, minute: Int, onPick: (hour: Int, minute: Int) -> Unit) {
     var h by remember { mutableIntStateOf(hour) }
     var m by remember { mutableIntStateOf(minute) }
+    val twentyFour = remember { DateFormatter.is24HourClock() }
     Dialog(onDismissRequest = { onPick(h, m) }) {
         Box(
             Modifier.width(WHEEL_CARD_WIDTH)
@@ -184,7 +186,22 @@ fun IosTimeWheelDialog(hour: Int, minute: Int, onPick: (hour: Int, minute: Int) 
                     .background(Ios.colors.fieldFill),
             )
             Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                Wheel(count = HOURS, initial = hour, onSelect = { h = it }, label = { it.toString().padStart(2, '0') })
+                if (twentyFour) {
+                    Wheel(
+                        count = HOURS,
+                        initial = hour,
+                        onSelect = { h = it },
+                        label = { it.toString().padStart(2, '0') },
+                    )
+                } else {
+                    // 12, 1, 2 … 11; the AM/PM wheel adds the half of the day.
+                    Wheel(
+                        count = HALF_DAY,
+                        initial = hour % HALF_DAY,
+                        onSelect = { h = it + if (h >= HALF_DAY) HALF_DAY else 0 },
+                        label = { if (it == 0) "12" else it.toString() },
+                    )
+                }
                 Text(":", style = Ios.type.title3, color = Ios.colors.label)
                 Wheel(
                     count = MINUTES,
@@ -192,6 +209,14 @@ fun IosTimeWheelDialog(hour: Int, minute: Int, onPick: (hour: Int, minute: Int) 
                     onSelect = { m = it },
                     label = { it.toString().padStart(2, '0') },
                 )
+                if (!twentyFour) {
+                    Wheel(
+                        count = 2,
+                        initial = if (hour >= HALF_DAY) 1 else 0,
+                        onSelect = { pm -> h = h % HALF_DAY + if (pm == 1) HALF_DAY else 0 },
+                        label = { if (it == 0) "AM" else "PM" },
+                    )
+                }
             }
         }
     }
@@ -230,10 +255,11 @@ private fun Wheel(count: Int, initial: Int, onSelect: (Int) -> Unit, label: (Int
 
 private const val DAYS_PER_WEEK = 7
 private const val HOURS = 24
+private const val HALF_DAY = 12
 private const val MINUTES = 60
 private const val WHEEL_VISIBLE = 5
 private val CARD_WIDTH = 340.dp
-private val WHEEL_CARD_WIDTH = 220.dp
+private val WHEEL_CARD_WIDTH = 280.dp
 private val CARD_CORNER = 22.dp
 private val DAY_SIZE = 44.dp
 private val WHEEL_ROW = 36.dp

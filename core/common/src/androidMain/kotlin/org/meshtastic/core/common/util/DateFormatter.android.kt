@@ -67,4 +67,6 @@ actual object DateFormatter {
 
     actual fun shortWeekdayNames(): List<String> =
         DateFormatSymbols.getInstance(Locale.getDefault()).shortWeekdays.drop(1)
+
+    actual fun is24HourClock(): Boolean = android.text.format.DateFormat.is24HourFormat(ContextServices.app)
 }

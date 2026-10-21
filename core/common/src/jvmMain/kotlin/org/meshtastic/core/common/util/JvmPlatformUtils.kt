@@ -86,6 +86,18 @@ actual object DateFormatter {
 
     actual fun shortWeekdayNames(): List<String> =
         java.text.DateFormatSymbols.getInstance(Locale.getDefault()).shortWeekdays.drop(1)
+
+    // The locale's own short time pattern says it: "H" (0-23) or "h" (1-12) for the hour.
+    actual fun is24HourClock(): Boolean {
+        val pattern =
+            java.time.format.DateTimeFormatterBuilder.getLocalizedDateTimePattern(
+                null,
+                FormatStyle.SHORT,
+                java.time.chrono.IsoChronology.INSTANCE,
+                Locale.getDefault(),
+            )
+        return pattern.contains('H')
+    }
 }
 
 // No ICU measurement data on the JVM, so the region table in core:common is the source. Desktop
