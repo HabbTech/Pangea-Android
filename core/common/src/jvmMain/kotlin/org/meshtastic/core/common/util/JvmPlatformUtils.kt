@@ -79,6 +79,13 @@ actual object DateFormatter {
 
     actual fun formatDateTimeShort(timestampMillis: Long): String =
         shortDateTimeFormatter.localized().format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+
+    actual fun formatMonthYear(timestampMillis: Long): String = DateTimeFormatter.ofPattern("LLLL yyyy")
+        .localized()
+        .format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+
+    actual fun shortWeekdayNames(): List<String> =
+        java.text.DateFormatSymbols.getInstance(Locale.getDefault()).shortWeekdays.drop(1)
 }
 
 // No ICU measurement data on the JVM, so the region table in core:common is the source. Desktop

@@ -19,6 +19,10 @@ package org.meshtastic.core.common.util
 import android.text.format.DateUtils
 import org.meshtastic.core.common.ContextServices
 import java.text.DateFormat
+import java.text.DateFormatSymbols
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 actual object DateFormatter {
     actual fun formatRelativeTime(timestampMillis: Long): String = DateUtils.getRelativeTimeSpanString(
@@ -57,4 +61,10 @@ actual object DateFormatter {
 
     actual fun formatDateTimeShort(timestampMillis: Long): String =
         DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(timestampMillis)
+
+    actual fun formatMonthYear(timestampMillis: Long): String =
+        SimpleDateFormat("LLLL yyyy", Locale.getDefault()).format(Date(timestampMillis))
+
+    actual fun shortWeekdayNames(): List<String> =
+        DateFormatSymbols.getInstance(Locale.getDefault()).shortWeekdays.drop(1)
 }

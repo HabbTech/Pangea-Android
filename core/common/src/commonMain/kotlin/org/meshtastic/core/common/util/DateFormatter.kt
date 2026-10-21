@@ -42,4 +42,10 @@ expect object DateFormatter {
 
     /** Formats a timestamp into a localized short date and medium time string. */
     fun formatDateTimeShort(timestampMillis: Long): String
+
+    /** The month and year of a timestamp, spelled out in the user's language ("October 2026"): a calendar's title. */
+    fun formatMonthYear(timestampMillis: Long): String
+
+    /** The weekdays' short names in the user's language, Sunday first ("Sun", "Mon", …): a calendar's column heads. */
+    fun shortWeekdayNames(): List<String>
 }

@@ -23,14 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TimePickerDialog
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.atTime
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
@@ -80,18 +72,17 @@ import org.meshtastic.core.resources.pangea_waypoint_options
 import org.meshtastic.core.resources.pangea_waypoint_radius
 import org.meshtastic.core.resources.pangea_waypoint_remove_box
 import org.meshtastic.core.resources.pangea_waypoint_set_box
-import org.meshtastic.core.resources.save
 import org.meshtastic.core.resources.send
 import org.meshtastic.core.resources.time
 import org.meshtastic.core.ui.emoji.EmojiPickerDialog
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosAccessory
-import org.meshtastic.core.ui.ios.IosButton
-import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosCalendarDialog
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.ios.IosSheet
+import org.meshtastic.core.ui.ios.IosTimeWheelDialog
 import org.meshtastic.proto.Waypoint
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.hours
@@ -281,7 +272,6 @@ fun EditWaypointDialog(
             if (showTimePicker) {
                 ExpiryTimePickerDialog(
                     initial = ldt,
-                    onDismiss = { showTimePicker = false },
                     onPick = { hour, minute ->
                         val newLdt =
                             LocalDate(year = ldt.year, month = ldt.month, day = ldt.day)
@@ -434,66 +424,21 @@ private fun Waypoint.normalizeGeofenceNotifications(): Waypoint = when {
     else -> this
 }
 
-/**
- * The expiry date, picked with Material 3's own dialog.
- *
- * The picker works in UTC-midnight milliseconds, so the value is converted through [TimeZone.UTC] on the way in and
- * out. Reading it back in the local zone would land on the previous day for anyone west of Greenwich.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The expiry date, on iOS's calendar card. */
 @Composable
 private fun ExpiryDatePickerDialog(initial: LocalDateTime, onPick: (LocalDate) -> Unit, onDismiss: () -> Unit) {
-    val state =
-        rememberDatePickerState(
-            initialSelectedDateMillis = initial.date.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds(),
-        )
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            IosButton(
-                text = stringResource(Res.string.save),
-                onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        onPick(Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.UTC).date)
-                    } ?: onDismiss()
-                },
-                style = IosButtonStyle.Plain,
-            )
-        },
-        dismissButton = {
-            IosButton(text = stringResource(Res.string.cancel), onClick = onDismiss, style = IosButtonStyle.Plain)
-        },
-    ) {
-        DatePicker(state = state)
-    }
+    IosCalendarDialog(
+        initial = initial.date,
+        onPick = onPick,
+        onDismiss = onDismiss,
+        today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date,
+    )
 }
 
-/**
- * The expiry time of day.
- *
- * `is24Hour` is left to [rememberTimePickerState], whose default resolves the platform's own clock preference — which
- * is what `android.text.format.DateFormat.is24HourFormat` used to supply here, and what made this Android-only.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** The expiry time of day, on iOS's hour and minute wheels; it is kept when the card closes. */
 @Composable
-private fun ExpiryTimePickerDialog(initial: LocalDateTime, onPick: (Int, Int) -> Unit, onDismiss: () -> Unit) {
-    val state = rememberTimePickerState(initialHour = initial.hour, initialMinute = initial.minute)
-    TimePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            IosButton(
-                text = stringResource(Res.string.save),
-                onClick = { onPick(state.hour, state.minute) },
-                style = IosButtonStyle.Plain,
-            )
-        },
-        title = { Text(stringResource(Res.string.time)) },
-        dismissButton = {
-            IosButton(text = stringResource(Res.string.cancel), onClick = onDismiss, style = IosButtonStyle.Plain)
-        },
-    ) {
-        TimePicker(state = state)
-    }
+private fun ExpiryTimePickerDialog(initial: LocalDateTime, onPick: (Int, Int) -> Unit) {
+    IosTimeWheelDialog(hour = initial.hour, minute = initial.minute, onPick = onPick)
 }
 
 /**
