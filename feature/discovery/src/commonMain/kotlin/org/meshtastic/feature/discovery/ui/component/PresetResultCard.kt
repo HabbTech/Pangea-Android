@@ -26,8 +26,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -46,6 +46,8 @@ import org.meshtastic.core.resources.discovery_stat_mesh
 import org.meshtastic.core.resources.discovery_stat_messages
 import org.meshtastic.core.resources.discovery_stat_sensor_pkts
 import org.meshtastic.core.resources.discovery_stat_unique_nodes
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.feature.discovery.ui.StatRow
 import org.meshtastic.feature.discovery.ui.formatDuration
 
@@ -58,7 +60,11 @@ fun PresetResultCard(
     rank: Int? = null,
     isTied: Boolean = false,
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = IosCardShape,
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             PresetHeader(result = result, rank = rank, isTied = isTied)
             Spacer(modifier = Modifier.height(12.dp))
@@ -75,11 +81,7 @@ fun PresetResultCard(
             val summaryText = aiSummary ?: result.aiSummary
             if (!summaryText.isNullOrBlank()) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text(
-                    text = summaryText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(text = summaryText, style = Ios.type.footnote, color = Ios.colors.secondaryLabel)
             }
 
             if (result.numPacketsTx > 0) {
@@ -98,22 +100,22 @@ private fun PresetHeader(result: DiscoveryPresetResultEntity, rank: Int?, isTied
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = result.presetName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(text = result.presetName, style = Ios.type.headline, fontWeight = FontWeight.Bold)
             if (rank != null) {
                 val rankLabel = if (isTied) "#$rank (tied)" else "#$rank"
                 val rankColor =
                     if (rank == 1 && !isTied) {
-                        MaterialTheme.colorScheme.primary
+                        Ios.colors.tint
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        Ios.colors.secondaryLabel
                     }
-                Text(text = rankLabel, style = MaterialTheme.typography.labelMedium, color = rankColor)
+                Text(text = rankLabel, style = Ios.type.caption1, color = rankColor)
             }
         }
         Text(
             text = formatDuration(result.dwellDurationSeconds),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
         )
     }
 }
@@ -171,11 +173,7 @@ private fun MetricChip(label: String, value: String, modifier: Modifier = Modifi
         modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Text(text = value, style = Ios.type.title3, fontWeight = FontWeight.Bold)
+        Text(text = label, style = Ios.type.footnote, color = Ios.colors.secondaryLabel)
     }
 }

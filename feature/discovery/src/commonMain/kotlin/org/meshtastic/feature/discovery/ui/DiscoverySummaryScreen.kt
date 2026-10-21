@@ -34,11 +34,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -66,11 +66,15 @@ import org.meshtastic.core.resources.discovery_stat_total_dwell_time
 import org.meshtastic.core.resources.discovery_stat_total_unique_nodes
 import org.meshtastic.core.resources.discovery_summary_not_available
 import org.meshtastic.core.resources.discovery_view_map
-import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.Map
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Share
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.feature.discovery.DiscoverySummaryViewModel
 import org.meshtastic.feature.discovery.export.ExportResult
 import org.meshtastic.feature.discovery.export.rememberExportSaver
@@ -146,28 +150,36 @@ private fun DiscoverySummaryContent(
     onRerunAnalysis: () -> Unit,
 ) {
     Scaffold(
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.discovery_scan_summary)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(MeshtasticIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
-                    }
+            IosTopBar(
+                title = stringResource(Res.string.discovery_scan_summary),
+                showTitle = true,
+                background = Ios.colors.groupedBackground,
+                leading = {
+                    IosGlassIconButton(
+                        IosIcons.ChevronLeft,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onNavigateUp,
+                    )
                 },
-                actions = {
-                    if (session != null) {
-                        IconButton(onClick = { onNavigateToMap(session.id) }) {
+                trailing = {
+                    // The bar's own buttons in the tint, as iOS draws toolbar items.
+                    CompositionLocalProvider(LocalContentColor provides Ios.colors.tint) {
+                        if (session != null) {
+                            IconButton(onClick = { onNavigateToMap(session.id) }) {
+                                Icon(
+                                    MeshtasticIcons.Map,
+                                    contentDescription = stringResource(Res.string.discovery_view_map),
+                                )
+                            }
+                        }
+                        IconButton(onClick = onExport) {
                             Icon(
-                                MeshtasticIcons.Map,
-                                contentDescription = stringResource(Res.string.discovery_view_map),
+                                MeshtasticIcons.Share,
+                                contentDescription = stringResource(Res.string.discovery_export_report),
                             )
                         }
-                    }
-                    IconButton(onClick = onExport) {
-                        Icon(
-                            MeshtasticIcons.Share,
-                            contentDescription = stringResource(Res.string.discovery_export_report),
-                        )
                     }
                 },
             )
@@ -215,12 +227,13 @@ private fun DiscoverySummaryContent(
 private fun SessionOverviewCard(session: DiscoverySessionEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
+        shape = IosCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(Res.string.discovery_stat_session_overview),
-                style = MaterialTheme.typography.titleMedium,
+                style = Ios.type.headline,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -258,7 +271,8 @@ private fun AiSummaryCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
+        shape = IosCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -268,7 +282,7 @@ private fun AiSummaryCard(
             ) {
                 Text(
                     text = stringResource(Res.string.discovery_stat_analysis),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = Ios.type.headline,
                     fontWeight = FontWeight.Bold,
                 )
                 if (isGenerating) {
@@ -278,7 +292,7 @@ private fun AiSummaryCard(
                         Icon(
                             MeshtasticIcons.Refresh,
                             contentDescription = stringResource(Res.string.discovery_rerun_analysis),
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            tint = Ios.colors.label,
                         )
                     }
                 }
@@ -288,11 +302,7 @@ private fun AiSummaryCard(
             val summaryText =
                 aiSummary ?: algorithmicSummary ?: stringResource(Res.string.discovery_summary_not_available)
 
-            Text(
-                text = summaryText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-            )
+            Text(text = summaryText, style = Ios.type.subheadline, color = Ios.colors.label)
         }
     }
 }
@@ -304,12 +314,8 @@ internal fun StatRow(label: String, value: String, modifier: Modifier = Modifier
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(text = label, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel)
+        Text(text = value, style = Ios.type.subheadline, fontWeight = FontWeight.Medium)
     }
 }
 

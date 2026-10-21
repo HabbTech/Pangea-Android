@@ -33,11 +33,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -55,9 +55,13 @@ import org.meshtastic.core.resources.discovery_stat_total_dwell_time
 import org.meshtastic.core.resources.discovery_stat_total_messages
 import org.meshtastic.core.resources.discovery_stat_unique_nodes
 import org.meshtastic.core.resources.discovery_view_map
-import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.Map
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.feature.discovery.DiscoveryHistoryDetailViewModel
 import org.meshtastic.feature.discovery.ui.component.PresetResultCard
 
@@ -75,26 +79,34 @@ fun DiscoveryHistoryDetailScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.discovery_session_detail)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(MeshtasticIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
-                    }
+            IosTopBar(
+                title = stringResource(Res.string.discovery_session_detail),
+                showTitle = true,
+                background = Ios.colors.groupedBackground,
+                leading = {
+                    IosGlassIconButton(
+                        IosIcons.ChevronLeft,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onNavigateUp,
+                    )
                 },
-                actions = {
-                    val s = session
-                    val hasAnyMappableNodes =
-                        nodesByPreset.values.flatten().any {
-                            it.latitude != null && it.longitude != null && it.latitude != 0.0
-                        }
-                    if (s != null && (s.userLatitude != 0.0 || hasAnyMappableNodes)) {
-                        IconButton(onClick = { onNavigateToMap(s.id) }) {
-                            Icon(
-                                MeshtasticIcons.Map,
-                                contentDescription = stringResource(Res.string.discovery_view_map),
-                            )
+                trailing = {
+                    // The bar's own buttons in the tint, as iOS draws toolbar items.
+                    CompositionLocalProvider(LocalContentColor provides Ios.colors.tint) {
+                        val s = session
+                        val hasAnyMappableNodes =
+                            nodesByPreset.values.flatten().any {
+                                it.latitude != null && it.longitude != null && it.latitude != 0.0
+                            }
+                        if (s != null && (s.userLatitude != 0.0 || hasAnyMappableNodes)) {
+                            IconButton(onClick = { onNavigateToMap(s.id) }) {
+                                Icon(
+                                    MeshtasticIcons.Map,
+                                    contentDescription = stringResource(Res.string.discovery_view_map),
+                                )
+                            }
                         }
                     }
                 },
@@ -108,10 +120,7 @@ fun DiscoveryHistoryDetailScreen(
             session?.let { s -> SessionMetadataCard(s) }
 
             if (presetResults.isNotEmpty()) {
-                Text(
-                    text = stringResource(Res.string.discovery_stat_preset_results),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Text(text = stringResource(Res.string.discovery_stat_preset_results), style = Ios.type.headline)
                 presetResults.forEach { result ->
                     PresetResultCard(result = result, nodes = nodesByPreset[result.id].orEmpty())
                 }
@@ -124,10 +133,11 @@ fun DiscoveryHistoryDetailScreen(
 private fun SessionMetadataCard(session: DiscoverySessionEntity) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
+        shape = IosCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = formatTimestamp(session.timestamp), style = MaterialTheme.typography.titleMedium)
+            Text(text = formatTimestamp(session.timestamp), style = Ios.type.headline)
             Spacer(Modifier.height(8.dp))
             MetadataRow(
                 stringResource(Res.string.discovery_stat_status),
@@ -145,11 +155,7 @@ private fun SessionMetadataCard(session: DiscoverySessionEntity) {
                 Spacer(Modifier.height(8.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(text = summary, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel)
             }
         }
     }
@@ -160,10 +166,10 @@ private fun MetadataRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.subheadline,
+            color = Ios.colors.secondaryLabel,
             modifier = Modifier.width(140.dp),
         )
-        Text(text = value, style = MaterialTheme.typography.bodyMedium)
+        Text(text = value, style = Ios.type.subheadline)
     }
 }

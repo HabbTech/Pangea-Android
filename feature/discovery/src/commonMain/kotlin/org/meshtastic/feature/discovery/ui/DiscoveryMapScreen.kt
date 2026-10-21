@@ -21,11 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,8 +31,10 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.back
 import org.meshtastic.core.resources.discovery_map
-import org.meshtastic.core.ui.icon.ArrowBack
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.core.ui.util.DiscoveryMapNode
 import org.meshtastic.core.ui.util.DiscoveryNeighborType
 import org.meshtastic.core.ui.util.LocalDiscoveryMapProvider
@@ -55,13 +53,18 @@ fun DiscoveryMapScreen(viewModel: DiscoveryMapViewModel, onNavigateUp: () -> Uni
 
     Scaffold(
         modifier = modifier,
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.discovery_map)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(MeshtasticIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
-                    }
+            IosTopBar(
+                title = stringResource(Res.string.discovery_map),
+                showTitle = true,
+                background = Ios.colors.groupedBackground,
+                leading = {
+                    IosGlassIconButton(
+                        IosIcons.ChevronLeft,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onNavigateUp,
+                    )
                 },
             )
         },

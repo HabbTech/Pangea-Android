@@ -31,13 +31,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,12 +62,16 @@ import org.meshtastic.core.resources.discovery_scan_complete
 import org.meshtastic.core.resources.discovery_scan_incomplete
 import org.meshtastic.core.resources.discovery_unique_nodes
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.CheckCircle
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.History
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Warning
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.feature.discovery.DiscoveryHistoryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,13 +86,18 @@ fun DiscoveryHistoryScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(Res.string.discovery_history)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(MeshtasticIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
-                    }
+            IosTopBar(
+                title = stringResource(Res.string.discovery_history),
+                showTitle = true,
+                background = Ios.colors.groupedBackground,
+                leading = {
+                    IosGlassIconButton(
+                        IosIcons.ChevronLeft,
+                        contentDescription = stringResource(Res.string.back),
+                        onClick = onNavigateUp,
+                    )
                 },
             )
         },
@@ -122,13 +130,13 @@ private fun EmptyHistoryState(modifier: Modifier = Modifier) {
                 imageVector = MeshtasticIcons.History,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Ios.colors.secondaryLabel,
             )
             Spacer(Modifier.height(16.dp))
             Text(
                 text = stringResource(Res.string.discovery_empty_history),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.body,
+                color = Ios.colors.secondaryLabel,
             )
         }
     }
@@ -143,6 +151,8 @@ private fun SessionListItem(session: DiscoverySessionEntity, onClick: () -> Unit
             if (session.completionStatus == "complete") "complete" else "incomplete"
 
     Card(
+        shape = IosCardShape,
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
         modifier =
         Modifier.fillMaxWidth().clickable(onClick = onClick).semantics(mergeDescendants = true) {
             contentDescription = sessionDescription
@@ -152,25 +162,21 @@ private fun SessionListItem(session: DiscoverySessionEntity, onClick: () -> Unit
             CompletionStatusIcon(session.completionStatus)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = formatTimestamp(session.timestamp), style = MaterialTheme.typography.titleSmall)
+                Text(text = formatTimestamp(session.timestamp), style = Ios.type.headline)
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = session.presetsScanned,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(text = session.presetsScanned, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel)
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = stringResource(Res.string.discovery_unique_nodes, session.totalUniqueNodes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
             IconButton(onClick = { showDeleteDialog = true }) {
                 Icon(
                     imageVector = MeshtasticIcons.Delete,
                     contentDescription = stringResource(Res.string.discovery_delete_session),
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = Ios.colors.systemRed,
                 )
             }
         }
@@ -193,14 +199,14 @@ private fun CompletionStatusIcon(status: String) {
         Icon(
             imageVector = MeshtasticIcons.CheckCircle,
             contentDescription = stringResource(Res.string.discovery_scan_complete),
-            tint = MaterialTheme.colorScheme.primary,
+            tint = Ios.colors.tint,
             modifier = Modifier.size(24.dp),
         )
     } else {
         Icon(
             imageVector = MeshtasticIcons.Warning,
             contentDescription = stringResource(Res.string.discovery_scan_incomplete),
-            tint = MaterialTheme.colorScheme.error,
+            tint = Ios.colors.systemRed,
             modifier = Modifier.size(24.dp),
         )
     }
