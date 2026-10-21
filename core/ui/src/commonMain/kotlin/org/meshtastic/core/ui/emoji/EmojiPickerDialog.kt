@@ -27,16 +27,17 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -44,20 +45,16 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -74,8 +71,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
@@ -87,7 +84,6 @@ import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.clear
 import org.meshtastic.core.resources.emoji_category_activities
 import org.meshtastic.core.resources.emoji_category_animals_nature
 import org.meshtastic.core.resources.emoji_category_flags
@@ -101,10 +97,9 @@ import org.meshtastic.core.resources.emoji_load_error
 import org.meshtastic.core.resources.emoji_no_results
 import org.meshtastic.core.resources.emoji_recently_used
 import org.meshtastic.core.resources.search_emoji
-import org.meshtastic.core.ui.icon.Close
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Search
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosSearchField
 import org.meshtastic.core.ui.theme.AppTheme
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -183,8 +178,8 @@ fun EmojiPickerDialog(
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(Res.string.emoji_load_error),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.subheadline,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
         } else if (isLoaded) {
@@ -287,44 +282,15 @@ private fun EmojiPickerContent(
 
 // ── Search Bar ─────────────────────────────────────────────────────────────────
 
+/** iOS's capsule search field over the grid. */
 @Composable
 private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
-    TextField(
+    IosSearchField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
-        placeholder = {
-            Text(
-                text = stringResource(Res.string.search_emoji),
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        leadingIcon = {
-            Icon(imageVector = MeshtasticIcons.Search, contentDescription = null, modifier = Modifier.size(20.dp))
-        },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(
-                        imageVector = MeshtasticIcons.Close,
-                        contentDescription = stringResource(Res.string.clear),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(12.dp),
-        colors =
-        TextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-        ),
-        textStyle = MaterialTheme.typography.bodyMedium,
+        placeholder = stringResource(Res.string.search_emoji),
+        glass = false,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
     )
 }
 
@@ -340,22 +306,24 @@ private fun CategoryTabStrip(
     val tabOffset = if (hasRecents) 1 else 0
     val totalTabs = categories.size + tabOffset
 
-    PrimaryScrollableTabRow(
-        selectedTabIndex = selectedIndex,
-        modifier = Modifier.fillMaxWidth(),
-        edgePadding = 4.dp,
-        divider = {},
-        containerColor = Color.Transparent,
+    // iOS's emoji keyboard: the categories as a row of symbols, the chosen one in a grey circle.
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(totalTabs) { index ->
             val isRecents = hasRecents && index == 0
-            Tab(
-                selected = selectedIndex == index,
-                onClick = { onCategorySelected(index) },
-                text = {
-                    Text(text = if (isRecents) "\uD83D\uDD50" else categories[index - tabOffset].icon, fontSize = 18.sp)
-                },
-            )
+            Box(
+                modifier =
+                Modifier.size(40.dp)
+                    .clip(CircleShape)
+                    .background(if (selectedIndex == index) Ios.colors.fieldFill else Color.Transparent)
+                    .selectable(selected = selectedIndex == index, role = Role.Tab) { onCategorySelected(index) },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = if (isRecents) "\uD83D\uDD50" else categories[index - tabOffset].icon, fontSize = 18.sp)
+            }
         }
     }
 }
@@ -473,8 +441,8 @@ private fun EmojiGrid(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     text = stringResource(Res.string.emoji_no_results),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.subheadline,
+                    color = Ios.colors.secondaryLabel,
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
                     textAlign = TextAlign.Center,
                 )
@@ -598,8 +566,8 @@ internal fun emojiCellSizeFor(glyphSize: Dp): Dp = max(GRID_MIN_CELL_SIZE, glyph
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = Ios.type.caption1,
+        color = Ios.colors.secondaryLabel,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
     )
 }
@@ -632,7 +600,7 @@ private fun EmojiCellWithSkinTone(
                 .clip(RoundedCornerShape(8.dp))
                 .then(
                     if (isSelected) {
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
+                        Modifier.background(Ios.colors.tint.copy(alpha = 0.2f))
                     } else {
                         Modifier
                     },
@@ -656,7 +624,7 @@ private fun EmojiCellWithSkinTone(
                     Modifier.align(Alignment.BottomEnd)
                         .padding(2.dp)
                         .size(6.dp)
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f), CircleShape),
+                        .background(Ios.colors.secondaryLabel.copy(alpha = 0.3f), CircleShape),
                 )
             }
         }
@@ -690,9 +658,9 @@ private fun SkinTonePopup(emoji: Emoji, onSelect: (String, Int) -> Unit, onDismi
 private fun SkinToneSurface(emoji: Emoji, onSelect: (String, Int) -> Unit) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = Ios.colors.groupedRow,
         shadowElevation = 8.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+        border = BorderStroke(1.dp, Ios.colors.separator.copy(alpha = 0.3f)),
         modifier = Modifier.widthIn(max = SKIN_TONE_POPUP_MAX_WIDTH),
     ) {
         // FlowRow so scale-grown cells wrap to a second line instead of clipping
