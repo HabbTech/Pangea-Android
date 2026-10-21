@@ -44,7 +44,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -166,6 +165,7 @@ import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosPushedColumnScreen
 import org.meshtastic.core.ui.ios.IosSegmentedControl
+import org.meshtastic.core.ui.ios.IosSwitch
 import org.meshtastic.core.ui.util.KeepScreenOn
 import org.meshtastic.core.ui.util.rememberOpenDocumentTreeLauncher
 import org.meshtastic.core.ui.util.rememberOpenFileLauncher
@@ -783,7 +783,7 @@ internal fun WipeDeviceToggle(
                     )
                 }
                 Spacer(Modifier.width(8.dp))
-                Switch(checked = wipeDevice && enabled, onCheckedChange = onWipeDeviceChange, enabled = enabled)
+                IosSwitch(checked = wipeDevice && enabled, onCheckedChange = onWipeDeviceChange, enabled = enabled)
             }
             refusal?.let {
                 Spacer(Modifier.height(4.dp))

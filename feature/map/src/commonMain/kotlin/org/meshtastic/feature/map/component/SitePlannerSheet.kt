@@ -50,7 +50,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -107,6 +106,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.MyLocation
 import org.meshtastic.core.ui.icon.PinDrop
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosSwitch
 
 private const val LAT_LIMIT = 90.0
 private const val LON_LIMIT = 180.0
@@ -316,7 +316,7 @@ private fun SimulationSection(state: SiteFormState) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(stringResource(Res.string.site_planner_high_resolution))
-            Switch(checked = state.highResolution, onCheckedChange = { state.highResolution = it })
+            IosSwitch(checked = state.highResolution, onCheckedChange = { state.highResolution = it })
         }
     }
 }

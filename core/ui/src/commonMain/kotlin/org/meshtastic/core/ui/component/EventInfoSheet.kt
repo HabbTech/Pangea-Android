@@ -34,7 +34,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -61,6 +60,7 @@ import org.meshtastic.core.ui.icon.LinkIcon
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Place
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosSwitch
 import org.meshtastic.core.ui.theme.LocalEventThemeToggle
 import org.meshtastic.core.ui.theme.pickLegible
 import org.meshtastic.core.ui.util.EventBrandingIcon
@@ -166,7 +166,7 @@ private fun EventThemeToggleRow() {
             modifier = Modifier.weight(1f),
         )
         // Row owns the toggle; null keeps the Switch visual-only (no double-fire).
-        Switch(checked = themeToggle.enabled, onCheckedChange = null)
+        IosSwitch(checked = themeToggle.enabled, onCheckedChange = null)
     }
 }
 

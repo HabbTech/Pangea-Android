@@ -149,14 +149,8 @@ fun <T> DropDownPreference(
         trailing = {
             Box {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 220.dp)) {
-                    if (currentItem?.icon != null) {
-                        Icon(
-                            imageVector = currentItem.icon,
-                            contentDescription = null,
-                            tint = c.secondaryLabel,
-                            modifier = Modifier.padding(end = 6.dp).size(20.dp),
-                        )
-                    } else if (currentItem?.color != null) {
+                    // iOS's menu picker shows the choice's words alone; the symbols stay in the menu.
+                    if (currentItem?.color != null) {
                         Icon(
                             painter = ColorPainter(currentItem.color),
                             contentDescription = null,

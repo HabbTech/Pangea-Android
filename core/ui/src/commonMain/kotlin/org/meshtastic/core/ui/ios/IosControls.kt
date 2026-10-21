@@ -229,7 +229,10 @@ fun IosGlassTextButton(
     }
 }
 
-/** An iOS switch: 51×31 track, white 27 dp thumb, the tint when on. */
+/**
+ * An iOS 26 switch, measured from the iPhone app: a 64×28 track, a 38×24 capsule thumb inset 2 dp, the tint when on.
+ * Off, the track is light grey (dark grey with a grey thumb in Dark Mode).
+ */
 @Composable
 fun IosSwitch(
     checked: Boolean,
@@ -243,17 +246,20 @@ fun IosSwitch(
             if (checked) {
                 c.tint
             } else if (c.isDark) {
-                Color(0xFF39393D)
+                Color(0xFF3B3B3E)
             } else {
-                Color(0xFFE9E9EA)
+                Color(0xFFE2E2E3)
             },
             label = "iosSwitchTrack",
         )
-    val thumbX by animateDpAsState(if (checked) 22.dp else 2.dp, label = "iosSwitchThumb")
+    val thumbX by animateDpAsState(if (checked) 24.dp else 2.dp, label = "iosSwitchThumb")
+    // iOS 26 greys the thumb of an off switch in Dark Mode; it is white otherwise.
+    val thumb by
+        animateColorAsState(if (!checked && c.isDark) Color(0xFF8E8E8F) else Color.White, label = "iosSwitchKnob")
     Box(
         modifier =
         modifier
-            .size(width = 51.dp, height = 31.dp)
+            .size(width = 64.dp, height = 28.dp)
             .alpha(if (enabled) 1f else 0.5f)
             .clip(CircleShape)
             .background(track)
@@ -274,10 +280,10 @@ fun IosSwitch(
     ) {
         Box(
             Modifier.offset(x = thumbX, y = 2.dp)
-                .size(27.dp)
+                .size(width = 38.dp, height = 24.dp)
                 .shadow(3.dp, CircleShape, ambientColor = Color(0x40000000), spotColor = Color(0x40000000))
                 .clip(CircleShape)
-                .background(Color.White),
+                .background(thumb),
         )
     }
 }
