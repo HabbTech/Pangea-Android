@@ -37,7 +37,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
@@ -91,6 +90,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Search
 import org.meshtastic.core.ui.icon.Usb
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.feature.connections.model.DeviceListEntry
 
 /**
@@ -463,7 +463,7 @@ private fun AddDeviceDialog(
     val portState = rememberTextFieldState(NetworkConstants.SERVICE_PORT.toString())
 
     @Suppress("MagicNumber")
-    ModalBottomSheet(onDismissRequest = onHideDialog, sheetState = sheetState) {
+    IosBottomSheet(onDismissRequest = onHideDialog, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(

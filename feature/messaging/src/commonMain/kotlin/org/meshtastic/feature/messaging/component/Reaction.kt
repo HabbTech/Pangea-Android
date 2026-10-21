@@ -37,7 +37,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -75,6 +74,7 @@ import org.meshtastic.core.ui.icon.AddReaction
 import org.meshtastic.core.ui.icon.HopCount
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.ShieldCheck
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusYellow
 import org.meshtastic.feature.messaging.DeliveryInfo
@@ -208,7 +208,7 @@ internal fun ReactionDialog(
     /** False for an archived conversation: a failed reaction cannot be retried there. */
     canReact: Boolean = true,
     onResend: (Reaction) -> Unit = {},
-) = ModalBottomSheet(
+) = IosBottomSheet(
     onDismissRequest = onDismiss,
     sheetState =
     rememberBottomSheetState(

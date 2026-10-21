@@ -19,7 +19,6 @@ package org.meshtastic.feature.node.detail
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -40,6 +39,7 @@ import org.meshtastic.core.model.Node
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.SharedContactDialog
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.util.ActiveWhileStarted
 import org.meshtastic.feature.node.compass.CompassUiState
 import org.meshtastic.feature.node.compass.CompassViewModel
@@ -228,5 +228,5 @@ private fun NodeDetailBottomSheet(onDismiss: () -> Unit, content: @Composable ()
             initialValue = SheetValue.Hidden,
             enabledValues = setOf(SheetValue.Hidden, SheetValue.PartiallyExpanded, SheetValue.Expanded),
         )
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) { content() }
+    IosBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) { content() }
 }

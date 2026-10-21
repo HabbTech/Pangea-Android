@@ -51,7 +51,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -105,6 +104,7 @@ import org.meshtastic.core.resources.search_emoji
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Search
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.theme.AppTheme
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -143,6 +143,7 @@ private val DEFAULT_QUICK_REACTIONS = listOf("👍", "❤️", "😂", "😮", "
  * @param selectedEmojis Set of emoji strings already selected (e.g. applied reactions). Matched emojis are highlighted
  *   with a tinted background.
  */
+@Suppress("ModifierMissing") // A sheet of its own: nothing for a caller to place.
 @Composable
 fun EmojiPickerDialog(
     onDismiss: () -> Unit = {},
@@ -170,7 +171,7 @@ fun EmojiPickerDialog(
     val recentEmojis by
         remember(viewModel.customEmojiFrequency) { derivedStateOf { parseRecents(viewModel.customEmojiFrequency) } }
 
-    ModalBottomSheet(
+    IosBottomSheet(
         onDismissRequest = onDismiss,
         sheetState =
         rememberBottomSheetState(

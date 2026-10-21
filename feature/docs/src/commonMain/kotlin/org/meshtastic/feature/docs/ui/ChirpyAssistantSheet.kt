@@ -50,7 +50,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SuggestionChip
@@ -80,6 +79,7 @@ import org.meshtastic.core.resources.chirpy_thinking
 import org.meshtastic.core.resources.img_chirpy
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Send
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.feature.docs.model.AIDocAssistantSessionState
 import org.meshtastic.feature.docs.model.ChirpyMessage
 import org.meshtastic.feature.docs.model.ChirpyRole
@@ -134,7 +134,7 @@ private fun ChirpyChatSheet(
             enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
         )
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier) {
+    IosBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize().imePadding().padding(16.dp)) {
             Text(
                 text = stringResource(CoreRes.string.chirpy_assistant_title),
@@ -192,7 +192,7 @@ private const val PERCENT_MULTIPLIER = 100
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChirpyCheckingSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
+    IosBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
         Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.height(16.dp))
@@ -213,7 +213,7 @@ private fun ChirpyDownloadingSheet(
             initialValue = SheetValue.Hidden,
             enabledValues = setOf(SheetValue.Hidden, SheetValue.PartiallyExpanded, SheetValue.Expanded),
         )
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier) {
+    IosBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier) {
         Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
                 painter = painterResource(CoreRes.drawable.img_chirpy),

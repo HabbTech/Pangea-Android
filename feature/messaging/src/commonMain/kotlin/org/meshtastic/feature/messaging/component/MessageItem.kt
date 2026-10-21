@@ -39,7 +39,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -104,6 +103,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Reply
 import org.meshtastic.core.ui.icon.ShieldCheck
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.theme.MessageItemColors
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.util.createClipEntry
@@ -201,7 +201,7 @@ fun MessageItem(
     val showsTranslation = message.showTranslated && message.translatedText != null && searchQuery.isEmpty()
     val bodyText = message.displayedText(searching = searchQuery.isNotEmpty())
     if (activeSheet != null) {
-        ModalBottomSheet(onDismissRequest = { activeSheet = null }, sheetState = sheetState) {
+        IosBottomSheet(onDismissRequest = { activeSheet = null }, sheetState = sheetState) {
             when (activeSheet) {
                 ActiveSheet.Actions -> {
                     MessageActionsContent(

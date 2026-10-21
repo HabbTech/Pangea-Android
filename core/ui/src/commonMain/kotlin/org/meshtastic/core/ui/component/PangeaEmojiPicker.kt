@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -45,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.meshtastic.core.model.pangea.EmojiCatalog
+import org.meshtastic.core.ui.ios.IosBottomSheet
 
 /**
  * Every emoji a Pangea profile or chat icon can carry, grouped as on iOS. Tapping an emoji picks it; holding one with
@@ -52,9 +52,10 @@ import org.meshtastic.core.model.pangea.EmojiCatalog
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PangeaEmojiPicker(onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(
+fun PangeaEmojiPicker(onPick: (String) -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    IosBottomSheet(
         onDismissRequest = onDismiss,
+        modifier = modifier,
         sheetState =
         rememberBottomSheetState(
             initialValue = SheetValue.Hidden,

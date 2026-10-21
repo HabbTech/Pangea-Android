@@ -47,7 +47,6 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -107,6 +106,7 @@ import org.meshtastic.core.ui.icon.Map
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.MyLocation
 import org.meshtastic.core.ui.icon.PinDrop
+import org.meshtastic.core.ui.ios.IosBottomSheet
 
 private const val LAT_LIMIT = 90.0
 private const val LON_LIMIT = 180.0
@@ -190,7 +190,7 @@ fun SitePlannerSheet(
         state.lat = initial.latitude.toString()
         state.lon = initial.longitude.toString()
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    IosBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         SiteFormContent(state, initial, onSubmit, onUseCurrentLocation, onUseNodeLocation, onUseMapCenter, note)
     }
 }

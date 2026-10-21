@@ -33,7 +33,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -61,6 +60,7 @@ import org.meshtastic.core.ui.icon.ChevronRight
 import org.meshtastic.core.ui.icon.LinkIcon
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Place
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.theme.LocalEventThemeToggle
 import org.meshtastic.core.ui.theme.pickLegible
 import org.meshtastic.core.ui.util.EventBrandingIcon
@@ -76,7 +76,7 @@ import org.meshtastic.core.ui.util.safeLinks
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventInfoSheet(edition: EventFirmwareEdition, onDismiss: () -> Unit) {
+fun EventInfoSheet(edition: EventFirmwareEdition, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val sheetState =
         rememberBottomSheetState(
             initialValue = SheetValue.Hidden,
@@ -86,7 +86,7 @@ fun EventInfoSheet(edition: EventFirmwareEdition, onDismiss: () -> Unit) {
     val accent = edition.accentColorOrNull()
     val palette = edition.brandPalette()
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    IosBottomSheet(onDismissRequest = onDismiss, modifier = modifier, sheetState = sheetState) {
         Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
             EventHeader(edition, accent, palette)
             EventDetails(edition = edition, palette = palette, onOpenUri = uriHandler::openUri)

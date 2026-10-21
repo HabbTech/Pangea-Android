@@ -36,8 +36,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -121,5 +123,41 @@ fun IosSheet(
                 content()
             }
         }
+    }
+}
+
+/**
+ * A sheet that sizes to its content, drawn as iOS draws one: the grey grabber at the top, 38 dp corners, and iOS's
+ * (elevated, in Dark Mode) background. A drop-in for Material's `ModalBottomSheet` where the content brings its own
+ * heading; [IosSheet] is the one with iOS's Cancel / title / action bar.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun IosBottomSheet(
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    sheetState: SheetState = rememberModalBottomSheetState(),
+    grouped: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val c = Ios.colors.elevated()
+    CompositionLocalProvider(LocalIosColors provides c) {
+        ModalBottomSheet(
+            onDismissRequest = onDismissRequest,
+            modifier = modifier,
+            sheetState = sheetState,
+            shape = RoundedCornerShape(topStart = SheetCorner, topEnd = SheetCorner),
+            containerColor = if (grouped) c.groupedBackground else c.background,
+            contentColor = c.label,
+            dragHandle = {
+                Box(
+                    Modifier.padding(top = 5.dp, bottom = 10.dp)
+                        .size(width = 36.dp, height = 5.dp)
+                        .clip(CircleShape)
+                        .background(c.tertiaryLabel),
+                )
+            },
+            content = content,
+        )
     }
 }

@@ -28,7 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -50,18 +49,19 @@ import org.meshtastic.core.resources.node_layout_signal_quality_indicator
 import org.meshtastic.core.resources.node_list_help_node_details
 import org.meshtastic.core.resources.node_list_help_title
 import org.meshtastic.core.ui.component.Quality
+import org.meshtastic.core.ui.ios.IosBottomSheet
 
 private const val ICON_SIZE = 24
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NodeListHelp(onDismiss: () -> Unit) {
+fun NodeListHelp(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val sheetState =
         rememberBottomSheetState(
             initialValue = SheetValue.Hidden,
             enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
         )
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    IosBottomSheet(onDismissRequest = onDismiss, modifier = modifier, sheetState = sheetState) {
         Column(
             modifier =
             Modifier.fillMaxWidth()

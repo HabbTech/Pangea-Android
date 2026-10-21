@@ -17,7 +17,6 @@
 package org.meshtastic.feature.map.maplibre.component
 
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +32,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.manage_custom_tile_sources
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.feature.map.component.CustomTileProviderManager
 import org.meshtastic.feature.map.tiles.CustomTileProviderRepository
@@ -65,7 +65,7 @@ fun CustomTileSourcesMenuItem(modifier: Modifier = Modifier, onAddLocalMbTiles: 
     )
 
     if (sheetVisible) {
-        ModalBottomSheet(onDismissRequest = { sheetVisible = false }) {
+        IosBottomSheet(onDismissRequest = { sheetVisible = false }) {
             CustomTileProviderManager(
                 providers = providers,
                 onAdd = { config -> scope.launch { repository.addCustomTileProvider(config) } },
