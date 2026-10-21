@@ -27,7 +27,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -49,6 +48,7 @@ import org.meshtastic.core.resources.node_layout_signal_quality_indicator
 import org.meshtastic.core.resources.node_list_help_node_details
 import org.meshtastic.core.resources.node_list_help_title
 import org.meshtastic.core.ui.component.Quality
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 
 private const val ICON_SIZE = 24
@@ -71,15 +71,15 @@ fun NodeListHelp(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = stringResource(Res.string.node_list_help_title),
-                style = MaterialTheme.typography.headlineSmall,
+                style = Ios.type.title3,
                 modifier = Modifier.semantics { heading() },
             )
 
-            HorizontalDivider()
+            HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
 
             Text(
                 text = stringResource(Res.string.node_list_help_node_details),
-                style = MaterialTheme.typography.titleMedium,
+                style = Ios.type.headline,
                 modifier = Modifier.semantics { heading() },
             )
 
@@ -88,17 +88,17 @@ fun NodeListHelp(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
             SignalQualityEntry(Quality.BAD, stringResource(Res.string.node_layout_help_signal_bad))
             SignalQualityEntry(Quality.NONE, stringResource(Res.string.node_layout_help_signal_none))
 
-            HorizontalDivider()
+            HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
 
             Text(
                 text = stringResource(Res.string.node_layout_signal_quality_indicator),
-                style = MaterialTheme.typography.titleMedium,
+                style = Ios.type.headline,
                 modifier = Modifier.semantics { heading() },
             )
             Text(
                 text = stringResource(Res.string.node_layout_help_signal_indicator),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
             )
         }
     }
@@ -118,12 +118,8 @@ private fun SignalQualityEntry(quality: Quality, description: String) {
             tint = quality.color(),
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = stringResource(quality.nameRes), style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(text = stringResource(quality.nameRes), style = Ios.type.headline)
+            Text(text = description, style = Ios.type.footnote, color = Ios.colors.secondaryLabel)
         }
     }
 }

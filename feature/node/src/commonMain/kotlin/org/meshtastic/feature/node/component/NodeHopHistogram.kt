@@ -29,7 +29,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -59,6 +58,7 @@ import org.meshtastic.core.resources.hop_histogram_empty
 import org.meshtastic.core.resources.hop_histogram_title
 import org.meshtastic.core.resources.one_hour
 import org.meshtastic.core.resources.twenty_four_hours
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import kotlin.time.Duration.Companion.hours
 
@@ -112,7 +112,7 @@ internal fun HopHistogramContent(nodes: List<Node>, window: HopWindow, onSelectW
     ) {
         Text(
             text = stringResource(Res.string.hop_histogram_title),
-            style = MaterialTheme.typography.headlineSmall,
+            style = Ios.type.title3,
             modifier = Modifier.semantics { heading() },
         )
 
@@ -129,8 +129,8 @@ internal fun HopHistogramContent(nodes: List<Node>, window: HopWindow, onSelectW
         if (buckets.isEmpty()) {
             Text(
                 text = stringResource(Res.string.hop_histogram_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.subheadline,
+                color = Ios.colors.secondaryLabel,
             )
         } else {
             buckets.forEachIndexed { hop, count -> HopBar(hop = hop, count = count, maxCount = maxCount) }
@@ -150,7 +150,7 @@ private fun HopBar(hop: Int, count: Int, maxCount: Int) {
     ) {
         Text(
             text = hop.toString(),
-            style = MaterialTheme.typography.titleMedium,
+            style = Ios.type.headline,
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(min = 20.dp),
         )
@@ -162,7 +162,7 @@ private fun HopBar(hop: Int, count: Int, maxCount: Int) {
         )
         Text(
             text = count.toString(),
-            style = MaterialTheme.typography.titleMedium,
+            style = Ios.type.headline,
             textAlign = TextAlign.End,
             modifier = Modifier.widthIn(min = 28.dp),
         )

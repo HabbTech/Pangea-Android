@@ -70,6 +70,7 @@ import org.meshtastic.core.ui.component.SignedNodeIcon
 import org.meshtastic.core.ui.icon.Lock
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Sort
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 
 /**
@@ -92,7 +93,7 @@ fun NodeFilterSearchBar(
     // False where the sort and filter menu has its own button (Pangea's floating one, as on iOS).
     showSortButton: Boolean = true,
 ) {
-    Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
+    Column(modifier = modifier.background(Ios.colors.background)) {
         MeshtasticSearchBar(
             query = filterText,
             onQueryChange = onTextChange,

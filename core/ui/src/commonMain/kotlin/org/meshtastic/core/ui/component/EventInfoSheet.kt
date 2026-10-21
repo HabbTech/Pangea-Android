@@ -59,6 +59,7 @@ import org.meshtastic.core.ui.icon.ChevronRight
 import org.meshtastic.core.ui.icon.LinkIcon
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Place
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.ios.IosSwitch
 import org.meshtastic.core.ui.theme.LocalEventThemeToggle
@@ -102,7 +103,7 @@ private fun EventDetails(edition: EventFirmwareEdition, palette: List<Color>, on
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (edition.welcomeMessage.isNotBlank()) {
-            Text(text = edition.welcomeMessage, style = MaterialTheme.typography.bodyLarge)
+            Text(text = edition.welcomeMessage, style = Ios.type.body)
         }
 
         edition.theme
@@ -111,16 +112,16 @@ private fun EventDetails(edition: EventFirmwareEdition, palette: List<Color>, on
             ?.let {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                     fontStyle = FontStyle.Italic,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
 
         // Brand colors are authored for the event's own materials, not for our light *and* dark surfaces — pick the
         // loudest one that still reads here, preferring the highlight, then the rest of the palette.
         val surface = MaterialTheme.colorScheme.surface
-        val fallbackTint = MaterialTheme.colorScheme.onSurfaceVariant
+        val fallbackTint = Ios.colors.secondaryLabel
         val iconTint =
             remember(edition, surface, fallbackTint) {
                 pickLegible(
@@ -135,13 +136,13 @@ private fun EventDetails(edition: EventFirmwareEdition, palette: List<Color>, on
         // safeLinks() drops anything that isn't an https URL — the manifest is remote, and these go to the URI handler.
         val links = edition.safeLinks()
         if (links.isNotEmpty()) {
-            HorizontalDivider()
+            HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
             links.forEach { link ->
                 LinkRow(label = link.label.ifBlank { link.url }, tint = iconTint) { onOpenUri(link.url) }
             }
         }
 
-        HorizontalDivider()
+        HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
         EventThemeToggleRow()
     }
 }
@@ -162,7 +163,7 @@ private fun EventThemeToggleRow() {
     ) {
         Text(
             text = stringResource(Res.string.event_use_event_theme),
-            style = MaterialTheme.typography.bodyMedium,
+            style = Ios.type.subheadline,
             modifier = Modifier.weight(1f),
         )
         // Row owns the toggle; null keeps the Switch visual-only (no double-fire).
@@ -178,7 +179,7 @@ private fun EventThemeToggleRow() {
 @Composable
 private fun EventHeader(edition: EventFirmwareEdition, accent: Color?, palette: List<Color>) {
     val background = accent ?: MaterialTheme.colorScheme.surfaceVariant
-    val foreground = accent?.contentColorFor() ?: MaterialTheme.colorScheme.onSurfaceVariant
+    val foreground = accent?.contentColorFor() ?: Ios.colors.secondaryLabel
     Column(Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().background(background).padding(24.dp),
@@ -193,7 +194,7 @@ private fun EventHeader(edition: EventFirmwareEdition, accent: Color?, palette: 
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = edition.displayName,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = Ios.type.title3,
                     color = foreground,
                     modifier = Modifier.semantics { heading() },
                 )
@@ -201,11 +202,7 @@ private fun EventHeader(edition: EventFirmwareEdition, accent: Color?, palette: 
                     ?.name
                     ?.takeIf { it.isNotBlank() }
                     ?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = foreground.copy(alpha = THEME_NAME_ALPHA),
-                        )
+                        Text(text = it, style = Ios.type.subheadline, color = foreground.copy(alpha = THEME_NAME_ALPHA))
                     }
             }
         }
@@ -217,7 +214,7 @@ private fun EventHeader(edition: EventFirmwareEdition, accent: Color?, palette: 
 private fun InfoRow(icon: ImageVector, text: String, tint: Color) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = tint)
-        Text(text = text, style = MaterialTheme.typography.bodyMedium)
+        Text(text = text, style = Ios.type.subheadline)
     }
 }
 
@@ -234,12 +231,8 @@ private fun LinkRow(label: String, tint: Color, onClick: () -> Unit) {
             modifier = Modifier.size(20.dp),
             tint = tint,
         )
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        Icon(
-            imageVector = MeshtasticIcons.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Text(text = label, style = Ios.type.subheadline, modifier = Modifier.weight(1f))
+        Icon(imageVector = MeshtasticIcons.ChevronRight, contentDescription = null, tint = Ios.colors.secondaryLabel)
     }
 }
 

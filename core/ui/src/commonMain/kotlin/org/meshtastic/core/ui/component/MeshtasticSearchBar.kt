@@ -192,7 +192,7 @@ private fun SearchInputField(
                     Icon(imageVector = MeshtasticIcons.ArrowBack, contentDescription = backDescription)
                 }
             } else {
-                Icon(imageVector = MeshtasticIcons.Search, contentDescription = null)
+                Icon(imageVector = MeshtasticIcons.Search, contentDescription = null, tint = Ios.colors.secondaryLabel)
             }
         },
         trailingIcon = {

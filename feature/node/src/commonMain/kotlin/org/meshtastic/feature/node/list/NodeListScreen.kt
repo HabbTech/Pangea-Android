@@ -34,15 +34,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.animateFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
@@ -97,9 +96,10 @@ import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.Nodes
 import org.meshtastic.core.ui.icon.SignalOff
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
-import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.util.parseDeepLinkOrInvalid
 import org.meshtastic.feature.node.component.LocalNodeContextMenu
 import org.meshtastic.feature.node.component.NodeContextMenu
@@ -528,39 +528,44 @@ private fun UnheardNodesBanner(unheardNodes: List<Node>, onRemoveAll: () -> Unit
 
     if (count == 0 || dismissed) return
 
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+    Column(
+        modifier = modifier.clip(RoundedCornerShape(16.dp)).background(Ios.colors.secondaryFill).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(
-                    imageVector = MeshtasticIcons.SignalOff,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.StatusOrange,
-                    modifier = Modifier.size(20.dp),
-                )
-                Text(
-                    text =
-                    if (count == 1) {
-                        stringResource(Res.string.nodes_unheard_banner_one)
-                    } else {
-                        stringResource(Res.string.nodes_unheard_banner, count)
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
-                TextButton(onClick = { dismissed = true }) { Text(stringResource(Res.string.nodes_unheard_keep)) }
-                TextButton(
-                    onClick = {
-                        onRemoveAll()
-                        dismissed = true
-                    },
-                ) {
-                    Text(stringResource(Res.string.nodes_unheard_remove))
-                }
-            }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(
+                imageVector = MeshtasticIcons.SignalOff,
+                contentDescription = null,
+                tint = Ios.colors.systemOrange,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text =
+                if (count == 1) {
+                    stringResource(Res.string.nodes_unheard_banner_one)
+                } else {
+                    stringResource(Res.string.nodes_unheard_banner, count)
+                },
+                style = Ios.type.subheadline,
+                color = Ios.colors.label,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
+            IosButton(
+                text = stringResource(Res.string.nodes_unheard_keep),
+                onClick = { dismissed = true },
+                style = IosButtonStyle.Gray,
+                textStyle = Ios.type.subheadline,
+            )
+            IosButton(
+                text = stringResource(Res.string.nodes_unheard_remove),
+                onClick = {
+                    onRemoveAll()
+                    dismissed = true
+                },
+                style = IosButtonStyle.Destructive,
+                textStyle = Ios.type.subheadline,
+            )
         }
     }
 }
