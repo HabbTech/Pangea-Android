@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,6 +70,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Share
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
@@ -186,7 +186,7 @@ private fun DiscoverySummaryContent(
         },
     ) { padding ->
         if (session == null) {
-            CircularProgressIndicator(modifier = Modifier.fillMaxSize().padding(padding))
+            IosActivityIndicator(modifier = Modifier.fillMaxSize().padding(padding), color = Ios.colors.systemGray)
             return@Scaffold
         }
 
@@ -286,7 +286,7 @@ private fun AiSummaryCard(
                     fontWeight = FontWeight.Bold,
                 )
                 if (isGenerating) {
-                    CircularProgressIndicator(modifier = Modifier.padding(4.dp), strokeWidth = 2.dp)
+                    IosActivityIndicator(modifier = Modifier.padding(4.dp), color = Ios.colors.systemGray)
                 } else {
                     IconButton(onClick = onRerunAnalysis) {
                         Icon(

@@ -22,15 +22,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
@@ -59,9 +55,14 @@ import org.meshtastic.core.resources.url_must_contain_placeholders
 import org.meshtastic.core.resources.url_template
 import org.meshtastic.core.resources.url_template_hint
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.icon.Delete
-import org.meshtastic.core.ui.icon.Edit
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.feature.map.tiles.CustomTileProviderConfig
 import org.meshtastic.feature.map.tiles.isValidTileUrlTemplate
 
@@ -90,81 +91,87 @@ fun CustomTileProviderManager(
         )
     }
 
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = 16.dp)) {
+    // iOS's sheet layout: a centred title, the sources in one card, then the add buttons.
+    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
             Text(
                 text = stringResource(Res.string.manage_custom_tile_sources),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(16.dp),
+                style = Ios.type.headline,
+                color = Ios.colors.label,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 12.dp),
             )
-            HorizontalDivider()
         }
 
-        if (providers.isEmpty()) {
-            item {
-                Text(
-                    text = stringResource(Res.string.no_custom_tile_sources_found),
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        } else {
-            items(providers, key = { it.id }) { config ->
-                ListItem(
-                    headlineContent = { Text(config.name) },
-                    supportingContent = {
-                        Text(
-                            if (config.isLocal) {
-                                stringResource(Res.string.local_mbtiles_file)
-                            } else {
-                                config.urlTemplate
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    },
-                    trailingContent = {
-                        Row {
-                            if (!config.isLocal) {
-                                IconButton(
-                                    onClick = {
-                                        editingConfig = config
-                                        showEditDialog = true
-                                    },
-                                ) {
+        item {
+            IosSection {
+                if (providers.isEmpty()) {
+                    IosRow(
+                        title = stringResource(Res.string.no_custom_tile_sources_found),
+                        titleColor = Ios.colors.secondaryLabel,
+                    )
+                }
+                providers.forEach { config ->
+                    IosRow(
+                        title = config.name,
+                        subtitle =
+                        if (config.isLocal) stringResource(Res.string.local_mbtiles_file) else config.urlTemplate,
+                        accessory =
+                        IosAccessory.Custom {
+                            Row {
+                                if (!config.isLocal) {
+                                    IconButton(
+                                        onClick = {
+                                            editingConfig = config
+                                            showEditDialog = true
+                                        },
+                                    ) {
+                                        Icon(
+                                            IosIcons.Compose,
+                                            contentDescription = stringResource(Res.string.edit_custom_tile_source),
+                                            tint = Ios.colors.tint,
+                                            modifier = Modifier.size(22.dp),
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = { onDelete(config.id) }) {
                                     Icon(
-                                        MeshtasticIcons.Edit,
-                                        contentDescription = stringResource(Res.string.edit_custom_tile_source),
+                                        IosIcons.Trash,
+                                        contentDescription = stringResource(Res.string.delete_custom_tile_source),
+                                        tint = Ios.colors.systemRed,
+                                        modifier = Modifier.size(22.dp),
                                     )
                                 }
                             }
-                            IconButton(onClick = { onDelete(config.id) }) {
-                                Icon(
-                                    MeshtasticIcons.Delete,
-                                    contentDescription = stringResource(Res.string.delete_custom_tile_source),
-                                )
-                            }
-                        }
-                    },
-                )
-                HorizontalDivider()
+                        },
+                    )
+                }
             }
         }
 
         item {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                IosButton(
+                    text = stringResource(Res.string.add_custom_tile_source),
                     onClick = {
                         editingConfig = null
                         showEditDialog = true
                     },
+                    style = IosButtonStyle.Tinted,
+                    large = true,
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(Res.string.add_custom_tile_source))
-                }
+                )
                 onAddLocalMbTiles?.let { onAddLocal ->
-                    Button(onClick = onAddLocal, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(Res.string.add_local_mbtiles_file))
-                    }
+                    IosButton(
+                        text = stringResource(Res.string.add_local_mbtiles_file),
+                        onClick = onAddLocal,
+                        style = IosButtonStyle.Tinted,
+                        large = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }
@@ -209,28 +216,27 @@ private fun AddEditCustomTileProviderDialog(
         ),
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                IosTextField(
                     value = name,
                     onValueChange = {
                         name = it
                         nameError = null
                     },
-                    label = { Text(stringResource(Res.string.name)) },
-                    isError = nameError != null,
-                    supportingText = { nameError?.let { Text(it) } },
-                    singleLine = true,
+                    placeholder = stringResource(Res.string.name),
                 )
-                OutlinedTextField(
+                nameError?.let { Text(it, style = Ios.type.footnote, color = Ios.colors.systemRed) }
+                IosTextField(
                     value = url,
                     onValueChange = {
                         url = it
                         urlError = null
                     },
-                    label = { Text(stringResource(Res.string.url_template)) },
-                    isError = urlError != null,
-                    supportingText = { Text(urlError ?: stringResource(Res.string.url_template_hint)) },
-                    singleLine = false,
-                    maxLines = 2,
+                    placeholder = stringResource(Res.string.url_template),
+                )
+                Text(
+                    text = urlError ?: stringResource(Res.string.url_template_hint),
+                    style = Ios.type.footnote,
+                    color = if (urlError != null) Ios.colors.systemRed else Ios.colors.secondaryLabel,
                 )
             }
         },

@@ -44,11 +44,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
@@ -80,7 +78,9 @@ import org.meshtastic.core.resources.img_chirpy
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Send
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.feature.docs.model.AIDocAssistantSessionState
 import org.meshtastic.feature.docs.model.ChirpyMessage
 import org.meshtastic.feature.docs.model.ChirpyRole
@@ -195,7 +195,7 @@ private const val PERCENT_MULTIPLIER = 100
 private fun ChirpyCheckingSheet(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     IosBottomSheet(onDismissRequest = onDismiss, modifier = modifier) {
         Column(modifier = Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(modifier = Modifier.size(32.dp))
+            IosActivityIndicator(modifier = Modifier.size(32.dp), color = Ios.colors.systemGray)
             Spacer(modifier = Modifier.height(16.dp))
             Text(stringResource(CoreRes.string.chirpy_checking), style = Ios.type.subheadline)
         }
@@ -230,10 +230,7 @@ private fun ChirpyDownloadingSheet(
             Spacer(modifier = Modifier.height(12.dp))
             val progress = readiness.progress
             if (progress != null) {
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                )
+                IosProgressBar(progress = { progress }, modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp))
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     "${(progress * PERCENT_MULTIPLIER).toInt()}%",
@@ -241,7 +238,10 @@ private fun ChirpyDownloadingSheet(
                     color = Ios.colors.secondaryLabel,
                 )
             } else {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp))
+                IosActivityIndicator(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+                    color = Ios.colors.systemGray,
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(

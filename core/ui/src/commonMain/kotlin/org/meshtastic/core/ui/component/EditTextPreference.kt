@@ -25,7 +25,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -369,8 +368,8 @@ private fun ByteCounter(valueBytes: Int, maxSize: Int, isError: Boolean) {
     Box(contentAlignment = Alignment.BottomEnd, modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "$valueBytes/$maxSize",
-            style = MaterialTheme.typography.bodySmall,
-            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,
+            style = Ios.type.footnote,
+            color = if (isError) Ios.colors.systemRed else Ios.colors.label,
             modifier = Modifier.padding(end = 8.dp, bottom = 4.dp),
         )
     }

@@ -28,7 +28,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -623,14 +622,14 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue, isMuted: Boolean)
     val muting = direction == SwipeToDismissBoxValue.StartToEnd
     val color =
         when (direction) {
-            SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.secondaryContainer
-            SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
+            SwipeToDismissBoxValue.StartToEnd -> Ios.colors.fieldFill
+            SwipeToDismissBoxValue.EndToStart -> Ios.colors.systemRed.copy(alpha = 0.12f)
             SwipeToDismissBoxValue.Settled -> Color.Transparent
         }
     val contentColor =
         when (direction) {
-            SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onSecondaryContainer
-            SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.onErrorContainer
+            SwipeToDismissBoxValue.StartToEnd -> Ios.colors.label
+            SwipeToDismissBoxValue.EndToStart -> Ios.colors.systemRed
             SwipeToDismissBoxValue.Settled -> Color.Transparent
         }
     val label =

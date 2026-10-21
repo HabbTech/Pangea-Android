@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -57,6 +56,7 @@ import org.meshtastic.core.resources.offline_terrain_regional_detail
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.feature.map.maplibre.terrain.OfflineTerrainRegion
 import org.meshtastic.feature.map.maplibre.terrain.OfflineTerrainRepository
 import org.meshtastic.feature.map.maplibre.terrain.estimateTerrainTiles
@@ -177,7 +177,7 @@ private fun TerrainDownloadControls(
                 } else {
                     0f
                 }
-            LinearProgressIndicator(
+            IosProgressBar(
                 progress = { fraction.coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             )

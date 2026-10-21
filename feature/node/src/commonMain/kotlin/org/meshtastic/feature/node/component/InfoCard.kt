@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +50,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.a11y_label_value
 import org.meshtastic.core.resources.copy
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.util.createClipEntry
 import org.meshtastic.core.ui.util.thenIf
 
@@ -71,7 +71,7 @@ fun InfoCard(
     val copyLabel = stringResource(Res.string.copy)
     val contentDescriptionText = stringResource(Res.string.a11y_label_value, text, value)
 
-    Card(
+    IosCard(
         modifier =
         modifier
             .defaultMinSize(minHeight = 48.dp)

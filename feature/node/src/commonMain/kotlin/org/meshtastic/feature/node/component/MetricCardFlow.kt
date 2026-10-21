@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.metric_channel_label
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.node.model.DrawableMetricInfo
 import org.meshtastic.feature.node.model.MetricInfo
 import org.meshtastic.feature.node.model.VectorMetricInfo
@@ -104,7 +104,7 @@ private fun MetricCard(metric: MetricInfo, valueColor: Color?) {
     val label =
         metric.channelNumber?.let { stringResource(Res.string.metric_channel_label, stringResource(metric.label), it) }
             ?: stringResource(metric.label)
-    val resolvedValueColor = valueColor ?: MaterialTheme.colorScheme.onSurface
+    val resolvedValueColor = valueColor ?: Ios.colors.label
     when (metric) {
         is VectorMetricInfo ->
             InfoCard(

@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +62,7 @@ import org.meshtastic.core.resources.rssi
 import org.meshtastic.core.resources.snr
 import org.meshtastic.core.resources.unknown
 import org.meshtastic.core.resources.you
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.DiscoveryMapNode
 import org.meshtastic.core.ui.util.DiscoveryNeighborType
 import org.meshtastic.feature.map.maplibre.component.MapZoom
@@ -245,7 +245,7 @@ private fun DiscoveryNodeCard(node: DiscoveryMapNode?, modifier: Modifier = Modi
         Column(modifier = Modifier.padding(CARD_PADDING.dp)) {
             Text(
                 text = node.longName ?: node.shortName ?: stringResource(Res.string.unknown),
-                style = MaterialTheme.typography.labelLarge,
+                style = Ios.type.subheadline,
             )
             Text(
                 text =
@@ -256,7 +256,7 @@ private fun DiscoveryNodeCard(node: DiscoveryMapNode?, modifier: Modifier = Modi
                     stringResource(Res.string.rssi) +
                     ": " +
                     MetricFormatter.rssi(node.rssi),
-                style = MaterialTheme.typography.labelMedium,
+                style = Ios.type.caption1,
             )
         }
     }

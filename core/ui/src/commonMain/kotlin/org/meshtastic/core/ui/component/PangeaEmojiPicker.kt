@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -44,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.meshtastic.core.model.pangea.EmojiCatalog
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 
 /**
@@ -70,7 +70,7 @@ fun PangeaEmojiPicker(onPick: (String) -> Unit, onDismiss: () -> Unit, modifier:
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text(
                         group.name,
-                        style = MaterialTheme.typography.titleSmall,
+                        style = Ios.type.subheadline,
                         modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 4.dp),
                     )
                 }

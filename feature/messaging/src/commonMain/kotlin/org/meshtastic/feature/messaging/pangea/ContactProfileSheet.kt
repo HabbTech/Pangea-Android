@@ -26,12 +26,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,8 +69,10 @@ import org.meshtastic.core.ui.component.rememberAvatarBitmap
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.ios.IosSheet
@@ -206,11 +205,11 @@ private fun PhotoRow(viewModel: PangeaChatsViewModel, num: Long, canUpdate: Bool
             full = false,
             lastAsk = lastAsk?.takeIf { it == PhotoAsk.BUSY || it == PhotoAsk.NO_RADIO },
         )
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IosCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (progress != null) {
                 Text(stringResource(Res.string.pangea_getting_photo, (progress * PERCENT).toInt()))
-                LinearProgressIndicator(progress = { progress.toFloat() }, modifier = Modifier.fillMaxWidth())
+                IosProgressBar(progress = { progress.toFloat() }, modifier = Modifier.fillMaxWidth())
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(Res.string.pangea_photo_offer), modifier = Modifier.weight(1f))
@@ -231,8 +230,8 @@ private fun PhotoRow(viewModel: PangeaChatsViewModel, num: Long, canUpdate: Bool
                             ProfileRules.PhotoLine.BUSY -> Res.string.pangea_photo_busy
                         },
                     ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
         }

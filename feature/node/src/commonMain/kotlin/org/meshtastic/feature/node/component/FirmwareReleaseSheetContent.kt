@@ -27,7 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -42,6 +41,7 @@ import org.meshtastic.core.resources.view_release
 import org.meshtastic.core.ui.icon.Download
 import org.meshtastic.core.ui.icon.LinkIcon
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.rememberOpenUrl
 
 @Composable
@@ -52,11 +52,8 @@ fun FirmwareReleaseSheetContent(firmwareRelease: FirmwareRelease, modifier: Modi
         modifier = modifier.verticalScroll(rememberScrollState()).padding(16.dp).fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(text = firmwareRelease.title, style = MaterialTheme.typography.titleLarge)
-        Text(
-            text = stringResource(Res.string.firmware_version, firmwareRelease.id),
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Text(text = firmwareRelease.title, style = Ios.type.title3)
+        Text(text = stringResource(Res.string.firmware_version, firmwareRelease.id), style = Ios.type.subheadline)
         Markdown(modifier = Modifier.padding(8.dp), content = firmwareRelease.releaseNotes)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { openUrl(firmwareRelease.pageUrl) }, modifier = Modifier.weight(1f)) {

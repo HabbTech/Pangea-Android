@@ -27,7 +27,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +42,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.settings_search_no_results
 import org.meshtastic.core.resources.settings_search_placeholder
 import org.meshtastic.core.ui.component.MeshtasticSearchBar
+import org.meshtastic.core.ui.ios.Ios
 
 /** Tag for the collapsed settings search field, so a test can target it rather than the expanded overlay's copy. */
 const val SETTINGS_SEARCH_BAR_INPUT_FIELD_TAG = "SettingsSearchBarInputField"
@@ -93,8 +93,8 @@ internal fun SettingsSearchResults(
         ) {
             Text(
                 text = stringResource(Res.string.settings_search_no_results),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.body,
+                color = Ios.colors.secondaryLabel,
             )
         }
     } else {
@@ -103,7 +103,7 @@ internal fun SettingsSearchResults(
         LazyColumn(modifier = modifier.fillMaxSize()) {
             items(results) { entry ->
                 SettingsSearchResult(entry = entry, onClick = { onSelect(entry.route) })
-                HorizontalDivider()
+                HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
             }
         }
     }

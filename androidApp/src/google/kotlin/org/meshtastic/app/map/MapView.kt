@@ -168,6 +168,7 @@ import org.meshtastic.core.ui.icon.Layers
 import org.meshtastic.core.ui.icon.Map
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.TripOrigin
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.TracerouteColors
 import org.meshtastic.core.ui.util.ActiveWhileStarted
 import org.meshtastic.core.ui.util.KeepScreenOn
@@ -910,7 +911,7 @@ fun MapView(
                     Text(
                         text = stringResource(Res.string.geofence_box_author_hint),
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     TextButton(
@@ -979,13 +980,13 @@ fun MapView(
         if (attributionText.isNotEmpty()) {
             Text(
                 text = attributionText,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.caption2,
+                color = Ios.colors.secondaryLabel,
                 modifier =
                 Modifier.align(Alignment.BottomCenter)
                     .padding(bottom = ATTRIBUTION_BOTTOM_PADDING)
                     .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = ATTRIBUTION_SCRIM_ALPHA),
+                        Ios.colors.background.copy(alpha = ATTRIBUTION_SCRIM_ALPHA),
                         MaterialTheme.shapes.extraSmall,
                     )
                     .padding(horizontal = 6.dp, vertical = 2.dp),
@@ -1116,7 +1117,7 @@ fun MapView(
                 onToggleHillshade = mapViewModel::setTerrainHillshadeEnabled,
                 onToggleContours = mapViewModel::setTerrainContoursEnabled,
             )
-            HorizontalDivider()
+            HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
 
             // The raster overlays sit above the imported-layer manager, matching where the MapLibre map puts them.
             RasterOverlayToggles(
@@ -1126,7 +1127,7 @@ fun MapView(
                 opacity = layerOpacity,
                 onOpacityChange = { key, value -> mapViewModel.setLayerOpacity(key, value) },
             )
-            HorizontalDivider()
+            HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
             CustomMapLayersSheet(
                 mapLayers = mapLayers,
                 onToggleVisibility = onToggleVisibility,
@@ -1377,7 +1378,7 @@ private fun NodeTrackOverlay(
 ) {
     val isHighPriority = focusedNode.num == myNodeNum || focusedNode.isFavorite
     val activeNodeZIndex = if (isHighPriority) 5f else 4f
-    val selectedColor = MaterialTheme.colorScheme.primary
+    val selectedColor = Ios.colors.tint
 
     sortedPositions.forEachIndexed { index, position ->
         key(position.time) {
@@ -1453,9 +1454,9 @@ private fun PositionInfoWindowContent(position: Position, displayUnits: Measurem
     @Composable
     fun PositionRow(label: String, value: String) {
         Row(modifier = Modifier.padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, style = MaterialTheme.typography.labelMedium)
+            Text(label, style = Ios.type.caption1)
             Spacer(modifier = Modifier.width(16.dp))
-            Text(value, style = MaterialTheme.typography.labelMedium)
+            Text(value, style = Ios.type.caption1)
         }
     }
 

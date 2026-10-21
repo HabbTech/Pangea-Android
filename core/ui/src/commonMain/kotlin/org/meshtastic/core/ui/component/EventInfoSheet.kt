@@ -32,7 +32,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -120,7 +119,7 @@ private fun EventDetails(edition: EventFirmwareEdition, palette: List<Color>, on
 
         // Brand colors are authored for the event's own materials, not for our light *and* dark surfaces — pick the
         // loudest one that still reads here, preferring the highlight, then the rest of the palette.
-        val surface = MaterialTheme.colorScheme.surface
+        val surface = Ios.colors.background
         val fallbackTint = Ios.colors.secondaryLabel
         val iconTint =
             remember(edition, surface, fallbackTint) {
@@ -178,7 +177,7 @@ private fun EventThemeToggleRow() {
  */
 @Composable
 private fun EventHeader(edition: EventFirmwareEdition, accent: Color?, palette: List<Color>) {
-    val background = accent ?: MaterialTheme.colorScheme.surfaceVariant
+    val background = accent ?: Ios.colors.fieldFill
     val foreground = accent?.contentColorFor() ?: Ios.colors.secondaryLabel
     Column(Modifier.fillMaxWidth()) {
         Row(

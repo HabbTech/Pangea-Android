@@ -37,7 +37,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.animateFloatingActionButton
@@ -482,22 +481,12 @@ private fun NodeListEmptyState(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = Ios.colors.secondaryLabel,
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-        )
+        Text(text = title, style = Ios.type.headline, color = Ios.colors.label, textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = hint,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        Text(text = hint, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel, textAlign = TextAlign.Center)
         if (!isConnected) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onNavigateToConnections) { Text(stringResource(Res.string.set_up_connection)) }

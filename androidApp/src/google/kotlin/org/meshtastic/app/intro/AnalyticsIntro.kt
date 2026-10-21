@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,6 +36,7 @@ import org.meshtastic.core.resources.firebase_link
 import org.meshtastic.core.resources.for_more_information_see_our_privacy_policy
 import org.meshtastic.core.resources.privacy_url
 import org.meshtastic.core.ui.component.AutoLinkText
+import org.meshtastic.core.ui.ios.Ios
 
 @Composable
 fun AnalyticsIntro(modifier: Modifier = Modifier) {
@@ -49,25 +49,25 @@ fun AnalyticsIntro(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             text = stringResource(Res.string.analytics_notice),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
         )
         Text(
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             textAlign = TextAlign.Center,
             text = stringResource(Res.string.analytics_platforms),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = Ios.type.caption1,
+            color = Ios.colors.label,
         )
         AutoLinkText(
             text = stringResource(Res.string.firebase_link),
-            style = MaterialTheme.typography.bodySmall,
+            style = Ios.type.footnote,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
         )
         AutoLinkText(
             text = stringResource(Res.string.datadog_link),
-            style = MaterialTheme.typography.bodySmall,
+            style = Ios.type.footnote,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
         )
@@ -76,12 +76,12 @@ fun AnalyticsIntro(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             textAlign = TextAlign.Center,
             text = stringResource(Res.string.for_more_information_see_our_privacy_policy),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
         )
         AutoLinkText(
             text = stringResource(Res.string.privacy_url),
-            style = MaterialTheme.typography.bodySmall,
+            style = Ios.type.footnote,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
         )

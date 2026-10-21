@@ -16,7 +16,6 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import org.meshtastic.core.model.MENTION_TOKEN_REGEX
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.HyperlinkBlue
 
 private val DefaultTextLinkStyles =
@@ -235,8 +235,8 @@ fun HighlightedText(
     style: TextStyle = TextStyle.Default,
     color: Color = Color.Unspecified,
 ) {
-    val highlightColor = MaterialTheme.colorScheme.tertiaryContainer
-    val highlightContentColor = MaterialTheme.colorScheme.onTertiaryContainer
+    val highlightColor = Ios.colors.fieldFill
+    val highlightContentColor = Ios.colors.label
     val annotatedString =
         remember(text, query, highlightColor, highlightContentColor) {
             buildHighlightedString(text, query, highlightColor, highlightContentColor)

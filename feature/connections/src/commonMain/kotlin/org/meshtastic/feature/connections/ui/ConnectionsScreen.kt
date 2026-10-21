@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -117,6 +116,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.SystemUpdate
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.PermissionGateAction
@@ -186,7 +186,7 @@ internal fun ConfigurationWarningCards(
     Column {
         if (showWarnings && regionUnset) {
             Spacer(modifier = Modifier.height(8.dp))
-            Card(modifier = Modifier.fillMaxWidth()) {
+            IosCard(modifier = Modifier.fillMaxWidth()) {
                 ListItem(
                     leadingIcon = MeshtasticIcons.Language,
                     text = stringResource(Res.string.set_your_region),
@@ -201,7 +201,7 @@ internal fun ConfigurationWarningCards(
         // An unset region already disables transmit and has its own card, so do not blame one root cause twice.
         if (showWarnings && txDisabled && !regionUnset) {
             Spacer(modifier = Modifier.height(8.dp))
-            Card(modifier = Modifier.fillMaxWidth()) {
+            IosCard(modifier = Modifier.fillMaxWidth()) {
                 ListItem(
                     leadingIcon = MeshtasticIcons.CellTower,
                     text = stringResource(Res.string.transmit_disabled),
@@ -834,7 +834,10 @@ private fun FirmwareUpdateNoticeCard(notice: FirmwareUpdateNotice, onAction: () 
             notice.stableVersion,
         )
 
-    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill)) {
+    IosCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill),
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.Top) {
             Icon(imageVector = MeshtasticIcons.SystemUpdate, contentDescription = null, tint = Ios.colors.tint)
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {

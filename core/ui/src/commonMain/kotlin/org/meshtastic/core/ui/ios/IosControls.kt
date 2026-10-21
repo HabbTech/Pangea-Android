@@ -386,7 +386,10 @@ fun IosTextField(
     }
 }
 
-/** The iOS activity indicator: eight fading spokes turning in steps. */
+/**
+ * The iOS activity indicator: eight fading spokes turning in steps. In a box larger than [size] (a full-screen loading
+ * state) it draws centred at no more than iOS's large spinner, rather than stretching to fill it.
+ */
 @Composable
 fun IosActivityIndicator(modifier: Modifier = Modifier, color: Color = Ios.colors.tint, size: Dp = 20.dp) {
     val turn by
@@ -398,7 +401,7 @@ fun IosActivityIndicator(modifier: Modifier = Modifier, color: Color = Ios.color
                 label = "iosSpinnerTurn",
             )
     Canvas(modifier.size(size).rotate((turn.toInt() % 8) * 45f)) {
-        val r = this.size.minDimension / 2
+        val r = minOf(this.size.minDimension / 2, LARGE_SPINNER_RADIUS.toPx())
         for (i in 0 until 8) {
             val a = (i * 45f - 90f) * (kotlin.math.PI.toFloat() / 180f)
             val dir = Offset(kotlin.math.cos(a), kotlin.math.sin(a))
@@ -488,3 +491,6 @@ fun IosBadge(count: Int, modifier: Modifier = Modifier, color: Color = Ios.color
 
 /** A button symbol's size against its text, about 19 dp beside 17 sp body text. */
 private const val ICON_TO_TEXT = 1.12f
+
+/** Half of iOS's `.large` activity indicator. */
+private val LARGE_SPINNER_RADIUS = 20.dp

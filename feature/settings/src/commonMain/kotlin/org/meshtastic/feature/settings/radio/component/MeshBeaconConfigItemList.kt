@@ -28,7 +28,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -148,7 +147,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                     Text(
                         text = stringResource(Res.string.mesh_beacon_region_required),
                         modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
                     )
                 }
             }
@@ -253,7 +252,7 @@ fun MeshBeaconConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit, 
                     Text(
                         text = stringResource(Res.string.mesh_beacon_broadcast_requires_preset),
                         modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
                     )
                 }
             }
@@ -485,7 +484,7 @@ private fun BroadcastTargetRow(
     Text(
         text = stringResource(Res.string.mesh_beacon_target, index + 1),
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        style = MaterialTheme.typography.titleSmall,
+        style = Ios.type.subheadline,
     )
     // Nullable value type throughout (design#140 behavior 6): `null` is the "Default" sentinel, matching the wire
     // format where an unset channel_index/preset falls back to the running config (module_config.proto's

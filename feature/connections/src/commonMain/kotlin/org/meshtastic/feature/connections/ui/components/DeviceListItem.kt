@@ -24,11 +24,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +64,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Usb
 import org.meshtastic.core.ui.icon.Wifi
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.connections.model.DeviceListEntry
 
@@ -140,9 +139,9 @@ fun DeviceListItem(
 
     val iconTint =
         if (connectionState is ConnectionState.Connected) {
-            MaterialTheme.colorScheme.primary
+            Ios.colors.tint
         } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
+            Ios.colors.secondaryLabel
         }
 
     ListItem(
@@ -156,7 +155,7 @@ fun DeviceListItem(
                 tint = iconTint,
             )
         },
-        supportingContent = { Text(text = device.address, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = { Text(text = device.address, style = Ios.type.body) },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (rssi != null) {
@@ -164,7 +163,7 @@ fun DeviceListItem(
                 }
 
                 if (connectionState is ConnectionState.Connecting) {
-                    CircularWavyProgressIndicator(modifier = Modifier.size(32.dp))
+                    IosActivityIndicator(modifier = Modifier.size(32.dp), color = Ios.colors.systemGray)
                 } else {
                     // iOS marks the chosen device with a checkmark in the tint rather than a radio button.
                     if (connectionState is ConnectionState.Connected) {
@@ -206,11 +205,5 @@ private fun DeviceHeadline(device: DeviceListEntry) {
 
 @Composable
 private fun DeviceName(text: String, modifier: Modifier = Modifier) {
-    Text(
-        modifier = modifier,
-        text = text,
-        style = MaterialTheme.typography.titleLarge,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-    )
+    Text(modifier = modifier, text = text, style = Ios.type.title3, maxLines = 2, overflow = TextOverflow.Ellipsis)
 }

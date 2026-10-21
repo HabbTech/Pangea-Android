@@ -24,9 +24,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,6 +45,8 @@ import org.meshtastic.core.ui.component.EventInfoSheet
 import org.meshtastic.core.ui.component.EventPaletteStrip
 import org.meshtastic.core.ui.icon.ChevronRight
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.util.EventBrandingIcon
 import org.meshtastic.core.ui.util.brandPalette
 
@@ -70,7 +70,7 @@ private val PALETTE_STRIP_HEIGHT = 4.dp
 @Composable
 fun EventFirmwareCard(edition: EventFirmwareEdition, modifier: Modifier = Modifier) {
     var showSheet by remember { mutableStateOf(false) }
-    Card(modifier = modifier.fillMaxWidth()) {
+    IosCard(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().clickable(role = Role.Button) { showSheet = true }.padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -85,20 +85,20 @@ fun EventFirmwareCard(edition: EventFirmwareEdition, modifier: Modifier = Modifi
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = edition.displayName,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = Ios.type.headline,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = stringResource(Res.string.event_firmware_running),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
             Icon(
                 imageVector = MeshtasticIcons.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Ios.colors.secondaryLabel,
             )
         }
         EventPaletteStrip(palette = edition.brandPalette(), height = PALETTE_STRIP_HEIGHT)

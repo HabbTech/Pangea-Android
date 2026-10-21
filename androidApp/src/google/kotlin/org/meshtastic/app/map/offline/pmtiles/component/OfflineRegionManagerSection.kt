@@ -24,8 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -67,6 +65,8 @@ import org.meshtastic.core.resources.map_zoom_levels
 import org.meshtastic.core.resources.offline_maps_empty
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.feature.map.terrain.TerrainDownloadFailure
 import org.meshtastic.feature.map.terrain.TerrainDownloadState
 
@@ -109,19 +109,16 @@ internal fun OfflineRegionManagerSection(
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(text = stringResource(Res.string.map_offline_manager), style = MaterialTheme.typography.titleMedium)
+            Text(text = stringResource(Res.string.map_offline_manager), style = Ios.type.headline)
             if (regions.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(Res.string.map_offline_show_on_map),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    Text(text = stringResource(Res.string.map_offline_show_on_map), style = Ios.type.footnote)
                     Switch(checked = offlineOverlayEnabled, onCheckedChange = onToggleOfflineOverlay)
                 }
             }
         }
 
-        Text(text = stringResource(Res.string.map_select_download_region), style = MaterialTheme.typography.bodyMedium)
+        Text(text = stringResource(Res.string.map_select_download_region), style = Ios.type.subheadline)
         Text(
             text =
             stringResource(Res.string.map_tile_download_estimate) +
@@ -129,8 +126,8 @@ internal fun OfflineRegionManagerSection(
                 stringResource(Res.string.map_cache_tiles, estimate.toInt()) +
                 "  " +
                 stringResource(Res.string.map_zoom_levels, zoomRange.first, zoomRange.last),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
         )
 
         DownloadStatusLine(downloadState)
@@ -173,8 +170,8 @@ private fun DownloadedRegionsList(
     if (regions.isEmpty()) {
         Text(
             text = stringResource(Res.string.offline_maps_empty),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.subheadline,
+            color = Ios.colors.secondaryLabel,
         )
         return
     }
@@ -214,9 +211,9 @@ private fun DownloadStatusLine(state: OfflineDownloadState?) {
             Column(modifier = Modifier.padding(top = 4.dp)) {
                 Text(
                     text = stringResource(Res.string.map_offline_downloading_progress, state.completed, state.total),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Ios.type.footnote,
                 )
-                LinearProgressIndicator(
+                IosProgressBar(
                     progress = { if (state.total > 0) state.completed.toFloat() / state.total else 0f },
                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                 )
@@ -224,16 +221,13 @@ private fun DownloadStatusLine(state: OfflineDownloadState?) {
         }
 
         is OfflineDownloadState.Complete ->
-            Text(
-                text = stringResource(Res.string.map_download_status_complete),
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Text(text = stringResource(Res.string.map_download_status_complete), style = Ios.type.footnote)
 
         is OfflineDownloadState.Failed ->
             Text(
                 text = stringResource(state.reason.messageRes()),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                style = Ios.type.footnote,
+                color = Ios.colors.systemRed,
             )
     }
 }
@@ -267,11 +261,11 @@ private fun OfflineRegionRow(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(modifier = Modifier.fillMaxWidth(REGION_ROW_TEXT_FRACTION)) {
-                Text(text = region.label(), style = MaterialTheme.typography.bodyLarge)
+                Text(text = region.label(), style = Ios.type.body)
                 Text(
                     text = stringResource(Res.string.map_cache_tiles, region.tileCount.toInt()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
             IconButton(onClick = onDelete) {
@@ -306,11 +300,7 @@ private fun OfflineRegionRow(
 @Composable
 private fun TerrainToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.fillMaxWidth(REGION_ROW_TEXT_FRACTION),
-        )
+        Text(text = label, style = Ios.type.footnote, modifier = Modifier.fillMaxWidth(REGION_ROW_TEXT_FRACTION))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
@@ -329,9 +319,9 @@ private fun TerrainDownloadStatusLine(state: TerrainDownloadState?) {
                         state.completed,
                         state.total,
                     ),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = Ios.type.footnote,
                 )
-                LinearProgressIndicator(
+                IosProgressBar(
                     progress = { if (state.total > 0) state.completed.toFloat() / state.total else 0f },
                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                 )
@@ -339,16 +329,13 @@ private fun TerrainDownloadStatusLine(state: TerrainDownloadState?) {
         }
 
         is TerrainDownloadState.Complete ->
-            Text(
-                text = stringResource(Res.string.map_offline_terrain_download_complete),
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Text(text = stringResource(Res.string.map_offline_terrain_download_complete), style = Ios.type.footnote)
 
         is TerrainDownloadState.Failed ->
             Text(
                 text = stringResource(state.reason.messageRes()),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                style = Ios.type.footnote,
+                color = Ios.colors.systemRed,
             )
     }
 }

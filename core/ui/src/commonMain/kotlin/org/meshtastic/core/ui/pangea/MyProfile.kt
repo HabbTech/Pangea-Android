@@ -36,7 +36,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -108,6 +107,7 @@ import org.meshtastic.core.ui.component.rememberAvatarBitmap
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.ios.IosSheet
 import org.meshtastic.core.ui.util.rememberAvatarPhotoPicker
@@ -182,7 +182,7 @@ fun MyProfileSection(modifier: Modifier = Modifier, viewModel: MyProfileViewMode
     val state by viewModel.state.collectAsStateWithLifecycle()
     var editing by rememberSaveable { mutableStateOf(false) }
     val name = state.profile.displayName.ifEmpty { state.radioName }
-    Card(modifier = modifier.fillMaxWidth().clickable { editing = true }) {
+    IosCard(modifier = modifier.fillMaxWidth().clickable { editing = true }) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -393,7 +393,7 @@ fun SetupProfilePrompt(modifier: Modifier = Modifier, viewModel: MyProfileViewMo
     val needsName =
         state.code != null && state.profile.displayName.isEmpty() && RadioAutoConfig.hasDefaultName(state.radioName)
     if (needsName) {
-        Card(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        IosCard(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,

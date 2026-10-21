@@ -45,6 +45,7 @@ import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.ErrorOutline
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.PermissionStatus
 import org.meshtastic.core.ui.util.PermissionUiState
@@ -77,13 +78,13 @@ fun RecoveryCard(
 ) {
     val containerColor =
         when (tone) {
-            RecoveryTone.ERROR -> MaterialTheme.colorScheme.errorContainer
-            RecoveryTone.INFORMATIONAL -> MaterialTheme.colorScheme.surfaceContainerHighest
+            RecoveryTone.ERROR -> Ios.colors.systemRed.copy(alpha = 0.12f)
+            RecoveryTone.INFORMATIONAL -> Ios.colors.fieldFill
         }
     val contentColor =
         when (tone) {
-            RecoveryTone.ERROR -> MaterialTheme.colorScheme.onErrorContainer
-            RecoveryTone.INFORMATIONAL -> MaterialTheme.colorScheme.onSurfaceVariant
+            RecoveryTone.ERROR -> Ios.colors.systemRed
+            RecoveryTone.INFORMATIONAL -> Ios.colors.secondaryLabel
         }
     val leadingIcon =
         when (tone) {
@@ -104,12 +105,7 @@ fun RecoveryCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(imageVector = leadingIcon, contentDescription = null, tint = contentColor)
-                Text(
-                    text = message,
-                    color = contentColor,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
+                Text(text = message, color = contentColor, style = Ios.type.subheadline, modifier = Modifier.weight(1f))
                 if (onDismiss != null) {
                     IconButton(onClick = onDismiss) {
                         Icon(

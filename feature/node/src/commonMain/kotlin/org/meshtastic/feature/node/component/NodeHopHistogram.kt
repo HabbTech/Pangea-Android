@@ -28,8 +28,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -60,6 +58,7 @@ import org.meshtastic.core.resources.one_hour
 import org.meshtastic.core.resources.twenty_four_hours
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosProgressBar
 import kotlin.time.Duration.Companion.hours
 
 /**
@@ -154,11 +153,9 @@ private fun HopBar(hop: Int, count: Int, maxCount: Int) {
             textAlign = TextAlign.Center,
             modifier = Modifier.widthIn(min = 20.dp),
         )
-        LinearProgressIndicator(
+        IosProgressBar(
             progress = { if (maxCount > 0) count.toFloat() / maxCount else 0f },
             modifier = Modifier.weight(1f),
-            trackColor = ProgressIndicatorDefaults.linearTrackColor,
-            strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
         )
         Text(
             text = count.toString(),

@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,6 +56,7 @@ import org.meshtastic.core.resources.supported_by_maker
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Verified
 import org.meshtastic.core.ui.icon.Wrench
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
 import org.meshtastic.core.ui.theme.StatusColors.StatusSky
@@ -84,7 +84,7 @@ internal fun DeviceHeroSection(
             val deviceText = reportedTarget?.let { "${deviceHardware.displayName} ($it)" } ?: deviceHardware.displayName
             Text(
                 text = deviceText,
-                style = MaterialTheme.typography.titleMedium,
+                style = Ios.type.headline,
                 fontWeight = FontWeight.SemiBold,
                 color = colorScheme.onSurface,
             )
@@ -141,7 +141,7 @@ private fun SupportStatusBadge(tier: HardwareSupportTier) {
                 HardwareSupportTier.MAKER -> stringResource(Res.string.supported_by_maker)
                 HardwareSupportTier.COMMUNITY -> stringResource(Res.string.supported_by_community)
             },
-            style = MaterialTheme.typography.labelSmall,
+            style = Ios.type.caption2,
             color = colorScheme.onSurfaceVariant,
         )
     }

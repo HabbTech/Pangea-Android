@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.Ios
 
 private const val SIZE_ICON = 20
 
@@ -39,8 +39,8 @@ fun IconInfo(
     modifier: Modifier = Modifier,
     label: String? = null,
     text: String? = null,
-    style: TextStyle = MaterialTheme.typography.labelMedium,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    style: TextStyle = Ios.type.caption1,
+    contentColor: Color = Ios.colors.label,
     content: @Composable () -> Unit = {},
 ) {
     Row(

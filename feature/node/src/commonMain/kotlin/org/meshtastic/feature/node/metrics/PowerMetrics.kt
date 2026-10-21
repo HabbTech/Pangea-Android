@@ -35,7 +35,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -79,6 +78,7 @@ import org.meshtastic.core.resources.save
 import org.meshtastic.core.resources.voltage
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Save
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.GraphColors.Gold
 import org.meshtastic.core.ui.theme.GraphColors.InfantryBlue
 import org.meshtastic.core.ui.util.rememberSaveFileLauncher
@@ -356,7 +356,7 @@ private fun PowerMetricsCard(
                 Row {
                     Text(
                         text = DateFormatter.formatDateTime(time),
-                        style = MaterialTheme.typography.titleMediumEmphasized,
+                        style = Ios.type.headline,
                         fontWeight = FontWeight.Bold,
                     )
                 }
@@ -476,7 +476,7 @@ private fun PowerChannelColumn(titleRes: StringResource, customLabel: String?, v
     Column {
         Text(
             text = customLabel?.takeIf { it.isNotBlank() } ?: stringResource(titleRes),
-            style = MaterialTheme.typography.labelLarge,
+            style = Ios.type.subheadline,
             fontWeight = FontWeight.Bold,
         )
         MetricValueRow(color = PowerMetric.VOLTAGE.color, text = MetricFormatter.voltage(voltage))

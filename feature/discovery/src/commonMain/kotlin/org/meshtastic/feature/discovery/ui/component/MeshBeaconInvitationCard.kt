@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,6 +47,7 @@ import org.meshtastic.core.resources.mesh_beacon_offer_region
 import org.meshtastic.core.resources.mesh_beacon_offer_signal
 import org.meshtastic.core.resources.mesh_beacon_offer_title
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.proto.Config.LoRaConfig.RegionCode
 
 /**
@@ -68,7 +68,7 @@ internal fun MeshBeaconInvitationCard(
     // preset is one we can actually seed a scan with (matches DiscoveryViewModel.discoverOffer's success condition).
     val presetOption = ChannelOption.from(offer.beacon.offer_preset)
     val region = offer.beacon.offer_region
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+    IosCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(text = stringResource(Res.string.mesh_beacon_offer_title), style = Ios.type.headline)
 

@@ -16,7 +16,6 @@
  */
 package org.meshtastic.feature.node.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -46,6 +45,7 @@ import org.meshtastic.core.ui.icon.AirQuality
 import org.meshtastic.core.ui.icon.Humidity
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Temperature
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.node.metrics.PmStatusFault
 import org.meshtastic.feature.node.model.MetricInfo
 import org.meshtastic.feature.node.model.VectorMetricInfo
@@ -186,7 +186,7 @@ internal fun AirQualityInfoCards(
 
     val co2Color = Co2Severity.fromPpm(metrics.co2 ?: 0)?.color
     val aqiColor = aqi?.second?.color()
-    val faultColor = MaterialTheme.colorScheme.error
+    val faultColor = Ios.colors.systemRed
     val faultValues = status.filterValues { it }.keys
 
     MetricCardFlow(

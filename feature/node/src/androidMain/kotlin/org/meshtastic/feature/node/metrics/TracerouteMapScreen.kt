@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,6 +50,7 @@ import org.meshtastic.core.resources.traceroute_showing_nodes
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Route
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.TracerouteColors
 import org.meshtastic.core.ui.util.LocalTracerouteMapOverlayInsetsProvider
 import org.meshtastic.core.ui.util.LocalTracerouteMapProvider
@@ -160,7 +160,7 @@ private fun TracerouteNodeCount(modifier: Modifier = Modifier, shown: Int, total
         Text(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             text = stringResource(Res.string.traceroute_showing_nodes, shown, total),
-            style = MaterialTheme.typography.labelMedium,
+            style = Ios.type.caption1,
         )
     }
 }
@@ -174,6 +174,6 @@ private fun LegendRow(color: Color, label: String) {
             tint = color,
             modifier = Modifier.padding(end = 8.dp).size(18.dp),
         )
-        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Text(text = label, style = Ios.type.caption1)
     }
 }

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,6 +46,7 @@ import org.meshtastic.core.resources.public_key_changed
 import org.meshtastic.core.resources.shared_contact_no_public_key
 import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.component.NodeChip
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.proto.SharedContact
 import org.meshtastic.proto.User
@@ -101,21 +101,15 @@ fun SharedContactDialogContent(
                     NodeChip(node = chipNode)
                 }
                 if (!hasPublicKey) {
-                    Text(
-                        text = stringResource(Res.string.shared_contact_no_public_key),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                    HorizontalDivider()
+                    Text(text = stringResource(Res.string.shared_contact_no_public_key), color = Ios.colors.systemRed)
+                    HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
                 }
                 if (node != null) {
                     Text(text = stringResource(Res.string.import_known_shared_contact_text))
                     if ((node.user.public_key.size) > 0 && node.user.public_key != sharedContact.user?.public_key) {
-                        Text(
-                            text = stringResource(Res.string.public_key_changed),
-                            color = MaterialTheme.colorScheme.error,
-                        )
+                        Text(text = stringResource(Res.string.public_key_changed), color = Ios.colors.systemRed)
                     }
-                    HorizontalDivider()
+                    HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
                     Text(text = compareUsers(node.user, sharedContact.user ?: User.Builder().build()))
                 } else {
                     Text(text = userFieldsToString(sharedContact.user ?: User.Builder().build()))

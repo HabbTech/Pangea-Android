@@ -65,6 +65,7 @@ import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.FilterAlt
 import org.meshtastic.core.ui.icon.FilterAltOff
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.feature.settings.debugging.DebugViewModel.UiMeshLog
 
@@ -128,7 +129,7 @@ fun DebugPresetFilters(
     Column(modifier = modifier) {
         Text(
             text = stringResource(Res.string.debug_filter_preset_title),
-            style = MaterialTheme.typography.bodyMedium,
+            style = Ios.type.subheadline,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 4.dp),
         )
@@ -185,7 +186,7 @@ fun DebugFilterBar(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = stringResource(Res.string.debug_filters),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = Ios.type.subheadline,
                         fontWeight = FontWeight.Bold,
                     )
                     Icon(
@@ -246,7 +247,7 @@ fun DebugActiveFilters(
             ) {
                 Text(
                     text = stringResource(Res.string.debug_active_filters),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                     fontWeight = FontWeight.Bold,
                 )
                 TextButton(

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
@@ -57,6 +56,7 @@ import org.meshtastic.core.ui.component.IosNodeRow
 import org.meshtastic.core.ui.component.NodeItemCompact
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosSegmentedControl
 import org.meshtastic.feature.settings.NodeListSettingsState
 import org.meshtastic.proto.Config
@@ -167,7 +167,7 @@ fun NodeLayoutSettings(
                 color = Ios.colors.secondaryLabel,
                 modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 8.dp),
             )
-            Card(
+            IosCard(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
             ) {

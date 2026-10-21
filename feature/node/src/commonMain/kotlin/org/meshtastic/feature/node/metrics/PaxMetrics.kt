@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +68,7 @@ import org.meshtastic.core.resources.wifi_devices
 import org.meshtastic.core.ui.component.IconInfo
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PeopleCount
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.GraphColors.Orange
 import org.meshtastic.core.ui.theme.GraphColors.Purple
 import org.meshtastic.proto.Paxcount as ProtoPaxcount
@@ -250,11 +250,7 @@ fun PaxMetricsScreen(metricsViewModel: MetricsViewModel, onNavigateUp: () -> Uni
 }
 
 @Composable
-fun PaxcountInfo(
-    pax: String,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun PaxcountInfo(pax: String, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.PeopleCount,
@@ -270,7 +266,7 @@ fun PaxMetricsItem(log: MeshLog, pax: ProtoPaxcount, isSelected: Boolean, onClic
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
             Text(
                 text = DateFormatter.formatDateTime(log.received_date),
-                style = MaterialTheme.typography.titleMediumEmphasized,
+                style = Ios.type.headline,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.End,
                 modifier = Modifier.fillMaxWidth(),
@@ -298,7 +294,7 @@ fun PaxMetricsItem(log: MeshLog, pax: ProtoPaxcount, isSelected: Boolean, onClic
 
                 Text(
                     text = stringResource(Res.string.uptime) + ": " + formatUptime(pax.uptime),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                     textAlign = TextAlign.End,
                 )
             }

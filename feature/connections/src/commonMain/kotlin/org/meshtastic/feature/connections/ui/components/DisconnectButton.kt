@@ -18,7 +18,6 @@ package org.meshtastic.feature.connections.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +25,7 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.disconnect
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * Full-width error-tinted [OutlinedButton] used by both the "currently connected" and "connecting" card states.
@@ -40,7 +40,7 @@ fun DisconnectButton(
 ) {
     OutlinedButton(
         modifier = modifier.fillMaxWidth(),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = Ios.colors.systemRed),
         enabled = enabled,
         onClick = onClick,
     ) {

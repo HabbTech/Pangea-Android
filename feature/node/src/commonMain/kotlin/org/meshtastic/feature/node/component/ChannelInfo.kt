@@ -16,7 +16,6 @@
  */
 package org.meshtastic.feature.node.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,13 +24,10 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.channel_label
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Tsunami
+import org.meshtastic.core.ui.ios.Ios
 
 @Composable
-fun ChannelInfo(
-    channel: Int,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun ChannelInfo(channel: Int, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.Tsunami,

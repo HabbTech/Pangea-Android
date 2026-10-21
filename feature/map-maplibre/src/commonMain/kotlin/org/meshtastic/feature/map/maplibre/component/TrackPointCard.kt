@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,6 +46,7 @@ import org.meshtastic.core.resources.speed
 import org.meshtastic.core.resources.speed_kmh
 import org.meshtastic.core.resources.speed_mph
 import org.meshtastic.core.resources.timestamp
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.formatPositionTime
 import org.meshtastic.proto.Position
 
@@ -63,7 +63,7 @@ internal fun TrackPointCard(position: Position?, displayUnits: MeasurementSystem
 
     Card(modifier = modifier) {
         Column(modifier = Modifier.padding(CARD_PADDING.dp)) {
-            Text(text = stringResource(Res.string.position), style = MaterialTheme.typography.labelLarge)
+            Text(text = stringResource(Res.string.position), style = Ios.type.subheadline)
             DetailRow(
                 label = stringResource(Res.string.latitude),
                 value = NumberFormatter.format((position.latitude_i ?: 0) * DEG_D, COORDINATE_DECIMALS),
@@ -102,9 +102,9 @@ internal fun TrackPointCard(position: Position?, displayUnits: MeasurementSystem
 @Composable
 private fun DetailRow(label: String, value: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Text(text = label, style = Ios.type.caption1)
         Spacer(modifier = Modifier.width(LABEL_GAP.dp))
-        Text(text = value, style = MaterialTheme.typography.labelMedium)
+        Text(text = value, style = Ios.type.caption1)
     }
 }
 

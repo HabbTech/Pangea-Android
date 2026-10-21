@@ -17,7 +17,6 @@
 package org.meshtastic.feature.settings.component
 
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +66,7 @@ import org.meshtastic.core.ui.icon.Lock
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Notifications
 import org.meshtastic.core.ui.icon.QrCodeScanner
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.PermissionGateAction
 import org.meshtastic.core.ui.util.PermissionStatus
 import org.meshtastic.core.ui.util.PermissionUiState
@@ -176,7 +176,7 @@ internal fun ColumnScope.PermissionsSettingsContent() {
             },
             // Same rule the individual rows follow: only a permanent denial is coloured, because only a permanent
             // denial actually leaves the user stuck. A retryable denial is a choice they are free to keep.
-            supportingTextColor = if (anyBlocked) MaterialTheme.colorScheme.error else Color.Unspecified,
+            supportingTextColor = if (anyBlocked) Ios.colors.systemRed else Color.Unspecified,
             leadingIcon = MeshtasticIcons.Lock,
             trailingIcon = if (expanded) MeshtasticIcons.ExpandLess else MeshtasticIcons.ExpandMore,
             onClick = { expanded = !expanded },
@@ -286,7 +286,7 @@ private fun PermissionListItem(row: PermissionRow, onShowRationale: () -> Unit) 
     // would read as a scolding, which the permissions guidance explicitly warns against.
     val statusColor =
         if (gated && state.status == PermissionStatus.PERMANENTLY_DENIED) {
-            MaterialTheme.colorScheme.error
+            Ios.colors.systemRed
         } else {
             Color.Unspecified
         }

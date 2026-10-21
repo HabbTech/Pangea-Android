@@ -32,7 +32,6 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,6 +73,7 @@ import org.meshtastic.core.resources.security_icon_insecure_no_precise
 import org.meshtastic.core.resources.security_icon_insecure_precise_only
 import org.meshtastic.core.resources.security_icon_secure
 import org.meshtastic.core.resources.security_icon_warning_precise_mqtt
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
@@ -438,7 +438,7 @@ private fun ContextualSecurityState(securityState: SecurityState) {
             badgeIconColor = securityState.badgeIconColor(),
         )
         Spacer(Modifier.height(16.dp))
-        Text(text = stringResource(securityState.helpTextResId), style = MaterialTheme.typography.bodyMedium)
+        Text(text = stringResource(securityState.helpTextResId), style = Ios.type.subheadline)
     }
 }
 
@@ -464,8 +464,8 @@ private fun AllSecurityStates() {
                     badgeIconColor = state.badgeIconColor(),
                 )
                 Column(modifier = Modifier.padding(start = 16.dp)) {
-                    Text(text = stringResource(state.descriptionResId), style = MaterialTheme.typography.titleMedium)
-                    Text(text = stringResource(state.helpTextResId), style = MaterialTheme.typography.bodyMedium)
+                    Text(text = stringResource(state.descriptionResId), style = Ios.type.headline)
+                    Text(text = stringResource(state.helpTextResId), style = Ios.type.subheadline)
                 }
             }
             if (state != SecurityState.entries.lastOrNull()) {
@@ -521,7 +521,7 @@ fun PreviewAllSecurityIconsWithDialog() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(text = "Security Icons Preview (Click for Help)", style = MaterialTheme.typography.headlineSmall)
+            Text(text = "Security Icons Preview (Click for Help)", style = Ios.type.title3)
 
             SecurityState.entries.forEach { state ->
                 // Iterate over enum entries

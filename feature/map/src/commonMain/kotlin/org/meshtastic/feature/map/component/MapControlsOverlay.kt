@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -40,6 +39,8 @@ import org.meshtastic.core.resources.toggle_my_position
 import org.meshtastic.core.ui.icon.MapCompass
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.theme.StatusColors.StatusBlue
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
@@ -128,7 +129,7 @@ fun MapControlsOverlay(
         if (showRefresh) {
             if (isRefreshing) {
                 Box(modifier = Modifier.padding(8.dp)) {
-                    CircularWavyProgressIndicator(modifier = Modifier.size(24.dp))
+                    IosActivityIndicator(modifier = Modifier.size(24.dp), color = Ios.colors.systemGray)
                 }
             } else {
                 MapButton(

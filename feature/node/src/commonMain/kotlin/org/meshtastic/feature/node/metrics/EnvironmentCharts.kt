@@ -18,7 +18,6 @@ package org.meshtastic.feature.node.metrics
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +53,7 @@ import org.meshtastic.core.resources.soil_temperature
 import org.meshtastic.core.resources.temperature
 import org.meshtastic.core.resources.uv_lux
 import org.meshtastic.core.resources.wind_speed
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.proto.Telemetry
 
 @Suppress("MagicNumber")
@@ -212,7 +212,7 @@ fun EnvironmentMetricsChart(
 
         val modelProducer = remember { CartesianChartModelProducer() }
         val shouldPlot = graphData.shouldPlot
-        val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+        val onSurfaceColor = Ios.colors.label
 
         val allLegendData =
             (LEGEND_DATA_1 + LEGEND_DATA_2 + LEGEND_DATA_3 + LEGEND_DATA_4 + LEGEND_DATA_5).filter {

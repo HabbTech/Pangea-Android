@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -184,8 +183,5 @@ private val ROW_TEXT_START = 52.dp
 @Composable
 internal fun SectionDivider(modifier: Modifier = Modifier) {
     if (LocalIosSectionRows.current) return
-    HorizontalDivider(
-        modifier = modifier.padding(horizontal = 20.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-    )
+    HorizontalDivider(modifier = modifier.padding(horizontal = 20.dp), color = Ios.colors.separator.copy(alpha = 0.5f))
 }

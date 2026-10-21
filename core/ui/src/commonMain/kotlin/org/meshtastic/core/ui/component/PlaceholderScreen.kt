@@ -18,23 +18,19 @@ package org.meshtastic.core.ui.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * Shared placeholder screen for desktop/JVM feature stubs that are not yet implemented. Displays a centered label in
- * [MaterialTheme.typography.headlineMedium].
+ * [Ios.type.title2].
  */
 @Composable
 fun PlaceholderScreen(name: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(
-            text = name,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Text(text = name, style = Ios.type.title2, color = Ios.colors.secondaryLabel)
     }
 }

@@ -46,6 +46,7 @@ import org.meshtastic.core.resources.chirpy_downloading_progress
 import org.meshtastic.core.resources.chirpy_ready
 import org.meshtastic.core.resources.img_chirpy
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.feature.docs.model.ModelReadiness
 import org.meshtastic.core.resources.Res as CoreRes
 
@@ -128,11 +129,9 @@ private fun CheckingFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
         contentColor = Ios.colors.label,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
+            IosActivityIndicator(
                 modifier = Modifier.size(FAB_PROGRESS_SIZE.dp).graphicsLayer { rotationZ = rotation },
-                strokeWidth = PROGRESS_STROKE_WIDTH.dp,
-                color = Ios.colors.systemBlue,
-                strokeCap = StrokeCap.Round,
+                color = Ios.colors.systemGray,
             )
             Image(
                 painter = painterResource(CoreRes.drawable.img_chirpy),
@@ -171,12 +170,7 @@ private fun DownloadingFab(readiness: ModelReadiness.Downloading, onClick: () ->
                     strokeCap = StrokeCap.Round,
                 )
             } else {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(FAB_PROGRESS_SIZE.dp),
-                    strokeWidth = PROGRESS_STROKE_WIDTH.dp,
-                    color = Ios.colors.systemBlue,
-                    strokeCap = StrokeCap.Round,
-                )
+                IosActivityIndicator(modifier = Modifier.size(FAB_PROGRESS_SIZE.dp), color = Ios.colors.systemGray)
             }
             Image(
                 painter = painterResource(CoreRes.drawable.img_chirpy),

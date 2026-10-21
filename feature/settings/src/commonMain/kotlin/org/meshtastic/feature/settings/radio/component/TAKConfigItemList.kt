@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -112,6 +111,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PlayArrow
 import org.meshtastic.core.ui.icon.Warning
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
@@ -542,7 +542,7 @@ internal fun TakMeshTestCardContent(
                 )
             }
             if (isRunning) {
-                CircularProgressIndicator()
+                IosActivityIndicator(modifier = Modifier, color = Ios.colors.systemGray)
             } else {
                 Button(onClick = onRunTests) {
                     Icon(imageVector = MeshtasticIcons.PlayArrow, contentDescription = null)

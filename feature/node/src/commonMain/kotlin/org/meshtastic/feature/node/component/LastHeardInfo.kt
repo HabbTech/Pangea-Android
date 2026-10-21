@@ -16,7 +16,6 @@
  */
 package org.meshtastic.feature.node.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +24,7 @@ import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.ic_antenna
 import org.meshtastic.core.resources.node_sort_last_heard
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.formatAgo
 
 @Composable
@@ -32,7 +32,7 @@ fun LastHeardInfo(
     modifier: Modifier = Modifier,
     lastHeard: Int,
     showLabel: Boolean = true,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = Ios.colors.label,
 ) {
     IconInfo(
         modifier = modifier,

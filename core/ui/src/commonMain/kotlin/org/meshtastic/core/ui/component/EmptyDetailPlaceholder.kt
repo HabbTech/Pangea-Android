@@ -24,19 +24,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * Generic empty-state placeholder for detail panes in list-detail layouts.
  *
- * Shows a centered icon and title, styled with [MaterialTheme.colorScheme.onSurfaceVariant]. Used by both nodes and
- * conversations adaptive screens on Android and Desktop.
+ * Shows a centered icon and title, styled with [Ios.colors.secondaryLabel]. Used by both nodes and conversations
+ * adaptive screens on Android and Desktop.
  */
 @Composable
 fun EmptyDetailPlaceholder(icon: ImageVector, title: String, modifier: Modifier = Modifier) {
@@ -46,14 +46,10 @@ fun EmptyDetailPlaceholder(icon: ImageVector, title: String, modifier: Modifier 
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Ios.colors.secondaryLabel,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Text(text = title, style = Ios.type.title3, color = Ios.colors.secondaryLabel)
         }
     }
 }

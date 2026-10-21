@@ -19,7 +19,6 @@ package org.meshtastic.feature.discovery.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -32,6 +31,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.back
 import org.meshtastic.core.resources.discovery_map
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosTopBar
@@ -72,7 +72,7 @@ fun DiscoveryMapScreen(viewModel: DiscoveryMapViewModel, onNavigateUp: () -> Uni
         val currentSession = session
         if (currentSession == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                IosActivityIndicator(modifier = Modifier, color = Ios.colors.systemGray)
             }
             return@Scaffold
         }

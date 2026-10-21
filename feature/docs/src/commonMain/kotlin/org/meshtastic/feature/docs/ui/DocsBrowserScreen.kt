@@ -25,13 +25,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
@@ -52,6 +50,8 @@ import org.meshtastic.core.resources.doc_no_documentation
 import org.meshtastic.core.resources.doc_no_results
 import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.feature.docs.model.AIDocAssistantSessionState
 import org.meshtastic.feature.docs.model.DocPage
 import org.meshtastic.feature.docs.model.DocSection
@@ -152,10 +152,10 @@ private fun DocsResultsContent(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                CircularProgressIndicator()
+                IosActivityIndicator(modifier = Modifier, color = Ios.colors.systemGray)
                 Text(
                     text = stringResource(Res.string.doc_loading),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
@@ -174,7 +174,7 @@ private fun DocsResultsContent(
                     } else {
                         stringResource(Res.string.doc_no_documentation)
                     },
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = Ios.type.body,
                 )
             }
         }
@@ -197,7 +197,7 @@ private fun DocsTocList(pages: List<DocPage>, onSelectPage: (String) -> Unit, mo
             item {
                 Text(
                     text = "User Guide",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = Ios.type.headline,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).semantics { heading() },
                 )
             }
@@ -209,7 +209,7 @@ private fun DocsTocList(pages: List<DocPage>, onSelectPage: (String) -> Unit, mo
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
                     text = "Developer Guide",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = Ios.type.headline,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).semantics { heading() },
                 )
             }
@@ -222,11 +222,7 @@ private fun DocsTocList(pages: List<DocPage>, onSelectPage: (String) -> Unit, mo
 private fun DocPageListItem(page: DocPage, onSelectPage: (String) -> Unit, modifier: Modifier = Modifier) {
     ListItem(
         leadingContent = {
-            Icon(
-                imageVector = page.resolveIcon(),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Icon(imageVector = page.resolveIcon(), contentDescription = null, tint = Ios.colors.secondaryLabel)
         },
         headlineContent = { Text(page.title) },
         modifier = modifier.clickable { onSelectPage(page.id) }.semantics { contentDescription = "Open ${page.title}" },

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,6 +33,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.geofence_box_author_hint
 import org.meshtastic.core.resources.geofence_box_use_view
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * The bar shown while a waypoint's geofence box is being drawn on the map.
@@ -53,7 +53,7 @@ internal fun BoxAuthoringBar(onCancel: () -> Unit, onUseVisibleRegion: () -> Uni
             Text(
                 text = stringResource(Res.string.geofence_box_author_hint),
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
+                style = Ios.type.subheadline,
             )
             Spacer(modifier = Modifier.width(GAP.dp))
             TextButton(onClick = onCancel) { Text(stringResource(Res.string.cancel)) }

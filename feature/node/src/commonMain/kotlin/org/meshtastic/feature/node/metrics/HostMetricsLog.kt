@@ -35,8 +35,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +61,7 @@ import org.meshtastic.core.resources.uptime
 import org.meshtastic.core.resources.user_string
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.core.ui.theme.GraphColors
 import org.meshtastic.proto.Telemetry
 
@@ -209,12 +208,9 @@ private fun LoadRow(label: String, value: Int, color: androidx.compose.ui.graphi
             modifier = Modifier.weight(1f),
         )
     }
-    LinearProgressIndicator(
+    IosProgressBar(
         progress = { (value / 10000.0f).coerceIn(0f, 1f) },
         modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-        color = color,
-        trackColor = ProgressIndicatorDefaults.linearTrackColor,
-        strokeCap = ProgressIndicatorDefaults.LinearStrokeCap,
     )
 }
 

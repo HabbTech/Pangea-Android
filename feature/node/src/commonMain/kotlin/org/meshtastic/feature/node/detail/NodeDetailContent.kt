@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +42,8 @@ import org.meshtastic.core.resources.loading
 import org.meshtastic.core.resources.position
 import org.meshtastic.core.resources.power
 import org.meshtastic.core.resources.soil_water_metrics
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.feature.node.component.AdministrationSection
 import org.meshtastic.feature.node.component.AirQualityInfoCards
@@ -84,7 +85,10 @@ fun NodeDetailContent(
         } else {
             val loadingDescription = stringResource(Res.string.loading)
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularWavyProgressIndicator(modifier = Modifier.semantics { contentDescription = loadingDescription })
+                IosActivityIndicator(
+                    modifier = Modifier.semantics { contentDescription = loadingDescription },
+                    color = Ios.colors.systemGray,
+                )
             }
         }
     }

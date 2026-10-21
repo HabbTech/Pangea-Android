@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -310,9 +309,9 @@ private fun ColumnScope.AdministrationContent(enabled: Boolean, onNavigate: (Rou
         supportingTextColor = expertModeCaptionColor(),
         leadingIcon = MeshtasticIcons.AdminPanelSettings,
         trailingIcon = MeshtasticIcons.ChevronRight,
-        leadingIconTint = MaterialTheme.colorScheme.error,
-        textColor = MaterialTheme.colorScheme.error,
-        trailingIconTint = MaterialTheme.colorScheme.error,
+        leadingIconTint = Ios.colors.systemRed,
+        textColor = Ios.colors.systemRed,
+        trailingIconTint = Ios.colors.systemRed,
         enabled = enabled,
     ) {
         onNavigate(SettingsRoute.Administration)
@@ -371,6 +370,6 @@ private fun ManagedMessage() {
     Text(
         text = stringResource(Res.string.message_device_managed),
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        color = MaterialTheme.colorScheme.error,
+        color = Ios.colors.systemRed,
     )
 }

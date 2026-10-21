@@ -16,7 +16,6 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
@@ -29,6 +28,7 @@ import org.meshtastic.core.resources.aqi_moderate
 import org.meshtastic.core.resources.aqi_unhealthy
 import org.meshtastic.core.resources.aqi_unhealthy_sensitive
 import org.meshtastic.core.resources.aqi_very_unhealthy
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AqiSeverityColors
 
 /**
@@ -66,7 +66,7 @@ enum class PmAqiSeverity(
      * `isSystemInDarkTheme()`, so a user who forces light while the system is dark (or vice versa — `AppTheme` takes an
      * explicit `darkTheme`) still gets the tone that was contrast-checked against the surface they are looking at.
      */
-    @Composable fun color(): Color = colorFor(MaterialTheme.colorScheme.surface.luminance() < DARK_SURFACE_LUMINANCE)
+    @Composable fun color(): Color = colorFor(Ios.colors.background.luminance() < DARK_SURFACE_LUMINANCE)
 
     companion object {
         /**

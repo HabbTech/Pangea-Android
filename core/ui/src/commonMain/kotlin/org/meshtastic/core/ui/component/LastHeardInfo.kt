@@ -16,7 +16,6 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +27,7 @@ import org.meshtastic.core.common.util.nowSeconds
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.ic_antenna
 import org.meshtastic.core.resources.node_sort_last_heard
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.formatAgo
 
@@ -39,7 +39,7 @@ fun LastHeardInfo(
     lastHeard: Int,
     showLabel: Boolean = true,
     relative: Boolean = true,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = Ios.colors.label,
 ) {
     val text =
         if (relative) {

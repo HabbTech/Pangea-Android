@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -87,6 +86,7 @@ import org.meshtastic.core.ui.icon.Group
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosSheet
 import org.meshtastic.core.ui.ios.IosTextField
@@ -113,7 +113,7 @@ fun GroupInvitesSection(viewModel: PangeaChatsViewModel, onJoin: (String) -> Uni
 
 @Composable
 private fun InviteCard(item: PendingGroupInvite, sender: String, onJoin: () -> Unit, onDecline: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+    IosCard(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(item.invite.name, style = Ios.type.headline)
             Text(

@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -36,6 +34,8 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.discovery_dwell_progress
 import org.meshtastic.core.resources.discovery_stat_dwelling_on
 import org.meshtastic.core.resources.discovery_time_remaining
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosProgressBar
 
 @Suppress("MagicNumber")
 private val CONTENT_PADDING = 8.dp
@@ -68,15 +68,12 @@ fun DwellProgressIndicator(
             progressBarRangeInfo = ProgressBarRangeInfo(progress, 0f..1f)
         },
     ) {
-        Text(
-            text = stringResource(Res.string.discovery_stat_dwelling_on, presetName),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().clearAndSetSemantics {})
+        Text(text = stringResource(Res.string.discovery_stat_dwelling_on, presetName), style = Ios.type.subheadline)
+        IosProgressBar(progress = { progress }, modifier = Modifier.fillMaxWidth().clearAndSetSemantics {})
         Text(
             text = stringResource(Res.string.discovery_time_remaining, timeText),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.subheadline,
+            color = Ios.colors.secondaryLabel,
             modifier = Modifier.padding(top = CONTENT_PADDING / 2),
         )
     }

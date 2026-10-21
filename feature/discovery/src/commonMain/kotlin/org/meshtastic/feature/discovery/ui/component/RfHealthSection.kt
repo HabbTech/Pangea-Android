@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -40,6 +39,7 @@ import org.meshtastic.core.resources.discovery_stat_packets_rx
 import org.meshtastic.core.resources.discovery_stat_packets_tx
 import org.meshtastic.core.resources.discovery_stat_rf_health
 import org.meshtastic.core.resources.discovery_stat_success_rate
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.discovery.ui.StatRow
 
 @Composable
@@ -47,7 +47,7 @@ fun RfHealthSection(result: DiscoveryPresetResultEntity, modifier: Modifier = Mo
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
             text = stringResource(Res.string.discovery_stat_rf_health),
-            style = MaterialTheme.typography.titleSmall,
+            style = Ios.type.subheadline,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(4.dp))

@@ -19,7 +19,6 @@ package org.meshtastic.feature.messaging
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,6 +33,7 @@ import org.meshtastic.core.resources.close
 import org.meshtastic.core.resources.relays
 import org.meshtastic.core.resources.resend
 import org.meshtastic.core.ui.component.MeshtasticDialog
+import org.meshtastic.core.ui.ios.Ios
 
 @Composable
 fun DeliveryInfo(
@@ -53,18 +53,14 @@ fun DeliveryInfo(
     text = {
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             text?.let {
-                Text(
-                    text = stringResource(it),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Text(text = stringResource(it), textAlign = TextAlign.Center, style = Ios.type.subheadline)
             }
             detail?.let {
                 Text(
                     text = stringResource(it),
                     modifier = Modifier.padding(top = 8.dp),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                 )
             }
             if (relays != 0) {
@@ -72,7 +68,7 @@ fun DeliveryInfo(
                     text = pluralStringResource(Res.plurals.relays, relays, relays),
                     modifier = Modifier.padding(top = 8.dp),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = Ios.type.subheadline,
                 )
             }
         }

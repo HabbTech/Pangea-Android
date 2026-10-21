@@ -30,7 +30,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -310,7 +309,7 @@ private fun PublicKeyContent(key: ByteString) = Column(horizontalAlignment = Ali
         Text(
             text = keyString,
             textAlign = TextAlign.Center,
-            color = if (isMismatch) MaterialTheme.colorScheme.error else Color.Unspecified,
+            color = if (isMismatch) Ios.colors.systemRed else Color.Unspecified,
         )
     }
     if (!isMismatch) {
@@ -332,11 +331,11 @@ private fun SecurityLegend() {
                 // Content, not a control: an IconButton here is focusable and activatable but does nothing.
                 Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) { state.Glyph() }
                 Column(modifier = Modifier.padding(start = 16.dp)) {
-                    Text(text = stringResource(state.title), style = MaterialTheme.typography.titleMedium)
-                    Text(text = stringResource(state.helpText), style = MaterialTheme.typography.bodyMedium)
+                    Text(text = stringResource(state.title), style = Ios.type.headline)
+                    Text(text = stringResource(state.helpText), style = Ios.type.subheadline)
                     Text(
                         text = stringResource(state.legendFirmwareNote),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = Ios.type.footnote,
                         color = colorScheme.onSurfaceVariant,
                     )
                 }

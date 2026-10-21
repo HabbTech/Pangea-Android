@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -67,6 +66,7 @@ import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PlayArrow
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.feature.map.maplibre.tileCount
 import kotlin.math.roundToInt
 
@@ -180,7 +180,7 @@ private fun OfflinePackRow(
         ) {
             Text(text = pack.label(), style = Ios.type.body)
             if (progress is DownloadProgress.Healthy && progress.status != DownloadStatus.Complete) {
-                LinearProgressIndicator(
+                IosProgressBar(
                     progress = { progress.fraction() },
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )

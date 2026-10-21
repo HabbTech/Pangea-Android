@@ -34,6 +34,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.map_offline_banner
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.OfflineShare
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * A small pill reporting that the device has no network connection right now.
@@ -49,7 +50,7 @@ fun OfflineStatusBanner(visible: Boolean, modifier: Modifier = Modifier) {
     AnimatedVisibility(visible = visible, modifier = modifier, enter = fadeIn(), exit = fadeOut()) {
         Surface(
             shape = MaterialTheme.shapes.small,
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = Ios.colors.fieldFill,
             tonalElevation = OFFLINE_BANNER_ELEVATION,
         ) {
             Row(
@@ -59,13 +60,13 @@ fun OfflineStatusBanner(visible: Boolean, modifier: Modifier = Modifier) {
                 Icon(
                     imageVector = MeshtasticIcons.OfflineShare,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = Ios.colors.secondaryLabel,
                     modifier = Modifier.padding(end = 6.dp),
                 )
                 Text(
                     text = stringResource(Res.string.map_offline_banner),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = Ios.type.caption1,
+                    color = Ios.colors.secondaryLabel,
                 )
             }
         }

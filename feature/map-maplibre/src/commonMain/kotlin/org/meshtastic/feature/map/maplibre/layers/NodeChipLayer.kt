@@ -16,7 +16,6 @@
  */
 package org.meshtastic.feature.map.maplibre.layers
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
@@ -63,6 +62,7 @@ import org.meshtastic.core.model.Node
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Person
 import org.meshtastic.core.ui.icon.Temperature
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.map.MapNodePolicy
 import org.meshtastic.feature.map.maplibre.geojson.MapChipGlyph
 import org.meshtastic.feature.map.maplibre.geojson.MapChipKey
@@ -195,7 +195,7 @@ private class ChipImage(val painter: Painter, val size: DpSize)
 private fun rememberChipImages(chips: List<MapChipKey>): Map<String, ChipImage> {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val textStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+    val textStyle = Ios.type.subheadline.copy(fontWeight = FontWeight.SemiBold)
 
     // Vector painters have to be built in composition, so they are resolved here and handed to the rasterizer rather
     // than looked up inside it.

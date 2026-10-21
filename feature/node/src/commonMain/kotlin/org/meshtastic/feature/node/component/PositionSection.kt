@@ -47,6 +47,7 @@ import org.meshtastic.core.ui.icon.CellTower
 import org.meshtastic.core.ui.icon.Compass
 import org.meshtastic.core.ui.icon.Distance
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.util.LocalInlineMapProvider
 import org.meshtastic.core.ui.util.LocalSitePlannerAvailable
 import org.meshtastic.feature.node.model.NodeDetailAction
@@ -81,7 +82,7 @@ internal fun PositionInlineContent(
         Spacer(Modifier.width(6.dp))
         Text(
             text = stringResource(Res.string.open_compass),
-            style = MaterialTheme.typography.labelLarge,
+            style = Ios.type.subheadline,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -98,7 +99,7 @@ internal fun PositionInlineContent(
             Spacer(Modifier.width(6.dp))
             Text(
                 text = stringResource(Res.string.site_planner_estimate),
-                style = MaterialTheme.typography.labelLarge,
+                style = Ios.type.subheadline,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -116,7 +117,7 @@ private fun PositionMap(node: Node, distance: String?) {
             Surface(
                 modifier = Modifier.padding(12.dp).align(Alignment.TopEnd),
                 shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                color = Ios.colors.fieldFill.copy(alpha = 0.9f),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -124,7 +125,7 @@ private fun PositionMap(node: Node, distance: String?) {
                 ) {
                     Icon(MeshtasticIcons.Distance, null, Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(distance, style = MaterialTheme.typography.labelLarge)
+                    Text(distance, style = Ios.type.subheadline)
                 }
             }
         }

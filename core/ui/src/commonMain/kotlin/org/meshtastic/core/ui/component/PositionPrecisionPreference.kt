@@ -19,7 +19,6 @@ package org.meshtastic.core.ui.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,6 +37,7 @@ import org.meshtastic.core.model.util.toDistanceString
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.position_enabled
 import org.meshtastic.core.resources.precise_location
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosSlider
 import org.meshtastic.core.ui.theme.AppTheme
 import kotlin.math.roundToInt
@@ -101,7 +101,7 @@ fun PositionPrecisionPreference(
                 Text(
                     text = "± ${precisionMeters?.toDistanceString(unit).orEmpty()}",
                     modifier = Modifier.padding(bottom = 16.dp),
-                    fontSize = MaterialTheme.typography.bodyLarge.fontSize,
+                    fontSize = Ios.type.body.fontSize,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
                 )

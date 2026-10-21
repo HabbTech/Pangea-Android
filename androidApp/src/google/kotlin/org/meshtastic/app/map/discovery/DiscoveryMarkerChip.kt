@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import org.meshtastic.core.ui.ios.Ios
 
 /** Compact chip rendered as a Google Maps marker icon for discovery nodes. */
 @Composable
@@ -48,7 +48,7 @@ fun DiscoveryMarkerChip(label: String, color: Color, modifier: Modifier = Modifi
         if (icon != null) {
             Icon(imageVector = icon, contentDescription = label, tint = Color.White, modifier = Modifier.size(16.dp))
         } else {
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = Color.White)
+            Text(text = label, style = Ios.type.caption2, color = Color.White)
         }
     }
 }

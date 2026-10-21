@@ -95,13 +95,9 @@ internal fun MapOptionsButton(
                     offlineMapsSupported = offlineMapsSupported,
                     onDismiss = { sheetVisible = false },
                 )
-                // The imported-layer manager is a lazy list of its own, so it gets a bounded height inside this
-                // scrolling sheet.
-                IosSection {
-                    Box(Modifier.fillMaxWidth().heightIn(max = LAYERS_MAX_HEIGHT).padding(vertical = 8.dp)) {
-                        layersExtra()
-                    }
-                }
+                // The imported-layer manager is a lazy list of its own (a section and its add buttons), so it gets a
+                // bounded height inside this scrolling sheet.
+                Box(Modifier.fillMaxWidth().heightIn(max = LAYERS_MAX_HEIGHT)) { layersExtra() }
             }
         }
     }

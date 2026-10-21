@@ -24,17 +24,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -71,13 +64,18 @@ import org.meshtastic.core.resources.url
 import org.meshtastic.core.resources.url_cannot_be_empty
 import org.meshtastic.core.resources.url_must_be_http
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.icon.CellTower
-import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.Layers
 import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.icon.Visibility
-import org.meshtastic.core.ui.icon.VisibilityOff
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.feature.map.layers.LayerType
 import org.meshtastic.feature.map.layers.MapLayerItem
 import org.meshtastic.feature.map.layers.isValidNetworkLayerUrl
@@ -98,52 +96,51 @@ fun CustomMapLayersSheet(
     modifier: Modifier = Modifier,
 ) {
     var showAddNetworkLayerDialog by remember { mutableStateOf(false) }
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = 16.dp)) {
+    // An iOS section: the title as its header, the layers as rows, the formats as its footer, then the add buttons.
+    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
-            Text(
-                modifier = Modifier.padding(16.dp),
-                text = stringResource(Res.string.manage_map_layers),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            HorizontalDivider()
-        }
-        item {
-            Text(
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 0.dp),
-                text = stringResource(Res.string.map_layer_formats),
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-
-        if (mapLayers.isEmpty()) {
-            item {
-                Text(
-                    modifier = Modifier.padding(16.dp),
-                    text = stringResource(Res.string.no_map_layers_loaded),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        } else {
-            items(mapLayers, key = { it.id }) { layer ->
-                MapLayerRow(
-                    layer = layer,
-                    onToggleVisibility = onToggleVisibility,
-                    onRemoveLayer = onRemoveLayer,
-                    onRefreshLayer = onRefreshLayer,
-                    opacity = opacity,
-                    onOpacityChange = onOpacityChange,
-                )
-                HorizontalDivider()
+            IosSection(
+                header = stringResource(Res.string.manage_map_layers),
+                footer = stringResource(Res.string.map_layer_formats),
+            ) {
+                if (mapLayers.isEmpty()) {
+                    IosRow(
+                        title = stringResource(Res.string.no_map_layers_loaded),
+                        titleColor = Ios.colors.secondaryLabel,
+                    )
+                } else {
+                    mapLayers.forEach { layer ->
+                        MapLayerRow(
+                            layer = layer,
+                            onToggleVisibility = onToggleVisibility,
+                            onRemoveLayer = onRemoveLayer,
+                            onRefreshLayer = onRefreshLayer,
+                            opacity = opacity,
+                            onOpacityChange = onOpacityChange,
+                        )
+                    }
+                }
             }
         }
         item {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(modifier = Modifier.fillMaxWidth(), onClick = onAddLayerClicked) {
-                    Text(stringResource(Res.string.add_layer))
-                }
-                Button(modifier = Modifier.fillMaxWidth(), onClick = { showAddNetworkLayerDialog = true }) {
-                    Text(stringResource(Res.string.add_network_layer))
-                }
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                IosButton(
+                    text = stringResource(Res.string.add_layer),
+                    onClick = onAddLayerClicked,
+                    style = IosButtonStyle.Tinted,
+                    large = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                IosButton(
+                    text = stringResource(Res.string.add_network_layer),
+                    onClick = { showAddNetworkLayerDialog = true },
+                    style = IosButtonStyle.Tinted,
+                    large = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
     }
@@ -184,29 +181,15 @@ private fun MapLayerRow(
             },
         )
     Column(modifier = modifier) {
-        ListItem(
-            headlineContent = { Text(layer.name) },
-            supportingContent = {
-                Text(
-                    text =
-                    layer.createdAt?.let {
-                        stringResource(Res.string.layer_subtitle, typeLabel, DateFormatter.formatDateTimeShort(it))
-                    } ?: typeLabel,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            },
-            leadingContent = {
-                Icon(
-                    imageVector =
-                    if (layer.layerType == LayerType.COVERAGE) {
-                        MeshtasticIcons.CellTower
-                    } else {
-                        MeshtasticIcons.Layers
-                    },
-                    contentDescription = typeLabel,
-                )
-            },
-            trailingContent = {
+        IosRow(
+            title = layer.name,
+            subtitle =
+            layer.createdAt?.let {
+                stringResource(Res.string.layer_subtitle, typeLabel, DateFormatter.formatDateTimeShort(it))
+            } ?: typeLabel,
+            icon = if (layer.layerType == LayerType.COVERAGE) IosIcons.AntennaTwoTone else IosIcons.Layers,
+            accessory =
+            IosAccessory.Custom {
                 MapLayerActions(
                     layer = layer,
                     onToggleVisibility = onToggleVisibility,
@@ -240,22 +223,34 @@ private fun MapLayerActions(
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         if (layer.isNetwork) {
             if (layer.isRefreshing) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp).padding(4.dp), strokeWidth = 2.dp)
+                IosActivityIndicator(modifier = Modifier.size(24.dp).padding(4.dp), color = Ios.colors.systemGray)
             } else {
                 IconButton(onClick = { onRefreshLayer(layer.id) }) {
-                    Icon(imageVector = MeshtasticIcons.Refresh, contentDescription = stringResource(Res.string.refresh))
+                    Icon(
+                        imageVector = IosIcons.ArrowsCirclepath,
+                        contentDescription = stringResource(Res.string.refresh),
+                        tint = Ios.colors.tint,
+                        modifier = Modifier.size(22.dp),
+                    )
                 }
             }
         }
         IconToggleButton(checked = layer.isVisible, onCheckedChange = { onToggleVisibility(layer.id) }) {
             Icon(
-                imageVector = if (layer.isVisible) MeshtasticIcons.Visibility else MeshtasticIcons.VisibilityOff,
+                imageVector = if (layer.isVisible) MeshtasticIcons.Visibility else IosIcons.EyeSlash,
                 contentDescription =
                 stringResource(if (layer.isVisible) Res.string.hide_layer else Res.string.show_layer),
+                tint = Ios.colors.tint,
+                modifier = Modifier.size(22.dp),
             )
         }
         IconButton(onClick = { onRemoveLayer(layer.id) }) {
-            Icon(imageVector = MeshtasticIcons.Delete, contentDescription = stringResource(Res.string.remove_layer))
+            Icon(
+                imageVector = IosIcons.Trash,
+                contentDescription = stringResource(Res.string.remove_layer),
+                tint = Ios.colors.systemRed,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }
@@ -290,31 +285,24 @@ fun AddNetworkLayerDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> 
         title = stringResource(Res.string.add_network_layer),
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                IosTextField(
                     value = name,
                     onValueChange = {
                         name = it
                         nameError = null
                     },
-                    label = { Text(stringResource(Res.string.name)) },
-                    isError = nameError != null,
-                    supportingText = { nameError?.let { Text(it) } },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(Res.string.name),
                 )
-                OutlinedTextField(
+                nameError?.let { Text(it, style = Ios.type.footnote, color = Ios.colors.systemRed) }
+                IosTextField(
                     value = url,
                     onValueChange = {
                         url = it
                         urlError = null
                     },
-                    label = { Text(stringResource(Res.string.url)) },
-                    placeholder = { Text(stringResource(Res.string.network_layer_url_hint)) },
-                    isError = urlError != null,
-                    supportingText = { urlError?.let { Text(it) } },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = stringResource(Res.string.network_layer_url_hint),
                 )
+                urlError?.let { Text(it, style = Ios.type.footnote, color = Ios.colors.systemRed) }
             }
         },
         onConfirm = ::validateAndConfirm,

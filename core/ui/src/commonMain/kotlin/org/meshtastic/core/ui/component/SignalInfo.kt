@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,6 +38,7 @@ import org.meshtastic.core.model.Node
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.signal_quality
 import org.meshtastic.core.ui.component.preview.NodePreviewParameterProvider
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.LocalModemPreset
 import org.meshtastic.core.ui.util.LocalNoiseFloor
@@ -53,7 +53,7 @@ import org.meshtastic.core.ui.util.LocalNoiseFloor
 fun SignalInfo(
     modifier: Modifier = Modifier,
     node: Node,
-    @Suppress("UNUSED_PARAMETER") contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    @Suppress("UNUSED_PARAMETER") contentColor: Color = Ios.colors.label,
 ) {
     val snr = node.snrOrNull
     if (snr != null) {
@@ -74,12 +74,7 @@ fun SignalInfo(
             Text(
                 text =
                 "${MetricFormatter.snr(snr)} · ${MetricFormatter.rssi(rssi)} · " + stringResource(quality.nameRes),
-                style =
-                MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp,
-                    letterSpacing = 0.sp,
-                ),
+                style = Ios.type.caption2.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 0.sp),
                 color = signalColor,
                 maxLines = 1,
                 softWrap = false,

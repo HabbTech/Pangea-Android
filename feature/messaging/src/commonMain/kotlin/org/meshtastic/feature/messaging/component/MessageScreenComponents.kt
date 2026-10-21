@@ -26,23 +26,21 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -110,7 +108,6 @@ import org.meshtastic.core.ui.component.MeshtasticTextDialog
 import org.meshtastic.core.ui.component.NodeKeyStatusIcon
 import org.meshtastic.core.ui.component.SecurityIcon
 import org.meshtastic.core.ui.icon.ArrowBack
-import org.meshtastic.core.ui.icon.ArrowDownward
 import org.meshtastic.core.ui.icon.ChatBubbleOutline
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.FilterList
@@ -132,6 +129,7 @@ import org.meshtastic.core.ui.icon.VisibilityOff
 import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosMenu
@@ -169,38 +167,47 @@ fun BoxScope.ScrollToBottomFab(
 ) {
     val modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
     val onClick: () -> Unit = { coroutineScope.launch { listState.animateScrollToItem(0) } }
-    val icon =
-        @Composable {
-            Icon(
-                imageVector = MeshtasticIcons.ArrowDownward,
-                contentDescription = stringResource(Res.string.scroll_to_bottom),
-            )
-        }
+    // iOS has no floating action button; this is a glass capsule like its other floating controls, the arrow in the
+    // tint and the sender (or the count) beside it.
+    val label =
+        when {
+            unreadCount > 0 && newestUnreadSender != null ->
+                if (unreadCount > 1) {
+                    stringResource(Res.string.jump_to_latest_from_and_more, newestUnreadSender, unreadCount - 1)
+                } else {
+                    stringResource(Res.string.jump_to_latest_from, newestUnreadSender)
+                }
 
-    if (unreadCount > 0 && newestUnreadSender != null) {
-        ExtendedFloatingActionButton(
-            modifier = modifier,
-            onClick = onClick,
-            icon = icon,
-            text = {
+            unreadCount > 0 -> unreadCount.toString()
+
+            else -> null
+        }
+    Surface(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 48.dp),
+        shape = CircleShape,
+        color = Ios.colors.chrome.copy(alpha = 1f),
+        shadowElevation = 6.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = if (label == null) 12.dp else 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = IosIcons.ArrowDownThin,
+                contentDescription = stringResource(Res.string.scroll_to_bottom),
+                tint = Ios.colors.tint,
+                modifier = Modifier.size(24.dp),
+            )
+            if (label != null) {
                 Text(
-                    text =
-                    if (unreadCount > 1) {
-                        stringResource(Res.string.jump_to_latest_from_and_more, newestUnreadSender, unreadCount - 1)
-                    } else {
-                        stringResource(Res.string.jump_to_latest_from, newestUnreadSender)
-                    },
+                    text = label,
+                    style = Ios.type.subheadline,
+                    color = Ios.colors.label,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-            },
-        )
-    } else {
-        FloatingActionButton(modifier = modifier, onClick = onClick) {
-            if (unreadCount > 0) {
-                BadgedBox(badge = { Badge { Text(unreadCount.toString()) } }) { icon() }
-            } else {
-                icon()
             }
         }
     }
@@ -321,7 +328,7 @@ internal fun TranslationModelDownloadDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        IosActivityIndicator(modifier = Modifier.size(24.dp), color = Ios.colors.systemGray)
                         Text(stringResource(Res.string.translation_downloading))
                     }
                 },

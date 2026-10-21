@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,6 +59,7 @@ import org.meshtastic.core.ui.icon.Memory
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Settings
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
@@ -172,7 +172,7 @@ private fun RemoteAdminListItem(
         )
         AnimatedVisibility(visible = isEnsuringSession) {
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                LinearWavyProgressIndicator(modifier = Modifier.fillMaxWidth())
+                IosActivityIndicator(modifier = Modifier.fillMaxWidth(), color = Ios.colors.systemGray)
                 androidx.compose.material3.Text(
                     text = stringResource(Res.string.establishing_session),
                     style = Ios.type.footnote,

@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -100,7 +99,7 @@ fun MainAppBar(
     onNavigateUp: () -> Unit,
     onClickChip: (Node) -> Unit,
     // The screen's own background: white over iOS's plain lists, grey (the default) over grouped ones.
-    background: Color = MaterialTheme.colorScheme.background,
+    background: Color = Ios.colors.background,
     // iOS's inline title (navigationBarTitleDisplayMode(.inline)): the title small and centred in the top row.
     inlineTitle: Boolean = false,
     // Expert Mode's radio chip, on pushed screens and the tab roots that ask for it ([showNodeChip]); false where iOS

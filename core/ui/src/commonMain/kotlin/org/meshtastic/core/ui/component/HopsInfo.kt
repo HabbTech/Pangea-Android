@@ -16,7 +16,6 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,10 +25,11 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.hops_away
 import org.meshtastic.core.ui.icon.HopCount
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 @Composable
-fun HopsInfo(hops: Int, modifier: Modifier = Modifier, contentColor: Color = MaterialTheme.colorScheme.onSurface) {
+fun HopsInfo(hops: Int, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     IconInfo(
         modifier = modifier,
         icon = MeshtasticIcons.HopCount,

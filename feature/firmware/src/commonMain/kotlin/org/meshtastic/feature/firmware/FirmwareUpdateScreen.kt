@@ -36,12 +36,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -157,11 +154,14 @@ import org.meshtastic.core.ui.icon.Usb
 import org.meshtastic.core.ui.icon.Warning
 import org.meshtastic.core.ui.icon.Wifi
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.core.ui.ios.IosPushedColumnScreen
 import org.meshtastic.core.ui.ios.IosSegmentedControl
 import org.meshtastic.core.ui.ios.IosSwitch
@@ -494,7 +494,7 @@ private fun FirmwareUpdateContent(
 
 @Composable
 internal fun VerifyingState() {
-    CircularWavyProgressIndicator(modifier = Modifier.size(64.dp))
+    IosActivityIndicator(modifier = Modifier.size(64.dp), color = Ios.colors.systemGray)
     Spacer(Modifier.height(24.dp))
     Text(stringResource(Res.string.firmware_update_verifying), style = Ios.type.headline)
     Spacer(Modifier.height(8.dp))
@@ -509,7 +509,7 @@ internal fun VerifyingState() {
 
 @Composable
 internal fun CheckingState() {
-    CircularWavyProgressIndicator(modifier = Modifier.size(64.dp))
+    IosActivityIndicator(modifier = Modifier.size(64.dp), color = Ios.colors.systemGray)
     Spacer(Modifier.height(24.dp))
     Text(stringResource(Res.string.firmware_update_checking), style = Ios.type.body)
 }
@@ -763,7 +763,7 @@ internal fun WipeDeviceToggle(
     onWipeDeviceChange: (Boolean) -> Unit,
 ) {
     val enabled = refusal == null
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IosCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
@@ -791,7 +791,7 @@ internal fun WipeDeviceToggle(
 
 @Composable
 private fun ChirpyCard() {
-    Card(
+    IosCard(
         modifier = Modifier.fillMaxWidth().padding(4.dp),
         colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill),
     ) {
@@ -837,9 +837,9 @@ private fun DeviceHardwareImage(deviceHardware: DeviceHardware, modifier: Modifi
 
 @Composable
 private fun ReleaseNotesCard(releaseNotes: String) {
-    ElevatedCard(
+    IosCard(
         modifier = Modifier.fillMaxWidth().animateContentSize(),
-        colors = CardDefaults.elevatedCardColors(containerColor = Ios.colors.background),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.background),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = stringResource(Res.string.firmware_update_release_notes), style = Ios.type.headline)
@@ -858,9 +858,9 @@ private fun DeviceInfoCard(
 ) {
     val target = deviceHardware.hwModelSlug.ifEmpty { deviceHardware.platformioTarget }
 
-    ElevatedCard(
+    IosCard(
         modifier = Modifier.fillMaxWidth().animateContentSize(),
-        colors = CardDefaults.elevatedCardColors(containerColor = Ios.colors.groupedRow),
+        colors = CardDefaults.cardColors(containerColor = Ios.colors.groupedRow),
     ) {
         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
@@ -935,7 +935,7 @@ internal fun UsbMaintenanceCard(deviceName: String, onBootloaderUpgrade: () -> U
         )
     }
 
-    Card(modifier = Modifier.fillMaxWidth().animateContentSize()) {
+    IosCard(modifier = Modifier.fillMaxWidth().animateContentSize()) {
         Column(modifier = Modifier.padding(16.dp)) {
             TextButton(onClick = { showUpgradeConfirmation = true }) {
                 Text(stringResource(Res.string.firmware_maintenance_upgrade_bootloader_action))
@@ -958,10 +958,10 @@ private fun usbMaintenanceRefusalText(refusal: UsbMaintenanceRefusal): String =
 private fun BootloaderWarningCard(deviceHardware: DeviceHardware, onDismissForDevice: () -> Unit) {
     val openUrl = rememberOpenUrl()
 
-    ElevatedCard(
+    IosCard(
         modifier = Modifier.fillMaxWidth().animateContentSize(),
         colors =
-        CardDefaults.elevatedCardColors(
+        CardDefaults.cardColors(
             containerColor = Ios.colors.systemRed.copy(alpha = 0.12f),
             contentColor = Ios.colors.systemRed,
         ),
@@ -1078,7 +1078,7 @@ private fun ProgressContent(
         Spacer(Modifier.height(12.dp))
 
         if (isDownloading || isUpdating) {
-            LinearWavyProgressIndicator(
+            IosProgressBar(
                 progress = { progressState.progress },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             )
@@ -1128,7 +1128,7 @@ internal fun AwaitingFileSaveState(
         )
     }
 
-    CircularWavyProgressIndicator(modifier = Modifier.size(64.dp))
+    IosActivityIndicator(modifier = Modifier.size(64.dp), color = Ios.colors.systemGray)
     Spacer(Modifier.height(24.dp))
     Text(
         stringResource(Res.string.firmware_update_save_dfu_file),

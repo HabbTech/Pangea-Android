@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.meshtastic.core.model.Node
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.proto.EnvironmentMetrics
 import org.meshtastic.proto.Paxcount
@@ -59,7 +60,7 @@ fun NodeChip(modifier: Modifier = Modifier, node: Node, onClick: ((Node) -> Unit
             Text(
                 modifier = Modifier.fillMaxWidth(),
                 text = node.user.short_name.ifEmpty { "???" },
-                style = MaterialTheme.typography.labelLarge,
+                style = Ios.type.subheadline,
                 textDecoration = TextDecoration.LineThrough.takeIf { node.isIgnored },
                 textAlign = TextAlign.Center,
                 maxLines = 1,

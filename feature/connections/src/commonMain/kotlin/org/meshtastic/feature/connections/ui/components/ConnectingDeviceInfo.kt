@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,6 +37,8 @@ import org.meshtastic.core.resources.node_restarting
 import org.meshtastic.core.resources.not_connected
 import org.meshtastic.core.resources.reconnecting
 import org.meshtastic.core.resources.stop_connecting
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.viewmodel.ConnectionStatus
 
 /**
@@ -85,16 +85,12 @@ fun ConnectingDeviceInfo(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            CircularWavyProgressIndicator(modifier = Modifier.size(40.dp))
+            IosActivityIndicator(modifier = Modifier.size(40.dp), color = Ios.colors.systemGray)
 
             Column {
-                Text(text = deviceName, style = MaterialTheme.typography.headlineSmall)
-                Text(text = deviceAddress, style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    text = statusLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                Text(text = deviceName, style = Ios.type.title3)
+                Text(text = deviceAddress, style = Ios.type.body)
+                Text(text = statusLabel, style = Ios.type.subheadline, color = Ios.colors.tint)
             }
         }
 

@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -77,6 +76,7 @@ import org.meshtastic.core.resources.device_metrics_voltage_value
 import org.meshtastic.core.resources.uptime
 import org.meshtastic.core.resources.voltage
 import org.meshtastic.core.ui.component.MaterialBatteryInfo
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.GraphColors.Cyan
 import org.meshtastic.core.ui.theme.GraphColors.Gold
@@ -428,7 +428,7 @@ private fun DeviceMetricsCard(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     text = timeTextOverride ?: DateFormatter.formatDateTime(time),
-                    style = MaterialTheme.typography.titleMediumEmphasized,
+                    style = Ios.type.headline,
                     fontWeight = FontWeight.Bold,
                 )
 
@@ -487,8 +487,8 @@ private fun DeviceMetricsCard(
                 Text(
                     text =
                     formatString(labelValueTemplate, uptimeLabel, formatUptime(deviceMetrics?.uptime_seconds ?: 0)),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = Ios.colors.label,
+                    style = Ios.type.subheadline,
                 )
             }
         }

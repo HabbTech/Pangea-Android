@@ -65,7 +65,7 @@ fun CustomTileSourcesMenuItem(modifier: Modifier = Modifier, onAddLocalMbTiles: 
     )
 
     if (sheetVisible) {
-        IosBottomSheet(onDismissRequest = { sheetVisible = false }) {
+        IosBottomSheet(onDismissRequest = { sheetVisible = false }, grouped = true) {
             CustomTileProviderManager(
                 providers = providers,
                 onAdd = { config -> scope.launch { repository.addCustomTileProvider(config) } },

@@ -16,7 +16,6 @@
  */
 package org.meshtastic.feature.map.maplibre.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -31,6 +30,7 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.map_cache_megabytes
 import org.meshtastic.core.resources.map_cache_size
 import org.meshtastic.core.resources.map_cache_tiles
+import org.meshtastic.core.ui.ios.Ios
 
 /** Disk occupied by every downloaded pack. */
 internal data class CacheUsage(val tiles: Long = 0L, val bytes: Long = 0L)
@@ -78,7 +78,7 @@ internal fun CacheUsageLine(storedBytes: Long, storedTiles: Long) {
             stringResource(Res.string.map_cache_megabytes, storedBytes.megabytes()) +
             " · " +
             stringResource(Res.string.map_cache_tiles, storedTiles.toInt()),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = Ios.type.footnote,
+        color = Ios.colors.secondaryLabel,
     )
 }

@@ -32,7 +32,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +62,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.ThumbUp
 import org.meshtastic.core.ui.icon.Warning
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.IAQColors.IAQDangerouslyPolluted
 import org.meshtastic.core.ui.theme.IAQColors.IAQExcellent
@@ -211,11 +211,7 @@ fun IndoorAirQuality(iaq: Int?, displayMode: IaqDisplayMode = IaqDisplayMode.Pil
                             onClick = { isLegendOpen = true },
                         ),
                     ) {
-                        LinearProgressIndicator(
-                            progress = { iaq / 500f },
-                            modifier = Modifier.fillMaxWidth().height(20.dp),
-                            color = iaqEnum.color,
-                        )
+                        IosProgressBar(progress = { iaq / 500f }, modifier = Modifier.fillMaxWidth().height(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(text = iaqEnum.description, fontSize = 12.sp)
                     }

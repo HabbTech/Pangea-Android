@@ -16,12 +16,12 @@
  */
 package org.meshtastic.feature.settings.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import org.meshtastic.core.ui.ios.Ios
 
 /** Color of the "Expert Mode" caption shown beneath expert-gated settings items. */
-@Composable fun expertModeCaptionColor(): Color = MaterialTheme.colorScheme.tertiary
+@Composable fun expertModeCaptionColor(): Color = Ios.colors.systemBlue
 // Note: an iOS-parity literal orange (#FF9500) was evaluated and rejected (2.04:1 on light — fails AA).
 // With the Fossil palette, brand-orange lives in colorScheme.primary; captions stay tertiary blue for contrast +
 // distinctness.

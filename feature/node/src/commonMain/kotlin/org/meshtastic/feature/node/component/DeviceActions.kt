@@ -58,6 +58,7 @@ import org.meshtastic.core.ui.icon.QrCode2
 import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeOff
 import org.meshtastic.core.ui.icon.VolumeUp
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.feature.node.model.LogsType
 import org.meshtastic.feature.node.model.NodeDetailAction
 import org.meshtastic.feature.node.model.showsDirectMessageAction
@@ -125,8 +126,8 @@ private fun PrimaryActionsRow(
                 shape = MaterialTheme.shapes.large,
                 colors =
                 ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    containerColor = Ios.colors.tintContainer,
+                    contentColor = Ios.colors.onTintContainer,
                 ),
             ) {
                 Icon(MeshtasticIcons.Message, contentDescription = null)
@@ -195,8 +196,8 @@ private fun ManagementActions(node: Node, onAction: (NodeDetailAction) -> Unit) 
             text = stringResource(Res.string.remove),
             leadingIcon = MeshtasticIcons.Delete,
             trailingIcon = null,
-            textColor = MaterialTheme.colorScheme.error,
-            leadingIconTint = MaterialTheme.colorScheme.error,
+            textColor = Ios.colors.systemRed,
+            leadingIconTint = Ios.colors.systemRed,
             onClick = { onAction(NodeDetailAction.HandleNodeMenuAction(NodeMenuAction.Remove(node))) },
         )
     }

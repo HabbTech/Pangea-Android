@@ -32,7 +32,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +58,7 @@ import org.meshtastic.core.resources.save
 import org.meshtastic.core.ui.component.AvatarPalette
 import org.meshtastic.core.ui.component.PangeaAvatar
 import org.meshtastic.core.ui.component.PangeaEmojiPicker
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosSheet
@@ -100,13 +100,13 @@ fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit
             )
             Text(
                 stringResource(Res.string.pangea_chat_icon_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
             )
             // Wraps to the screen width; a fixed eight per row ran off a phone's edge.
             FlowRow(horizontalArrangement = Arrangement.Center) {
                 EmojiCatalog.suggestedEmoji.forEach { item ->
-                    val ring = if (item == emoji) MaterialTheme.colorScheme.primary else Color.Transparent
+                    val ring = if (item == emoji) Ios.colors.tint else Color.Transparent
                     Text(
                         item,
                         fontSize = 24.sp,
@@ -122,7 +122,7 @@ fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit
             TextButton(onClick = { showAll = true }) { Text(stringResource(Res.string.pangea_all_emoji)) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AvatarPalette.colors.forEachIndexed { index, swatch ->
-                    val ring = if (index == color) MaterialTheme.colorScheme.onSurface else Color.Transparent
+                    val ring = if (index == color) Ios.colors.label else Color.Transparent
                     Box(
                         modifier =
                         Modifier.size(34.dp).clip(CircleShape).border(3.dp, ring, CircleShape).clickable {

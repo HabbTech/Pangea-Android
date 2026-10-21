@@ -19,7 +19,6 @@ package org.meshtastic.feature.node.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -32,6 +31,7 @@ import org.meshtastic.core.resources.node_count_online
 import org.meshtastic.core.resources.node_count_shown
 import org.meshtastic.core.resources.node_count_template
 import org.meshtastic.core.resources.node_count_total
+import org.meshtastic.core.ui.ios.Ios
 
 /** Horizontal gap between two count labels that share a line. */
 private val LABEL_GAP = 12.dp
@@ -77,12 +77,6 @@ internal fun NodeCountSummaryContent(labels: List<String>, contentDescription: S
         horizontalArrangement = Arrangement.spacedBy(LABEL_GAP),
         verticalArrangement = Arrangement.spacedBy(LINE_GAP),
     ) {
-        labels.forEach { label ->
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        labels.forEach { label -> Text(text = label, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel) }
     }
 }

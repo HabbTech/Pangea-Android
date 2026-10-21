@@ -16,7 +16,6 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +28,7 @@ import org.meshtastic.core.resources.altitude
 import org.meshtastic.core.resources.elevation_suffix
 import org.meshtastic.core.ui.icon.Elevation
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 @Composable
@@ -37,7 +37,7 @@ fun ElevationInfo(
     altitude: Int,
     system: MeasurementSystem,
     suffix: String = stringResource(Res.string.elevation_suffix),
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    contentColor: Color = Ios.colors.label,
 ) {
     IconInfo(
         modifier = modifier,

@@ -35,7 +35,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -175,7 +174,7 @@ fun Legend(
                 FilterChip(
                     selected = isVisible,
                     onClick = { onToggle(index) },
-                    label = { Text(text = label, style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(text = label, style = Ios.type.caption2) },
                     leadingIcon = { LegendIndicator(color = data.color, isLine = data.isLine) },
                     modifier = Modifier.padding(horizontal = 2.dp),
                 )
@@ -183,11 +182,7 @@ fun Legend(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
                     LegendIndicator(color = data.color, isLine = data.isLine)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = label,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        style = MaterialTheme.typography.labelSmall,
-                    )
+                    Text(text = label, color = Ios.colors.label, style = Ios.type.caption2)
                 }
             }
         }

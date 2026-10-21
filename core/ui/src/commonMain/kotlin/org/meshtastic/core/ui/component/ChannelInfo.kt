@@ -16,7 +16,6 @@
  */
 package org.meshtastic.core.ui.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,15 +34,12 @@ import org.meshtastic.core.ui.icon.Counter6
 import org.meshtastic.core.ui.icon.Counter7
 import org.meshtastic.core.ui.icon.Counter8
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 
 @Composable
 @Suppress("MagicNumber")
-fun ChannelInfo(
-    channel: Int,
-    modifier: Modifier = Modifier,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
-) {
+fun ChannelInfo(channel: Int, modifier: Modifier = Modifier, contentColor: Color = Ios.colors.label) {
     val icon =
         when (channel) {
             0 -> MeshtasticIcons.Counter0

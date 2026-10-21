@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +49,7 @@ import org.meshtastic.core.resources.pangea_radio_connecting
 import org.meshtastic.core.resources.pangea_radio_not_connected
 import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.pangea.MyProfileViewModel
 
 /** My radio: its name and whether it's connected, with Pair and Forget (Pangea-Apple MyRadioSection). */
@@ -63,7 +63,7 @@ fun MyRadioSection(
     val connection by viewModel.connectionState.collectAsStateWithLifecycle()
     var confirmForget by remember { mutableStateOf(false) }
     val paired = state.code != null
-    Card(modifier = modifier.fillMaxWidth()) {
+    IosCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(Res.string.pangea_my_radio), style = Ios.type.caption1)
             Text(

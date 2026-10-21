@@ -24,7 +24,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,6 +45,7 @@ import org.meshtastic.core.resources.name
 import org.meshtastic.core.resources.type
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.proto.RemoteHardwarePin
 import org.meshtastic.proto.RemoteHardwarePinType
@@ -66,12 +66,12 @@ inline fun <reified T> EditListPreference(
     val listState = remember(list) { mutableStateListOf<T>().apply { addAll(list) } }
 
     Column(modifier = modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Text(text = title, style = MaterialTheme.typography.titleLarge)
+        Text(text = title, style = Ios.type.title3)
         if (summary != null) {
             Text(
                 text = summary,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
                 modifier = Modifier.padding(top = 4.dp),
             )
         }

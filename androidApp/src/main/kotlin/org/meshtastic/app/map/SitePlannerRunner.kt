@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -64,6 +63,8 @@ import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.site_planner_estimating
 import org.meshtastic.core.resources.site_planner_failed
 import org.meshtastic.core.resources.site_planner_webview_updating
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.feature.map.component.SITE_PLANNER_URL
 import org.meshtastic.feature.map.component.SitePlannerParams
 import org.meshtastic.feature.map.component.SitePlannerSheet
@@ -155,14 +156,14 @@ fun SitePlannerHost(
                 Surface(
                     modifier = Modifier.matchParentSize(),
                     shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.surface,
+                    color = Ios.colors.background,
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
                     ) {
-                        CircularWavyProgressIndicator()
+                        IosActivityIndicator(modifier = Modifier, color = Ios.colors.systemGray)
                         Text(estimatingText)
                         TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
                     }
