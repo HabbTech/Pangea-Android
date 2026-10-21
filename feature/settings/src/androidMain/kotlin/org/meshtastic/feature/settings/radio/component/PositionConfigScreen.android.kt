@@ -18,8 +18,6 @@ package org.meshtastic.feature.settings.radio.component
 
 import android.annotation.SuppressLint
 import android.os.Build
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.location.LocationCompat
@@ -28,6 +26,8 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.Position
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.position_config_set_fixed_from_phone
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 
 @Composable
@@ -38,8 +38,8 @@ actual fun DeviceLocationButton(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    TextButton(
-        enabled = enabled,
+    IosButton(
+        text = stringResource(Res.string.position_config_set_fixed_from_phone),
         onClick = {
             @SuppressLint("MissingPermission")
             coroutineScope.launch {
@@ -62,7 +62,7 @@ actual fun DeviceLocationButton(
                 }
             }
         },
-    ) {
-        Text(text = stringResource(Res.string.position_config_set_fixed_from_phone))
-    }
+        style = IosButtonStyle.Plain,
+        enabled = enabled,
+    )
 }

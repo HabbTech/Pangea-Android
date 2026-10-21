@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -69,6 +68,7 @@ import org.meshtastic.core.ui.component.rememberAvatarBitmap
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosInset
@@ -213,9 +213,11 @@ private fun PhotoRow(viewModel: PangeaChatsViewModel, num: Long, canUpdate: Bool
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(Res.string.pangea_photo_offer), modifier = Modifier.weight(1f))
-                    Button(onClick = { viewModel.requestPhoto(num) }, enabled = viewModel.canRequestPhoto(num)) {
-                        Text(stringResource(Res.string.pangea_get_photo))
-                    }
+                    IosButton(
+                        text = stringResource(Res.string.pangea_get_photo),
+                        onClick = { viewModel.requestPhoto(num) },
+                        enabled = viewModel.canRequestPhoto(num),
+                    )
                     IconButton(onClick = { viewModel.declinePhoto(num) }) {
                         Icon(MeshtasticIcons.Close, contentDescription = null)
                     }

@@ -29,7 +29,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -83,6 +82,8 @@ import org.meshtastic.core.ui.component.RegularPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -456,12 +457,12 @@ internal fun BroadcastTargetsCard(
             )
         }
         PreferenceDivider()
-        TextButton(
+        IosButton(
+            text = stringResource(Res.string.mesh_beacon_target_add),
             onClick = { onChange(targets + MeshBeaconConfig.BroadcastTarget.Builder().build()) },
+            style = IosButtonStyle.Plain,
             enabled = enabled,
-        ) {
-            Text(stringResource(Res.string.mesh_beacon_target_add))
-        }
+        )
     }
 }
 
@@ -531,7 +532,12 @@ private fun BroadcastTargetRow(
         enabled = enabled,
         onItemSelected = { sel -> onChange { it.newBuilder().also { wb -> wb.preset = sel }.build() } },
     )
-    TextButton(onClick = onRemove, enabled = enabled) { Text(stringResource(Res.string.mesh_beacon_target_remove)) }
+    IosButton(
+        text = stringResource(Res.string.mesh_beacon_target_remove),
+        onClick = onRemove,
+        style = IosButtonStyle.Plain,
+        enabled = enabled,
+    )
 }
 
 /** iOS's note above the beacon settings while the radio has no LoRa region: a beacon needs one. */

@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -33,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.common.util.MeasurementSystem
@@ -48,6 +46,8 @@ import org.meshtastic.core.ui.icon.Compass
 import org.meshtastic.core.ui.icon.Distance
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.util.LocalInlineMapProvider
 import org.meshtastic.core.ui.util.LocalSitePlannerAvailable
 import org.meshtastic.feature.node.model.NodeDetailAction
@@ -73,37 +73,25 @@ internal fun PositionInlineContent(
     LinkedCoordinatesItem(node, displayUnits)
     if (!showActions) return
     Spacer(Modifier.height(8.dp))
-    FilledTonalButton(
+    IosButton(
+        text = stringResource(Res.string.open_compass),
         onClick = { onAction(NodeDetailAction.OpenCompass(node, displayUnits)) },
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Icon(MeshtasticIcons.Compass, null, Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = stringResource(Res.string.open_compass),
-            style = Ios.type.subheadline,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+        large = true,
+        style = IosButtonStyle.Tinted,
+        icon = MeshtasticIcons.Compass,
+    )
     // Estimate RF coverage for this node in the Site Planner (Google flavor, position-gated).
     if (LocalSitePlannerAvailable.current && node.validPosition != null) {
         Spacer(Modifier.height(8.dp))
-        FilledTonalButton(
+        IosButton(
+            text = stringResource(Res.string.site_planner_estimate),
             onClick = { onAction(NodeDetailAction.Navigate(MapRoute.Map(sitePlannerNodeNum = node.num))) },
             modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large,
-        ) {
-            Icon(MeshtasticIcons.CellTower, null, Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = stringResource(Res.string.site_planner_estimate),
-                style = Ios.type.subheadline,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+            large = true,
+            style = IosButtonStyle.Tinted,
+            icon = MeshtasticIcons.CellTower,
+        )
     }
 }
 

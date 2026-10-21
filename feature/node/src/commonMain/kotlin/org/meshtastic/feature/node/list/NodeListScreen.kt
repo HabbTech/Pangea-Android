@@ -35,7 +35,6 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -489,7 +488,7 @@ private fun NodeListEmptyState(
         Text(text = hint, style = Ios.type.subheadline, color = Ios.colors.secondaryLabel, textAlign = TextAlign.Center)
         if (!isConnected) {
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onNavigateToConnections) { Text(stringResource(Res.string.set_up_connection)) }
+            IosButton(text = stringResource(Res.string.set_up_connection), onClick = onNavigateToConnections)
         }
     }
 }

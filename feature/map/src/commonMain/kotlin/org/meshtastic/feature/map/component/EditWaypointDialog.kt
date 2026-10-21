@@ -27,7 +27,6 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TimePickerDialog
 import androidx.compose.material3.rememberDatePickerState
@@ -87,6 +86,8 @@ import org.meshtastic.core.resources.time
 import org.meshtastic.core.ui.emoji.EmojiPickerDialog
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.IosSection
@@ -449,17 +450,19 @@ private fun ExpiryDatePickerDialog(initial: LocalDateTime, onPick: (LocalDate) -
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(
+            IosButton(
+                text = stringResource(Res.string.save),
                 onClick = {
                     state.selectedDateMillis?.let { millis ->
                         onPick(Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.UTC).date)
                     } ?: onDismiss()
                 },
-            ) {
-                Text(stringResource(Res.string.save))
-            }
+                style = IosButtonStyle.Plain,
+            )
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
+        dismissButton = {
+            IosButton(text = stringResource(Res.string.cancel), onClick = onDismiss, style = IosButtonStyle.Plain)
+        },
     ) {
         DatePicker(state = state)
     }
@@ -478,10 +481,16 @@ private fun ExpiryTimePickerDialog(initial: LocalDateTime, onPick: (Int, Int) ->
     TimePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = { onPick(state.hour, state.minute) }) { Text(stringResource(Res.string.save)) }
+            IosButton(
+                text = stringResource(Res.string.save),
+                onClick = { onPick(state.hour, state.minute) },
+                style = IosButtonStyle.Plain,
+            )
         },
         title = { Text(stringResource(Res.string.time)) },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) } },
+        dismissButton = {
+            IosButton(text = stringResource(Res.string.cancel), onClick = onDismiss, style = IosButtonStyle.Plain)
+        },
     ) {
         TimePicker(state = state)
     }

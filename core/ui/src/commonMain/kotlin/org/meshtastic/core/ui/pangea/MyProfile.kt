@@ -35,10 +35,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -201,7 +199,11 @@ fun MyProfileSection(modifier: Modifier = Modifier, viewModel: MyProfileViewMode
                 Text(name, style = Ios.type.headline)
                 state.code?.let { Text(it, fontFamily = FontFamily.Monospace, style = Ios.type.footnote) }
             }
-            TextButton(onClick = { editing = true }) { Text(stringResource(Res.string.pangea_edit_profile)) }
+            IosButton(
+                text = stringResource(Res.string.pangea_edit_profile),
+                onClick = { editing = true },
+                style = IosButtonStyle.Plain,
+            )
         }
     }
     if (editing) ProfileEditorSheet(state, onSave = viewModel::save, onDismiss = { editing = false })
@@ -362,7 +364,7 @@ private fun EmojiQuickPicks(selected: String, onPick: (String) -> Unit, onAll: (
                 )
             }
         }
-        TextButton(onClick = onAll) { Text(stringResource(Res.string.pangea_all_emoji)) }
+        IosButton(text = stringResource(Res.string.pangea_all_emoji), onClick = onAll, style = IosButtonStyle.Plain)
     }
 }
 
@@ -407,7 +409,7 @@ fun SetupProfilePrompt(modifier: Modifier = Modifier, viewModel: MyProfileViewMo
                         color = Ios.colors.secondaryLabel,
                     )
                 }
-                Button(onClick = { editing = true }) { Text(stringResource(Res.string.pangea_edit_profile)) }
+                IosButton(text = stringResource(Res.string.pangea_edit_profile), onClick = { editing = true })
             }
         }
     }

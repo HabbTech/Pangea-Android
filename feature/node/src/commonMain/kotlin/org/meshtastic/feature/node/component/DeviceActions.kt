@@ -23,8 +23,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -59,6 +57,8 @@ import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeOff
 import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.feature.node.model.LogsType
 import org.meshtastic.feature.node.model.NodeDetailAction
 import org.meshtastic.feature.node.model.showsDirectMessageAction
@@ -120,20 +120,13 @@ private fun PrimaryActionsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showMessageAction) {
-            Button(
+            IosButton(
+                text = stringResource(Res.string.direct_message),
                 onClick = { onAction(NodeDetailAction.HandleNodeMenuAction(NodeMenuAction.DirectMessage(node))) },
                 modifier = Modifier.weight(1f),
-                shape = MaterialTheme.shapes.large,
-                colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = Ios.colors.tintContainer,
-                    contentColor = Ios.colors.onTintContainer,
-                ),
-            ) {
-                Icon(MeshtasticIcons.Message, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.direct_message))
-            }
+                icon = MeshtasticIcons.Message,
+                style = IosButtonStyle.Tinted,
+            )
         }
 
         OutlinedButton(

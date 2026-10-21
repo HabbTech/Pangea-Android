@@ -38,7 +38,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,7 +45,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -169,6 +167,8 @@ import org.meshtastic.core.ui.icon.Map
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.TripOrigin
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.theme.TracerouteColors
 import org.meshtastic.core.ui.util.ActiveWhileStarted
 import org.meshtastic.core.ui.util.KeepScreenOn
@@ -914,19 +914,20 @@ fun MapView(
                         style = Ios.type.subheadline,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(
+                    IosButton(
+                        text = stringResource(Res.string.cancel),
                         onClick = {
                             boxAuthoringDraft = null
                             boxAuthoringFirstCorner = null
                             boxAuthoringSecondCorner = null
                             editingWaypoint = draft
                         },
-                    ) {
-                        Text(stringResource(Res.string.cancel))
-                    }
+                        style = IosButtonStyle.Plain,
+                    )
                     // Single operable control: commits the currently-visible map bounds as the box, so the box can be
                     // authored without the two precise corner taps (keyboard/screen-reader accessible path).
-                    Button(
+                    IosButton(
+                        text = stringResource(Res.string.geofence_box_use_view),
                         onClick = {
                             val bounds = cameraPositionState.projection?.visibleRegion?.latLngBounds
                             if (bounds != null) {
@@ -938,9 +939,7 @@ fun MapView(
                                 boxAuthoringSecondCorner = null
                             }
                         },
-                    ) {
-                        Text(stringResource(Res.string.geofence_box_use_view))
-                    }
+                    )
                 }
             }
         }

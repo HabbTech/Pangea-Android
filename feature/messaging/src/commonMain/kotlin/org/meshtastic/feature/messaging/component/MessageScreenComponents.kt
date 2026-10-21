@@ -35,7 +35,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -130,6 +129,7 @@ import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosMenu
@@ -750,7 +750,7 @@ fun QuickChatRow(
 
     LazyRow(modifier = modifier.padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         items(allActions, key = { it.uuid }) { action ->
-            Button(onClick = { onClick(action) }, enabled = enabled) { Text(text = action.name) }
+            IosButton(text = action.name, onClick = { onClick(action) }, enabled = enabled)
         }
     }
 }

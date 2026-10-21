@@ -22,10 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +44,8 @@ import org.meshtastic.core.resources.mesh_beacon_offer_region
 import org.meshtastic.core.resources.mesh_beacon_offer_signal
 import org.meshtastic.core.resources.mesh_beacon_offer_title
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.proto.Config.LoRaConfig.RegionCode
 
@@ -114,10 +113,18 @@ internal fun MeshBeaconInvitationCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.mesh_beacon_offer_dismiss)) }
+                IosButton(
+                    text = stringResource(Res.string.mesh_beacon_offer_dismiss),
+                    onClick = onDismiss,
+                    style = IosButtonStyle.Plain,
+                )
                 Spacer(modifier = Modifier.weight(1f))
                 if (presetOption != null) {
-                    OutlinedButton(onClick = onDiscover) { Text(stringResource(Res.string.mesh_beacon_offer_discover)) }
+                    IosButton(
+                        text = stringResource(Res.string.mesh_beacon_offer_discover),
+                        onClick = onDiscover,
+                        style = IosButtonStyle.Tinted,
+                    )
                 }
                 // "Add channel" joins with no reboot (same frequency slot); otherwise "Join" retunes + reboots.
                 val joinLabel =
@@ -127,9 +134,11 @@ internal fun MeshBeaconInvitationCard(
                         Res.string.mesh_beacon_offer_join
                     }
                 // NONE (no offered channel) can't be joined — toJoinChannelSet returns null — so disable the action.
-                Button(onClick = onJoin, enabled = joinOption != BeaconJoinOption.NONE) {
-                    Text(stringResource(joinLabel))
-                }
+                IosButton(
+                    text = stringResource(joinLabel),
+                    onClick = onJoin,
+                    enabled = joinOption != BeaconJoinOption.NONE,
+                )
             }
         }
     }

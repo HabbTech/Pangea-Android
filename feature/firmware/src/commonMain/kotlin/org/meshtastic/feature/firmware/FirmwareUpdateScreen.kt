@@ -39,9 +39,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -937,9 +935,11 @@ internal fun UsbMaintenanceCard(deviceName: String, onBootloaderUpgrade: () -> U
 
     IosCard(modifier = Modifier.fillMaxWidth().animateContentSize()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            TextButton(onClick = { showUpgradeConfirmation = true }) {
-                Text(stringResource(Res.string.firmware_maintenance_upgrade_bootloader_action))
-            }
+            IosButton(
+                text = stringResource(Res.string.firmware_maintenance_upgrade_bootloader_action),
+                onClick = { showUpgradeConfirmation = true },
+                style = IosButtonStyle.Plain,
+            )
         }
     }
 }
@@ -989,13 +989,19 @@ private fun BootloaderWarningCard(deviceHardware: DeviceHardware, onDismissForDe
             val infoUrl = deviceHardware.bootloaderInfoUrl
             if (!infoUrl.isNullOrEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = { openUrl(infoUrl) }) { Text(text = stringResource(Res.string.learn_more)) }
+                IosButton(
+                    text = stringResource(Res.string.learn_more),
+                    onClick = { openUrl(infoUrl) },
+                    style = IosButtonStyle.Plain,
+                )
             }
 
             Spacer(Modifier.height(8.dp))
-            TextButton(onClick = onDismissForDevice) {
-                Text(text = stringResource(Res.string.dont_show_again_for_device))
-            }
+            IosButton(
+                text = stringResource(Res.string.dont_show_again_for_device),
+                onClick = onDismissForDevice,
+                style = IosButtonStyle.Plain,
+            )
         }
     }
 }
@@ -1087,7 +1093,7 @@ private fun ProgressContent(
         Spacer(Modifier.height(16.dp))
         CyclingMessages()
         Spacer(Modifier.height(24.dp))
-        OutlinedButton(onClick = onCancel) { Text(stringResource(Res.string.cancel)) }
+        IosButton(text = stringResource(Res.string.cancel), onClick = onCancel, style = IosButtonStyle.Tinted)
     }
 }
 
@@ -1148,7 +1154,7 @@ internal fun AwaitingFileSaveState(
 
     if (!showDialog) {
         Spacer(Modifier.height(16.dp))
-        Button(onClick = launchPicker) { Text(stringResource(Res.string.save)) }
+        IosButton(text = stringResource(Res.string.save), onClick = launchPicker)
     }
 }
 
@@ -1197,12 +1203,13 @@ private fun VerificationFailedState(onRetry: () -> Unit, onIgnore: () -> Unit) {
     )
     Spacer(Modifier.height(32.dp))
     Row(horizontalArrangement = spacedBy(16.dp)) {
-        OutlinedButton(onClick = onRetry) {
-            Icon(MeshtasticIcons.Refresh, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(Res.string.firmware_update_retry))
-        }
-        Button(onClick = onIgnore) { Text(stringResource(Res.string.firmware_update_done)) }
+        IosButton(
+            text = stringResource(Res.string.firmware_update_retry),
+            onClick = onRetry,
+            style = IosButtonStyle.Tinted,
+            icon = MeshtasticIcons.Refresh,
+        )
+        IosButton(text = stringResource(Res.string.firmware_update_done), onClick = onIgnore)
     }
 }
 
@@ -1222,11 +1229,12 @@ internal fun ErrorState(error: UiText, onRetry: () -> Unit) {
         textAlign = TextAlign.Center,
     )
     Spacer(Modifier.height(32.dp))
-    OutlinedButton(onClick = onRetry) {
-        Icon(MeshtasticIcons.Refresh, contentDescription = null)
-        Spacer(Modifier.width(8.dp))
-        Text(stringResource(Res.string.firmware_update_retry))
-    }
+    IosButton(
+        text = stringResource(Res.string.firmware_update_retry),
+        onClick = onRetry,
+        style = IosButtonStyle.Tinted,
+        icon = MeshtasticIcons.Refresh,
+    )
 }
 
 @Composable
@@ -1268,7 +1276,11 @@ internal fun SuccessState(wasLowSpeedTransfer: Boolean = false, deviceWasWiped: 
                 color = Ios.colors.secondaryLabel,
                 textAlign = TextAlign.Center,
             )
-            TextButton(onClick = { openUrl(OTAFIX_BOOTLOADER_URL) }) { Text(stringResource(Res.string.learn_more)) }
+            IosButton(
+                text = stringResource(Res.string.learn_more),
+                onClick = { openUrl(OTAFIX_BOOTLOADER_URL) },
+                style = IosButtonStyle.Plain,
+            )
         }
         Spacer(Modifier.height(32.dp))
         val largeHeight = ButtonDefaults.LargeContainerHeight

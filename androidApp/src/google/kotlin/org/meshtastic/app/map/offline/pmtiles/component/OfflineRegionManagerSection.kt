@@ -21,12 +21,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,6 +64,8 @@ import org.meshtastic.core.resources.offline_maps_empty
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.feature.map.terrain.TerrainDownloadFailure
 import org.meshtastic.feature.map.terrain.TerrainDownloadState
@@ -132,13 +132,12 @@ internal fun OfflineRegionManagerSection(
 
         DownloadStatusLine(downloadState)
 
-        Button(
+        IosButton(
+            text = stringResource(Res.string.map_start_download),
             onClick = { visibleBounds?.let { onDownload(it, zoomRange) } },
-            enabled = visibleBounds != null && estimate > 0L && downloadState !is OfflineDownloadState.InProgress,
             modifier = Modifier.padding(vertical = 8.dp),
-        ) {
-            Text(text = stringResource(Res.string.map_start_download))
-        }
+            enabled = visibleBounds != null && estimate > 0L && downloadState !is OfflineDownloadState.InProgress,
+        )
 
         DownloadedRegionsList(
             regions = regions,
@@ -290,9 +289,12 @@ private fun OfflineRegionRow(
         } else if (isDownloadingTerrain) {
             TerrainDownloadStatusLine(terrainDownloadState)
         } else {
-            TextButton(onClick = onDownloadTerrain, enabled = terrainDownloadEnabled) {
-                Text(stringResource(Res.string.map_offline_download_terrain))
-            }
+            IosButton(
+                text = stringResource(Res.string.map_offline_download_terrain),
+                onClick = onDownloadTerrain,
+                style = IosButtonStyle.Plain,
+                enabled = terrainDownloadEnabled,
+            )
         }
     }
 }

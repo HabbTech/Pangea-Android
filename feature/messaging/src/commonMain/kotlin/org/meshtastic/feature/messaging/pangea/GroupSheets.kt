@@ -25,13 +25,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -86,6 +83,7 @@ import org.meshtastic.core.ui.icon.Group
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosSheet
@@ -122,8 +120,12 @@ private fun InviteCard(item: PendingGroupInvite, sender: String, onJoin: () -> U
                 color = Ios.colors.secondaryLabel,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-                Button(onClick = onJoin) { Text(stringResource(Res.string.pangea_join)) }
-                OutlinedButton(onClick = onDecline) { Text(stringResource(Res.string.pangea_decline)) }
+                IosButton(text = stringResource(Res.string.pangea_join), onClick = onJoin)
+                IosButton(
+                    text = stringResource(Res.string.pangea_decline),
+                    onClick = onDecline,
+                    style = IosButtonStyle.Tinted,
+                )
             }
         }
     }
@@ -195,19 +197,20 @@ fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave:
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
-                    Button(
+                    IosButton(
+                        text = stringResource(Res.string.pangea_share_group),
                         onClick = {
                             viewModel
                                 .shareable(group)
                                 .onSuccess { showQr = it }
                                 .onFailure { viewModel.reportShareError(it) }
                         },
-                    ) {
-                        Text(stringResource(Res.string.pangea_share_group))
-                    }
-                    OutlinedButton(onClick = { confirmLeave = true }) {
-                        Text(stringResource(Res.string.pangea_leave_group))
-                    }
+                    )
+                    IosButton(
+                        text = stringResource(Res.string.pangea_leave_group),
+                        onClick = { confirmLeave = true },
+                        style = IosButtonStyle.Tinted,
+                    )
                 }
             }
             item { Text(stringResource(Res.string.pangea_invite_people), style = Ios.type.subheadline) }
@@ -219,11 +222,11 @@ fun GroupInfoSheet(viewModel: PangeaChatsViewModel, group: PangeaGroup, onLeave:
                         if (sent) {
                             Text(stringResource(Res.string.pangea_invite_sent), style = Ios.type.caption1)
                         } else {
-                            TextButton(
+                            IosButton(
+                                text = stringResource(Res.string.pangea_invite_people),
                                 onClick = { viewModel.sendInvite(group, person.num) { invited.value += person.num } },
-                            ) {
-                                Text(stringResource(Res.string.pangea_invite_people))
-                            }
+                                style = IosButtonStyle.Plain,
+                            )
                         }
                     },
                 )

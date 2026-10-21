@@ -39,7 +39,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -107,6 +106,7 @@ import org.meshtastic.core.ui.icon.MyLocation
 import org.meshtastic.core.ui.icon.PinDrop
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosSwitch
 
 private const val LAT_LIMIT = 90.0
@@ -244,13 +244,13 @@ private fun SiteFormContent(
                 )
             }
         }
-        Button(
+        IosButton(
+            text = stringResource(Res.string.site_planner_estimate),
             onClick = { onSubmit(buildSubmitParams(state, initial)) },
-            enabled = state.canSubmit,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(Res.string.site_planner_estimate))
-        }
+            large = true,
+            enabled = state.canSubmit,
+        )
     }
 }
 

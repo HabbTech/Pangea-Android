@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
@@ -69,6 +68,8 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Nfc
 import org.meshtastic.core.ui.icon.Share
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.theme.SemanticColors
 import org.meshtastic.core.ui.util.LocalNfcEmulationSupported
 import org.meshtastic.core.ui.util.LocalNfcEmulatorProvider
@@ -213,22 +214,24 @@ fun QrDialog(
                     }
                 }
 
-                OutlinedButton(
+                IosButton(
+                    text = stringResource(Res.string.share_action),
                     onClick = { shareText(uriString, shareSubject) },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                ) {
-                    Icon(imageVector = MeshtasticIcons.Share, contentDescription = null)
-                    Text(text = stringResource(Res.string.share_action), modifier = Modifier.padding(start = 8.dp))
-                }
+                    large = true,
+                    style = IosButtonStyle.Tinted,
+                    icon = MeshtasticIcons.Share,
+                )
 
                 if (nfcSupported) {
-                    OutlinedButton(
+                    IosButton(
+                        text = stringResource(Res.string.write_nfc),
                         onClick = { isWritingNfc = true },
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    ) {
-                        Icon(imageVector = MeshtasticIcons.Nfc, contentDescription = null)
-                        Text(text = stringResource(Res.string.write_nfc), modifier = Modifier.padding(start = 8.dp))
-                    }
+                        large = true,
+                        style = IosButtonStyle.Tinted,
+                        icon = MeshtasticIcons.Nfc,
+                    )
                 }
 
                 if (nfcSupported || hceSupported) {

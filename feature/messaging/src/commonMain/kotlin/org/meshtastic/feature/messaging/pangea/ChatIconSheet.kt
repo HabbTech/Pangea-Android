@@ -33,7 +33,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -119,7 +118,11 @@ fun ChatIconSheet(title: String, current: ChatIcon?, onSave: (ChatIcon?) -> Unit
                     )
                 }
             }
-            TextButton(onClick = { showAll = true }) { Text(stringResource(Res.string.pangea_all_emoji)) }
+            IosButton(
+                text = stringResource(Res.string.pangea_all_emoji),
+                onClick = { showAll = true },
+                style = IosButtonStyle.Plain,
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AvatarPalette.colors.forEachIndexed { index, swatch ->
                     val ring = if (index == color) Ios.colors.label else Color.Transparent

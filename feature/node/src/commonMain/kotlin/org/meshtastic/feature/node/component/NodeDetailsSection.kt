@@ -22,7 +22,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -35,7 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -106,6 +104,8 @@ import org.meshtastic.core.ui.icon.Rssi
 import org.meshtastic.core.ui.icon.Snr
 import org.meshtastic.core.ui.icon.role
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.theme.StatusColors.StatusYellow
 import org.meshtastic.core.ui.util.LocalModemPreset
 import org.meshtastic.core.ui.util.LocalNoiseFloor
@@ -465,9 +465,11 @@ private fun NoPublicKeyItem(onRequestUserInfo: (() -> Unit)?) {
         Spacer(Modifier.height(4.dp))
         Text(text = body, style = Ios.type.footnote, color = Ios.colors.label)
         if (onRequestUserInfo != null) {
-            TextButton(onClick = onRequestUserInfo, contentPadding = PaddingValues(0.dp)) {
-                Text(stringResource(Res.string.request_user_info))
-            }
+            IosButton(
+                text = stringResource(Res.string.request_user_info),
+                onClick = onRequestUserInfo,
+                style = IosButtonStyle.Plain,
+            )
         }
     }
 }

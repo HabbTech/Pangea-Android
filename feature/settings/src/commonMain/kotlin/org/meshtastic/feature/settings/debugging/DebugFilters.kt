@@ -66,6 +66,8 @@ import org.meshtastic.core.ui.icon.FilterAlt
 import org.meshtastic.core.ui.icon.FilterAltOff
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.feature.settings.debugging.DebugViewModel.UiMeshLog
 
@@ -250,7 +252,13 @@ fun DebugActiveFilters(
                     style = Ios.type.subheadline,
                     fontWeight = FontWeight.Bold,
                 )
-                TextButton(
+                IosButton(
+                    text =
+                    if (filterMode == FilterMode.OR) {
+                        stringResource(Res.string.match_any)
+                    } else {
+                        stringResource(Res.string.match_all)
+                    },
                     onClick = {
                         onFilterModeChange(
                             if (filterMode == FilterMode.OR) {
@@ -260,15 +268,8 @@ fun DebugActiveFilters(
                             },
                         )
                     },
-                ) {
-                    Text(
-                        if (filterMode == FilterMode.OR) {
-                            stringResource(Res.string.match_any)
-                        } else {
-                            stringResource(Res.string.match_all)
-                        },
-                    )
-                }
+                    style = IosButtonStyle.Plain,
+                )
                 IconButton(onClick = { onFilterTextsChange(emptyList()) }) {
                     Icon(
                         imageVector = MeshtasticIcons.Close,

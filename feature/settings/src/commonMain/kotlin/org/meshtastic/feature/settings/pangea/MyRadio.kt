@@ -21,9 +21,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +47,8 @@ import org.meshtastic.core.resources.pangea_radio_connecting
 import org.meshtastic.core.resources.pangea_radio_not_connected
 import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.pangea.MyProfileViewModel
 
@@ -87,17 +87,20 @@ fun MyRadioSection(
                 },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onPairRadio) {
-                    Text(
-                        stringResource(
-                            if (paired) Res.string.pangea_pair_different_radio else Res.string.pangea_pair_radio,
-                        ),
-                    )
-                }
+                IosButton(
+                    text =
+                    stringResource(
+                        if (paired) Res.string.pangea_pair_different_radio else Res.string.pangea_pair_radio,
+                    ),
+                    onClick = onPairRadio,
+                    style = IosButtonStyle.Tinted,
+                )
                 if (paired) {
-                    TextButton(onClick = { confirmForget = true }) {
-                        Text(stringResource(Res.string.pangea_forget_radio))
-                    }
+                    IosButton(
+                        text = stringResource(Res.string.pangea_forget_radio),
+                        onClick = { confirmForget = true },
+                        style = IosButtonStyle.Plain,
+                    )
                 }
             }
         }

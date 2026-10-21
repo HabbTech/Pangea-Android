@@ -19,14 +19,10 @@ package org.meshtastic.feature.node.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -42,6 +38,7 @@ import org.meshtastic.core.ui.icon.Download
 import org.meshtastic.core.ui.icon.LinkIcon
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.util.rememberOpenUrl
 
 @Composable
@@ -56,19 +53,18 @@ fun FirmwareReleaseSheetContent(firmwareRelease: FirmwareRelease, modifier: Modi
         Text(text = stringResource(Res.string.firmware_version, firmwareRelease.id), style = Ios.type.subheadline)
         Markdown(modifier = Modifier.padding(8.dp), content = firmwareRelease.releaseNotes)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { openUrl(firmwareRelease.pageUrl) }, modifier = Modifier.weight(1f)) {
-                Icon(
-                    imageVector = MeshtasticIcons.LinkIcon,
-                    contentDescription = stringResource(Res.string.view_release),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(Res.string.view_release))
-            }
-            Button(onClick = { openUrl(firmwareRelease.zipUrl) }, modifier = Modifier.weight(1f)) {
-                Icon(imageVector = MeshtasticIcons.Download, contentDescription = stringResource(Res.string.download))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = stringResource(Res.string.download))
-            }
+            IosButton(
+                text = stringResource(Res.string.view_release),
+                onClick = { openUrl(firmwareRelease.pageUrl) },
+                modifier = Modifier.weight(1f),
+                icon = MeshtasticIcons.LinkIcon,
+            )
+            IosButton(
+                text = stringResource(Res.string.download),
+                onClick = { openUrl(firmwareRelease.zipUrl) },
+                modifier = Modifier.weight(1f),
+                icon = MeshtasticIcons.Download,
+            )
         }
     }
 }

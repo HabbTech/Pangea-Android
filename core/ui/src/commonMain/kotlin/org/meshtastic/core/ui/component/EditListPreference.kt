@@ -24,7 +24,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -46,6 +45,8 @@ import org.meshtastic.core.resources.type
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.proto.RemoteHardwarePin
 import org.meshtastic.proto.RemoteHardwarePinType
@@ -166,8 +167,8 @@ inline fun <reified T> EditListPreference(
                 }
             }
         }
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
+        IosButton(
+            text = stringResource(Res.string.add),
             onClick = {
                 // Add element based on the type T
                 val newElement =
@@ -179,10 +180,11 @@ inline fun <reified T> EditListPreference(
                     }
                 listState.add(listState.size, newElement)
             },
+            modifier = Modifier.fillMaxWidth(),
+            large = true,
+            style = IosButtonStyle.Tinted,
             enabled = maxCount > listState.size,
-        ) {
-            Text(text = stringResource(Res.string.add))
-        }
+        )
     }
 }
 

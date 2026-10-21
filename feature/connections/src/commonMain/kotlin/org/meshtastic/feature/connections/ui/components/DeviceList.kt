@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -92,6 +91,7 @@ import org.meshtastic.core.ui.icon.Usb
 import org.meshtastic.core.ui.icon.Wifi
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.feature.connections.model.DeviceListEntry
 
 /**
@@ -483,12 +483,14 @@ private fun AddDeviceDialog(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(modifier = Modifier.weight(1f), onClick = { onHideDialog() }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-
-                Button(
+                IosButton(
+                    text = stringResource(Res.string.cancel),
+                    onClick = { onHideDialog() },
                     modifier = Modifier.weight(1f),
+                )
+
+                IosButton(
+                    text = stringResource(Res.string.add_network_device),
                     onClick = {
                         val address = addressState.text.toString()
                         if (address.isValidAddress()) {
@@ -505,9 +507,8 @@ private fun AddDeviceDialog(
                             onClickAdd(combinedString, "t$combinedString")
                         }
                     },
-                ) {
-                    Text(stringResource(Res.string.add_network_device))
-                }
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

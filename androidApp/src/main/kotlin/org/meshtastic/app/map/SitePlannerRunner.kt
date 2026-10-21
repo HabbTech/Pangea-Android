@@ -37,7 +37,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,6 +64,8 @@ import org.meshtastic.core.resources.site_planner_failed
 import org.meshtastic.core.resources.site_planner_webview_updating
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.feature.map.component.SITE_PLANNER_URL
 import org.meshtastic.feature.map.component.SitePlannerParams
 import org.meshtastic.feature.map.component.SitePlannerSheet
@@ -165,7 +166,11 @@ fun SitePlannerHost(
                     ) {
                         IosActivityIndicator(modifier = Modifier, color = Ios.colors.systemGray)
                         Text(estimatingText)
-                        TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
+                        IosButton(
+                            text = stringResource(Res.string.cancel),
+                            onClick = onDismiss,
+                            style = IosButtonStyle.Plain,
+                        )
                     }
                 }
             }

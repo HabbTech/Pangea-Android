@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -56,6 +55,7 @@ import org.meshtastic.core.resources.offline_terrain_regional_detail
 import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.feature.map.maplibre.terrain.OfflineTerrainRegion
 import org.meshtastic.feature.map.maplibre.terrain.OfflineTerrainRepository
@@ -162,13 +162,12 @@ private fun TerrainDownloadControls(
             }
         }
 
-        Button(
+        IosButton(
+            text = stringResource(Res.string.map_start_download),
             onClick = { bounds?.let { onStartDownload(it.toGeoBounds()) } },
-            enabled = bounds != null && estimate in 1L..TerrainRegionExtractor.MAX_TILES.toLong() && !isDownloading,
             modifier = Modifier.padding(vertical = 8.dp),
-        ) {
-            Text(text = stringResource(Res.string.map_start_download))
-        }
+            enabled = bounds != null && estimate in 1L..TerrainRegionExtractor.MAX_TILES.toLong() && !isDownloading,
+        )
 
         if (downloadState is TerrainDownloadState.InProgress) {
             val fraction =

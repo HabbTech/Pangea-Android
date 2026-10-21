@@ -19,10 +19,8 @@ package org.meshtastic.feature.settings.radio.component
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.CardDefaults
@@ -30,7 +28,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +36,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -95,6 +91,8 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PhoneAndroid
 import org.meshtastic.core.ui.icon.role
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosCheckCircle
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.util.annotatedStringFromHtml
@@ -264,24 +262,17 @@ fun DeviceConfigScreenCommon(viewModel: RadioConfigViewModel, onBack: () -> Unit
 
                 PreferenceDivider()
 
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = state.connected,
-                    shape = RectangleShape,
+                IosButton(
+                    text = stringResource(Res.string.config_device_use_phone_tz),
                     onClick = {
                         formState.value =
                             formState.value.newBuilder().also { wb -> wb.tzdef = appTzPosixString }.build()
                     },
-                ) {
-                    Icon(
-                        imageVector = MeshtasticIcons.PhoneAndroid,
-                        contentDescription = stringResource(Res.string.config_device_use_phone_tz),
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(text = stringResource(Res.string.config_device_use_phone_tz))
-                }
+                    modifier = Modifier.fillMaxWidth(),
+                    style = IosButtonStyle.Plain,
+                    enabled = state.connected,
+                    icon = MeshtasticIcons.PhoneAndroid,
+                )
             }
         }
 

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -66,6 +65,7 @@ import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PlayArrow
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.feature.map.maplibre.tileCount
 import kotlin.math.roundToInt
@@ -105,13 +105,12 @@ internal fun OfflineMapsSection(target: OfflineMapTarget, onShowRegion: (Boundin
         CacheUsageLine(storedBytes = usage.bytes, storedTiles = usage.tiles)
         DownloadEstimateLines(estimate = estimate, range = range)
 
-        Button(
+        IosButton(
+            text = stringResource(Res.string.map_start_download),
             onClick = { scope.launch { manager.downloadVisibleArea(target, pixelRatio) } },
-            enabled = target.styleUrl != null && estimate > 0L,
             modifier = Modifier.padding(vertical = 8.dp),
-        ) {
-            Text(text = stringResource(Res.string.map_start_download))
-        }
+            enabled = target.styleUrl != null && estimate > 0L,
+        )
 
         if (packs.isEmpty()) {
             Text(

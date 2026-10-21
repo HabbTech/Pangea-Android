@@ -33,8 +33,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -116,6 +114,7 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.NoDevice
 import org.meshtastic.core.ui.icon.SystemUpdate
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosCardShape
 import org.meshtastic.core.ui.util.LocalEventBranding
@@ -848,11 +847,12 @@ private fun FirmwareUpdateNoticeCard(notice: FirmwareUpdateNotice, onAction: () 
                     style = Ios.type.subheadline,
                     color = Ios.colors.secondaryLabel,
                 )
-                Button(modifier = Modifier.padding(top = 12.dp), onClick = onAction) {
-                    Icon(imageVector = MeshtasticIcons.SystemUpdate, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(actionLabel)
-                }
+                IosButton(
+                    text = actionLabel,
+                    onClick = onAction,
+                    modifier = Modifier.padding(top = 12.dp),
+                    icon = MeshtasticIcons.SystemUpdate,
+                )
             }
         }
     }
