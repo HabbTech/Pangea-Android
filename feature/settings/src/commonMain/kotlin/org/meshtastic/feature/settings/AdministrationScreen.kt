@@ -111,7 +111,13 @@ private fun AdminRouteItems(
 
         IosRow(
             title = stringResource(route.title),
-            titleColor = if (enabled) Ios.colors.systemRed else Ios.colors.tertiaryLabel,
+            // Setting the clock changes nothing on the radio for good, so it is the one command not in red.
+            titleColor =
+            when {
+                !enabled -> Ios.colors.tertiaryLabel
+                route == AdminRoute.SET_TIME -> Ios.colors.tint
+                else -> Ios.colors.systemRed
+            },
             onClick = if (enabled) ({ showDialog = true }) else null,
         )
     }
@@ -138,6 +144,7 @@ private fun AdminActionDialog(
     } else {
         WarningDialog(
             title = "${stringResource(route.title)}?",
+            destructive = route != AdminRoute.SET_TIME,
             text = {
                 if (route == AdminRoute.NODEDB_RESET) {
                     Row(

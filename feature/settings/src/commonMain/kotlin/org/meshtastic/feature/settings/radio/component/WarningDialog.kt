@@ -31,6 +31,7 @@ fun WarningDialog(
     text: @Composable () -> Unit = {},
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
+    destructive: Boolean = true,
 ) {
     MeshtasticDialog(
         onDismiss = onDismiss,
@@ -42,7 +43,7 @@ fun WarningDialog(
             onDismiss()
             onConfirm()
         },
-        confirmDestructive = true,
+        confirmDestructive = destructive,
         dismissText = stringResource(Res.string.cancel),
     )
 }

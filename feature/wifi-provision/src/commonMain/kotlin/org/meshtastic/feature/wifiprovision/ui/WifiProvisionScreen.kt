@@ -183,6 +183,8 @@ fun WifiProvisionScreen(
                 title = stringResource(Res.string.wifi_provisioning),
                 showTitle = true,
                 background = c.groupedBackground,
+                // iOS shows this as a sheet with no radio chip, and the title needs the room.
+                showRadioChip = false,
                 leading = {
                     IosGlassIconButton(
                         IosIcons.ChevronLeft,
