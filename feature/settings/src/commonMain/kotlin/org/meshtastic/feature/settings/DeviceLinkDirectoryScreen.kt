@@ -16,13 +16,10 @@
  */
 package org.meshtastic.feature.settings
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,10 +31,12 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.device_links
 import org.meshtastic.core.resources.device_links_affiliate_disclosure
-import org.meshtastic.core.ui.component.ListItem
-import org.meshtastic.core.ui.component.MainAppBar
-import org.meshtastic.core.ui.icon.Language
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosPushedScreen
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
 
 /** Directory of every imported msh.to short code. Tapping a row opens `msh.to/{shortCode}` in the browser. */
 @Composable
@@ -49,40 +48,45 @@ fun DeviceLinkDirectoryScreen(
     val links by viewModel.links.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
 
-    Scaffold(
+    // iOS's Device Links page: one card, the affiliate note first, then each link in the tint with a compass.
+    IosPushedScreen(
+        title = stringResource(Res.string.device_links),
+        onBack = onNavigateUp,
         modifier = modifier,
-        topBar = {
-            MainAppBar(
-                title = stringResource(Res.string.device_links),
-                canNavigateUp = true,
-                onNavigateUp = onNavigateUp,
-                ourNode = null,
-                showNodeChip = false,
-                actions = {},
-                onClickChip = {},
-            )
-        },
-    ) { paddingValues ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (links.isNotEmpty()) {
-                // The disclosure sits above the links it covers.
-                item {
+        largeTitle = true,
+    ) {
+        item {
+            IosSection {
+                if (links.isNotEmpty()) {
                     Text(
                         text = stringResource(Res.string.device_links_affiliate_disclosure),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                        style = Ios.type.subheadline,
+                        color = Ios.colors.secondaryLabel,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 11.dp),
                     )
                 }
-            }
-            items(links, key = { it.shortCode }) { link ->
-                ListItem(
-                    text = link.description ?: link.shortCode,
-                    supportingText = "msh.to/${link.shortCode}",
-                    trailingIcon = MeshtasticIcons.Language,
-                    onClick = { uriHandler.openUri(link.url) },
-                )
+                links.forEach { link ->
+                    IosRow(
+                        title = link.description ?: link.shortCode,
+                        titleColor = Ios.colors.tint,
+                        subtitle = "msh.to/${link.shortCode}",
+                        subtitleColor = Ios.colors.tint.copy(alpha = LINK_ADDRESS_ALPHA),
+                        accessory =
+                        IosAccessory.Custom {
+                            Icon(
+                                IosIcons.Safari,
+                                contentDescription = null,
+                                tint = Ios.colors.tint,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        },
+                        onClick = { uriHandler.openUri(link.url) },
+                    )
+                }
             }
         }
     }
 }
+
+/** iOS draws the link address in a lighter tint than its name. */
+private const val LINK_ADDRESS_ALPHA = 0.6f

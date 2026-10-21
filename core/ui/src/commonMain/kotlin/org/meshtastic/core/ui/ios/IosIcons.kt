@@ -2759,6 +2759,20 @@ object IosIcons {
         }
     }
 
+    /** `safari`: a link that opens in the browser (Device Links). */
+    val Safari: ImageVector by lazy {
+        icon("ios.safari") {
+            stroked(width = 1.6f) { circle(12f, 12f, 9.2f) }
+            filled {
+                moveTo(15.9f, 8.1f)
+                lineTo(13.4f, 13.4f)
+                lineTo(8.1f, 15.9f)
+                lineTo(10.6f, 10.6f)
+                close()
+            }
+        }
+    }
+
     /** A straight dashed stroke from ([x0], [y0]) to ([x1], [y1]), its dashes evenly spread with one at each end. */
     private fun PathBuilder.dashed(x0: Float, y0: Float, x1: Float, y1: Float, dash: Float = 2.2f) {
         val length = kotlin.math.hypot(x1 - x0, y1 - y0)
