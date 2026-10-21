@@ -19,11 +19,8 @@ package org.meshtastic.core.ui.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +43,7 @@ import org.meshtastic.core.ui.icon.ErrorOutline
 import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.PermissionStatus
 import org.meshtastic.core.ui.util.PermissionUiState
@@ -118,13 +116,13 @@ fun RecoveryCard(
             }
         }
 
-        Button(onClick = onAction, modifier = Modifier.fillMaxWidth()) {
-            if (actionIcon != null) {
-                Icon(imageVector = actionIcon, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Text(text = actionLabel)
-        }
+        IosButton(
+            text = actionLabel,
+            onClick = onAction,
+            modifier = Modifier.fillMaxWidth(),
+            large = true,
+            icon = actionIcon,
+        )
     }
 }
 

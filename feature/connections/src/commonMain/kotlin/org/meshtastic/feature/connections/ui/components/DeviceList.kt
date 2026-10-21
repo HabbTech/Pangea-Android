@@ -29,11 +29,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
@@ -90,6 +87,7 @@ import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosCard
 import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.feature.connections.model.DeviceListEntry
 
@@ -384,11 +382,8 @@ private fun DeviceCard(
     modifier: Modifier = Modifier,
     onDelete: ((DeviceListEntry) -> Unit)? = null,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill),
-    ) {
+    // A white inset card on the grouped page, as iOS lists its radios.
+    IosCard(modifier = modifier.fillMaxWidth()) {
         DeviceListItem(
             connectionState =
             connectionState.takeIf { device.fullAddress == selectedDevice } ?: ConnectionState.Disconnected,

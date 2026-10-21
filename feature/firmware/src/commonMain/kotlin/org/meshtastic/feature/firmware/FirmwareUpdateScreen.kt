@@ -34,8 +34,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.material3.Icon
@@ -675,44 +673,36 @@ private fun ReadyActionButton(
 ) {
     if (state.updateMethod is FirmwareUpdateMethod.Unknown) return
     if (selectedReleaseType != FirmwareReleaseType.LOCAL && state.release == null) return
-    val largeHeight = ButtonDefaults.LargeContainerHeight
     Column {
-        Button(
+        // iOS's large capsule, the update path's symbol before its words.
+        IosButton(
+            text =
+            when {
+                selectedReleaseType == FirmwareReleaseType.LOCAL ->
+                    stringResource(Res.string.firmware_update_select_file)
+
+                state.isRecovery -> stringResource(Res.string.firmware_recovery_button)
+
+                else ->
+                    stringResource(
+                        resource = Res.string.firmware_update_method_detail,
+                        stringResource(state.updateMethod.description),
+                    )
+            },
             onClick = onClick,
-            shapes = ButtonDefaults.shapesFor(largeHeight),
-            modifier = Modifier.fillMaxWidth().height(largeHeight),
-        ) {
+            modifier = Modifier.fillMaxWidth(),
+            large = true,
+            icon =
             if (selectedReleaseType == FirmwareReleaseType.LOCAL) {
-                Icon(MeshtasticIcons.Folder, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    stringResource(Res.string.firmware_update_select_file),
-                    style = ButtonDefaults.textStyleFor(largeHeight),
-                )
+                MeshtasticIcons.Folder
             } else {
-                Icon(
-                    imageVector =
-                    when (state.updateMethod) {
-                        FirmwareUpdateMethod.Ble -> MeshtasticIcons.Bluetooth
-                        FirmwareUpdateMethod.Usb -> MeshtasticIcons.Usb
-                        FirmwareUpdateMethod.Wifi -> MeshtasticIcons.Wifi
-                    },
-                    contentDescription = null,
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    if (state.isRecovery) {
-                        stringResource(Res.string.firmware_recovery_button)
-                    } else {
-                        stringResource(
-                            resource = Res.string.firmware_update_method_detail,
-                            stringResource(state.updateMethod.description),
-                        )
-                    },
-                    style = ButtonDefaults.textStyleFor(largeHeight),
-                )
-            }
-        }
+                when (state.updateMethod) {
+                    FirmwareUpdateMethod.Ble -> MeshtasticIcons.Bluetooth
+                    FirmwareUpdateMethod.Usb -> MeshtasticIcons.Usb
+                    FirmwareUpdateMethod.Wifi -> MeshtasticIcons.Wifi
+                }
+            },
+        )
         if (selectedReleaseType != FirmwareReleaseType.LOCAL && state.release != null) {
             Spacer(Modifier.height(24.dp))
             ReleaseNotesCard(state.release.releaseNotes)
@@ -1283,13 +1273,11 @@ internal fun SuccessState(wasLowSpeedTransfer: Boolean = false, deviceWasWiped: 
             )
         }
         Spacer(Modifier.height(32.dp))
-        val largeHeight = ButtonDefaults.LargeContainerHeight
-        Button(
+        IosButton(
+            text = stringResource(Res.string.firmware_update_done),
             onClick = onDone,
-            shapes = ButtonDefaults.shapesFor(largeHeight),
-            modifier = Modifier.fillMaxWidth().height(largeHeight),
-        ) {
-            Text(stringResource(Res.string.firmware_update_done), style = ButtonDefaults.textStyleFor(largeHeight))
-        }
+            modifier = Modifier.fillMaxWidth(),
+            large = true,
+        )
     }
 }
