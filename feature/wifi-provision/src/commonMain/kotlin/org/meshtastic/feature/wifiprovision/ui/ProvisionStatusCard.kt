@@ -16,21 +16,18 @@
  */
 package org.meshtastic.feature.wifiprovision.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -38,61 +35,55 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.wifi_provision_sending_credentials
 import org.meshtastic.core.resources.wifi_provision_status_applied
 import org.meshtastic.core.resources.wifi_provision_status_failed
-import org.meshtastic.core.ui.icon.Error
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Success
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.wifiprovision.WifiProvisionUiState.ProvisionStatus
 
-/** Inline status card matching the web flasher's colored status feedback. */
+/**
+ * Inline status card matching the web flasher's colored status feedback, drawn as an iOS card: a soft wash of green or
+ * red behind the words when it worked or failed, grey with the spinner while the credentials go.
+ */
 @Composable
 internal fun ProvisionStatusCard(provisionStatus: ProvisionStatus, isProvisioning: Boolean) {
     val colors = statusCardColors(provisionStatus, isProvisioning)
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = colors.first),
-        shape = MaterialTheme.shapes.medium,
-        modifier = Modifier.fillMaxWidth(),
+    Row(
+        modifier =
+        Modifier.fillMaxWidth()
+            .clip(IosCardShape)
+            .background(colors.first)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            StatusIcon(provisionStatus = provisionStatus, isProvisioning = isProvisioning, tint = colors.second)
-            Text(
-                text = statusText(provisionStatus, isProvisioning),
-                style = MaterialTheme.typography.bodyMediumEmphasized,
-                color = colors.second,
-            )
-        }
+        StatusIcon(provisionStatus = provisionStatus, isProvisioning = isProvisioning, tint = colors.second)
+        Text(text = statusText(provisionStatus, isProvisioning), style = Ios.type.headline, color = colors.second)
     }
 }
 
 /** Resolve container + content color pair for the provision status card. */
 @Composable
-private fun statusCardColors(provisionStatus: ProvisionStatus, isProvisioning: Boolean): Pair<Color, Color> = when {
-    isProvisioning -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
-
-    provisionStatus == ProvisionStatus.Success ->
-        MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-
-    provisionStatus == ProvisionStatus.Failed ->
-        MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-
-    else -> MaterialTheme.colorScheme.surfaceContainerHigh to MaterialTheme.colorScheme.onSurface
+private fun statusCardColors(provisionStatus: ProvisionStatus, isProvisioning: Boolean): Pair<Color, Color> {
+    val c = Ios.colors
+    return when {
+        isProvisioning -> c.groupedRow to c.label
+        provisionStatus == ProvisionStatus.Success -> c.systemGreen.copy(alpha = WASH) to c.systemGreen
+        provisionStatus == ProvisionStatus.Failed -> c.systemRed.copy(alpha = WASH) to c.systemRed
+        else -> c.groupedRow to c.label
+    }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun StatusIcon(provisionStatus: ProvisionStatus, isProvisioning: Boolean, tint: Color) {
     when {
-        isProvisioning -> LoadingIndicator(modifier = Modifier.size(20.dp), color = tint)
+        isProvisioning -> IosActivityIndicator(size = 20.dp, color = Ios.colors.secondaryLabel)
 
         provisionStatus == ProvisionStatus.Success ->
-            Icon(MeshtasticIcons.Success, contentDescription = null, modifier = Modifier.size(20.dp), tint = tint)
+            Icon(IosIcons.CheckCircleFill, contentDescription = null, modifier = Modifier.size(22.dp), tint = tint)
 
         provisionStatus == ProvisionStatus.Failed ->
-            Icon(MeshtasticIcons.Error, contentDescription = null, modifier = Modifier.size(20.dp), tint = tint)
+            Icon(IosIcons.WarningFill, contentDescription = null, modifier = Modifier.size(22.dp), tint = tint)
     }
 }
 
@@ -103,3 +94,6 @@ private fun statusText(provisionStatus: ProvisionStatus, isProvisioning: Boolean
     provisionStatus == ProvisionStatus.Failed -> stringResource(Res.string.wifi_provision_status_failed)
     else -> ""
 }
+
+/** iOS's tinted wash behind status text. */
+private const val WASH = 0.15f

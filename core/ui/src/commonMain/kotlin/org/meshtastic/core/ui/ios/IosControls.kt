@@ -46,6 +46,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -335,6 +336,7 @@ fun IosTextField(
     modifier: Modifier = Modifier,
     textStyle: TextStyle = Ios.type.body,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     textAlign: TextAlign = TextAlign.Start,
     containerColor: Color = Ios.colors.fieldFill,
     // `PasswordVisualTransformation` makes it iOS's SecureField.
@@ -369,6 +371,7 @@ fun IosTextField(
                 textStyle = textStyle.copy(color = c.label, textAlign = textAlign),
                 cursorBrush = SolidColor(c.tint),
                 keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
                 visualTransformation = visualTransformation,
                 modifier = Modifier.fillMaxWidth(),
             )

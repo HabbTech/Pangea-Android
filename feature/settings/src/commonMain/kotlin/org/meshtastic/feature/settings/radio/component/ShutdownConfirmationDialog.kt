@@ -21,12 +21,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -37,8 +35,7 @@ import org.meshtastic.core.resources.send
 import org.meshtastic.core.resources.shutdown_node_name
 import org.meshtastic.core.resources.shutdown_warning
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Warning
+import org.meshtastic.core.ui.ios.Ios
 
 @Composable
 fun ShutdownConfirmationDialog(
@@ -50,11 +47,9 @@ fun ShutdownConfirmationDialog(
     onConfirm: () -> Unit,
 ) {
     val nodeLongName = node?.user?.long_name ?: "Unknown Node"
-    val resolvedIcon = icon ?: MeshtasticIcons.Warning
-
     MeshtasticDialog(
         onDismiss = onDismiss,
-        icon = resolvedIcon,
+        icon = icon,
         title = title,
         text = { ShutdownDialogContent(nodeLongName = nodeLongName, isShutdown = isShutdown) },
         confirmText = stringResource(Res.string.send),
@@ -62,6 +57,7 @@ fun ShutdownConfirmationDialog(
             onDismiss()
             onConfirm()
         },
+        confirmDestructive = true,
         dismissText = stringResource(Res.string.cancel),
     )
 }
@@ -71,8 +67,8 @@ private fun ShutdownDialogContent(nodeLongName: String, isShutdown: Boolean) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
         Text(
             text = stringResource(Res.string.shutdown_node_name, nodeLongName),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = Ios.type.headline,
+            color = Ios.colors.label,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
         )
@@ -81,8 +77,8 @@ private fun ShutdownDialogContent(nodeLongName: String, isShutdown: Boolean) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(Res.string.shutdown_warning),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
+                style = Ios.type.footnote,
+                color = Ios.colors.systemRed,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
             )

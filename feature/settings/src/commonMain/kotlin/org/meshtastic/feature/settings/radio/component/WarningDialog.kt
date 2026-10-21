@@ -23,8 +23,6 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.cancel
 import org.meshtastic.core.resources.send
 import org.meshtastic.core.ui.component.MeshtasticDialog
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Warning
 
 @Composable
 fun WarningDialog(
@@ -34,11 +32,9 @@ fun WarningDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
-    val resolvedIcon = icon ?: MeshtasticIcons.Warning
-
     MeshtasticDialog(
         onDismiss = onDismiss,
-        icon = resolvedIcon,
+        icon = icon,
         title = title,
         text = text,
         confirmText = stringResource(Res.string.send),
@@ -46,6 +42,7 @@ fun WarningDialog(
             onDismiss()
             onConfirm()
         },
+        confirmDestructive = true,
         dismissText = stringResource(Res.string.cancel),
     )
 }

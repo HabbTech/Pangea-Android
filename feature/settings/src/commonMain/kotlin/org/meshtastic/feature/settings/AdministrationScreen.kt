@@ -18,16 +18,10 @@ package org.meshtastic.feature.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,15 +33,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.vectorResource
 import org.meshtastic.core.model.Node
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.administration
 import org.meshtastic.core.resources.preserve_favorites
 import org.meshtastic.core.resources.remotely_administrating
-import org.meshtastic.core.ui.component.ListItem
-import org.meshtastic.core.ui.component.MainAppBar
-import org.meshtastic.feature.settings.component.ExpressiveSection
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosPushedColumnScreen
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.IosSwitch
 import org.meshtastic.feature.settings.radio.AdminRoute
 import org.meshtastic.feature.settings.radio.RadioConfigState
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -64,36 +59,17 @@ fun AdministrationScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
     val enabled = state.connected && !state.responseState.isWaiting()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            topBar = {
-                MainAppBar(
-                    title = stringResource(Res.string.administration),
-                    subtitle =
-                    if (state.isLocal) {
-                        destNode?.user?.long_name
-                    } else {
-                        val remoteName = destNode?.user?.long_name ?: ""
-                        stringResource(Res.string.remotely_administrating, remoteName)
-                    },
-                    ourNode = null,
-                    showNodeChip = false,
-                    canNavigateUp = true,
-                    onNavigateUp = onBack,
-                    actions = {},
-                    onClickChip = {},
-                )
-            },
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()).padding(paddingValues).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+        // iOS keeps these commands as red buttons in a section of their own, each asking before it acts.
+        IosPushedColumnScreen(title = stringResource(Res.string.administration), onBack = onBack, largeTitle = true) {
+            IosSection(
+                header =
+                if (state.isLocal) {
+                    destNode?.user?.long_name
+                } else {
+                    stringResource(Res.string.remotely_administrating, destNode?.user?.long_name ?: "")
+                },
             ) {
-                ExpressiveSection(
-                    title = stringResource(Res.string.administration),
-                    titleColor = MaterialTheme.colorScheme.error,
-                ) {
-                    AdminRouteItems(viewModel = viewModel, enabled = enabled, state = state, destNode = destNode)
-                }
+                AdminRouteItems(viewModel = viewModel, enabled = enabled, state = state, destNode = destNode)
             }
         }
 
@@ -133,16 +109,11 @@ private fun AdminRouteItems(
             )
         }
 
-        ListItem(
-            enabled = enabled,
-            text = stringResource(route.title),
-            leadingIcon = vectorResource(route.icon),
-            leadingIconTint = MaterialTheme.colorScheme.error,
-            textColor = MaterialTheme.colorScheme.error,
-            trailingIcon = null,
-        ) {
-            showDialog = true
-        }
+        IosRow(
+            title = stringResource(route.title),
+            titleColor = if (enabled) Ios.colors.systemRed else Ios.colors.tertiaryLabel,
+            onClick = if (enabled) ({ showDialog = true }) else null,
+        )
     }
 }
 
@@ -170,16 +141,19 @@ private fun AdminActionDialog(
             text = {
                 if (route == AdminRoute.NODEDB_RESET) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
+                        modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text(text = stringResource(Res.string.preserve_favorites))
-                        Switch(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            enabled = enabled,
+                        Text(
+                            text = stringResource(Res.string.preserve_favorites),
+                            style = Ios.type.body,
+                            color = Ios.colors.label,
+                        )
+                        IosSwitch(
                             checked = state.nodeDbResetPreserveFavorites,
                             onCheckedChange = onPreserveFavoritesChange,
+                            enabled = enabled,
                         )
                     }
                 }
