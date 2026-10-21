@@ -48,6 +48,7 @@ import org.meshtastic.core.resources.app_settings
 import org.meshtastic.core.resources.device_links
 import org.meshtastic.core.resources.filter_settings
 import org.meshtastic.core.resources.node_layout_section_title
+import org.meshtastic.core.resources.pangea_app_files
 import org.meshtastic.core.resources.pangea_developers
 import org.meshtastic.core.resources.pangea_tools
 import org.meshtastic.core.resources.preferences_language
@@ -182,6 +183,9 @@ actual fun AppSettingsExtras(onNavigate: (Route) -> Unit, modifier: Modifier) {
         ExpressiveSection(title = stringResource(Res.string.pangea_developers)) {
             ListItem(text = stringResource(Res.string.device_links), leadingIcon = MeshtasticIcons.Device) {
                 onNavigate(SettingsRoute.DeviceLinks)
+            }
+            ListItem(text = stringResource(Res.string.pangea_app_files), leadingIcon = IosIcons.Folder) {
+                onNavigate(SettingsRoute.AppFiles)
             }
             // iOS lists Tools only where its NFC reader is available.
             if (LocalNfcScannerSupported.current) {

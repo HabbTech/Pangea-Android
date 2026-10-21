@@ -1363,6 +1363,7 @@
     <string name="packet_authenticity_strict_title">Enable Strict authentication?</string>
     <string name="packet_authenticity_unsupported">This connected device does not support packet signature verification.</string>
     <!-- PANGEA -->
+    <string name="pangea_active_database">Active Database</string>
     <string name="pangea_add_channel">Add Channel</string>
     <string name="pangea_add_channels">Add Channels</string>
     <string name="pangea_add_nickname">Add a nickname</string>
@@ -1373,6 +1374,8 @@
     <string name="pangea_all_emoji">All Emoji</string>
     <string name="pangea_all_set_desc">Your radio is ready. You can message anyone nearby with Pangea, no cell service needed.</string>
     <string name="pangea_all_set_title">You're All Set</string>
+    <string name="pangea_app_files">App Files</string>
+    <string name="pangea_app_files_section">Files</string>
     <string name="pangea_app_settings">App Settings</string>
     <string name="pangea_appearance">Appearance</string>
     <string name="pangea_appearance_footer">Match Device follows your device's Light or Dark setting.</string>
@@ -1430,6 +1433,11 @@
     <string name="pangea_create">Create</string>
     <string name="pangea_create_group">Create Group</string>
     <string name="pangea_critical_alerts_desc">Select packets sent as critical will ignore silent mode and Do Not Disturb in your phone's notification settings.</string>
+    <string name="pangea_db_missing">Missing</string>
+    <string name="pangea_db_shm">SHM</string>
+    <string name="pangea_db_store">Store</string>
+    <string name="pangea_db_total">Total</string>
+    <string name="pangea_db_wal">WAL</string>
     <string name="pangea_debug">Debug</string>
     <string name="pangea_decline">Decline</string>
     <string name="pangea_decrease">Decrease</string>
@@ -1468,6 +1476,8 @@
     <string name="pangea_expert_mode_footer">Looking for the node list, mesh map, or radio settings? Turn on Expert Mode to see them.</string>
     <string name="pangea_export_configuration">Export Configuration</string>
     <string name="pangea_favorites">Favorites</string>
+    <string name="pangea_file_row">%1$s - %2$s - %3$s</string>
+    <string name="pangea_file_storage">File Storage</string>
     <string name="pangea_find_contact">Find a contact</string>
     <string name="pangea_find_in_conversation">Find in conversation</string>
     <string name="pangea_find_node">Find a node</string>
@@ -1481,6 +1491,13 @@
     <string name="pangea_getting_photo">Getting photoâ€¦ %1$d%%</string>
     <string name="pangea_gpio">GPIO</string>
     <string name="pangea_gpio_configuration">GPIO Configuration</string>
+    <string name="pangea_gps_accuracy">Accuracy %1$s</string>
+    <string name="pangea_gps_altitude">Altitude %1$s</string>
+    <string name="pangea_gps_coordinate">Coordinate %1$s</string>
+    <string name="pangea_gps_heading">Heading: %1$s</string>
+    <string name="pangea_gps_permission">Allow location access to see the phone's GPS.</string>
+    <string name="pangea_gps_speed">Speed %1$s</string>
+    <string name="pangea_gps_waiting">Waiting for a location fix…</string>
     <string name="pangea_group_error_blank">Give the group a name with at least one letter or number.</string>
     <string name="pangea_group_error_cant_share_key">This group doesn't have a private key, so anyone could read it. Make a new group to invite people.</string>
     <string name="pangea_group_error_cant_share_name">This group's name has spacing or characters Pangea can't share. Make a new group to invite people.</string>
@@ -1570,8 +1587,8 @@
     <string name="pangea_new_message">New Message</string>
     <string name="pangea_new_message_hint">@code, or paste a link</string>
     <string name="pangea_nfc_node_name">Node Name: %1$s</string>
-    <string name="pangea_nfc_not_pangea">This tag doesn\'t hold a Pangea contact or channel link.</string>
-    <string name="pangea_nfc_read_failed">Couldn\'t read tag</string>
+    <string name="pangea_nfc_not_pangea">This tag doesn't hold a Pangea contact or channel link.</string>
+    <string name="pangea_nfc_read_failed">Couldn't read tag</string>
     <string name="pangea_nfc_scan_tag">Scan NFC Tag</string>
     <string name="pangea_nfc_scan_tag_hint">Read a Pangea tag to add the contact or channel it contains.</string>
     <string name="pangea_nfc_tags">NFC Tags</string>
@@ -1609,6 +1626,7 @@
     <string name="pangea_paste">Paste</string>
     <string name="pangea_pax_counter">PAX Counter</string>
     <string name="pangea_pax_log">PAX Counter Log</string>
+    <string name="pangea_phone_gps">Phone GPS</string>
     <string name="pangea_photo_busy">Busy downloading other photos. Try again in a moment.</string>
     <string name="pangea_photo_connect_radio">Connect your radio to get photos.</string>
     <string name="pangea_photo_offer">They shared a profile photo.</string>
@@ -1643,6 +1661,8 @@
     <string name="pangea_radio_configuration">Radio Configuration</string>
     <string name="pangea_radio_connected">Connected</string>
     <string name="pangea_radio_connecting">Connectingâ€¦</string>
+    <string name="pangea_radio_databases">Other Radios</string>
+    <string name="pangea_radio_databases_footer">Each radio you've connected keeps its own messages and nodes. The app removes the oldest when there are too many.</string>
     <string name="pangea_radio_name">Radio: %1$s</string>
     <string name="pangea_radio_not_connected">Not connected</string>
     <string name="pangea_radio_restarting_wait">Your radio is restarting with the new settings. This takes about 20 seconds.</string>

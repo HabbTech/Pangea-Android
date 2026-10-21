@@ -56,4 +56,7 @@ interface DatabaseManager {
 
     /** Returns true if a database exists for the given device address. */
     fun hasDatabaseFor(address: String?): Boolean
+
+    /** The name of the database the app is using now (its WAL and SHM files share it), or null where unknown. */
+    fun activeDatabaseName(): String? = null
 }

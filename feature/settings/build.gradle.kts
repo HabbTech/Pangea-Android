@@ -56,6 +56,7 @@ kotlin {
             implementation(projects.core.datastore)
             implementation(projects.core.testing)
             implementation(libs.compose.multiplatform.ui.test)
+            implementation(libs.okio.fakefilesystem)
         }
 
         jvmTest.dependencies { implementation(compose.desktop.currentOs) }

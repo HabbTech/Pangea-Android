@@ -451,6 +451,62 @@ object IosIcons {
         }
     }
 
+    /** `folder`: App Files. */
+    val Folder: ImageVector by lazy {
+        icon("ios.folder") {
+            stroked(width = 1.5f) {
+                moveTo(3.2f, 7.2f)
+                curveTo(3.2f, 6.1f, 4.1f, 5.2f, 5.2f, 5.2f)
+                lineTo(9.4f, 5.2f)
+                lineTo(11.2f, 7.2f)
+                lineTo(18.8f, 7.2f)
+                curveTo(19.9f, 7.2f, 20.8f, 8.1f, 20.8f, 9.2f)
+                lineTo(20.8f, 17.2f)
+                curveTo(20.8f, 18.3f, 19.9f, 19.2f, 18.8f, 19.2f)
+                lineTo(5.2f, 19.2f)
+                curveTo(4.1f, 19.2f, 3.2f, 18.3f, 3.2f, 17.2f)
+                close()
+                moveTo(3.2f, 10f)
+                lineTo(20.8f, 10f)
+            }
+        }
+    }
+
+    /** `cylinder.split.1x2`: a database. */
+    val Cylinder: ImageVector by lazy {
+        icon("ios.cylinder") {
+            stroked(width = 1.5f) {
+                // Top ellipse, the sides, the bottom curve and the split across the middle.
+                moveTo(5f, 6.2f)
+                curveTo(5f, 4.6f, 19f, 4.6f, 19f, 6.2f)
+                curveTo(19f, 7.8f, 5f, 7.8f, 5f, 6.2f)
+                moveTo(5f, 6.2f)
+                lineTo(5f, 17.8f)
+                curveTo(5f, 19.4f, 19f, 19.4f, 19f, 17.8f)
+                lineTo(19f, 6.2f)
+                moveTo(5f, 12f)
+                curveTo(5f, 13.6f, 19f, 13.6f, 19f, 12f)
+            }
+        }
+    }
+
+    /** `mountain.2`: altitude. */
+    val Mountain: ImageVector by lazy {
+        icon("ios.mountain") {
+            stroked(width = 1.5f) {
+                moveTo(2.8f, 18.6f)
+                lineTo(9.2f, 7.4f)
+                lineTo(13.4f, 14.6f)
+                moveTo(11.2f, 18.6f)
+                lineTo(15.6f, 10.8f)
+                lineTo(21.2f, 18.6f)
+                close()
+                moveTo(2.8f, 18.6f)
+                lineTo(11.2f, 18.6f)
+            }
+        }
+    }
+
     /** `mappin`: Mesh Map Location. */
     val MapPin: ImageVector by lazy {
         icon("ios.mapPin") {

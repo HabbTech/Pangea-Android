@@ -481,6 +481,8 @@ open class DatabaseManager(private val datastore: DatabaseDataStore, private val
      */
     @Volatile private var currentDbName: String = DatabaseConstants.DEFAULT_DB_NAME
 
+    override fun activeDatabaseName(): String = currentDbName
+
     /** Initialize the active database for [address]. */
     suspend fun init(address: String?) {
         switchActiveDatabase(address)

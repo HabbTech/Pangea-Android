@@ -1327,6 +1327,7 @@ packet_authenticity_strict_summary
 packet_authenticity_strict_title
 packet_authenticity_unsupported
 ### PANGEA ###
+pangea_active_database
 pangea_add_channel
 pangea_add_channels
 pangea_add_nickname
@@ -1337,6 +1338,8 @@ pangea_air_quality_sensor_options
 pangea_all_emoji
 pangea_all_set_desc
 pangea_all_set_title
+pangea_app_files
+pangea_app_files_section
 pangea_app_settings
 pangea_appearance
 pangea_appearance_footer
@@ -1394,6 +1397,11 @@ pangea_copyright_notice
 pangea_create
 pangea_create_group
 pangea_critical_alerts_desc
+pangea_db_missing
+pangea_db_shm
+pangea_db_store
+pangea_db_total
+pangea_db_wal
 pangea_debug
 pangea_decline
 pangea_decrease
@@ -1432,6 +1440,8 @@ pangea_exchange_user_info
 pangea_expert_mode_footer
 pangea_export_configuration
 pangea_favorites
+pangea_file_row
+pangea_file_storage
 pangea_find_contact
 pangea_find_in_conversation
 pangea_find_node
@@ -1445,6 +1455,13 @@ pangea_get_photo
 pangea_getting_photo
 pangea_gpio
 pangea_gpio_configuration
+pangea_gps_accuracy
+pangea_gps_altitude
+pangea_gps_coordinate
+pangea_gps_heading
+pangea_gps_permission
+pangea_gps_speed
+pangea_gps_waiting
 pangea_group_error_blank
 pangea_group_error_cant_share_key
 pangea_group_error_cant_share_name
@@ -1573,6 +1590,7 @@ pangea_pair_try_again
 pangea_paste
 pangea_pax_counter
 pangea_pax_log
+pangea_phone_gps
 pangea_photo_busy
 pangea_photo_connect_radio
 pangea_photo_offer
@@ -1607,6 +1625,8 @@ pangea_radio
 pangea_radio_configuration
 pangea_radio_connected
 pangea_radio_connecting
+pangea_radio_databases
+pangea_radio_databases_footer
 pangea_radio_name
 pangea_radio_not_connected
 pangea_radio_restarting_wait
