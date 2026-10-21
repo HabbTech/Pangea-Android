@@ -341,7 +341,9 @@ private fun InlineTextField(
         visualTransformation = visualTransformation,
         cursorBrush = SolidColor(c.tint),
         decorationBox = { inner ->
-            Box(Modifier.fillMaxWidth()) {
+            // The typed text sits where the placeholder does: the core field is only as wide as its text, so the box
+            // places it at the row's end for a value iOS sets there.
+            Box(Modifier.fillMaxWidth(), contentAlignment = if (atEnd) Alignment.CenterEnd else Alignment.CenterStart) {
                 // iOS shows the field's name as its placeholder; the row's title already names it for screen readers.
                 if (value.isEmpty()) {
                     Text(

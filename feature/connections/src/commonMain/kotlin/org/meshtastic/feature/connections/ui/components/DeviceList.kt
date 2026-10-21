@@ -29,24 +29,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,6 +89,8 @@ import org.meshtastic.core.ui.icon.Wifi
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.feature.connections.model.DeviceListEntry
 
 /**
@@ -455,46 +454,58 @@ private fun AddDeviceDialog(
     onHideDialog: () -> Unit,
     onClickAdd: (address: String, fullAddress: String) -> Unit,
 ) {
-    val addressState = rememberTextFieldState("")
-    val portState = rememberTextFieldState(NetworkConstants.SERVICE_PORT.toString())
+    var address by rememberSaveable { mutableStateOf("") }
+    var portString by rememberSaveable { mutableStateOf(NetworkConstants.SERVICE_PORT.toString()) }
 
+    // iOS's form: the address and port as grey fields with their names above, Cancel and Add as capsules.
     @Suppress("MagicNumber")
     IosBottomSheet(onDismissRequest = onHideDialog, sheetState = sheetState) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    state = addressState,
-                    labelPosition = TextFieldLabelPosition.Above(),
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                    label = { Text(stringResource(Res.string.address)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
-                    modifier = Modifier.weight(.7f),
-                )
-
-                OutlinedTextField(
-                    state = portState,
-                    labelPosition = TextFieldLabelPosition.Above(),
-                    placeholder = { Text(NetworkConstants.SERVICE_PORT.toString()) },
-                    lineLimits = TextFieldLineLimits.SingleLine,
-                    label = { Text(stringResource(Res.string.ip_port)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-                    modifier = Modifier.weight(.3f),
-                )
+                Column(modifier = Modifier.weight(.7f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(Res.string.address),
+                        style = Ios.type.footnote,
+                        color = Ios.colors.secondaryLabel,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                    IosTextField(
+                        value = address,
+                        onValueChange = { address = it },
+                        placeholder = "192.168.1.20",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                    )
+                }
+                Column(modifier = Modifier.weight(.3f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(Res.string.ip_port),
+                        style = Ios.type.footnote,
+                        color = Ios.colors.secondaryLabel,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                    IosTextField(
+                        value = portString,
+                        onValueChange = { portString = it },
+                        placeholder = NetworkConstants.SERVICE_PORT.toString(),
+                        keyboardOptions =
+                        KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                    )
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IosButton(
                     text = stringResource(Res.string.cancel),
                     onClick = { onHideDialog() },
+                    style = IosButtonStyle.Gray,
+                    large = true,
                     modifier = Modifier.weight(1f),
                 )
 
                 IosButton(
                     text = stringResource(Res.string.add_network_device),
                     onClick = {
-                        val address = addressState.text.toString()
                         if (address.isValidAddress()) {
-                            val portString = portState.text.toString()
                             val port = portString.toIntOrNull()
 
                             val combinedString =
@@ -507,6 +518,7 @@ private fun AddDeviceDialog(
                             onClickAdd(combinedString, "t$combinedString")
                         }
                     },
+                    large = true,
                     modifier = Modifier.weight(1f),
                 )
             }

@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -75,6 +74,7 @@ import org.meshtastic.core.resources.ppm
 import org.meshtastic.core.ui.component.Co2Severity
 import org.meshtastic.core.ui.component.PmAqiSeverity
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosChip
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.GraphColors.Blue
 import org.meshtastic.core.ui.theme.GraphColors.Cyan
@@ -202,7 +202,8 @@ fun AirQualityMetricsScreen(viewModel: MetricsViewModel, onNavigateUp: () -> Uni
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     availableMetrics.forEach { metric ->
-                        FilterChip(
+                        IosChip(
+                            text = stringResource(metric.labelRes),
                             selected = metric in selectedMetrics,
                             onClick = {
                                 selectedMetrics =
@@ -212,7 +213,6 @@ fun AirQualityMetricsScreen(viewModel: MetricsViewModel, onNavigateUp: () -> Uni
                                         selectedMetrics + metric
                                     }
                             },
-                            label = { Text(stringResource(metric.labelRes)) },
                         )
                     }
                 }

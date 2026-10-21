@@ -360,28 +360,33 @@ fun IosTextField(
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) {
-                Text(
-                    placeholder,
-                    style = textStyle,
-                    color = c.tertiaryLabel,
-                    textAlign = textAlign,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                textStyle = textStyle.copy(color = c.label, textAlign = textAlign),
-                cursorBrush = SolidColor(c.tint),
-                keyboardOptions = keyboardOptions,
-                keyboardActions = keyboardActions,
-                visualTransformation = visualTransformation,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+        // The placeholder is drawn inside the field's own decoration, so it belongs to the field (as a Material field's
+        // does): a screen reader reads it as the field's hint, and a test can find the field by it.
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = textStyle.copy(color = c.label, textAlign = textAlign),
+            cursorBrush = SolidColor(c.tint),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
+            visualTransformation = visualTransformation,
+            modifier = Modifier.weight(1f),
+            decorationBox = { innerTextField ->
+                Box(Modifier.fillMaxWidth()) {
+                    if (value.isEmpty()) {
+                        Text(
+                            placeholder,
+                            style = textStyle,
+                            color = c.tertiaryLabel,
+                            textAlign = textAlign,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    innerTextField()
+                }
+            },
+        )
         trailing?.invoke(this)
     }
 }

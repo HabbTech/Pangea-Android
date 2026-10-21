@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -58,6 +57,7 @@ import org.meshtastic.core.resources.one_hour
 import org.meshtastic.core.resources.twenty_four_hours
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosChip
 import org.meshtastic.core.ui.ios.IosProgressBar
 import kotlin.time.Duration.Companion.hours
 
@@ -117,10 +117,10 @@ internal fun HopHistogramContent(nodes: List<Node>, window: HopWindow, onSelectW
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             HopWindow.entries.forEach { option ->
-                FilterChip(
+                IosChip(
+                    text = stringResource(option.label),
                     selected = option == window,
                     onClick = { onSelectWindow(option) },
-                    label = { Text(stringResource(option.label)) },
                 )
             }
         }

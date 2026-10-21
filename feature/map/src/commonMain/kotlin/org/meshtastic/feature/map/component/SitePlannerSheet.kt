@@ -20,14 +20,11 @@
 package org.meshtastic.feature.map.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,20 +32,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
@@ -63,10 +52,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -98,16 +87,18 @@ import org.meshtastic.core.resources.site_planner_tx_power_watts
 import org.meshtastic.core.resources.site_planner_use_current_location
 import org.meshtastic.core.resources.site_planner_use_map_center
 import org.meshtastic.core.resources.site_planner_use_node_location
-import org.meshtastic.core.ui.icon.ExpandLess
-import org.meshtastic.core.ui.icon.ExpandMore
+import org.meshtastic.core.ui.component.EditTextPreference
 import org.meshtastic.core.ui.icon.Map
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.MyLocation
-import org.meshtastic.core.ui.icon.PinDrop
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.ios.IosButton
-import org.meshtastic.core.ui.ios.IosSwitch
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosMenuItem
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.iosRowSeparator
 
 private const val LAT_LIMIT = 90.0
 private const val LON_LIMIT = 180.0
@@ -191,11 +182,15 @@ fun SitePlannerSheet(
         state.lat = initial.latitude.toString()
         state.lon = initial.longitude.toString()
     }
-    IosBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+    IosBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, grouped = true) {
         SiteFormContent(state, initial, onSubmit, onUseCurrentLocation, onUseNodeLocation, onUseMapCenter, note)
     }
 }
 
+/**
+ * The planner's form as an iOS grouped form: a centred title over a footnote, then a section per panel of the planner
+ * (Transmitter, Receiver, Simulation, Display) with each value as a titled row, and the estimate button at the foot.
+ */
 @Composable
 private fun SiteFormContent(
     state: SiteFormState,
@@ -206,68 +201,41 @@ private fun SiteFormContent(
     onUseMapCenter: (() -> Unit)?,
     note: String?,
 ) {
-    Column(
-        modifier =
-        Modifier.fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
         Text(
             text = stringResource(Res.string.site_planner),
-            style = Ios.type.title3,
-            modifier = Modifier.semantics { heading() },
+            style = Ios.type.headline,
+            color = Ios.colors.label,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp).semantics { heading() },
         )
         Text(
             text = stringResource(Res.string.site_planner_subtitle),
-            style = Ios.type.subheadline,
+            style = Ios.type.footnote,
             color = Ios.colors.secondaryLabel,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 6.dp),
         )
-        // Sections mirror the planner's own panel order + default-open state (Site Parameters drawer):
-        // Site / Transmitter (open) → Receiver → Simulation Options → Display (open).
+        // Sections in the planner's own panel order: Site / Transmitter → Receiver → Simulation Options → Display.
         TransmitterSection(state, onUseCurrentLocation, onUseNodeLocation, onUseMapCenter)
         ReceiverSection(state)
         SimulationSection(state)
         DisplaySection(state)
         note?.let {
-            Surface(
-                color = Ios.colors.fieldFill,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = it,
-                    style = Ios.type.footnote,
-                    color = Ios.colors.secondaryLabel,
-                    modifier = Modifier.padding(12.dp),
-                )
-            }
+            Text(
+                text = it,
+                style = Ios.type.footnote,
+                color = Ios.colors.secondaryLabel,
+                modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp),
+            )
         }
         IosButton(
             text = stringResource(Res.string.site_planner_estimate),
             onClick = { onSubmit(buildSubmitParams(state, initial)) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth(),
             large = true,
             enabled = state.canSubmit,
         )
-    }
-}
-
-/** A collapsible titled section, matching the planner's `Section` panels. */
-@Composable
-private fun FormSection(title: String, defaultExpanded: Boolean, content: @Composable ColumnScope.() -> Unit) {
-    var expanded by remember { mutableStateOf(defaultExpanded) }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(title, style = Ios.type.subheadline, modifier = Modifier.semantics { heading() })
-            Icon(if (expanded) MeshtasticIcons.ExpandLess else MeshtasticIcons.ExpandMore, contentDescription = null)
-        }
-        if (expanded) content()
     }
 }
 
@@ -279,22 +247,49 @@ private fun TransmitterSection(
     onUseMapCenter: (() -> Unit)?,
 ) {
     val posMsg = stringResource(Res.string.site_planner_invalid_positive)
-    FormSection(stringResource(Res.string.site_planner_section_transmitter), defaultExpanded = true) {
+    IosSection(header = stringResource(Res.string.site_planner_section_transmitter)) {
         SiteField(state.name, { state.name = it }, Res.string.name, keyboardType = KeyboardType.Text)
-        LocationChips(onUseCurrentLocation, onUseNodeLocation, onUseMapCenter)
-        TransmitterFields(
-            state = state,
-            latError = if (state.latBad) stringResource(Res.string.site_planner_invalid_latitude) else null,
-            lonError = if (state.lonBad) stringResource(Res.string.site_planner_invalid_longitude) else null,
-            powerError = if (state.powerBad) posMsg else null,
-            freqError = if (state.freqBad) posMsg else null,
+        // Southern/western hemispheres and lossy antennas are negative, so these need a sign key.
+        SiteField(
+            state.lat,
+            { state.lat = it },
+            Res.string.latitude,
+            keyboardType = KeyboardType.DecimalSigned,
+            error = if (state.latBad) stringResource(Res.string.site_planner_invalid_latitude) else null,
+        )
+        SiteField(
+            state.lon,
+            { state.lon = it },
+            Res.string.longitude,
+            keyboardType = KeyboardType.DecimalSigned,
+            error = if (state.lonBad) stringResource(Res.string.site_planner_invalid_longitude) else null,
+        )
+        SiteField(
+            state.power,
+            { state.power = it },
+            Res.string.site_planner_tx_power_watts,
+            error = if (state.powerBad) posMsg else null,
+        )
+        SiteField(
+            state.freq,
+            { state.freq = it },
+            Res.string.site_planner_frequency_mhz,
+            error = if (state.freqBad) posMsg else null,
+        )
+        SiteField(state.height, { state.height = it }, Res.string.site_planner_antenna_height_meters)
+        SiteField(
+            state.gain,
+            { state.gain = it },
+            Res.string.site_planner_antenna_gain_dbi,
+            keyboardType = KeyboardType.DecimalSigned,
         )
     }
+    LocationShortcuts(onUseCurrentLocation, onUseNodeLocation, onUseMapCenter)
 }
 
 @Composable
 private fun ReceiverSection(state: SiteFormState) {
-    FormSection(stringResource(Res.string.site_planner_section_receiver), defaultExpanded = false) {
+    IosSection(header = stringResource(Res.string.site_planner_section_receiver)) {
         // The whole valid range is negative (-150..-30 dBm), so an unsigned keypad reaches no valid value.
         SiteField(
             state.rxSensitivity,
@@ -309,87 +304,60 @@ private fun ReceiverSection(state: SiteFormState) {
 
 @Composable
 private fun SimulationSection(state: SiteFormState) {
-    FormSection(stringResource(Res.string.site_planner_section_simulation), defaultExpanded = false) {
+    IosSection(header = stringResource(Res.string.site_planner_section_simulation)) {
         SiteField(state.maxRange, { state.maxRange = it }, Res.string.site_planner_max_range_km)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(stringResource(Res.string.site_planner_high_resolution))
-            IosSwitch(checked = state.highResolution, onCheckedChange = { state.highResolution = it })
-        }
+        IosRow(
+            title = stringResource(Res.string.site_planner_high_resolution),
+            accessory =
+            IosAccessory.Switch(checked = state.highResolution, onCheckedChange = { state.highResolution = it }),
+        )
     }
 }
 
 @Composable
 private fun DisplaySection(state: SiteFormState) {
-    FormSection(stringResource(Res.string.site_planner_section_display), defaultExpanded = true) {
+    IosSection(header = stringResource(Res.string.site_planner_section_display)) {
         PalettePicker(state.colorScale) { state.colorScale = it }
     }
 }
 
-/** Quick shortcuts (chips) that re-seed the coordinates from the device, this node, or the map center. */
+/** Shortcuts that re-seed the coordinates from the device, this node, or the map center: tinted rows, as iOS's. */
 @Composable
-private fun LocationChips(
+private fun LocationShortcuts(
     onUseCurrentLocation: (() -> Unit)?,
     onUseNodeLocation: (() -> Unit)?,
     onUseMapCenter: (() -> Unit)?,
 ) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (onUseCurrentLocation == null && onUseNodeLocation == null && onUseMapCenter == null) return
+    IosSection {
         onUseCurrentLocation?.let {
-            LocationChip(it, MeshtasticIcons.MyLocation, Res.string.site_planner_use_current_location)
+            IosRow(
+                title = stringResource(Res.string.site_planner_use_current_location),
+                icon = IosIcons.LocationFill,
+                titleColor = Ios.colors.tint,
+                onClick = it,
+            )
         }
-        onUseNodeLocation?.let { LocationChip(it, MeshtasticIcons.PinDrop, Res.string.site_planner_use_node_location) }
-        onUseMapCenter?.let { LocationChip(it, MeshtasticIcons.Map, Res.string.site_planner_use_map_center) }
+        onUseNodeLocation?.let {
+            IosRow(
+                title = stringResource(Res.string.site_planner_use_node_location),
+                icon = IosIcons.MapPin,
+                titleColor = Ios.colors.tint,
+                onClick = it,
+            )
+        }
+        onUseMapCenter?.let {
+            IosRow(
+                title = stringResource(Res.string.site_planner_use_map_center),
+                icon = IosIcons.Map,
+                titleColor = Ios.colors.tint,
+                onClick = it,
+            )
+        }
     }
 }
 
-@Composable
-private fun LocationChip(onClick: () -> Unit, icon: ImageVector, label: StringResource) {
-    AssistChip(
-        onClick = onClick,
-        leadingIcon = { Icon(icon, null, Modifier.size(AssistChipDefaults.IconSize)) },
-        label = { Text(stringResource(label)) },
-    )
-}
-
-@Composable
-private fun TransmitterFields(
-    state: SiteFormState,
-    latError: String?,
-    lonError: String?,
-    powerError: String?,
-    freqError: String?,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Southern/western hemispheres and lossy antennas are negative, so these need a sign key.
-        SiteField(
-            state.lat,
-            { state.lat = it },
-            Res.string.latitude,
-            keyboardType = KeyboardType.DecimalSigned,
-            error = latError,
-        )
-        SiteField(
-            state.lon,
-            { state.lon = it },
-            Res.string.longitude,
-            keyboardType = KeyboardType.DecimalSigned,
-            error = lonError,
-        )
-        SiteField(state.power, { state.power = it }, Res.string.site_planner_tx_power_watts, error = powerError)
-        SiteField(state.freq, { state.freq = it }, Res.string.site_planner_frequency_mhz, error = freqError)
-        SiteField(state.height, { state.height = it }, Res.string.site_planner_antenna_height_meters)
-        SiteField(
-            state.gain,
-            { state.gain = it },
-            Res.string.site_planner_antenna_gain_dbi,
-            keyboardType = KeyboardType.DecimalSigned,
-        )
-    }
-}
-
+/** A titled value row of the form, the value typed at its end, as an iOS form's `TextField`. */
 @Composable
 private fun SiteField(
     value: String,
@@ -400,45 +368,56 @@ private fun SiteField(
     keyboardType: KeyboardType = KeyboardType.Decimal,
     error: String? = null,
 ) {
-    OutlinedTextField(
+    EditTextPreference(
+        title = stringResource(label),
         value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(label)) },
-        singleLine = true,
+        enabled = true,
         isError = error != null,
-        supportingText = error?.let { { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        modifier = modifier.fillMaxWidth(),
+        keyboardActions = KeyboardActions(),
+        onValueChanged = onValueChange,
+        summary = error,
+        modifier = modifier.iosRowSeparator(),
     )
 }
 
-/** Color-scale picker with a gradient swatch for each palette (recognition over recall). */
+/** Color-scale picker: a row with the palette's swatch and name, choosing from a menu of every palette. */
 @Composable
 private fun PalettePicker(value: String, onChange: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = SitePlannerParams.COLOR_SCALES.firstOrNull { it.first == value }?.second ?: value,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(stringResource(Res.string.site_planner_color_scale)) },
-            leadingIcon = { PaletteSwatch(value) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SitePlannerParams.COLOR_SCALES.forEach { (key, label) ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    leadingIcon = { PaletteSwatch(key) },
-                    onClick = {
-                        onChange(key)
-                        expanded = false
-                    },
-                )
+    IosRow(
+        title = stringResource(Res.string.site_planner_color_scale),
+        value = SitePlannerParams.COLOR_SCALES.firstOrNull { it.first == value }?.second ?: value,
+        onClick = { expanded = true },
+        accessory =
+        IosAccessory.Custom {
+            Box {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.width(8.dp))
+                    PaletteSwatch(value)
+                    Icon(
+                        IosIcons.ChevronUpDown,
+                        contentDescription = null,
+                        tint = Ios.colors.secondaryLabel,
+                        modifier = Modifier.padding(start = 6.dp).size(14.dp),
+                    )
+                }
+                IosMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    SitePlannerParams.COLOR_SCALES.forEach { (key, label) ->
+                        IosMenuItem(
+                            text = label,
+                            checked = key == value,
+                            checkable = true,
+                            onClick = {
+                                onChange(key)
+                                expanded = false
+                            },
+                        )
+                    }
+                }
             }
-        }
-    }
+        },
+    )
 }
 
 @Composable

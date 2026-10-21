@@ -16,18 +16,10 @@
  */
 package org.meshtastic.feature.node.component
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,8 +27,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
@@ -45,64 +38,41 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.add_a_note
 import org.meshtastic.core.resources.notes
 import org.meshtastic.core.resources.save
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Save
 import org.meshtastic.core.ui.ios.Ios
-import org.meshtastic.core.ui.ios.IosCard
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.IosTextField
 
 @Composable
 fun NotesSection(node: Node, onSaveNotes: (Int, String) -> Unit, modifier: Modifier = Modifier) {
+    // An iOS section: "Notes" as its header and the note as a field in its row, saved by Done or the tinted Save.
     if (node.isFavorite) {
-        IosCard(
-            modifier = modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Ios.colors.fieldFill),
-            shape = MaterialTheme.shapes.extraLarge,
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = stringResource(Res.string.notes),
-                    style = Ios.type.headline,
-                    color = Ios.colors.tint,
-                    fontWeight = FontWeight.Bold,
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                val originalNotes = node.notes
-                var notes by remember(node.notes) { mutableStateOf(node.notes) }
-                val edited = notes.trim() != originalNotes.trim()
-                val keyboardController = LocalSoftwareKeyboardController.current
-
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(Res.string.add_a_note)) },
-                    shape = MaterialTheme.shapes.large,
-                    trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                onSaveNotes(node.num, notes.trim())
-                                keyboardController?.hide()
-                            },
-                            enabled = edited,
-                        ) {
-                            Icon(
-                                imageVector = MeshtasticIcons.Save,
-                                contentDescription = stringResource(Res.string.save),
-                            )
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions =
-                    KeyboardActions(
-                        onDone = {
-                            onSaveNotes(node.num, notes.trim())
-                            keyboardController?.hide()
-                        },
-                    ),
-                )
-            }
+        val originalNotes = node.notes
+        var notes by remember(node.notes) { mutableStateOf(node.notes) }
+        val edited = notes.trim() != originalNotes.trim()
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val save = {
+            onSaveNotes(node.num, notes.trim())
+            keyboardController?.hide()
+        }
+        IosSection(header = stringResource(Res.string.notes), modifier = modifier) {
+            IosTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                placeholder = stringResource(Res.string.add_a_note),
+                containerColor = Color.Transparent,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { save() }),
+                trailing = {
+                    Text(
+                        text = stringResource(Res.string.save),
+                        style = Ios.type.body,
+                        color = if (edited) Ios.colors.tint else Ios.colors.tertiaryLabel,
+                        modifier =
+                        Modifier.clickable(enabled = edited, role = Role.Button) { save() }
+                            .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+                    )
+                },
+            )
         }
     }
 }

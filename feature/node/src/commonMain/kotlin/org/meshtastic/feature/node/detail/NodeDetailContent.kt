@@ -168,13 +168,7 @@ fun NodeDetailList(
                 )
             }
         }
-        item {
-            NotesSection(
-                node = node,
-                onSaveNotes = onSaveNotes,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp),
-            )
-        }
+        item { NotesSection(node = node, onSaveNotes = onSaveNotes) }
         if (!metrics.isManaged) {
             item {
                 AdministrationSection(

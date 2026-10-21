@@ -18,6 +18,7 @@
 
 package org.meshtastic.feature.node.metrics
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,10 +33,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -76,9 +74,9 @@ import org.meshtastic.core.resources.current
 import org.meshtastic.core.resources.power_metrics_log
 import org.meshtastic.core.resources.save
 import org.meshtastic.core.resources.voltage
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Save
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosChip
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.core.ui.theme.GraphColors.Gold
 import org.meshtastic.core.ui.theme.GraphColors.InfantryBlue
 import org.meshtastic.core.ui.util.rememberSaveFileLauncher
@@ -150,10 +148,10 @@ fun PowerMetricsScreen(viewModel: MetricsViewModel, onNavigateUp: () -> Unit) {
                 ) {
                     availableChannels.forEach { channel ->
                         val customLabel = channelLabels.getOrNull(channel.ordinal).orEmpty()
-                        FilterChip(
+                        IosChip(
+                            text = customLabel.ifBlank { stringResource(channel.strRes) },
                             selected = selectedChannel == channel,
                             onClick = { selectedChannel = channel },
-                            label = { Text(customLabel.ifBlank { stringResource(channel.strRes) }) },
                         )
                     }
                 }
@@ -213,21 +211,32 @@ private fun PowerChannelLabelEditor(
         onSave(label.trim())
         keyboardController?.hide()
     }
-    OutlinedTextField(
-        value = label,
-        onValueChange = { label = it },
-        modifier = modifier.fillMaxWidth(),
-        // Floating label (not a placeholder) so the channel stays identifiable after a custom name is typed.
-        label = { Text(channelName) },
-        singleLine = true,
-        trailingIcon = {
-            IconButton(onClick = save, enabled = edited) {
-                Icon(imageVector = MeshtasticIcons.Save, contentDescription = stringResource(Res.string.save))
-            }
-        },
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { save() }),
-    )
+    // The channel's name above an iOS field, so it stays identifiable after a custom name is typed.
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = channelName,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+        IosTextField(
+            value = label,
+            onValueChange = { label = it },
+            placeholder = channelName,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { save() }),
+            trailing = {
+                Text(
+                    text = stringResource(Res.string.save),
+                    style = Ios.type.body,
+                    color = if (edited) Ios.colors.tint else Ios.colors.tertiaryLabel,
+                    modifier =
+                    Modifier.clickable(enabled = edited, role = Role.Button) { save() }
+                        .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+                )
+            },
+        )
+    }
 }
 
 @Suppress("LongMethod")

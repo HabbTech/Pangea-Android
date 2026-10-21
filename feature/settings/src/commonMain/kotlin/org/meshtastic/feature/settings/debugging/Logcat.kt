@@ -29,11 +29,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,8 +60,10 @@ import org.meshtastic.core.resources.debug_logs_export_warning
 import org.meshtastic.core.ui.component.MeshtasticResourceDialog
 import org.meshtastic.core.ui.icon.FileDownload
 import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Refresh
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosChip
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosSearchField
 
 /** Logcat priority levels the user can toggle. Fatal/assert lines carry an unknown code and are always shown. */
 enum class LogLevel(val code: Char) {
@@ -137,14 +137,18 @@ fun LogcatContent(modifier: Modifier = Modifier) {
     val lines = remember(raw, levels, query) { filterLogcat(redactText(raw.orEmpty()), levels, query) }
 
     Column(modifier = modifier.fillMaxSize().padding(8.dp)) {
-        OutlinedTextField(
+        IosSearchField(
             value = query,
             onValueChange = { query = it },
-            label = { Text(stringResource(Res.string.debug_default_search)) },
-            singleLine = true,
-            trailingIcon = {
+            placeholder = stringResource(Res.string.debug_default_search),
+            glass = false,
+            trailing = {
                 IconButton(onClick = { refresh() }) {
-                    Icon(MeshtasticIcons.Refresh, contentDescription = stringResource(Res.string.debug_logcat_refresh))
+                    Icon(
+                        IosIcons.ArrowsCirclepath,
+                        contentDescription = stringResource(Res.string.debug_logcat_refresh),
+                        tint = Ios.colors.tint,
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -155,10 +159,10 @@ fun LogcatContent(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LogLevel.entries.forEach { level ->
-                FilterChip(
+                IosChip(
+                    text = level.code.toString(),
                     selected = level in levels,
                     onClick = { levels = if (level in levels) levels - level else levels + level },
-                    label = { Text(level.code.toString()) },
                 )
             }
             Box(modifier = Modifier.weight(1f))

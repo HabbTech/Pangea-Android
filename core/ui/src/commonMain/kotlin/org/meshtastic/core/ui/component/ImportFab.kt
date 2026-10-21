@@ -20,8 +20,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +53,7 @@ import org.meshtastic.core.ui.icon.Nfc
 import org.meshtastic.core.ui.icon.Person
 import org.meshtastic.core.ui.icon.QrCode2
 import org.meshtastic.core.ui.icon.QrCodeScanner
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.util.LocalBarcodeScannerProvider
 import org.meshtastic.core.ui.util.LocalBarcodeScannerSupported
@@ -234,12 +233,11 @@ private fun InputUrlDialog(title: String, onDismiss: () -> Unit, onConfirm: (Str
         onDismiss = onDismiss,
         title = title,
         text = {
-            OutlinedTextField(
+            IosTextField(
                 value = urlText,
                 onValueChange = { urlText = it },
-                label = { Text(stringResource(Res.string.url)) },
+                placeholder = stringResource(Res.string.url),
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 4,
             )
         },
         onConfirm = { onConfirm(urlText) },

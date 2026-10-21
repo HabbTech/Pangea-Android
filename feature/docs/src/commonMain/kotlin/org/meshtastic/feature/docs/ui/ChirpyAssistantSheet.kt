@@ -48,7 +48,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
@@ -75,12 +74,13 @@ import org.meshtastic.core.resources.chirpy_downloading_subtitle
 import org.meshtastic.core.resources.chirpy_search_placeholder
 import org.meshtastic.core.resources.chirpy_thinking
 import org.meshtastic.core.resources.img_chirpy
-import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Send
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosProgressBar
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.feature.docs.model.AIDocAssistantSessionState
 import org.meshtastic.feature.docs.model.ChirpyMessage
 import org.meshtastic.feature.docs.model.ChirpyRole
@@ -167,19 +167,20 @@ private fun ChirpyChatSheet(
                 }
             }
 
-            OutlinedTextField(
+            IosTextField(
                 value = state.draftQuestion,
                 onValueChange = onDraftChange,
-                placeholder = { Text(stringResource(CoreRes.string.chirpy_search_placeholder)) },
-                singleLine = false,
-                maxLines = 3,
-                shape = RoundedCornerShape(INPUT_CORNER_PERCENT),
+                placeholder = stringResource(CoreRes.string.chirpy_search_placeholder),
                 keyboardOptions =
                 KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Send),
                 keyboardActions = KeyboardActions(onSend = { doSend() }),
-                trailingIcon = {
+                trailing = {
                     IconButton(onClick = ::doSend, enabled = canSend) {
-                        Icon(imageVector = MeshtasticIcons.Send, contentDescription = "Send")
+                        Icon(
+                            imageVector = IosIcons.ArrowUp,
+                            contentDescription = "Send",
+                            tint = if (canSend) Ios.colors.tint else Ios.colors.tertiaryLabel,
+                        )
                     }
                 },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -257,7 +258,6 @@ private fun ChirpyDownloadingSheet(
 private val AVATAR_SIZE = 24.dp
 private val BUBBLE_CORNER = 8.dp
 private val BUBBLE_BORDER_WIDTH = 0.5.dp
-private const val INPUT_CORNER_PERCENT = 50f
 
 /** User bubble shape: rounded everywhere except bottom-end (like MessageItem sender). */
 private val UserBubbleShape =

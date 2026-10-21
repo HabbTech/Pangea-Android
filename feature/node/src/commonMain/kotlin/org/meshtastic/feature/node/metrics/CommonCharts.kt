@@ -63,6 +63,7 @@ import org.meshtastic.core.resources.rssi
 import org.meshtastic.core.resources.snr
 import org.meshtastic.core.ui.component.MeshtasticDialog
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosChip
 import org.meshtastic.core.ui.theme.AppTheme
 import kotlin.time.Duration.Companion.days
 
@@ -171,12 +172,13 @@ fun Legend(
             val isVisible = index !in hiddenSet
             val label = legendLabel(data)
             if (onToggle != null) {
-                FilterChip(
+                IosChip(
+                    text = label,
                     selected = isVisible,
                     onClick = { onToggle(index) },
-                    label = { Text(text = label, style = Ios.type.caption2) },
-                    leadingIcon = { LegendIndicator(color = data.color, isLine = data.isLine) },
                     modifier = Modifier.padding(horizontal = 2.dp),
+                    textStyle = Ios.type.caption2,
+                    leading = { LegendIndicator(color = data.color, isLine = data.isLine) },
                 )
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {

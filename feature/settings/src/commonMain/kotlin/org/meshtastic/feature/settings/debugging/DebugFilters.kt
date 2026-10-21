@@ -28,11 +28,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,7 +57,6 @@ import org.meshtastic.core.resources.filter_icon
 import org.meshtastic.core.resources.match_all
 import org.meshtastic.core.resources.match_any
 import org.meshtastic.core.resources.remove_filter
-import org.meshtastic.core.ui.icon.Add
 import org.meshtastic.core.ui.icon.Check
 import org.meshtastic.core.ui.icon.Close
 import org.meshtastic.core.ui.icon.FilterAlt
@@ -68,7 +65,10 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosButton
 import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosChip
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosMenu
+import org.meshtastic.core.ui.ios.IosTextField
 import org.meshtastic.feature.settings.debugging.DebugViewModel.UiMeshLog
 
 @Composable
@@ -80,12 +80,11 @@ fun DebugCustomFilterInput(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
+        IosTextField(
             value = customFilterText,
             onValueChange = onCustomFilterTextChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text(stringResource(Res.string.debug_filter_add_custom)) },
-            singleLine = true,
+            placeholder = stringResource(Res.string.debug_filter_add_custom),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions =
             KeyboardActions(
@@ -107,7 +106,11 @@ fun DebugCustomFilterInput(
             },
             enabled = customFilterText.isNotBlank(),
         ) {
-            Icon(imageVector = MeshtasticIcons.Add, contentDescription = stringResource(Res.string.debug_filter_add))
+            Icon(
+                imageVector = IosIcons.Plus,
+                contentDescription = stringResource(Res.string.debug_filter_add),
+                tint = if (customFilterText.isNotBlank()) Ios.colors.tint else Ios.colors.tertiaryLabel,
+            )
         }
     }
 }
@@ -141,7 +144,8 @@ fun DebugPresetFilters(
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
             for (filter in availableFilters) {
-                FilterChip(
+                IosChip(
+                    text = filter,
                     selected = filter in filterTexts,
                     onClick = {
                         onFilterTextsChange(
@@ -152,8 +156,7 @@ fun DebugPresetFilters(
                             },
                         )
                     },
-                    label = { Text(filter) },
-                    leadingIcon = {
+                    leading = {
                         if (filter in filterTexts) {
                             Icon(
                                 imageVector = MeshtasticIcons.Check,
@@ -283,17 +286,17 @@ fun DebugActiveFilters(
                 verticalArrangement = Arrangement.spacedBy(0.dp),
             ) {
                 for (filter in filterTexts) {
-                    FilterChip(
+                    IosChip(
+                        text = filter,
                         selected = true,
                         onClick = { onFilterTextsChange(filterTexts - filter) },
-                        label = { Text(filter) },
-                        leadingIcon = {
+                        leading = {
                             Icon(
                                 imageVector = MeshtasticIcons.FilterAlt,
                                 contentDescription = stringResource(Res.string.filter_icon),
                             )
                         },
-                        trailingIcon = {
+                        trailing = {
                             Icon(
                                 imageVector = MeshtasticIcons.Close,
                                 contentDescription = stringResource(Res.string.remove_filter),
