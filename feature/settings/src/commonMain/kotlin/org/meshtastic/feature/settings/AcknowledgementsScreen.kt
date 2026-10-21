@@ -16,135 +16,147 @@
  */
 package org.meshtastic.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
+import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
-import com.mikepenz.aboutlibraries.ui.compose.variant.LibraryBadges
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.acknowledgements
 import org.meshtastic.core.resources.library_count
 import org.meshtastic.core.resources.open_source_description
 import org.meshtastic.core.resources.open_source_libraries
-import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosPushedScreen
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSheet
 
 /**
- * Shared Acknowledgements screen listing the open-source libraries the app is built on, using the multiplatform
- * [LibrariesContainer] composable and [produceLibraries] from the AboutLibraries KMP library.
+ * The open-source libraries the app is built on, as an iOS settings page: a large title, a note on what this is, then
+ * one inset list with a row per library (its name, who made it, its version) and the count under it. A row opens the
+ * library's licence in a sheet.
  *
- * Leverages the full M3 [LibrariesContainer] API:
- * - **header**: app branding with descriptive text
- * - **divider**: [HorizontalDivider] between library items for clean visual separation
- * - **footer**: total library count summary
- * - **contentPadding**: proper LazyColumn padding (avoids clipping during scroll)
- * - **badges**: per-row metadata badges (author, version, description, license, funding) via [LibraryBadges]
- * - **license dialog**: built-in license dialog wired by default via the container's `licenseDialogBody`
- *
- * Each platform provides a [jsonProvider] lambda that loads the library definitions JSON
+ * The libraries come from AboutLibraries ([produceLibraries]); each platform provides a [jsonProvider] that loads the
+ * library definitions JSON.
  *
  * @see <a href="https://github.com/mikepenz/AboutLibraries">AboutLibraries KMP</a>
  */
 @Composable
 fun AcknowledgementsScreen(onNavigateUp: () -> Unit, jsonProvider: suspend () -> String) {
     val libraries by produceLibraries(jsonProvider)
+    val list = libraries?.libraries.orEmpty()
+    var shown by remember { mutableStateOf<Library?>(null) }
 
-    Scaffold(
-        containerColor = Ios.colors.background,
-        topBar = {
-            MainAppBar(
-                title = stringResource(Res.string.acknowledgements),
-                canNavigateUp = true,
-                onNavigateUp = onNavigateUp,
-                ourNode = null,
-                showNodeChip = false,
-                actions = {},
-                onClickChip = {},
-            )
-        },
-    ) { paddingValues ->
-        // The library list draws itself from Material's colours; scoped to iOS's here, so its rows, badges and dialog
-        // read as the rest of the app does.
-        val c = Ios.colors
-        MaterialTheme(
-            colorScheme =
-            MaterialTheme.colorScheme.copy(
-                background = c.background,
-                onBackground = c.label,
-                surface = c.background,
-                onSurface = c.label,
-                onSurfaceVariant = c.secondaryLabel,
-                primary = c.tint,
-                primaryContainer = c.fieldFill,
-                onPrimaryContainer = c.secondaryLabel,
-                secondaryContainer = c.fieldFill,
-                onSecondaryContainer = c.secondaryLabel,
-                tertiaryContainer = c.fieldFill,
-                onTertiaryContainer = c.secondaryLabel,
-            ),
-        ) {
-            LibrariesContainer(
-                libraries = libraries,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = paddingValues,
-                badges =
-                LibraryBadges(version = true, author = true, description = true, license = true, funding = true),
-                header = {
-                    item {
-                        AcknowledgementsHeader()
-                        HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
+    IosPushedScreen(title = stringResource(Res.string.acknowledgements), onBack = onNavigateUp, largeTitle = true) {
+        item(key = "ack-header") {
+            Column(modifier = Modifier.padding(horizontal = IosInset * 2, vertical = 8.dp)) {
+                Text(
+                    text = stringResource(Res.string.open_source_libraries),
+                    style = Ios.type.headline,
+                    color = Ios.colors.secondaryLabel,
+                )
+                Text(
+                    text = stringResource(Res.string.open_source_description),
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+        // One inset list, drawn row by row so a long list stays lazy: the first and last rows carry the card's corners.
+        itemsIndexed(list, key = { _, lib -> lib.uniqueId }) { index, library ->
+            val shape =
+                when {
+                    list.size == 1 -> IosCardShape
+                    index == 0 -> RoundedCornerShape(topStart = CORNER, topEnd = CORNER)
+                    index == list.lastIndex -> RoundedCornerShape(bottomStart = CORNER, bottomEnd = CORNER)
+                    else -> RoundedCornerShape(0.dp)
+                }
+            Box(Modifier.padding(horizontal = IosInset).clip(shape).background(Ios.colors.groupedRow)) {
+                IosRow(
+                    title = library.name,
+                    subtitle = library.developers.firstOrNull()?.name ?: library.organization?.name,
+                    value = library.artifactVersion,
+                    accessory = IosAccessory.Chevron,
+                    onClick = { shown = library },
+                )
+                if (index > 0) {
+                    Box(
+                        Modifier.padding(start = IosInset)
+                            .fillMaxWidth()
+                            .height(0.5.dp)
+                            .background(Ios.colors.separator),
+                    )
+                }
+            }
+        }
+        if (list.isNotEmpty()) {
+            item(key = "ack-count") {
+                Text(
+                    text = stringResource(Res.string.library_count, list.size),
+                    style = Ios.type.footnote,
+                    color = Ios.colors.secondaryLabel,
+                    modifier = Modifier.padding(horizontal = IosInset * 2, vertical = 8.dp),
+                )
+            }
+        }
+    }
+
+    shown?.let { library -> LicenseSheet(library = library, onDismiss = { shown = null }) }
+}
+
+/** A library's licence, as iOS shows an acknowledgement: its name as the title, the licence text below. */
+@Composable
+private fun LicenseSheet(library: Library, onDismiss: () -> Unit) {
+    IosSheet(title = library.name, onDismissRequest = onDismiss, grouped = true, grabber = true) {
+        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+            library.licenses.forEach { license ->
+                Text(
+                    text = license.name,
+                    style = Ios.type.headline,
+                    color = Ios.colors.secondaryLabel,
+                    modifier = Modifier.padding(start = IosInset * 2, end = IosInset * 2, top = 18.dp, bottom = 8.dp),
+                )
+                Box(
+                    Modifier.padding(horizontal = IosInset)
+                        .fillMaxWidth()
+                        .clip(IosCardShape)
+                        .background(Ios.colors.groupedRow)
+                        .padding(IosInset),
+                ) {
+                    SelectionContainer {
+                        Text(
+                            text = license.licenseContent?.takeIf { it.isNotBlank() } ?: license.url.orEmpty(),
+                            style = Ios.type.footnote,
+                            color = Ios.colors.label,
+                        )
                     }
-                },
-                divider = { HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator) },
-                footer = {
-                    val count = libraries?.libraries?.size ?: 0
-                    if (count > 0) {
-                        item {
-                            HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.library_count, count),
-                                    style = Ios.type.footnote,
-                                    color = Ios.colors.secondaryLabel,
-                                )
-                            }
-                        }
-                    }
-                },
-            )
+                }
+            }
         }
     }
 }
 
-@Composable
-private fun AcknowledgementsHeader() {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Text(
-            text = stringResource(Res.string.open_source_libraries),
-            style = Ios.type.headline,
-            color = Ios.colors.label,
-        )
-        Text(
-            text = stringResource(Res.string.open_source_description),
-            style = Ios.type.footnote,
-            color = Ios.colors.secondaryLabel,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-    }
-}
+/** The inset list's corner, iOS 26's. */
+private val CORNER = 26.dp
