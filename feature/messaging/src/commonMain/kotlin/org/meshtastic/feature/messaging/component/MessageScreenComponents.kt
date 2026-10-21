@@ -118,8 +118,6 @@ import org.meshtastic.core.ui.icon.ArrowBack
 import org.meshtastic.core.ui.icon.ArrowDownward
 import org.meshtastic.core.ui.icon.ChatBubbleOutline
 import org.meshtastic.core.ui.icon.Close
-import org.meshtastic.core.ui.icon.Copy
-import org.meshtastic.core.ui.icon.Delete
 import org.meshtastic.core.ui.icon.FilterList
 import org.meshtastic.core.ui.icon.FilterListOff
 import org.meshtastic.core.ui.icon.FormatPaint
@@ -132,7 +130,6 @@ import org.meshtastic.core.ui.icon.Muted
 import org.meshtastic.core.ui.icon.Person
 import org.meshtastic.core.ui.icon.Reply
 import org.meshtastic.core.ui.icon.Search
-import org.meshtastic.core.ui.icon.SelectAll
 import org.meshtastic.core.ui.icon.Settings
 import org.meshtastic.core.ui.icon.Unmuted
 import org.meshtastic.core.ui.icon.Visibility
@@ -140,7 +137,9 @@ import org.meshtastic.core.ui.icon.VisibilityOff
 import org.meshtastic.core.ui.icon.VolumeMute
 import org.meshtastic.core.ui.icon.VolumeUp
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosGlassIconButton
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.core.ui.ios.iosPressable
 import org.meshtastic.feature.messaging.DeliveryInfo
 import org.meshtastic.feature.messaging.TranslationDialogState
@@ -354,33 +353,43 @@ sealed class MessageMenuAction {
  * @param selectedCount The number of currently selected messages.
  * @param onAction Callback for when a menu action is triggered.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActionModeTopBar(selectedCount: Int, onAction: (MessageMenuAction) -> Unit) = TopAppBar(
-    title = { Text(text = selectedCount.toString()) },
-    navigationIcon = {
-        IconButton(onClick = { onAction(MessageMenuAction.Dismiss) }) {
-            Icon(
-                imageVector = MeshtasticIcons.ArrowBack,
+fun ActionModeTopBar(selectedCount: Int, onAction: (MessageMenuAction) -> Unit) {
+    // iOS's bar while choosing messages: ✕ to stop, the count, and the actions as glass buttons in the tint.
+    IosTopBar(
+        title = selectedCount.toString(),
+        showTitle = true,
+        background = Ios.colors.background,
+        showRadioChip = false,
+        leading = {
+            IosGlassIconButton(
+                IosIcons.Xmark,
                 contentDescription = stringResource(Res.string.clear_selection),
+                onClick = { onAction(MessageMenuAction.Dismiss) },
             )
-        }
-    },
-    actions = {
-        IconButton(onClick = { onAction(MessageMenuAction.ClipboardCopy) }) {
-            Icon(imageVector = MeshtasticIcons.Copy, contentDescription = stringResource(Res.string.copy))
-        }
-        IconButton(onClick = { onAction(MessageMenuAction.Delete) }) {
-            Icon(imageVector = MeshtasticIcons.Delete, contentDescription = stringResource(Res.string.delete))
-        }
-        IconButton(onClick = { onAction(MessageMenuAction.SelectAll) }) {
-            Icon(
-                imageVector = MeshtasticIcons.SelectAll,
+        },
+        trailing = {
+            IosGlassIconButton(
+                IosIcons.DocOnDoc,
+                contentDescription = stringResource(Res.string.copy),
+                onClick = { onAction(MessageMenuAction.ClipboardCopy) },
+                tint = Ios.colors.tint,
+            )
+            IosGlassIconButton(
+                IosIcons.Trash,
+                contentDescription = stringResource(Res.string.delete),
+                onClick = { onAction(MessageMenuAction.Delete) },
+                tint = Ios.colors.systemRed,
+            )
+            IosGlassIconButton(
+                IosIcons.CheckCircle,
                 contentDescription = stringResource(Res.string.select_all),
+                onClick = { onAction(MessageMenuAction.SelectAll) },
+                tint = Ios.colors.tint,
             )
-        }
-    },
-)
+        },
+    )
+}
 
 // endregion
 

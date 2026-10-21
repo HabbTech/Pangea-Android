@@ -201,7 +201,11 @@ fun MessageItem(
     val showsTranslation = message.showTranslated && message.translatedText != null && searchQuery.isEmpty()
     val bodyText = message.displayedText(searching = searchQuery.isNotEmpty())
     if (activeSheet != null) {
-        IosBottomSheet(onDismissRequest = { activeSheet = null }, sheetState = sheetState) {
+        IosBottomSheet(
+            onDismissRequest = { activeSheet = null },
+            sheetState = sheetState,
+            grouped = activeSheet == ActiveSheet.Actions,
+        ) {
             when (activeSheet) {
                 ActiveSheet.Actions -> {
                     MessageActionsContent(

@@ -29,11 +29,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -46,15 +43,8 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.model.getAckProofStatusRes
 import org.meshtastic.core.resources.Res
-import org.meshtastic.core.resources.action_copy_message
-import org.meshtastic.core.resources.action_delete_message
 import org.meshtastic.core.resources.action_more_message_actions
 import org.meshtastic.core.resources.action_react_with_emoji
-import org.meshtastic.core.resources.action_select_message
-import org.meshtastic.core.resources.action_send_reply
-import org.meshtastic.core.resources.action_show_message_status
-import org.meshtastic.core.resources.action_toggle_translation
-import org.meshtastic.core.resources.action_translate_message
 import org.meshtastic.core.resources.copy
 import org.meshtastic.core.resources.delete
 import org.meshtastic.core.resources.device_metrics_label_value
@@ -80,6 +70,10 @@ import org.meshtastic.core.ui.icon.Reply
 import org.meshtastic.core.ui.icon.SelectAll
 import org.meshtastic.core.ui.icon.ShieldCheck
 import org.meshtastic.core.ui.icon.Translate
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.proto.MeshPacket
 
 @Suppress("LongMethod")
@@ -104,131 +98,84 @@ fun MessageActionsContent(
     onTranslate: () -> Unit = {},
     onToggleTranslation: () -> Unit = {},
 ) {
-    Column {
+    val c = Ios.colors
+    Column(Modifier.padding(bottom = 24.dp)) {
         // An archived conversation shows no reaction affordances: the send path refuses them, so offering the row
         // would be a control that silently does nothing.
         if (quickEmojis.isNotEmpty()) {
             QuickEmojiRow(quickEmojis = quickEmojis, onReact = onReact, onMoreReactions = onMoreReactions)
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         }
 
-        if (xeddsaSigned) {
-            ListItem(
-                headlineContent = { Text(stringResource(Res.string.security_signed_verified)) },
-                supportingContent = { Text(stringResource(Res.string.security_signed_message_info)) },
-                leadingContent = {
-                    Icon(
-                        MeshtasticIcons.ShieldCheck,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+        // What is known about the message, as one card.
+        val hasInfo =
+            xeddsaSigned || getAckProofStatusRes(ackProofStatus) != null || timestamp != null || status != null
+        if (hasInfo) {
+            IosSection {
+                if (xeddsaSigned) {
+                    IosRow(
+                        title = stringResource(Res.string.security_signed_verified),
+                        subtitle = stringResource(Res.string.security_signed_message_info),
+                        icon = MeshtasticIcons.ShieldCheck,
                     )
-                },
-            )
-        }
-
-        AckProofListItem(ackProofStatus)
-
-        // The caller supplies the same compact or full timestamp shown in the conversation header.
-        if (timestamp != null) {
-            ListItem(
-                headlineContent = {
-                    Text(
+                }
+                AckProofRow(ackProofStatus)
+                // The caller supplies the same compact or full timestamp shown in the conversation header.
+                if (timestamp != null) {
+                    IosRow(
+                        title =
                         stringResource(
                             Res.string.device_metrics_label_value,
                             stringResource(Res.string.timestamp),
                             timestamp,
                         ),
+                        icon = MeshtasticIcons.History,
+                        iconTint = c.secondaryLabel,
                     )
-                },
-                leadingContent = { Icon(MeshtasticIcons.History, contentDescription = null) },
-            )
+                }
+                if (status != null) {
+                    val title =
+                        statusString?.first?.let { stringResource(it) }
+                            ?: stringResource(Res.string.message_delivery_status)
+                    val statusText = statusString?.second?.let { stringResource(it) }
+                    IosRow(
+                        title = stringResource(Res.string.device_metrics_label_value, title, statusText.orEmpty()),
+                        leading = { MessageStatusIcon(status = status) },
+                        accessory = IosAccessory.Chevron,
+                        onClick = onStatus,
+                    )
+                }
+            }
         }
 
-        if (status != null) {
-            val title =
-                statusString?.first?.let { stringResource(it) } ?: stringResource(Res.string.message_delivery_status)
-            val statusText = statusString?.second?.let { stringResource(it) }
-
-            ListItem(
-                headlineContent = {
-                    Text(stringResource(Res.string.device_metrics_label_value, title, statusText.orEmpty()))
-                },
-                leadingContent = { MessageStatusIcon(status = status) },
-                modifier =
-                Modifier.clickable(
-                    onClickLabel = stringResource(Res.string.action_show_message_status),
-                    role = Role.Button,
-                    onClick = onStatus,
-                ),
-            )
-        }
-
-        ReplyAction(canReply = canReply, onReply = onReply)
-
-        ListItem(
-            headlineContent = { Text(stringResource(Res.string.copy)) },
-            leadingContent = { Icon(MeshtasticIcons.Copy, contentDescription = stringResource(Res.string.copy)) },
-            modifier =
-            Modifier.clickable(
-                onClickLabel = stringResource(Res.string.action_copy_message),
-                role = Role.Button,
-                onClick = onCopy,
-            ),
-        )
-
-        if (translationRowState != null) {
-            val headline =
-                when (translationRowState) {
-                    TranslationRowState.Translate -> stringResource(Res.string.translate)
-                    TranslationRowState.ShowOriginal -> stringResource(Res.string.show_original)
-                    TranslationRowState.ShowTranslation -> stringResource(Res.string.show_translation)
-                }
-            val onClickLabel =
-                when (translationRowState) {
-                    TranslationRowState.Translate -> stringResource(Res.string.action_translate_message)
-                    else -> stringResource(Res.string.action_toggle_translation)
-                }
-            ListItem(
-                headlineContent = { Text(headline) },
-                leadingContent = { Icon(MeshtasticIcons.Translate, contentDescription = headline) },
-                modifier =
-                Modifier.clickable(
-                    onClickLabel = onClickLabel,
-                    role = Role.Button,
+        // The actions, as iOS's menu lists them, Delete last and in red.
+        IosSection {
+            if (canReply) {
+                IosRow(title = stringResource(Res.string.reply), icon = MeshtasticIcons.Reply, onClick = onReply)
+            }
+            IosRow(title = stringResource(Res.string.copy), icon = MeshtasticIcons.Copy, onClick = onCopy)
+            if (translationRowState != null) {
+                val headline =
+                    when (translationRowState) {
+                        TranslationRowState.Translate -> stringResource(Res.string.translate)
+                        TranslationRowState.ShowOriginal -> stringResource(Res.string.show_original)
+                        TranslationRowState.ShowTranslation -> stringResource(Res.string.show_translation)
+                    }
+                IosRow(
+                    title = headline,
+                    icon = MeshtasticIcons.Translate,
                     onClick =
-                    if (translationRowState == TranslationRowState.Translate) {
-                        onTranslate
-                    } else {
-                        onToggleTranslation
-                    },
-                ),
+                    if (translationRowState == TranslationRowState.Translate) onTranslate else onToggleTranslation,
+                )
+            }
+            IosRow(title = stringResource(Res.string.select), icon = MeshtasticIcons.SelectAll, onClick = onSelect)
+            IosRow(
+                title = stringResource(Res.string.delete),
+                icon = MeshtasticIcons.Delete,
+                iconTint = c.systemRed,
+                titleColor = c.systemRed,
+                onClick = onDelete,
             )
         }
-
-        ListItem(
-            headlineContent = { Text(stringResource(Res.string.select)) },
-            leadingContent = {
-                Icon(MeshtasticIcons.SelectAll, contentDescription = stringResource(Res.string.select))
-            },
-            modifier =
-            Modifier.clickable(
-                onClickLabel = stringResource(Res.string.action_select_message),
-                role = Role.Button,
-                onClick = onSelect,
-            ),
-        )
-
-        ListItem(
-            headlineContent = { Text(stringResource(Res.string.delete)) },
-            leadingContent = { Icon(MeshtasticIcons.Delete, contentDescription = stringResource(Res.string.delete)) },
-            modifier =
-            Modifier.clickable(
-                onClickLabel = stringResource(Res.string.action_delete_message),
-                role = Role.Button,
-                onClick = onDelete,
-            ),
-        )
     }
 }
 
@@ -237,7 +184,7 @@ fun MessageActionsContent(
  * from firmware predating [MeshPacket.AckProofStatus] and every ack that simply did not carry one.
  */
 @Composable
-private fun AckProofListItem(ackProofStatus: Int) {
+private fun AckProofRow(ackProofStatus: Int) {
     val (headline, supporting) = getAckProofStatusRes(ackProofStatus) ?: return
     val proofStatus = MeshPacket.AckProofStatus.fromValue(ackProofStatus)
     val icon =
@@ -248,15 +195,11 @@ private fun AckProofListItem(ackProofStatus: Int) {
         }
     val tint =
         when (proofStatus) {
-            MeshPacket.AckProofStatus.ACK_PROOF_INVALID -> MaterialTheme.colorScheme.error
-            MeshPacket.AckProofStatus.ACK_PROOF_NO_KEY -> MaterialTheme.colorScheme.onSurfaceVariant
-            else -> MaterialTheme.colorScheme.primary
+            MeshPacket.AckProofStatus.ACK_PROOF_INVALID -> Ios.colors.systemRed
+            MeshPacket.AckProofStatus.ACK_PROOF_NO_KEY -> Ios.colors.secondaryLabel
+            else -> Ios.colors.tint
         }
-    ListItem(
-        headlineContent = { Text(stringResource(headline)) },
-        supportingContent = { Text(stringResource(supporting)) },
-        leadingContent = { Icon(icon, contentDescription = null, tint = tint) },
-    )
+    IosRow(title = stringResource(headline), subtitle = stringResource(supporting), icon = icon, iconTint = tint)
 }
 
 internal const val MAX_EMOJI_ROW_SIZE = 6
@@ -286,7 +229,7 @@ internal fun QuickEmojiRow(
                 modifier =
                 Modifier.defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .background(Ios.colors.fieldFill)
                     .clickable(
                         onClickLabel = stringResource(Res.string.action_react_with_emoji),
                         role = Role.Button,
@@ -295,50 +238,34 @@ internal fun QuickEmojiRow(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = emoji, style = MaterialTheme.typography.titleMedium)
+                Text(text = emoji, style = Ios.type.headline)
             }
         }
 
         IconButton(
             onClick = onMoreReactions,
-            modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+            modifier = Modifier.size(44.dp).background(Ios.colors.fieldFill, CircleShape),
         ) {
             Icon(
                 MeshtasticIcons.AddReaction,
                 contentDescription = stringResource(Res.string.more_reactions),
                 modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = Ios.colors.secondaryLabel,
             )
         }
 
         if (onMoreActions != null) {
             IconButton(
                 onClick = onMoreActions,
-                modifier = Modifier.size(44.dp).background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                modifier = Modifier.size(44.dp).background(Ios.colors.fieldFill, CircleShape),
             ) {
                 Icon(
                     MeshtasticIcons.More,
                     contentDescription = stringResource(Res.string.action_more_message_actions),
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = Ios.colors.secondaryLabel,
                 )
             }
         }
     }
-}
-
-/** The sheet's Reply row, absent on an archived conversation because there is nothing to reply into. */
-@Composable
-private fun ReplyAction(canReply: Boolean, onReply: () -> Unit) {
-    if (!canReply) return
-    ListItem(
-        headlineContent = { Text(stringResource(Res.string.reply)) },
-        leadingContent = { Icon(MeshtasticIcons.Reply, contentDescription = stringResource(Res.string.reply)) },
-        modifier =
-        Modifier.clickable(
-            onClickLabel = stringResource(Res.string.action_send_reply),
-            role = Role.Button,
-            onClick = onReply,
-        ),
-    )
 }
