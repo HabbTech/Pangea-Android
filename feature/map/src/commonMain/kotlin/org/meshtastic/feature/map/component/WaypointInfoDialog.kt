@@ -50,6 +50,7 @@ import org.meshtastic.core.resources.geofence
 import org.meshtastic.core.resources.geofence_alerts_opt_in
 import org.meshtastic.core.resources.geofence_alerts_opt_in_desc
 import org.meshtastic.core.resources.geofence_radius
+import org.meshtastic.core.resources.pangea_open_in_maps
 import org.meshtastic.core.resources.pangea_waypoint_area
 import org.meshtastic.core.resources.pangea_waypoint_location
 import org.meshtastic.core.resources.pangea_waypoint_timestamps
@@ -61,6 +62,7 @@ import org.meshtastic.core.ui.ios.IosInset
 import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.ios.IosSheet
+import org.meshtastic.core.ui.util.rememberOpenMap
 import org.meshtastic.proto.Waypoint
 
 /**
@@ -108,16 +110,7 @@ fun WaypointInfoDialog(
                     IosSection { IosRow(title = waypoint.description, icon = IosIcons.DocText) }
                 }
             }
-            IosSection(header = stringResource(Res.string.pangea_waypoint_location)) {
-                IosRow(
-                    title =
-                    NumberFormatter.format((waypoint.latitude_i ?: 0) * COORDINATE_SCALE, COORDINATE_DECIMALS) +
-                        ", " +
-                        NumberFormatter.format((waypoint.longitude_i ?: 0) * COORDINATE_SCALE, COORDINATE_DECIMALS),
-                    titleColor = Ios.colors.secondaryLabel,
-                    icon = IosIcons.MapPin,
-                )
-            }
+            WaypointLocationSection(waypoint = waypoint, name = title)
             if (waypoint.geofence_radius > 0 || waypoint.bounding_box != null) {
                 IosSection(header = stringResource(Res.string.geofence)) {
                     if (waypoint.geofence_radius > 0) {
@@ -194,6 +187,35 @@ private fun WaypointTitle(emoji: String, name: String) {
             Text(emoji, fontSize = 18.sp)
         }
         Text(name, style = Ios.type.headline, color = Ios.colors.label)
+    }
+}
+
+/** Where the waypoint is: its coordinates, then iOS's Open in Maps, which hands them to the phone's map app. */
+@Composable
+private fun WaypointLocationSection(waypoint: Waypoint, name: String) {
+    val openMap = rememberOpenMap()
+    IosSection(header = stringResource(Res.string.pangea_waypoint_location)) {
+        IosRow(
+            title =
+            NumberFormatter.format((waypoint.latitude_i ?: 0) * COORDINATE_SCALE, COORDINATE_DECIMALS) +
+                ", " +
+                NumberFormatter.format((waypoint.longitude_i ?: 0) * COORDINATE_SCALE, COORDINATE_DECIMALS),
+            titleColor = Ios.colors.secondaryLabel,
+            icon = IosIcons.MapPin,
+        )
+        // iOS's Open in Maps: the phone's own map app, at the waypoint with its name.
+        IosRow(
+            title = stringResource(Res.string.pangea_open_in_maps),
+            titleColor = Ios.colors.tint,
+            icon = IosIcons.MapPinEllipse,
+            onClick = {
+                openMap(
+                    (waypoint.latitude_i ?: 0) * COORDINATE_SCALE,
+                    (waypoint.longitude_i ?: 0) * COORDINATE_SCALE,
+                    name,
+                )
+            },
+        )
     }
 }
 

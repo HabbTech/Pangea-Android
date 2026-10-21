@@ -1547,6 +1547,7 @@ pangea_offered_to_listeners
 pangea_offline_maps
 pangea_online
 pangea_open_chat
+pangea_open_in_maps
 pangea_open_settings
 pangea_optional_gpio
 pangea_pair_code_hint

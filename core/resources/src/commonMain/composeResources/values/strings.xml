@@ -1583,6 +1583,7 @@
     <string name="pangea_offline_maps">Offline Maps</string>
     <string name="pangea_online">Online</string>
     <string name="pangea_open_chat">Message</string>
+    <string name="pangea_open_in_maps">Open in Maps</string>
     <string name="pangea_open_settings">Open Settings</string>
     <string name="pangea_optional_gpio">Optional GPIO</string>
     <string name="pangea_pair_code_hint">The first time, your phone may ask for a pairing code: enter the number shown on your radio's screen, or 123456 if it doesn't have one. After that it won't ask again.</string>
