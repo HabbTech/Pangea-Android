@@ -40,6 +40,7 @@ import org.meshtastic.core.resources.library_count
 import org.meshtastic.core.resources.open_source_description
 import org.meshtastic.core.resources.open_source_libraries
 import org.meshtastic.core.ui.component.MainAppBar
+import org.meshtastic.core.ui.ios.Ios
 
 /**
  * Shared Acknowledgements screen listing the open-source libraries the app is built on, using the multiplatform
@@ -62,6 +63,7 @@ fun AcknowledgementsScreen(onNavigateUp: () -> Unit, jsonProvider: suspend () ->
     val libraries by produceLibraries(jsonProvider)
 
     Scaffold(
+        containerColor = Ios.colors.background,
         topBar = {
             MainAppBar(
                 title = stringResource(Res.string.acknowledgements),
@@ -74,34 +76,59 @@ fun AcknowledgementsScreen(onNavigateUp: () -> Unit, jsonProvider: suspend () ->
             )
         },
     ) { paddingValues ->
-        LibrariesContainer(
-            libraries = libraries,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = paddingValues,
-            badges = LibraryBadges(version = true, author = true, description = true, license = true, funding = true),
-            header = {
-                item {
-                    AcknowledgementsHeader()
-                    HorizontalDivider()
-                }
-            },
-            divider = { HorizontalDivider() },
-            footer = {
-                val count = libraries?.libraries?.size ?: 0
-                if (count > 0) {
+        // The library list draws itself from Material's colours; scoped to iOS's here, so its rows, badges and dialog
+        // read as the rest of the app does.
+        val c = Ios.colors
+        MaterialTheme(
+            colorScheme =
+            MaterialTheme.colorScheme.copy(
+                background = c.background,
+                onBackground = c.label,
+                surface = c.background,
+                onSurface = c.label,
+                onSurfaceVariant = c.secondaryLabel,
+                primary = c.tint,
+                primaryContainer = c.fieldFill,
+                onPrimaryContainer = c.secondaryLabel,
+                secondaryContainer = c.fieldFill,
+                onSecondaryContainer = c.secondaryLabel,
+                tertiaryContainer = c.fieldFill,
+                onTertiaryContainer = c.secondaryLabel,
+            ),
+        ) {
+            LibrariesContainer(
+                libraries = libraries,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = paddingValues,
+                badges =
+                LibraryBadges(version = true, author = true, description = true, license = true, funding = true),
+                header = {
                     item {
-                        HorizontalDivider()
-                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                            Text(
-                                text = stringResource(Res.string.library_count, count),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                        AcknowledgementsHeader()
+                        HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
+                    }
+                },
+                divider = { HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator) },
+                footer = {
+                    val count = libraries?.libraries?.size ?: 0
+                    if (count > 0) {
+                        item {
+                            HorizontalDivider(thickness = 0.5.dp, color = Ios.colors.separator)
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.library_count, count),
+                                    style = Ios.type.footnote,
+                                    color = Ios.colors.secondaryLabel,
+                                )
+                            }
                         }
                     }
-                }
-            },
-        )
+                },
+            )
+        }
     }
 }
 
@@ -110,13 +137,13 @@ private fun AcknowledgementsHeader() {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
             text = stringResource(Res.string.open_source_libraries),
-            style = MaterialTheme.typography.titleMediumEmphasized,
-            color = MaterialTheme.colorScheme.primary,
+            style = Ios.type.headline,
+            color = Ios.colors.label,
         )
         Text(
             text = stringResource(Res.string.open_source_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = Ios.type.footnote,
+            color = Ios.colors.secondaryLabel,
             modifier = Modifier.padding(top = 4.dp),
         )
     }
