@@ -17,13 +17,12 @@
 package org.meshtastic.feature.messaging.ui.sharing
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,8 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
@@ -41,9 +40,16 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.share
 import org.meshtastic.core.resources.share_to
 import org.meshtastic.core.ui.component.MainAppBar
-import org.meshtastic.core.ui.icon.MeshtasticIcons
-import org.meshtastic.core.ui.icon.Send
-import org.meshtastic.feature.messaging.ui.contact.ContactItem
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosInset
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSection
+import org.meshtastic.core.ui.ios.LocalIosBottomInset
+import org.meshtastic.feature.messaging.pangea.IosChatAvatar
 import org.meshtastic.feature.messaging.ui.contact.ContactsViewModel
 
 @Composable
@@ -55,6 +61,10 @@ fun ShareScreen(viewModel: ContactsViewModel, onConfirm: (String) -> Unit, onNav
     ShareScreen(contacts = shareable, onConfirm = onConfirm, onNavigateUp = onNavigateUp)
 }
 
+/**
+ * Picking the conversation to share into, drawn as an iOS inset list: each chat with its avatar and last message, a
+ * checkmark on the chosen one, and Share as the large button under the list.
+ */
 @Composable
 fun ShareScreen(contacts: List<Contact>, onConfirm: (String) -> Unit, onNavigateUp: () -> Unit) {
     var selectedContact by remember { mutableStateOf("") }
@@ -66,6 +76,7 @@ fun ShareScreen(contacts: List<Contact>, onConfirm: (String) -> Unit, onNavigate
     }
 
     Scaffold(
+        containerColor = Ios.colors.groupedBackground,
         topBar = {
             MainAppBar(
                 title = stringResource(Res.string.share_to),
@@ -78,31 +89,50 @@ fun ShareScreen(contacts: List<Contact>, onConfirm: (String) -> Unit, onNavigate
             )
         },
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                itemsIndexed(contacts, key = { index, contact -> "${contact.contactKey}#$index" }) { _, contact ->
-                    val selected = contact.contactKey == selectedContact
-                    ContactItem(
-                        contact = contact,
-                        selected = selected,
+        Column(
+            modifier =
+            Modifier.padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalIosBottomInset.current + 24.dp),
+        ) {
+            IosSection {
+                contacts.forEach { contact ->
+                    IosRow(
+                        title = contact.longName,
+                        subtitle = contact.lastMessageText?.takeIf { it.isNotBlank() },
+                        leading = {
+                            IosChatAvatar(
+                                contactKey = contact.contactKey,
+                                shortName = contact.shortName,
+                                longName = contact.longName,
+                                nodeColor = contact.nodeColors?.let { Color(it.second) },
+                                size = AVATAR_SIZE.dp,
+                            )
+                        },
+                        leadingWidth = AVATAR_COLUMN.dp,
+                        accessory =
+                        if (contact.contactKey == selectedContact) IosAccessory.Checkmark else IosAccessory.None,
                         onClick = { selectedContact = contact.contactKey },
                     )
                 }
             }
-
-            Button(
+            Spacer(Modifier.height(24.dp))
+            IosButton(
+                text = stringResource(Res.string.share),
                 onClick = { if (selectionIsSendable) onConfirm(selectedContact) },
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                style = IosButtonStyle.Filled,
                 enabled = selectionIsSendable,
-            ) {
-                Icon(imageVector = MeshtasticIcons.Send, contentDescription = stringResource(Res.string.share))
-            }
+                large = true,
+                icon = IosIcons.Send,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = IosInset),
+            )
         }
     }
 }
+
+private const val AVATAR_SIZE = 40
+
+/** Room for the avatar ahead of the chat's name, as the chat list lays it out. */
+private const val AVATAR_COLUMN = 68
 
 // Preview kept out of commonMain to avoid platform tooling dependencies.
