@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -60,8 +61,9 @@ fun IosMenu(
         modifier = modifier.widthIn(min = MENU_MIN_WIDTH),
         offset = offset,
         shape = RoundedCornerShape(MENU_CORNER),
-        // Opaque: a translucent panel lets its own shadow show through as a grey box.
-        containerColor = Ios.colors.chrome.copy(alpha = 1f),
+        // Opaque: a translucent panel lets its own shadow show through as a grey box. In Dark Mode iOS lifts a menu
+        // to the elevated grey, lighter than the page under it.
+        containerColor = if (Ios.colors.isDark) DARK_MENU else Ios.colors.chrome.copy(alpha = 1f),
         tonalElevation = 0.dp,
         shadowElevation = 12.dp,
         content = content,
@@ -123,5 +125,6 @@ fun IosMenuDivider(modifier: Modifier = Modifier) {
 val IosContextMenuOffset = DpOffset(16.dp, 0.dp)
 
 private val MENU_MIN_WIDTH = 220.dp
+private val DARK_MENU = Color(0xFF2C2C2E)
 private val MENU_CORNER = 24.dp
 private const val DISABLED_ALPHA = 0.4f
