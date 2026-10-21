@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -60,6 +59,8 @@ import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Settings
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
 import org.meshtastic.core.ui.theme.StatusColors.StatusOrange
 import org.meshtastic.core.ui.theme.StatusColors.StatusRed
@@ -152,19 +153,17 @@ private fun RemoteAdminListItem(
             trailingContent =
             chipLabelRes?.let { res ->
                 {
-                    AssistChip(
+                    IosButton(
+                        text = stringResource(res),
                         onClick = { onAction(NodeDetailAction.OpenRemoteAdmin(nodeNum)) },
-                        label = { androidx.compose.material3.Text(stringResource(res)) },
                         enabled = !isEnsuringSession,
-                        colors =
+                        style =
                         if (sessionStatus is SessionStatus.Active) {
-                            AssistChipDefaults.assistChipColors(
-                                labelColor = Ios.colors.onTintContainer,
-                                containerColor = Ios.colors.tintContainer,
-                            )
+                            IosButtonStyle.Tinted
                         } else {
-                            AssistChipDefaults.assistChipColors()
+                            IosButtonStyle.Gray
                         },
+                        textStyle = Ios.type.subheadline,
                     )
                 }
             },

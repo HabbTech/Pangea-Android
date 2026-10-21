@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -108,13 +106,12 @@ fun MapControlsOverlay(
         // Filter button + dropdown (optional)
         onToggleFilterMenu?.let { onClick ->
             Box {
-                BadgedBox(badge = { if (filtersActive) Badge() }) {
-                    MapButton(
-                        icon = IosIcons.FilterCircle,
-                        contentDescription = stringResource(Res.string.map_filter),
-                        onClick = onClick,
-                    )
-                }
+                // iOS fills the symbol while any filter is on, rather than badging the button.
+                MapButton(
+                    icon = if (filtersActive) IosIcons.FilterCircleFill else IosIcons.FilterCircle,
+                    contentDescription = stringResource(Res.string.map_filter),
+                    onClick = onClick,
+                )
                 filterDropdownContent()
             }
         }

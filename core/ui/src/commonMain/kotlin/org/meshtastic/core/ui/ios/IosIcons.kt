@@ -389,6 +389,18 @@ object IosIcons {
         }
     }
 
+    /** `line.3.horizontal.decrease.circle.fill`: filters that are on. */
+    val FilterCircleFill: ImageVector by lazy {
+        icon("ios.filterCircleFill") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                circle(12f, 12f, 9.6f)
+                capsule(7.5f, 9f, 16.5f, 9f, 0.8f)
+                capsule(9f, 12f, 15f, 12f, 0.8f)
+                capsule(10.5f, 15f, 13.5f, 15f, 0.8f)
+            }
+        }
+    }
+
     /** `mappin`: Mesh Map Location. */
     val MapPin: ImageVector by lazy {
         icon("ios.mapPin") {

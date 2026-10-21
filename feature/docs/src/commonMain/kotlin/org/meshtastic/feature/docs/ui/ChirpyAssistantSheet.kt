@@ -49,8 +49,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -78,6 +76,8 @@ import org.meshtastic.core.ui.icon.Send
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActivityIndicator
 import org.meshtastic.core.ui.ios.IosBottomSheet
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosButtonStyle
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosProgressBar
 import org.meshtastic.core.ui.ios.IosTextField
@@ -360,15 +360,11 @@ private fun AssistantBubble(message: ChirpyMessage, onNavigateToPage: (String) -
                 modifier = Modifier.padding(top = 4.dp, start = 8.dp),
             ) {
                 message.sources.forEach { source ->
-                    SuggestionChip(
+                    IosButton(
+                        text = source.title,
                         onClick = { onNavigateToPage(source.id) },
-                        label = { Text(text = source.title, style = Ios.type.caption2) },
-                        colors =
-                        SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = Ios.colors.fieldFill,
-                            labelColor = Ios.colors.label,
-                        ),
-                        border = BorderStroke(BUBBLE_BORDER_WIDTH, Ios.colors.separator),
+                        style = IosButtonStyle.Gray,
+                        textStyle = Ios.type.caption1,
                     )
                 }
             }
