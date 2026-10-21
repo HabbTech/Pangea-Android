@@ -401,6 +401,56 @@ object IosIcons {
         }
     }
 
+    /** `hammer`: Tools. */
+    val Hammer: ImageVector by lazy {
+        icon("ios.hammer") {
+            stroked(width = 1.5f) {
+                // The handle, then the head across its top.
+                moveTo(4.8f, 19.6f)
+                lineTo(12.6f, 11.8f)
+                moveTo(10.2f, 9.4f)
+                lineTo(14.4f, 5.2f)
+                curveTo(15.4f, 4.2f, 17.0f, 4.2f, 18.0f, 5.2f)
+                lineTo(19.2f, 6.4f)
+                lineTo(15.0f, 10.6f)
+                moveTo(10.2f, 9.4f)
+                lineTo(13.8f, 13.0f)
+                lineTo(15.0f, 10.6f)
+            }
+        }
+    }
+
+    /** `tag`: write a contact to an NFC tag. */
+    val Tag: ImageVector by lazy {
+        icon("ios.tag") {
+            stroked(width = 1.5f) {
+                moveTo(4.2f, 5.6f)
+                curveTo(4.2f, 4.8f, 4.8f, 4.2f, 5.6f, 4.2f)
+                lineTo(11.2f, 4.2f)
+                lineTo(19.8f, 12.8f)
+                lineTo(12.8f, 19.8f)
+                lineTo(4.2f, 11.2f)
+                close()
+                circle(8.4f, 8.4f, 1.3f)
+            }
+        }
+    }
+
+    /** `wave.3.right.circle`: scan an NFC tag. */
+    val WaveRightCircle: ImageVector by lazy {
+        icon("ios.waveRightCircle") {
+            stroked(width = 1.5f) {
+                circle(12f, 12f, 9.2f)
+                // Three arcs opening to the right of a point at (8, 12), at 45 degrees either side.
+                listOf(2.4f, 4.6f, 6.8f).forEach { r ->
+                    val d = r * 0.7071f
+                    moveTo(7.4f + d, 12f - d)
+                    arcTo(r, r, 0f, isMoreThanHalf = false, isPositiveArc = true, x1 = 7.4f + d, y1 = 12f + d)
+                }
+            }
+        }
+    }
+
     /** `mappin`: Mesh Map Location. */
     val MapPin: ImageVector by lazy {
         icon("ios.mapPin") {

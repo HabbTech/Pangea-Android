@@ -251,6 +251,7 @@ object DeepLinkRouter {
             "acknowledgements" to SettingsRoute.Acknowledgements,
             "attributions" to SettingsRoute.Acknowledgements,
             "filter-settings" to SettingsRoute.FilterSettings,
+            "tools" to SettingsRoute.Tools,
             "helpdocs" to SettingsRoute.HelpDocs,
             "help-docs" to SettingsRoute.HelpDocs,
             "local-mesh-discovery" to DiscoveryRoute.DiscoveryGraph,

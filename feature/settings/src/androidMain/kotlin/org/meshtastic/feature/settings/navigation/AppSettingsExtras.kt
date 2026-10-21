@@ -49,6 +49,7 @@ import org.meshtastic.core.resources.device_links
 import org.meshtastic.core.resources.filter_settings
 import org.meshtastic.core.resources.node_layout_section_title
 import org.meshtastic.core.resources.pangea_developers
+import org.meshtastic.core.resources.pangea_tools
 import org.meshtastic.core.resources.preferences_language
 import org.meshtastic.core.resources.wifi_devices
 import org.meshtastic.core.ui.component.ListItem
@@ -59,6 +60,8 @@ import org.meshtastic.core.ui.icon.List
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.SettingsRemote
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.util.LocalNfcScannerSupported
 import org.meshtastic.core.ui.util.isBluetoothSupported
 import org.meshtastic.feature.settings.SettingsViewModel
 import org.meshtastic.feature.settings.component.AppInfoSection
@@ -179,6 +182,12 @@ actual fun AppSettingsExtras(onNavigate: (Route) -> Unit, modifier: Modifier) {
         ExpressiveSection(title = stringResource(Res.string.pangea_developers)) {
             ListItem(text = stringResource(Res.string.device_links), leadingIcon = MeshtasticIcons.Device) {
                 onNavigate(SettingsRoute.DeviceLinks)
+            }
+            // iOS lists Tools only where its NFC reader is available.
+            if (LocalNfcScannerSupported.current) {
+                ListItem(text = stringResource(Res.string.pangea_tools), leadingIcon = IosIcons.Hammer) {
+                    onNavigate(SettingsRoute.Tools)
+                }
             }
         }
     }

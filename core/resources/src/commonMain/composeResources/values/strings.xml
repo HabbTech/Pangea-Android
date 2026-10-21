@@ -1569,6 +1569,14 @@
     <string name="pangea_new_group">New Group</string>
     <string name="pangea_new_message">New Message</string>
     <string name="pangea_new_message_hint">@code, or paste a link</string>
+    <string name="pangea_nfc_node_name">Node Name: %1$s</string>
+    <string name="pangea_nfc_not_pangea">This tag doesn\'t hold a Pangea contact or channel link.</string>
+    <string name="pangea_nfc_read_failed">Couldn\'t read tag</string>
+    <string name="pangea_nfc_scan_tag">Scan NFC Tag</string>
+    <string name="pangea_nfc_scan_tag_hint">Read a Pangea tag to add the contact or channel it contains.</string>
+    <string name="pangea_nfc_tags">NFC Tags</string>
+    <string name="pangea_nfc_write_contact">Write Contact to NFC Tag</string>
+    <string name="pangea_nfc_write_contact_hint">Hold a writable NFC tag against the back of your phone to save your contact to it.</string>
     <string name="pangea_nickname">Nickname</string>
     <string name="pangea_nickname_hint">Only you can see this.</string>
     <string name="pangea_no_chats_yet">No Chats Yet</string>
@@ -1718,6 +1726,7 @@
     <string name="pangea_tertiary_admin_key">Tertiary Admin Key</string>
     <string name="pangea_this_is_your_radio">This is your radio</string>
     <string name="pangea_timing_overrides">Timing and Overrides</string>
+    <string name="pangea_tools">Tools</string>
     <string name="pangea_trace_route">Trace Route</string>
     <string name="pangea_trace_route_log">Trace Route Log</string>
     <string name="pangea_udp_broadcast">UDP Broadcast</string>

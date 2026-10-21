@@ -61,7 +61,7 @@ fun EntryProviderScope<NavKey>.desktopNavGraph(
     )
     mapGraph(backStack)
     firmwareGraph(backStack)
-    settingsGraph(backStack, settingsRadioConfigViewModel)
+    settingsGraph(backStack, radioConfigViewModelProvider = settingsRadioConfigViewModel)
     docsEntries(backStack)
     channelsGraph(backStack)
     connectionsGraph(backStack)

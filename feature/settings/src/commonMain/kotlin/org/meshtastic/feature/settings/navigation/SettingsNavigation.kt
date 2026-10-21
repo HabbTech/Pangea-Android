@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinViewModel
 import org.koin.core.parameter.parametersOf
+import org.meshtastic.core.common.util.CommonUri
 import org.meshtastic.core.navigation.NodesRoute
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoute
@@ -55,6 +56,7 @@ import org.meshtastic.feature.settings.filter.FilterSettingsScreen
 import org.meshtastic.feature.settings.filter.FilterSettingsViewModel
 import org.meshtastic.feature.settings.pangea.IosAppSettingsScreen
 import org.meshtastic.feature.settings.pangea.PangeaHelpScreen
+import org.meshtastic.feature.settings.pangea.ToolsScreen
 import org.meshtastic.feature.settings.radio.CleanNodeDatabaseScreen
 import org.meshtastic.feature.settings.radio.CleanNodeDatabaseViewModel
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
@@ -261,6 +263,8 @@ private fun NavBackStack<NavKey>.addSettingsRoute(route: Route) {
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 fun EntryProviderScope<NavKey>.settingsGraph(
     backStack: NavBackStack<NavKey>,
+    // Where Tools sends a link read from an NFC tag: the app's own deep-link handling, as a scanned QR code.
+    onHandleDeepLink: (CommonUri, onInvalid: () -> Unit) -> Unit = { _, _ -> },
     radioConfigViewModelProvider: @Composable (SettingsRoute.Settings?) -> RadioConfigViewModel,
 ) {
     entry<SettingsRoute.Settings> { args ->
@@ -473,6 +477,15 @@ fun EntryProviderScope<NavKey>.settingsGraph(
         DeviceLinkDirectoryScreen(
             viewModel = koinViewModel(),
             onNavigateUp = dropUnlessResumed { backStack.removeLastOrNull() },
+        )
+    }
+    entry<SettingsRoute.Tools> {
+        val settingsViewModel: SettingsViewModel = koinViewModel()
+        val ourNode by settingsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
+        ToolsScreen(
+            ownNode = ourNode,
+            onHandleDeepLink = onHandleDeepLink,
+            onBack = dropUnlessResumed { backStack.removeLastOrNull() },
         )
     }
     entry<SettingsRoute.AppFunctionsSettings> {

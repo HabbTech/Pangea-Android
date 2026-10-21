@@ -126,7 +126,11 @@ fun MainScreen() {
                         channelsGraph(backStack)
                         connectionsGraph(backStack)
                         discoveryGraph(backStack)
-                        settingsGraph(backStack, settingsRadioConfigViewModelProvider)
+                        settingsGraph(
+                            backStack,
+                            onHandleDeepLink = viewModel::handleDeepLink,
+                            radioConfigViewModelProvider = settingsRadioConfigViewModelProvider,
+                        )
                         docsEntries(backStack)
                         firmwareGraph(backStack)
                         wifiProvisionGraph(backStack)

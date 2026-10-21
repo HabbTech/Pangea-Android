@@ -193,6 +193,9 @@ sealed interface SettingsRoute : Route {
 
     @Serializable data object DeviceLinks : SettingsRoute
 
+    /** Pangea: the iPhone app's Tools page (NFC tags: write your contact, read a contact or channel). */
+    @Serializable data object Tools : SettingsRoute
+
     @Serializable data object AppFunctionsSettings : SettingsRoute
 
     // endregion

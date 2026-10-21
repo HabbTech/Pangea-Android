@@ -1533,6 +1533,14 @@ pangea_network_servers
 pangea_new_group
 pangea_new_message
 pangea_new_message_hint
+pangea_nfc_node_name
+pangea_nfc_not_pangea
+pangea_nfc_read_failed
+pangea_nfc_scan_tag
+pangea_nfc_scan_tag_hint
+pangea_nfc_tags
+pangea_nfc_write_contact
+pangea_nfc_write_contact_hint
 pangea_nickname
 pangea_nickname_hint
 pangea_no_chats_yet
@@ -1682,6 +1690,7 @@ pangea_tak_server_status
 pangea_tertiary_admin_key
 pangea_this_is_your_radio
 pangea_timing_overrides
+pangea_tools
 pangea_trace_route
 pangea_trace_route_log
 pangea_udp_broadcast
