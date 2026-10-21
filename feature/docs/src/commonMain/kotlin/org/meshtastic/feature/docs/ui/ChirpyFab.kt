@@ -28,9 +28,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -95,13 +95,7 @@ private fun AvailableFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
             label = "pulseScale",
         )
 
-    FloatingActionButton(
-        onClick = onClick,
-        modifier = modifier.scale(scale),
-        containerColor = Ios.colors.tintContainer,
-        contentColor = Ios.colors.onTintContainer,
-        elevation = FloatingActionButtonDefaults.elevation(),
-    ) {
+    GlassFab(onClick = onClick, modifier = modifier.scale(scale)) {
         Image(
             painter = painterResource(CoreRes.drawable.img_chirpy),
             contentDescription = stringResource(CoreRes.string.chirpy_ready),
@@ -122,12 +116,7 @@ private fun CheckingFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
             label = "spinRotation",
         )
 
-    FloatingActionButton(
-        onClick = onClick,
-        modifier = modifier,
-        containerColor = Ios.colors.fieldFill,
-        contentColor = Ios.colors.label,
-    ) {
+    GlassFab(onClick = onClick, modifier = modifier) {
         Box(contentAlignment = Alignment.Center) {
             IosActivityIndicator(
                 modifier = Modifier.size(FAB_PROGRESS_SIZE.dp).graphicsLayer { rotationZ = rotation },
@@ -153,12 +142,7 @@ private fun DownloadingFab(readiness: ModelReadiness.Downloading, onClick: () ->
             label = "downloadProgress",
         )
 
-    FloatingActionButton(
-        onClick = onClick,
-        modifier = modifier,
-        containerColor = Ios.colors.fieldFill,
-        contentColor = Ios.colors.label,
-    ) {
+    GlassFab(onClick = onClick, modifier = modifier) {
         Box(contentAlignment = Alignment.Center) {
             if (targetProgress > 0f) {
                 CircularProgressIndicator(
@@ -182,5 +166,20 @@ private fun DownloadingFab(readiness: ModelReadiness.Downloading, onClick: () ->
                 modifier = Modifier.size(FAB_ICON_SIZE.dp),
             )
         }
+    }
+}
+
+/** iOS's floating glass button: a light circle with a soft shadow, the content centred. */
+@Composable
+private fun GlassFab(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(56.dp),
+        shape = CircleShape,
+        color = Ios.colors.chrome.copy(alpha = 1f),
+        contentColor = Ios.colors.label,
+        shadowElevation = 6.dp,
+    ) {
+        Box(contentAlignment = Alignment.Center) { content() }
     }
 }

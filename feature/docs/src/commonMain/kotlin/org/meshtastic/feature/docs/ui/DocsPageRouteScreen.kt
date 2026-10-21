@@ -23,11 +23,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -35,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mikepenz.markdown.compose.components.markdownComponents
@@ -42,11 +40,13 @@ import com.mikepenz.markdown.compose.elements.MarkdownTable
 import com.mikepenz.markdown.compose.elements.MarkdownTableHeader
 import com.mikepenz.markdown.compose.elements.MarkdownTableRow
 import com.mikepenz.markdown.m3.Markdown
+import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.markdownDimens
-import org.meshtastic.core.ui.icon.ArrowBack
-import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.feature.docs.model.AIDocAssistantSessionState
 import org.meshtastic.feature.docs.model.DocPageContent
 import org.meshtastic.feature.docs.model.ModelReadiness
@@ -75,13 +75,21 @@ fun DocsPageRouteScreen(
     onNavigateToPage: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    // iOS's pushed page: a glass back button and the page's title (with how it was translated under it) in the bar.
     Scaffold(
+        containerColor = Ios.colors.background,
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
+            IosTopBar(
+                title = content?.page?.title ?: "Documentation",
+                showTitle = true,
+                background = Ios.colors.background,
+                showRadioChip = false,
+                titleContent = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = content?.page?.title ?: "Documentation",
+                            style = Ios.type.headline,
+                            color = Ios.colors.label,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -98,10 +106,8 @@ fun DocsPageRouteScreen(
                         }
                     }
                 },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(imageVector = MeshtasticIcons.ArrowBack, contentDescription = "Navigate back")
-                    }
+                leading = {
+                    IosGlassIconButton(IosIcons.ChevronLeft, contentDescription = "Navigate back", onClick = onBack)
                 },
             )
         },
@@ -150,6 +156,18 @@ fun DocsPageRouteScreen(
                         Markdown(
                             content = markdownText,
                             imageTransformer = ComposeResourceImageTransformer(),
+                            // iOS's reading sizes: a large title, then title and headline steps, body text.
+                            typography =
+                            markdownTypography(
+                                h1 = Ios.type.largeTitle,
+                                h2 = Ios.type.title1.copy(fontWeight = FontWeight.Bold),
+                                h3 = Ios.type.title2.copy(fontWeight = FontWeight.Bold),
+                                h4 = Ios.type.title3.copy(fontWeight = FontWeight.SemiBold),
+                                h5 = Ios.type.headline,
+                                h6 = Ios.type.subheadline.copy(fontWeight = FontWeight.SemiBold),
+                                text = Ios.type.body,
+                                paragraph = Ios.type.body,
+                            ),
                             dimens = markdownDimens(tableCellWidth = 108.dp),
                             components =
                             markdownComponents(

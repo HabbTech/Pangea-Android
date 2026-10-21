@@ -132,7 +132,7 @@ class DocsBrowserScreenTest {
                 onBack = { backCalled = true },
             )
         }
-        onNodeWithContentDescription("Navigate back").performClick()
+        onNodeWithContentDescription("Navigate back", ignoreCase = true).performClick()
         runOnIdle { assertTrue(backCalled) }
     }
 

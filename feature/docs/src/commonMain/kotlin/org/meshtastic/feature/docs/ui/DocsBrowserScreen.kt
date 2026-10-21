@@ -16,29 +16,18 @@
  */
 package org.meshtastic.feature.docs.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -48,10 +37,14 @@ import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.doc_loading
 import org.meshtastic.core.resources.doc_no_documentation
 import org.meshtastic.core.resources.doc_no_results
-import org.meshtastic.core.ui.icon.ArrowBack
-import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.resources.doc_search_placeholder
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosAccessory
 import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosPushedScreen
+import org.meshtastic.core.ui.ios.IosRow
+import org.meshtastic.core.ui.ios.IosSearchField
+import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.feature.docs.model.AIDocAssistantSessionState
 import org.meshtastic.feature.docs.model.DocPage
 import org.meshtastic.feature.docs.model.DocSection
@@ -80,47 +73,26 @@ fun DocsBrowserScreen(
     onChirpySubmit: () -> Unit = {},
     onChirpyNavigateToPage: (String) -> Unit = {},
 ) {
-    val searchScrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Help & Documentation") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(imageVector = MeshtasticIcons.ArrowBack, contentDescription = "Navigate back")
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            if (isAiSupported && showFab) {
-                ChirpyFab(modelReadiness = modelReadiness, onClick = onChirpyToggle)
+    // iOS's pushed page: the back button and title in the bar, the search field, then the guides as sections. Chirpy
+    // floats at the bottom right as a glass button.
+    Box(modifier = modifier.fillMaxSize()) {
+        IosPushedScreen(title = "Help & Documentation", onBack = onBack, largeTitle = true) {
+            item {
+                IosSearchField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    placeholder = stringResource(Res.string.doc_search_placeholder),
+                    glass = false,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
-        },
-        modifier = modifier.nestedScroll(searchScrollBehavior.nestedScrollConnection),
-    ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            DocsSearchBar(
-                query = searchQuery,
-                onQueryChange = onSearchQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                scrollBehavior = searchScrollBehavior,
-                expandedContent = {
-                    DocsResultsContent(
-                        pages = pages,
-                        isLoading = isLoading,
-                        searchQuery = searchQuery,
-                        onSelectPage = onSelectPage,
-                    )
-                },
-            )
-
-            DocsResultsContent(
-                pages = pages,
-                isLoading = isLoading,
-                searchQuery = searchQuery,
-                onSelectPage = onSelectPage,
+            docsResults(pages = pages, isLoading = isLoading, searchQuery = searchQuery, onSelectPage = onSelectPage)
+        }
+        if (isAiSupported && showFab) {
+            ChirpyFab(
+                modelReadiness = modelReadiness,
+                onClick = onChirpyToggle,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 24.dp),
             )
         }
 
@@ -137,94 +109,88 @@ fun DocsBrowserScreen(
     }
 }
 
-/** The loading / empty / results states shown below the search field, shared between the inline and expanded bar. */
-@Composable
-private fun DocsResultsContent(
+/** The loading / empty / results states under the search field. */
+private fun LazyListScope.docsResults(
     pages: List<DocPage>,
     isLoading: Boolean,
     searchQuery: String,
     onSelectPage: (String) -> Unit,
 ) {
     when {
-        isLoading -> {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                IosActivityIndicator(modifier = Modifier, color = Ios.colors.systemGray)
-                Text(
-                    text = stringResource(Res.string.doc_loading),
-                    style = Ios.type.subheadline,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
+        isLoading ->
+            item {
+                Column(
+                    modifier = Modifier.fillParentMaxHeight(PLACEHOLDER_HEIGHT_FRACTION).fillMaxWidth(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    IosActivityIndicator(color = Ios.colors.systemGray)
+                    Text(
+                        text = stringResource(Res.string.doc_loading),
+                        style = Ios.type.subheadline,
+                        color = Ios.colors.secondaryLabel,
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
+                }
             }
-        }
 
-        pages.isEmpty() -> {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text =
-                    if (searchQuery.isNotBlank()) {
-                        stringResource(Res.string.doc_no_results)
-                    } else {
-                        stringResource(Res.string.doc_no_documentation)
-                    },
-                    style = Ios.type.body,
-                )
+        pages.isEmpty() ->
+            item {
+                Column(
+                    modifier = Modifier.fillParentMaxHeight(PLACEHOLDER_HEIGHT_FRACTION).fillMaxWidth(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text =
+                        if (searchQuery.isNotBlank()) {
+                            stringResource(Res.string.doc_no_results)
+                        } else {
+                            stringResource(Res.string.doc_no_documentation)
+                        },
+                        style = Ios.type.body,
+                        color = Ios.colors.secondaryLabel,
+                    )
+                }
             }
-        }
 
         else -> {
-            DocsTocList(pages = pages, onSelectPage = onSelectPage)
+            val userGuidePages = pages.filter { it.section == DocSection.UserGuide }.sortedBy { it.navOrder }
+            val devGuidePages = pages.filter { it.section == DocSection.DeveloperGuide }.sortedBy { it.navOrder }
+            if (userGuidePages.isNotEmpty()) {
+                item { DocGuideSection(title = "User Guide", pages = userGuidePages, onSelectPage = onSelectPage) }
+            }
+            if (devGuidePages.isNotEmpty()) {
+                item { DocGuideSection(title = "Developer Guide", pages = devGuidePages, onSelectPage = onSelectPage) }
+            }
         }
     }
 }
 
+/** One guide as an iOS section: a row per page with its symbol and a chevron. */
 @Composable
-private fun DocsTocList(pages: List<DocPage>, onSelectPage: (String) -> Unit, modifier: Modifier = Modifier) {
-    val userGuidePages =
-        remember(pages) { pages.filter { it.section == DocSection.UserGuide }.sortedBy { it.navOrder } }
-    val devGuidePages =
-        remember(pages) { pages.filter { it.section == DocSection.DeveloperGuide }.sortedBy { it.navOrder } }
-
-    LazyColumn(modifier = modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
-        if (userGuidePages.isNotEmpty()) {
-            item {
-                Text(
-                    text = "User Guide",
-                    style = Ios.type.headline,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).semantics { heading() },
-                )
-            }
-            items(userGuidePages, key = { it.id }) { page -> DocPageListItem(page = page, onSelectPage = onSelectPage) }
-        }
-
-        if (devGuidePages.isNotEmpty()) {
-            item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text(
-                    text = "Developer Guide",
-                    style = Ios.type.headline,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).semantics { heading() },
-                )
-            }
-            items(devGuidePages, key = { it.id }) { page -> DocPageListItem(page = page, onSelectPage = onSelectPage) }
-        }
-    }
-}
-
-@Composable
-private fun DocPageListItem(page: DocPage, onSelectPage: (String) -> Unit, modifier: Modifier = Modifier) {
-    ListItem(
-        leadingContent = {
-            Icon(imageVector = page.resolveIcon(), contentDescription = null, tint = Ios.colors.secondaryLabel)
+private fun DocGuideSection(title: String, pages: List<DocPage>, onSelectPage: (String) -> Unit) {
+    IosSection(
+        headerContent = {
+            Text(
+                text = title,
+                style = Ios.type.headline,
+                color = Ios.colors.secondaryLabel,
+                modifier = Modifier.padding(start = 16.dp, top = 18.dp, bottom = 8.dp).semantics { heading() },
+            )
         },
-        headlineContent = { Text(page.title) },
-        modifier = modifier.clickable { onSelectPage(page.id) }.semantics { contentDescription = "Open ${page.title}" },
-    )
+    ) {
+        pages.forEach { page ->
+            IosRow(
+                title = page.title,
+                icon = page.resolveIcon(),
+                accessory = IosAccessory.Chevron,
+                onClick = { onSelectPage(page.id) },
+                modifier = Modifier.semantics { contentDescription = "Open ${page.title}" },
+            )
+        }
+    }
 }
+
+/** Leaves room for the search field above, so the placeholder sits in the middle of what's left. */
+private const val PLACEHOLDER_HEIGHT_FRACTION = 0.7f
