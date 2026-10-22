@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (c) 2025 Meshtastic LLC
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<!-- PANGEA BRAND MARK: the footprint's outer outline, traced from design/logo/pangea-logo.webp by
+     scripts/make-logo-assets.py (don't hand-edit; rerun the script). Solid so it stays legible at
+     nav-bar sizes. Keeps the upstream resource name for merge-friendliness; Icon() tints the fill. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <path
+      android:fillColor="#FF000000"
+      android:pathData="M12.32,23.00 L11.65,23.00 L11.15,22.92 L10.66,22.75 L10.13,22.47 L9.50,21.97 L8.23,20.65 L6.76,19.63 L6.17,19.05 L5.80,18.32 L5.53,16.85 L5.18,15.90 L4.80,15.25 L3.31,13.16 L2.81,12.18 L2.61,11.26 L2.58,10.24 L2.51,9.91 L2.28,9.25 L2.14,8.50 L2.18,8.00 L2.32,7.88 L2.45,7.88 L2.87,8.11 L3.40,8.59 L3.75,8.81 L4.82,9.06 L5.94,9.50 L6.41,9.80 L7.10,10.42 L8.04,11.64 L8.64,12.30 L8.90,12.40 L9.03,12.38 L9.15,12.21 L9.25,11.61 L9.22,10.56 L8.89,7.67 L8.92,6.53 L9.09,5.75 L9.27,5.23 L9.65,4.56 L10.14,3.96 L10.94,3.14 L11.31,2.36 L11.59,1.53 L11.82,1.11 L11.97,1.00 L12.08,1.03 L12.26,1.26 L13.03,3.09 L13.99,4.10 L14.41,4.63 L14.70,5.16 L14.96,5.92 L15.10,6.85 L15.11,7.72 L15.06,8.49 L14.75,10.97 L14.80,12.06 L14.85,12.24 L14.95,12.38 L15.14,12.40 L15.37,12.27 L15.81,11.79 L16.83,10.47 L17.32,10.00 L17.83,9.63 L18.79,9.20 L20.31,8.80 L21.46,7.91 L21.75,7.91 L21.86,8.12 L21.81,8.87 L21.44,10.07 L21.37,11.46 L21.19,12.19 L20.67,13.18 L19.25,15.18 L18.67,16.20 L18.45,16.90 L18.23,18.18 L17.98,18.80 L17.72,19.17 L17.39,19.49 L15.81,20.63 L14.75,21.71 L13.99,22.38 L13.08,22.85 L12.32,23.00 Z" />
+</vector>

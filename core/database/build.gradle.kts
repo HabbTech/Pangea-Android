@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,28 +16,63 @@
  */
 
 plugins {
-    alias(libs.plugins.meshtastic.android.library)
+    alias(libs.plugins.meshtastic.kmp.library)
     alias(libs.plugins.meshtastic.android.room)
-    alias(libs.plugins.meshtastic.hilt)
     alias(libs.plugins.meshtastic.kotlinx.serialization)
+    alias(libs.plugins.meshtastic.koin)
 }
 
-android {
-    namespace = "org.meshtastic.core.database"
+kotlin {
+    android {
+        withHostTest { isIncludeAndroidResources = true }
+        withDeviceTest { instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
+    }
+
     sourceSets {
-        // Adds exported schema location as test app assets.
-        named("androidTest") { assets.srcDirs(files("$projectDir/schemas")) }
+        commonMain.dependencies {
+            implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.androidx.datastore.preferences)
+            implementation(libs.kotlinx.atomicfu)
+            implementation(libs.okio)
+
+            api(projects.core.common)
+            implementation(projects.core.di)
+            api(projects.core.model)
+            implementation(libs.meshtastic.protobufs)
+            implementation(projects.core.resources)
+            implementation(libs.androidx.room.paging)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kermit)
+        }
+        commonTest.dependencies {
+            implementation(projects.core.testing)
+            implementation(libs.androidx.room.testing)
+        }
+
+        getByName("androidHostTest") {
+            dependencies {
+                implementation(libs.androidx.sqlite.bundled)
+                runtimeOnly(libs.androidx.sqlite.bundled.jvm)
+                implementation(libs.androidx.room.testing)
+                implementation(libs.junit)
+            }
+        }
+        getByName("androidDeviceTest") {
+            dependencies {
+                implementation(libs.androidx.room.testing)
+                implementation(libs.androidx.test.ext.junit)
+                implementation(libs.androidx.test.runner)
+            }
+        }
     }
 }
 
 dependencies {
-    implementation(projects.core.model)
-    implementation(projects.core.proto)
-    implementation(projects.core.strings)
-
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.timber)
-
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.ext.junit)
+    "kspJvm"(libs.androidx.room.compiler)
+    "kspJvmTest"(libs.androidx.room.compiler)
+    // KSP resolves this via a detached configuration at task execution time,
+    // so we declare it explicitly to ensure offline/Flatpak builds can resolve it.
+    "kspJvm"(libs.ksp.symbol.processing.aa.embeddable)
+    "kspAndroidHostTest"(libs.androidx.room.compiler)
+    "kspAndroidDeviceTest"(libs.androidx.room.compiler)
 }

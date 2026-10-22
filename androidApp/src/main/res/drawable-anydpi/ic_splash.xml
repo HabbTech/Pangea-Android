@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pangea: the launch screen is blank, as on the iPhone app (empty UILaunchScreen). This replaces upstream's
+     Meshtastic mark, which Pangea may not show as its own. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M0,0h1v1h-1z" />
+</vector>

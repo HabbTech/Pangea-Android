@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,28 +16,57 @@
  */
 
 plugins {
-    alias(libs.plugins.meshtastic.android.library)
-    alias(libs.plugins.meshtastic.hilt)
+    alias(libs.plugins.meshtastic.kmp.library)
     alias(libs.plugins.meshtastic.kotlinx.serialization)
-    alias(libs.plugins.kover)
+    alias(libs.plugins.meshtastic.kmp.jvm.android)
+    alias(libs.plugins.meshtastic.koin)
 }
 
-android { namespace = "org.meshtastic.core.data" }
+kotlin {
+    android { withHostTest { isIncludeAndroidResources = true } }
 
-dependencies {
-    implementation(projects.core.analytics)
-    implementation(projects.core.database)
-    implementation(projects.core.datastore)
-    implementation(projects.core.di)
-    implementation(projects.core.model)
-    implementation(projects.core.network)
-    implementation(projects.core.prefs)
-    implementation(projects.core.proto)
+    sourceSets {
+        commonMain.dependencies {
+            api(projects.core.repository)
+            implementation(projects.core.common)
+            implementation(projects.core.database)
+            implementation(projects.core.datastore)
+            implementation(projects.core.di)
+            implementation(projects.core.model)
+            implementation(projects.core.network)
+            implementation(projects.core.prefs)
+            implementation(libs.meshtastic.protobufs)
+            implementation(projects.core.takserver)
 
-    // Needed because core:data references MeshtasticDatabase (supertype RoomDatabase)
-    implementation(libs.androidx.room.runtime)
+            implementation(libs.jetbrains.lifecycle.runtime)
+            implementation(libs.androidx.paging.common)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.serialization.json.okio)
+            implementation(libs.okio)
+            implementation(libs.kermit)
+            implementation(libs.kotlinx.atomicfu)
+            implementation(libs.kotlinx.collections.immutable)
+        }
 
-    implementation(libs.androidx.core.location.altitude)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.timber)
+        // Room / SQLite runtime shared between Android and Desktop JVM targets
+        getByName("jvmAndroidMain") {
+            dependencies {
+                implementation(libs.androidx.room.runtime)
+                implementation(libs.androidx.room.paging)
+                implementation(libs.androidx.sqlite.bundled)
+            }
+        }
+
+        androidMain.dependencies {
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.core.location.altitude)
+        }
+
+        commonTest.dependencies {
+            implementation(projects.core.testing)
+            implementation(libs.okio.fakefilesystem)
+        }
+
+        getByName("androidHostTest") { dependencies { runtimeOnly(libs.androidx.sqlite.bundled.jvm) } }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,40 +14,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 import com.android.build.api.dsl.LibraryExtension
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
-import com.geeksville.mesh.buildlogic.configureFlavors
-import com.geeksville.mesh.buildlogic.configureKotlinAndroid
-import com.geeksville.mesh.buildlogic.disableUnnecessaryAndroidTests
-import com.geeksville.mesh.buildlogic.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.dependencies
+import org.meshtastic.buildlogic.configureGraphTasks
+import org.meshtastic.buildlogic.configureKotlinAndroid
+import org.meshtastic.buildlogic.configureTestOptions
+import org.meshtastic.buildlogic.disableUnnecessaryAndroidTests
 
 class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             apply(plugin = "com.android.library")
-            apply(plugin = "org.jetbrains.kotlin.android")
             apply(plugin = "meshtastic.android.lint")
             apply(plugin = "meshtastic.detekt")
             apply(plugin = "meshtastic.spotless")
-            apply(plugin = "com.autonomousapps.dependency-analysis")
+            apply(plugin = "meshtastic.dokka")
+            apply(plugin = "meshtastic.kover")
 
             extensions.configure<LibraryExtension> {
                 configureKotlinAndroid(this)
-                testOptions.targetSdk = 36
-                lint.targetSdk = 36
-                defaultConfig.testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-                testOptions.animationsDisabled = true
-                configureFlavors(this)
+
+                defaultConfig {
+                    // When flavorless modules depend on flavored modules (like :core:data),
+                    // they need a strategy to pick a variant. We default to 'google'.
+                    missingDimensionStrategy("marketplace", "google")
+                }
+
+                buildTypes { getByName("debug") { enableAndroidTestCoverage = true } }
             }
-            extensions.configure<LibraryAndroidComponentsExtension> {
-                disableUnnecessaryAndroidTests(target)
-            }
+            extensions.configure<LibraryAndroidComponentsExtension> { disableUnnecessaryAndroidTests(target) }
+            configureTestOptions()
+            configureGraphTasks()
         }
     }
 }

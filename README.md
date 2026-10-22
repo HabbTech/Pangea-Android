@@ -1,84 +1,40 @@
-<p align="center">
-  <img src=".github/meshtastic_logo.png" alt="Meshtastic Logo" width="200"/>
-</p>
-<h1 align="center">Meshtastic-Android</h1>
+# Pangea for Android
 
-![GitHub all releases](https://img.shields.io/github/downloads/meshtastic/meshtastic-android/total)
-[![Android CI](https://github.com/meshtastic/Meshtastic-Android/actions/workflows/pull-request.yml/badge.svg?branch=main)](https://github.com/meshtastic/Meshtastic-Android/actions/workflows/pull-request.yml)
-[![codecov](https://codecov.io/gh/meshtastic/Meshtastic-Android/graph/badge.svg)](https://codecov.io/gh/meshtastic/Meshtastic-Android)
-[![Crowdin](https://badges.crowdin.net/e/f440f1a5e094a5858dd86deb1adfe83d/localized.svg)](https://crowdin.meshtastic.org/android)
-[![CLA assistant](https://cla-assistant.io/readme/badge/meshtastic/Meshtastic-Android)](https://cla-assistant.io/meshtastic/Meshtastic-Android)
-[![Fiscal Contributors](https://opencollective.com/meshtastic/tiers/badge.svg?label=Fiscal%20Contributors&color=deeppink)](https://opencollective.com/meshtastic/)
-[![Vercel](https://img.shields.io/static/v1?label=Powered%20by&message=Vercel&style=flat&logo=vercel&color=000000)](https://vercel.com?utm_source=meshtastic&utm_campaign=oss)
+Pangea is an off-grid mesh communication app for Android, built for backcountry users: hikers, overlanders, search-and-rescue volunteers, and anyone who needs to stay connected far from cell service. It connects to LoRa mesh radios over Bluetooth, Wi-Fi, or USB and keeps you messaging, sharing location, and tracking your group when nothing else works.
 
-This is a tool for using Android with open-source mesh radios. For more information see our webpage: [meshtastic.org](https://www.meshtastic.org). If you are looking for the the device side code, see [here](https://github.com/meshtastic/Meshtastic-device).
+Pangea is a downstream fork of [Meshtastic-Android](https://github.com/meshtastic/Meshtastic-Android). It stays close to upstream for easy syncing — module and file names are intentionally unchanged — while adding a distinct identity and a simplified out-of-box experience.
 
-This project is currently beta testing across various providers. If you have questions or feedback please [Join our discussion forum](https://github.com/orgs/meshtastic/discussions) or the [Discord Group](https://discord.gg/meshtastic) . We would love to hear from you!
+## What's different from upstream
 
+### Expert Mode
 
+Casual users see a clean settings surface: channels, sharing, display, and user settings. Advanced configuration — LoRa parameters, security, MQTT, serial modules, device power tuning, debug logging, administration — is hidden until **Expert Mode** is switched on in Settings. Sections stay visible with softer names ("Radio" instead of "Radio Configuration"); gated items reappear with an "Expert Mode" caption when enabled. First-run onboarding ends with a screen explaining the split.
 
-## Get Meshtastic
+### Power Mode
 
-The easiest, and fastest way to get the latest beta releases is to use our [github releases](https://github.com/meshtastic/Meshtastic-Android/releases). It is recommend to use these with [Obtainum](https://github.com/ImranR98/Obtainium) to get the latest updates.
+A three-tier battery profile (**Standard / Trail / Expedition**) selectable from Settings or by tapping the nav-bar logo:
 
-Alternatively, these other providers are also available, but may be slower to update. 
+- **Standard** — all features on.
+- **Trail** — day-trip tuning: phone-position shares to the mesh are rate-limited (≥5 min), background work reduced.
+- **Expedition** — multi-day off-grid: phone-GPS sharing off, widget refresh paused, background auto-reconnect off.
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-alt="Get it on F-Droid"
-width="24%">](https://f-droid.org/packages/com.geeksville.mesh/)
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroid.png"
-alt="Get it on IzzyOnDroid"
-width="24%">](https://apt.izzysoft.de/fdroid/index/apk/com.geeksville.mesh)
-[<img src="https://github.com/machiav3lli/oandbackupx/blob/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png"
-alt="Get it on GitHub"
-width="24%">](https://github.com/meshtastic/Meshtastic-Android/releases)
-[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-alt="Download at https://play.google.com/store/apps/details?id=com.geeksville.mesh]"
-width="24%">](https://play.google.com/store/apps/details?id=com.geeksville.mesh&referrer=utm_source%3Dgithub-android-readme)
+Android's own Battery Saver temporarily clamps the effective mode to Expedition. Architecturally, `PowerModeManager` (`core/repository` interface, `core/service` implementation) is the single gate all battery-hungry feature sites consult — new features with background cost should read its `effectiveMode` rather than invent their own switches.
 
-The play store is the last to update of these options, but if you want to join the Play Store testing program go to [this URL](https://play.google.com/apps/testing/com.geeksville.mesh) and opt-in to become a tester.
-If you encounter any problems or have questions, [ask us on the discord](https://discord.gg/meshtastic), [create an issue](https://github.com/meshtastic/Meshtastic-Android/issues), or [post in the forum](https://github.com/orgs/meshtastic/discussions) and we'll help as we can.
+## Getting started
 
-## Documentation
+1. Clone: `git clone https://github.com/HabbTech/Pangea-Android.git`
+2. Install [Android Studio](https://developer.android.com/studio) (latest stable) and JDK 21.
+3. `cp secrets.defaults.properties local.properties` (the google flavor fails without it).
+4. Build: `./gradlew assembleFdroidDebug` or open in Android Studio and run the `fdroidDebug` variant.
 
-The project's documentation is generated with [Dokka](https://kotlinlang.org/docs/dokka-introduction.html) and hosted on GitHub Pages. It is automatically updated on every push to the `main` branch.
+Before pushing: `./gradlew spotlessApply spotlessCheck detekt assembleDebug test allTests`. See [AGENTS.md](AGENTS.md) for architecture, conventions, and the AI-assisted workflow this repo is set up for.
 
-[**View Documentation**](https://meshtastic.github.io/Meshtastic-Android/)
+## Project structure
 
-### Generating Locally
+A Kotlin Multiplatform project producing the Android app (`androidApp/`) and a JVM desktop app (`desktopApp/`) from shared `core/*` and `feature/*` modules. Radio protocol handling, mesh state, and Power Mode gating live in `commonMain` and ship in both apps.
 
-You can generate the documentation locally to preview your changes.
+## License
 
-1.  **Run the Dokka task:**
-    ```bash
-    ./gradlew :app:dokkaHtml
-    ```
-2.  **View the output:**
-    The generated HTML files will be located in the `app/build/dokka/html` directory. You can open the `index.html` file in your browser to view the documentation.
+GPL v3. See the [LICENSE](LICENSE) file for details.
 
-## Translations
-
-You can help translate the app into your native language using [Crowdin](https://crowdin.meshtastic.org/android).
-
-## Building the Android App
-> [!WARNING]
-> Debug and release builds can be installed concurrently. This is solely to enable smoother development, and you should avoid running both apps simultaneously. To ensure proper function, force quit the app not in use.
-
-https://meshtastic.org/docs/development/android/
-
-Note: when building the `google` flavor locally you will need to supply your own [Google Maps Android SDK api key](https://developers.google.com/maps/documentation/android-sdk/get-api-key) `MAPS_API_KEY` in `local.properties` in order to use Google Maps.
-e.g.
-```properties
-MAPS_API_KEY=your_google_maps_api_key_here
-```
-
-## Contributing guidelines
-
-For detailed instructions on how to contribute, please see our [CONTRIBUTING.md](CONTRIBUTING.md) file.
-For details on our release process, see the [RELEASE_PROCESS.md](RELEASE_PROCESS.md) file.
-
-## Repository Statistics
-
-![Alt](https://repobeats.axiom.co/api/embed/1d75239069a6d671fe0b8f80b2e1bf590a98f0eb.svg "Repobeats analytics image")
-
-Copyright 2025, Meshtastic LLC. GPL-3.0 license
+Pangea is a downstream fork of [Meshtastic-Android](https://github.com/meshtastic/Meshtastic-Android), © Meshtastic LLC, GPL-3.0. Meshtastic® is a registered trademark of Meshtastic LLC. Credit and gratitude to the upstream maintainers whose work made this possible; app-level bugs unique to Pangea should be reported here rather than upstream.
