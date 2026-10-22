@@ -33,6 +33,7 @@ import org.meshtastic.core.repository.NotificationPrefs
 import org.meshtastic.core.repository.PacketRepository
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.RadioController
+import org.meshtastic.core.repository.RouteRepository
 import org.meshtastic.core.ui.viewmodel.stateInWhileSubscribed
 import org.meshtastic.feature.map.BaseMapViewModel
 import org.meshtastic.feature.map.layers.MapLayerItem
@@ -52,6 +53,7 @@ class MapViewModel(
     savedStateHandle: SavedStateHandle,
     localeUnitsProvider: LocaleUnitsProvider,
     networkRepository: NetworkRepository,
+    routeRepository: RouteRepository,
 ) : BaseMapViewModel(
     mapPrefs,
     nodeRepository,
@@ -61,6 +63,7 @@ class MapViewModel(
     notificationPrefs,
     localeUnitsProvider,
     networkRepository,
+    routeRepository,
 ) {
 
     private val mutableInitialCameraState = MutableStateFlow<InitialCameraState>(InitialCameraState.Loading)

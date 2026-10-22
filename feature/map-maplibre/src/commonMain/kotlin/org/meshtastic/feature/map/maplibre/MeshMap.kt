@@ -71,8 +71,10 @@ import org.meshtastic.feature.map.maplibre.geojson.rememberFeatureSource
 import org.meshtastic.feature.map.maplibre.layers.CustomLayer
 import org.meshtastic.feature.map.maplibre.layers.CustomLayers
 import org.meshtastic.feature.map.maplibre.layers.MapOverlayLayers
+import org.meshtastic.feature.map.maplibre.layers.MapRoute
 import org.meshtastic.feature.map.maplibre.layers.NodeLayers
 import org.meshtastic.feature.map.maplibre.layers.RasterBasemapLayer
+import org.meshtastic.feature.map.maplibre.layers.RouteLayers
 import org.meshtastic.feature.map.maplibre.layers.TerrainLayers
 import org.meshtastic.feature.map.maplibre.layers.WaypointLayers
 import org.meshtastic.feature.map.maplibre.style.Basemap
@@ -134,6 +136,9 @@ fun rememberMeshMapState(
     val filterState by viewModel.mapFilterStateFlow.collectAsStateWithLifecycle()
     val myNodeInfo by viewModel.myNodeInfo.collectAsStateWithLifecycle()
     val displayUnits by viewModel.displayUnits.collectAsStateWithLifecycle()
+    val savedRoutes by viewModel.mapRoutes.collectAsStateWithLifecycle()
+    val routes =
+        remember(savedRoutes) { savedRoutes.map { MapRoute(id = it.id, points = it.points, color = it.color) } }
 
     val scope = rememberCoroutineScope()
     // The style block recomposes on every camera frame (it reads the viewport below); the mesh-wide filter should not.
@@ -160,6 +165,8 @@ fun rememberMeshMapState(
                 displayUnits = displayUnits,
             )
             CustomLayers(customLayers, layerOpacity)
+            // The routes switched on in the Route List, under the waypoints and the mesh as iOS draws them.
+            RouteLayers(routes = routes, idPrefix = "mesh-routes")
 
             if (filterState.showWaypoints) {
                 WaypointLayers(waypoints = waypoints.values, onWaypointClick = onWaypointClick)

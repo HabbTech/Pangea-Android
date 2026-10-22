@@ -58,10 +58,13 @@ import org.meshtastic.core.resources.pangea_app_settings
 import org.meshtastic.core.resources.pangea_configure
 import org.meshtastic.core.resources.pangea_connected_node
 import org.meshtastic.core.resources.pangea_firmware_updates
+import org.meshtastic.core.resources.pangea_route_recorder
+import org.meshtastic.core.resources.pangea_routes
 import org.meshtastic.core.resources.remotely_administrating
 import org.meshtastic.core.ui.component.BasicListItem
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.component.ExpressiveSection
 import org.meshtastic.feature.settings.component.expertModeCaptionColor
@@ -234,6 +237,16 @@ fun SettingsScreen(
                         leadingIcon = IosIcons.Antenna,
                     ) {
                         onNavigate(DiscoveryRoute.DiscoveryGraph)
+                    }
+                    ListItem(text = stringResource(Res.string.pangea_routes), leadingIcon = IosIcons.RoadLanes) {
+                        onNavigate(SettingsRoute.Routes)
+                    }
+                    ListItem(
+                        text = stringResource(Res.string.pangea_route_recorder),
+                        leadingIcon = IosIcons.RecordCircle,
+                        leadingIconTint = Ios.colors.systemRed,
+                    ) {
+                        onNavigate(SettingsRoute.RouteRecorder)
                     }
                     ListItem(
                         text = stringResource(Res.string.pangea_firmware_updates),

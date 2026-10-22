@@ -62,6 +62,9 @@ actual object DateFormatter {
     actual fun formatDateTimeShort(timestampMillis: Long): String =
         DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(timestampMillis)
 
+    actual fun formatDateTimeNumeric(timestampMillis: Long): String =
+        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(timestampMillis)
+
     actual fun formatMonthYear(timestampMillis: Long): String =
         SimpleDateFormat("LLLL yyyy", Locale.getDefault()).format(Date(timestampMillis))
 

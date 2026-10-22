@@ -60,9 +60,9 @@ class LocationRepositoryImpl(
         get() = _receivingLocationUpdates
 
     @RequiresPermission(anyOf = [ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION])
-    private fun LocationManager.requestLocationUpdates(): Flow<Location> = callbackFlow {
+    private fun LocationManager.requestLocationUpdates(intervalMs: Long): Flow<Location> = callbackFlow {
         val locationRequest =
-            LocationRequestCompat.Builder(DEFAULT_INTERVAL_MS)
+            LocationRequestCompat.Builder(intervalMs)
                 .setMinUpdateDistanceMeters(MIN_DISTANCE_METERS)
                 .setQuality(LocationRequestCompat.QUALITY_HIGH_ACCURACY)
                 .build()
@@ -90,7 +90,7 @@ class LocationRepositoryImpl(
         }
 
         Logger.i {
-            "Starting location updates with $providerList intervalMs=$DEFAULT_INTERVAL_MS " +
+            "Starting location updates with $providerList intervalMs=$intervalMs " +
                 "and minDistanceM=$MIN_DISTANCE_METERS"
         }
         _receivingLocationUpdates.value = true
@@ -122,5 +122,9 @@ class LocationRepositoryImpl(
 
     /** Observable flow for location updates */
     @RequiresPermission(anyOf = [ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION])
-    override fun getLocations(): Flow<Location> = locationManager.value.requestLocationUpdates()
+    override fun getLocations(): Flow<Location> = locationManager.value.requestLocationUpdates(DEFAULT_INTERVAL_MS)
+
+    @RequiresPermission(anyOf = [ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION])
+    override fun getLocations(intervalMs: Long): Flow<Location> =
+        locationManager.value.requestLocationUpdates(intervalMs)
 }

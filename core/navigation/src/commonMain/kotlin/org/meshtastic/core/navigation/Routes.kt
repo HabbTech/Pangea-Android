@@ -199,6 +199,12 @@ sealed interface SettingsRoute : Route {
     /** Pangea: the iPhone app's App Files page (phone GPS, database sizes, the app's files). */
     @Serializable data object AppFiles : SettingsRoute
 
+    /** Pangea: the iPhone app's Route List (import, edit and export saved routes). */
+    @Serializable data object Routes : SettingsRoute
+
+    /** Pangea: the iPhone app's Route Recorder (record the phone's track as a route). */
+    @Serializable data object RouteRecorder : SettingsRoute
+
     @Serializable data object AppFunctionsSettings : SettingsRoute
 
     // endregion

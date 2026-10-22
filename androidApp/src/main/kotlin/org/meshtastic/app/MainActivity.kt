@@ -93,6 +93,8 @@ import org.meshtastic.core.ui.util.LocalNfcScannerSupported
 import org.meshtastic.core.ui.util.LocalNfcWriterProvider
 import org.meshtastic.core.ui.util.LocalNodeMapScreenProvider
 import org.meshtastic.core.ui.util.LocalNodeTrackMapProvider
+import org.meshtastic.core.ui.util.LocalRouteMapProvider
+import org.meshtastic.core.ui.util.LocalRouteRecorderMapProvider
 import org.meshtastic.core.ui.util.LocalSitePlannerAvailable
 import org.meshtastic.core.ui.util.LocalTracerouteMapOverlayInsetsProvider
 import org.meshtastic.core.ui.util.LocalTracerouteMapProvider
@@ -263,6 +265,14 @@ class MainActivity : AppCompatActivity() {
                     )
                 },
             LocalTracerouteMapOverlayInsetsProvider provides getTracerouteMapOverlayInsets(),
+            LocalRouteMapProvider provides
+                { points, color, modifier ->
+                    org.meshtastic.app.map.route.RouteMap(points, color, modifier)
+                },
+            LocalRouteRecorderMapProvider provides
+                { points, color, modifier ->
+                    org.meshtastic.app.map.route.RouteRecorderMap(points, color, modifier)
+                },
             LocalTracerouteMapProvider provides
                 { overlay, nodePositions, onMappableCountChanged, modifier ->
                     org.meshtastic.app.map.traceroute.TracerouteMap(

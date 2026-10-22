@@ -58,6 +58,7 @@ import org.meshtastic.core.resources.info
 import org.meshtastic.core.resources.modules_already_unlocked
 import org.meshtastic.core.resources.modules_unlocked
 import org.meshtastic.core.resources.node_layout_section_title
+import org.meshtastic.core.resources.pangea_routes
 import org.meshtastic.core.resources.preferences_language
 import org.meshtastic.core.resources.remotely_administrating
 import org.meshtastic.core.resources.theme
@@ -79,6 +80,7 @@ import org.meshtastic.core.ui.icon.Memory
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.PermScanWifi
 import org.meshtastic.core.ui.icon.Wifi
+import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.pangea.MyProfileSection
 import org.meshtastic.core.ui.util.rememberShowToastResource
 import org.meshtastic.feature.settings.component.CacheLimitPreference
@@ -300,6 +302,13 @@ fun DesktopSettingsScreen(
                         leadingIcon = MeshtasticIcons.PermScanWifi,
                     ) {
                         onNavigate(DiscoveryRoute.DiscoveryGraph)
+                    }
+                }
+
+                // The desktop has no location to record from, so Routes comes without the Route Recorder.
+                ExpressiveSection(title = stringResource(Res.string.pangea_routes)) {
+                    ListItem(text = stringResource(Res.string.pangea_routes), leadingIcon = IosIcons.RoadLanes) {
+                        onNavigate(SettingsRoute.Routes)
                     }
                 }
 

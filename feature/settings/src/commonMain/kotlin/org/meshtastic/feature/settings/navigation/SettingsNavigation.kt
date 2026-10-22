@@ -57,6 +57,8 @@ import org.meshtastic.feature.settings.filter.FilterSettingsViewModel
 import org.meshtastic.feature.settings.pangea.AppFilesScreen
 import org.meshtastic.feature.settings.pangea.IosAppSettingsScreen
 import org.meshtastic.feature.settings.pangea.PangeaHelpScreen
+import org.meshtastic.feature.settings.pangea.RouteRecorderScreen
+import org.meshtastic.feature.settings.pangea.RoutesScreen
 import org.meshtastic.feature.settings.pangea.ToolsScreen
 import org.meshtastic.feature.settings.radio.CleanNodeDatabaseScreen
 import org.meshtastic.feature.settings.radio.CleanNodeDatabaseViewModel
@@ -482,6 +484,12 @@ fun EntryProviderScope<NavKey>.settingsGraph(
     }
     entry<SettingsRoute.AppFiles> {
         AppFilesScreen(viewModel = koinViewModel(), onBack = dropUnlessResumed { backStack.removeLastOrNull() })
+    }
+    entry<SettingsRoute.Routes> {
+        RoutesScreen(viewModel = koinViewModel(), onBack = dropUnlessResumed { backStack.removeLastOrNull() })
+    }
+    entry<SettingsRoute.RouteRecorder> {
+        RouteRecorderScreen(viewModel = koinViewModel(), onBack = dropUnlessResumed { backStack.removeLastOrNull() })
     }
     entry<SettingsRoute.Tools> {
         val settingsViewModel: SettingsViewModel = koinViewModel()

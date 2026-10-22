@@ -1364,6 +1364,13 @@
     <string name="packet_authenticity_unsupported">This connected device does not support packet signature verification.</string>
     <!-- PANGEA -->
     <string name="pangea_active_database">Active Database</string>
+    <string name="pangea_activity">Activity</string>
+    <string name="pangea_activity_biking">Biking</string>
+    <string name="pangea_activity_driving">Driving</string>
+    <string name="pangea_activity_hiking">Hiking</string>
+    <string name="pangea_activity_overlanding">Overlanding</string>
+    <string name="pangea_activity_skiing">Skiing</string>
+    <string name="pangea_activity_walking">Walking</string>
     <string name="pangea_add_channel">Add Channel</string>
     <string name="pangea_add_channels">Add Channels</string>
     <string name="pangea_add_nickname">Add a nickname</string>
@@ -1459,6 +1466,7 @@
     <string name="pangea_discovery_modem_presets">Modem Presets</string>
     <string name="pangea_display_name">Your name</string>
     <string name="pangea_edit_profile">Edit</string>
+    <string name="pangea_elev_gain">Elev. Gain</string>
     <string name="pangea_encrypted">Encrypted</string>
     <string name="pangea_encrypted_only">Encrypted</string>
     <string name="pangea_environment_metrics_log">Environment Metrics Log</string>
@@ -1547,6 +1555,7 @@
     <string name="pangea_host_metrics_log">Host Metrics Log</string>
     <string name="pangea_identity">Identity</string>
     <string name="pangea_import_configuration">Import Configuration</string>
+    <string name="pangea_import_route">Import Route</string>
     <string name="pangea_include">Include</string>
     <string name="pangea_increase">Increase</string>
     <string name="pangea_inputs">Inputs</string>
@@ -1669,6 +1678,9 @@
     <string name="pangea_radio_serial">Pangea Radio %1$s</string>
     <string name="pangea_radio_status_not_connected">Your radio isn't connected. Messages will send once it's back.</string>
     <string name="pangea_reaching">Saying hello to %1$sâ€¦ This can take a minute.</string>
+    <string name="pangea_recorded_route_name">%1$s %2$s</string>
+    <string name="pangea_recording_paused">Route recording paused</string>
+    <string name="pangea_recording_route">Recording route</string>
     <string name="pangea_regenerate_key_desc">Generate a new private key to replace the one currently in use. The public key will automatically be regenerated from your private key.</string>
     <string name="pangea_region_choose">Choose your country</string>
     <string name="pangea_region_footer">Radios must use the frequencies allowed where you are. We picked this from your phone's settings.</string>
@@ -1684,6 +1696,22 @@
     <string name="pangea_role">Role</string>
     <string name="pangea_role_value">Role: %1$s</string>
     <string name="pangea_root_topic">Root Topic</string>
+    <string name="pangea_route_bad_file">Not a valid route file</string>
+    <string name="pangea_route_bad_file_message">Your route file must have both Latitude and Longitude columns and headers.</string>
+    <string name="pangea_route_export">Export</string>
+    <string name="pangea_route_finish">Finish</string>
+    <string name="pangea_route_list">Route List</string>
+    <string name="pangea_route_location_needed">Allow location access to record a route.</string>
+    <string name="pangea_route_log">%1$s Log</string>
+    <string name="pangea_route_pause">Pause</string>
+    <string name="pangea_route_record_details">View route recording details</string>
+    <string name="pangea_route_recorder">Route Recorder</string>
+    <string name="pangea_route_recording_details">Recording route, view details</string>
+    <string name="pangea_route_resume">Resume</string>
+    <string name="pangea_route_show_on_map">Show on the mesh map.</string>
+    <string name="pangea_route_start">Start</string>
+    <string name="pangea_route_unknown_time">Unknown Time</string>
+    <string name="pangea_routes">Routes</string>
     <string name="pangea_save_contact">Save to Contacts</string>
     <string name="pangea_save_to_radio_failed">Couldn't save to your radio. Make sure it's still on and nearby, then try again.</string>
     <string name="pangea_saving_to_radio">Saving to your radio…</string>
@@ -1745,6 +1773,11 @@
     <string name="pangea_tak_server_status">Server Status</string>
     <string name="pangea_tertiary_admin_key">Tertiary Admin Key</string>
     <string name="pangea_this_is_your_radio">This is your radio</string>
+    <string name="pangea_time_afternoon">Afternoon</string>
+    <string name="pangea_time_evening">Evening</string>
+    <string name="pangea_time_midday">Midday</string>
+    <string name="pangea_time_morning">Morning</string>
+    <string name="pangea_time_nighttime">Nighttime</string>
     <string name="pangea_timing_overrides">Timing and Overrides</string>
     <string name="pangea_tools">Tools</string>
     <string name="pangea_trace_route">Trace Route</string>

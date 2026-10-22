@@ -57,6 +57,7 @@ import org.meshtastic.core.testing.FakeNodeRepository
 import org.meshtastic.core.testing.FakeNotificationPrefs
 import org.meshtastic.core.testing.FakeRadioConfigRepository
 import org.meshtastic.core.testing.FakeRadioController
+import org.meshtastic.core.testing.FakeRouteRepository
 import org.meshtastic.core.testing.FakeUiPrefs
 import org.meshtastic.feature.map.layers.LayerOpacityStore
 import org.meshtastic.feature.map.layers.MapLayersManager
@@ -138,6 +139,7 @@ class MapViewModelSitePlannerRequestTest {
                 savedStateHandle = SavedStateHandle(),
                 localeUnitsProvider = FakeLocaleUnitsProvider(),
                 networkRepository = networkRepository,
+                routeRepository = FakeRouteRepository(),
             )
     }
 

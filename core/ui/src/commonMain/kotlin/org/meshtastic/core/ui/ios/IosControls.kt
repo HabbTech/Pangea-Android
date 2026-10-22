@@ -102,8 +102,9 @@ enum class IosButtonStyle {
 }
 
 /**
- * An iOS button. [large] is `.controlSize(.large)`: full width, 50 dp tall, as the setup pages' bottom button. The
- * disabled look is iOS's grey fill with grey text.
+ * An iOS button. [large] is `.controlSize(.large)`: 50 dp tall, and full width, as the setup pages' bottom button,
+ * unless [fullWidth] is off (a capsule sized to its words, as the Route List's Import Route). The disabled look is
+ * iOS's grey fill with grey text.
  */
 @Composable
 fun IosButton(
@@ -115,6 +116,7 @@ fun IosButton(
     large: Boolean = false,
     icon: ImageVector? = null,
     textStyle: TextStyle = Ios.type.body,
+    fullWidth: Boolean = true,
 ) {
     val c = Ios.colors
     val container =
@@ -135,7 +137,13 @@ fun IosButton(
     Row(
         modifier =
         modifier
-            .then(if (large) Modifier.fillMaxWidth().height(50.dp) else Modifier.defaultMinSize(minHeight = 34.dp))
+            .then(
+                when {
+                    !large -> Modifier.defaultMinSize(minHeight = 34.dp)
+                    fullWidth -> Modifier.fillMaxWidth().height(50.dp)
+                    else -> Modifier.height(50.dp)
+                },
+            )
             .clip(CircleShape)
             .background(container)
             .iosPressable(enabled = enabled, onClick = onClick)

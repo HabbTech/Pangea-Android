@@ -37,6 +37,8 @@ actual object DateFormatter {
 
     actual fun formatDateTimeShort(timestampMillis: Long): String = ""
 
+    actual fun formatDateTimeNumeric(timestampMillis: Long): String = ""
+
     actual fun formatMonthYear(timestampMillis: Long): String = ""
 
     actual fun shortWeekdayNames(): List<String> = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")

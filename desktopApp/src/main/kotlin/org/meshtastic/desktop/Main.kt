@@ -105,6 +105,7 @@ import org.meshtastic.core.ui.util.LocalNodeProfileSheet
 import org.meshtastic.core.ui.util.LocalNodeTrackMapProvider
 import org.meshtastic.core.ui.util.LocalPairRadioSheet
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
+import org.meshtastic.core.ui.util.LocalRouteMapProvider
 import org.meshtastic.core.ui.util.LocalSitePlannerAvailable
 import org.meshtastic.core.ui.util.LocalTracerouteMapProvider
 import org.meshtastic.core.ui.util.rememberOpenUrl
@@ -123,6 +124,7 @@ import org.meshtastic.feature.map.SharedMapViewModel
 import org.meshtastic.feature.map.maplibre.MapLibreDiscoveryMap
 import org.meshtastic.feature.map.maplibre.MapLibreInlineMap
 import org.meshtastic.feature.map.maplibre.MapLibreNodeTrackMap
+import org.meshtastic.feature.map.maplibre.MapLibreRouteMap
 import org.meshtastic.feature.messaging.pangea.nodeProfileSheetSlot
 import java.awt.Desktop
 import java.util.Locale
@@ -455,6 +457,7 @@ private fun ApplicationScope.MeshtasticWindow(
                             onPositionSelect = onPositionSelect,
                         )
                     },
+                LocalRouteMapProvider provides { points, color, modifier -> MapLibreRouteMap(points, color, modifier) },
                 LocalDiscoveryMapProvider provides
                     { userLatitude, userLongitude, nodes, modifier ->
                         MapLibreDiscoveryMap(userLatitude, userLongitude, nodes, modifier)

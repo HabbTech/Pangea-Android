@@ -33,6 +33,7 @@ import org.meshtastic.core.model.NodeAddress
 import org.meshtastic.core.model.TracerouteOverlay
 import org.meshtastic.core.model.geofence.activeWaypointPackets
 import org.meshtastic.core.model.isFromLocal
+import org.meshtastic.core.model.pangea.Route
 import org.meshtastic.core.network.repository.NetworkRepository
 import org.meshtastic.core.repository.MapFilterPrefs
 import org.meshtastic.core.repository.MapPrefs
@@ -41,6 +42,7 @@ import org.meshtastic.core.repository.NotificationPrefs
 import org.meshtastic.core.repository.PacketRepository
 import org.meshtastic.core.repository.RadioConfigRepository
 import org.meshtastic.core.repository.RadioController
+import org.meshtastic.core.repository.RouteRepository
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.any
 import org.meshtastic.core.resources.eight_hours
@@ -70,6 +72,7 @@ open class BaseMapViewModel(
     private val notificationPrefs: NotificationPrefs,
     localeUnitsProvider: LocaleUnitsProvider,
     networkRepository: NetworkRepository,
+    routeRepository: RouteRepository,
 ) : ViewModel() {
 
     val myNodeInfo = nodeRepository.myNodeInfo
@@ -119,6 +122,12 @@ open class BaseMapViewModel(
             // so the map and the geofence engine can't drift (getWaypoints is a row-per-transmission firehose).
             .mapLatest { list -> list.activeWaypointPackets(nowSeconds) }
             .stateInWhileSubscribed(initialValue = emptyMap())
+
+    /** The saved routes switched on for the mesh map (iOS's "Show on the mesh map"), each with a line to draw. */
+    val mapRoutes: StateFlow<List<Route>> =
+        routeRepository.routes
+            .map { routes -> routes.filter { it.enabled && it.points.size > 1 } }
+            .stateInWhileSubscribed(initialValue = emptyList())
 
     /** Waypoint ids of foreign geofences the user opted in to crossing alerts for (see [NotificationPrefs]). */
     val geofenceAlertOptIns: StateFlow<Set<Int>> = notificationPrefs.geofenceAlertOptIns

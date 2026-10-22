@@ -62,7 +62,10 @@ kotlin {
             implementation(libs.androidx.core.location.altitude)
         }
 
-        commonTest.dependencies { implementation(projects.core.testing) }
+        commonTest.dependencies {
+            implementation(projects.core.testing)
+            implementation(libs.okio.fakefilesystem)
+        }
 
         getByName("androidHostTest") { dependencies { runtimeOnly(libs.androidx.sqlite.bundled.jvm) } }
     }

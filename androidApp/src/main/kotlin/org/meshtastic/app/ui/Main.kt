@@ -82,21 +82,7 @@ fun MainScreen() {
     val settingsRadioConfigViewModelProvider = rememberSettingsRadioConfigViewModelProvider(backStack)
 
     AndroidAppVersionCheck(viewModel)
-
-    val lockdownState by viewModel.lockdownState.collectAsStateWithLifecycle()
-    LockdownDialog(
-        lockdownState = lockdownState,
-        onSubmit = { passphrase, boots, hours, sessionMinutes ->
-            viewModel.sendLockdownUnlock(passphrase, boots, hours, sessionMinutes * SECONDS_PER_MINUTE)
-        },
-        onDisconnect = { viewModel.setDeviceAddress("n") },
-    )
-    // Auto-disconnect when firmware acknowledges Lock Now
-    LaunchedEffect(lockdownState) {
-        if (lockdownState is LockdownState.LockNowAcknowledged) {
-            viewModel.setDeviceAddress("n")
-        }
-    }
+    Lockdown(viewModel)
 
     CompositionLocalProvider(
         LocalPowerModeMenu provides rememberPowerModeMenu(multiBackstack),
@@ -149,6 +135,25 @@ fun MainScreen() {
                     analytics = koinInject<PlatformAnalytics>(),
                 )
             }
+        }
+    }
+}
+
+/** The lockdown unlock dialog, and the disconnect once the radio acknowledges Lock Now. */
+@Composable
+private fun Lockdown(viewModel: UIViewModel) {
+    val lockdownState by viewModel.lockdownState.collectAsStateWithLifecycle()
+    LockdownDialog(
+        lockdownState = lockdownState,
+        onSubmit = { passphrase, boots, hours, sessionMinutes ->
+            viewModel.sendLockdownUnlock(passphrase, boots, hours, sessionMinutes * SECONDS_PER_MINUTE)
+        },
+        onDisconnect = { viewModel.setDeviceAddress("n") },
+    )
+    // Auto-disconnect when firmware acknowledges Lock Now
+    LaunchedEffect(lockdownState) {
+        if (lockdownState is LockdownState.LockNowAcknowledged) {
+            viewModel.setDeviceAddress("n")
         }
     }
 }

@@ -43,6 +43,9 @@ expect object DateFormatter {
     /** Formats a timestamp into a localized short date and medium time string. */
     fun formatDateTimeShort(timestampMillis: Long): String
 
+    /** A numeric date and a short time, without seconds ("10/22/26, 12:29 AM"), as iOS's `.numeric, .shortened`. */
+    fun formatDateTimeNumeric(timestampMillis: Long): String
+
     /** The month and year of a timestamp, spelled out in the user's language ("October 2026"): a calendar's title. */
     fun formatMonthYear(timestampMillis: Long): String
 

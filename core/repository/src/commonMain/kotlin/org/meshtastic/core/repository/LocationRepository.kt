@@ -18,9 +18,13 @@ package org.meshtastic.core.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import org.meshtastic.core.model.pangea.GpsFix
 
 /** Platform-independent location object for KMP. */
 expect class Location
+
+/** This location as a [GpsFix], or null where the platform's location carries none. */
+expect fun Location.toGpsFix(): GpsFix?
 
 interface LocationRepository {
     /** Status of whether the app is actively subscribed to location changes. */
@@ -28,4 +32,7 @@ interface LocationRepository {
 
     /** Observable flow for location updates */
     fun getLocations(): Flow<Location>
+
+    /** Location updates about every [intervalMs], for a caller that needs more than the default rate (a recording). */
+    fun getLocations(intervalMs: Long): Flow<Location> = getLocations()
 }

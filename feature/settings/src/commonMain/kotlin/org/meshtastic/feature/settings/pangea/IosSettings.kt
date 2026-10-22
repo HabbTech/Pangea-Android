@@ -76,6 +76,8 @@ import org.meshtastic.core.resources.pangea_profile_row_subtitle
 import org.meshtastic.core.resources.pangea_radio_connected
 import org.meshtastic.core.resources.pangea_radio_connecting
 import org.meshtastic.core.resources.pangea_radio_not_connected
+import org.meshtastic.core.resources.pangea_route_recorder
+import org.meshtastic.core.resources.pangea_routes
 import org.meshtastic.core.resources.pangea_setup_profile
 import org.meshtastic.core.resources.pangea_you
 import org.meshtastic.core.resources.pangea_you_footer
@@ -209,6 +211,21 @@ fun IosSettingsScreen(
                     accessory = IosAccessory.Chevron,
                     onClick = { onNavigate(SettingsRoute.AppSettings) },
                 )
+                IosRow(
+                    title = stringResource(Res.string.pangea_routes),
+                    icon = IosIcons.RoadLanes,
+                    accessory = IosAccessory.Chevron,
+                    onClick = { onNavigate(SettingsRoute.Routes) },
+                )
+                if (canRecordRoutes) {
+                    IosRow(
+                        title = stringResource(Res.string.pangea_route_recorder),
+                        icon = IosIcons.RecordCircle,
+                        iconTint = c.systemRed,
+                        accessory = IosAccessory.Chevron,
+                        onClick = { onNavigate(SettingsRoute.RouteRecorder) },
+                    )
+                }
                 IosRow(
                     title = stringResource(Res.string.pangea_firmware_updates),
                     icon = IosIcons.ArrowsUpDownSquare,

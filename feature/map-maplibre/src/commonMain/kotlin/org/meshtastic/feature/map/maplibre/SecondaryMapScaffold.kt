@@ -34,6 +34,7 @@ import org.maplibre.compose.map.MapState
 import org.maplibre.compose.map.MapUiOptions
 import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.map.rememberMapState
+import org.maplibre.compose.overlay.include
 import org.maplibre.spatialk.geojson.BoundingBox
 import org.meshtastic.feature.map.component.MapEngineUnavailable
 import org.meshtastic.feature.map.maplibre.component.BasemapSelection
@@ -43,6 +44,7 @@ import org.meshtastic.feature.map.maplibre.layers.RasterBasemapLayer
 import org.meshtastic.feature.map.maplibre.style.Basemap
 import org.meshtastic.feature.map.maplibre.style.toBaseStyle
 import org.meshtastic.feature.map.maplibre.style.zoomRange
+import org.maplibre.compose.overlay.MapOverlay as MaplibreOverlay
 
 /**
  * The map state the maps outside the main one all share.
@@ -90,6 +92,8 @@ internal fun SecondaryMapSurface(
     modifier: Modifier = Modifier.fillMaxSize(),
     interactions: MapInteractions = SecondaryMapInteractions,
     uiOptions: MapUiOptions = MapUiOptions.Standard,
+    // The library's own ornaments; a map with chrome of its own in the top corner leaves out the scale bar.
+    ornaments: MaplibreOverlay = MaplibreOverlay.Default,
 ) {
     // Same guard as MeshMap, and in the same place: the style content is never composed without a presentation, so
     // it stops here too. Like MeshMap's, it covers the view and not the state.
@@ -104,6 +108,7 @@ internal fun SecondaryMapSurface(
         CameraConstraints(minZoom = zoomRange.start.toDouble(), maxZoom = zoomRange.endInclusive.toDouble()),
         interactions = interactions,
         uiOptions = uiOptions,
+        overlay = { include(ornaments) },
     )
 }
 

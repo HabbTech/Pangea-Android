@@ -2922,6 +2922,107 @@ object IosIcons {
         }
     }
 
+    /** `road.lanes.curved.right`: Routes. */
+    val RoadLanes: ImageVector by lazy {
+        icon("ios.roadLanes") {
+            stroked(width = 1.6f) {
+                // The road's two edges, rising and bending to the right.
+                moveTo(5f, 21f)
+                lineTo(5f, 13.5f)
+                curveTo(5f, 8.3f, 9.2f, 4.5f, 14.5f, 4.5f)
+                lineTo(20f, 4.5f)
+                moveTo(14f, 21f)
+                lineTo(14f, 16.8f)
+                curveTo(14f, 14.6f, 15.6f, 13.2f, 17.8f, 13.2f)
+                lineTo(20f, 13.2f)
+                // The dashed centre line between them.
+                moveTo(9.5f, 21f)
+                lineTo(9.5f, 19f)
+                moveTo(9.5f, 17f)
+                lineTo(9.55f, 14.6f)
+                moveTo(10.1f, 12.4f)
+                lineTo(11.6f, 10.3f)
+                moveTo(13.6f, 9.2f)
+                lineTo(15.8f, 8.9f)
+                moveTo(17.8f, 8.9f)
+                lineTo(20f, 8.9f)
+            }
+        }
+    }
+
+    /** `record.circle`: Route Recorder, and its record button while idle. */
+    val RecordCircle: ImageVector by lazy {
+        icon("ios.recordCircle") {
+            stroked(width = 1.8f) { circle(12f, 12f, 9.1f) }
+            filled { circle(12f, 12f, 3.9f) }
+        }
+    }
+
+    /** `record.circle.fill`: the record button while recording. */
+    val RecordCircleFill: ImageVector by lazy {
+        icon("ios.recordCircleFill") {
+            path(fill = SolidColor(Color.Black), pathFillType = PathFillType.EvenOdd) {
+                circle(12f, 12f, 10f)
+                circle(12f, 12f, 6.4f)
+                circle(12f, 12f, 4.4f)
+            }
+        }
+    }
+
+    /** `play`: Start. */
+    val Play: ImageVector by lazy {
+        icon("ios.play") {
+            stroked(width = 1.7f) {
+                moveTo(7.4f, 4.8f)
+                lineTo(18.6f, 12f)
+                lineTo(7.4f, 19.2f)
+                close()
+            }
+        }
+    }
+
+    /** `pause`: Pause. */
+    val Pause: ImageVector by lazy {
+        icon("ios.pause") {
+            stroked(width = 2.6f) {
+                moveTo(8.4f, 5.4f)
+                lineTo(8.4f, 18.6f)
+                moveTo(15.6f, 5.4f)
+                lineTo(15.6f, 18.6f)
+            }
+        }
+    }
+
+    /** `playpause`: Resume, and a paused recording. */
+    val PlayPause: ImageVector by lazy {
+        icon("ios.playPause") {
+            stroked(width = 1.6f) {
+                moveTo(3.2f, 6.4f)
+                lineTo(11.4f, 12f)
+                lineTo(3.2f, 17.6f)
+                close()
+            }
+            stroked(width = 2.2f) {
+                moveTo(15.2f, 6.6f)
+                lineTo(15.2f, 17.4f)
+                moveTo(20.2f, 6.6f)
+                lineTo(20.2f, 17.4f)
+            }
+        }
+    }
+
+    /** `point.topleft.filled.down.to.point.bottomright.curvepath`: a route's Enabled switch. */
+    val CurvePath: ImageVector by lazy {
+        icon("ios.curvePath") {
+            filled { circle(5.2f, 5.2f, 2.7f) }
+            stroked(width = 1.6f) {
+                circle(18.8f, 18.8f, 2.5f)
+                moveTo(5.2f, 8.4f)
+                curveTo(5.2f, 17.6f, 15.8f, 7f, 16.2f, 17.4f)
+            }
+        }
+    }
+
     private fun icon(name: String, size: Float = 24f, viewport: Float = 24f, block: ImageVector.Builder.() -> Unit) =
         ImageVector.Builder(name, size.dp, size.dp, viewport, viewport).apply(block).build()
 

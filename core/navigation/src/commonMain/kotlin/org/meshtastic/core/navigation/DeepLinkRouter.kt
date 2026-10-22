@@ -253,6 +253,8 @@ object DeepLinkRouter {
             "filter-settings" to SettingsRoute.FilterSettings,
             "tools" to SettingsRoute.Tools,
             "app-files" to SettingsRoute.AppFiles,
+            "routes" to SettingsRoute.Routes,
+            "route-recorder" to SettingsRoute.RouteRecorder,
             "helpdocs" to SettingsRoute.HelpDocs,
             "help-docs" to SettingsRoute.HelpDocs,
             "local-mesh-discovery" to DiscoveryRoute.DiscoveryGraph,

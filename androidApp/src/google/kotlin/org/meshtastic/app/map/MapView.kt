@@ -126,6 +126,7 @@ import org.meshtastic.app.map.offline.pmtiles.OfflineVectorOverlay
 import org.meshtastic.app.map.offline.pmtiles.component.OfflineRegionManagerSection
 import org.meshtastic.app.map.offline.terrain.ContourOverlay
 import org.meshtastic.app.map.offline.terrain.HillshadeTileProvider
+import org.meshtastic.app.map.route.SavedRouteOverlay
 import org.meshtastic.app.map.tiles.RasterBasemap
 import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.common.util.nowSeconds
@@ -417,6 +418,7 @@ fun MapView(
     val waypoints by mapViewModel.waypoints.collectAsStateWithLifecycle(emptyMap())
     val displayableWaypoints = waypoints.values.mapNotNull { it.waypoint }
     val selectedWaypointId by mapViewModel.selectedWaypointId.collectAsStateWithLifecycle()
+    val mapRoutes by mapViewModel.mapRoutes.collectAsStateWithLifecycle()
 
     val filteredNodes = MapNodePolicy.visibleNodes(allNodes, mapFilterState, nowSeconds, ourNodeInfo?.num)
 
@@ -761,7 +763,9 @@ fun MapView(
             }
 
             when (mode) {
-                is GoogleMapMode.Main ->
+                is GoogleMapMode.Main -> {
+                    // The routes switched on in the Route List, as iOS's mesh map draws them.
+                    mapRoutes.forEach { route -> key(route.id) { SavedRouteOverlay(route) } }
                     MainMapContent(
                         nodeClusterItems = nodeClusterItems,
                         mapFilterState = mapFilterState,
@@ -779,6 +783,7 @@ fun MapView(
                         coroutineScope = coroutineScope,
                         onShowClusterItemsDialog = { showClusterItemsDialog = it },
                     )
+                }
 
                 is GoogleMapMode.NodeTrack -> {
                     if (mode.focusedNode != null && sortedTrackPositions.isNotEmpty()) {

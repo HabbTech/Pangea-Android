@@ -1328,6 +1328,13 @@ packet_authenticity_strict_title
 packet_authenticity_unsupported
 ### PANGEA ###
 pangea_active_database
+pangea_activity
+pangea_activity_biking
+pangea_activity_driving
+pangea_activity_hiking
+pangea_activity_overlanding
+pangea_activity_skiing
+pangea_activity_walking
 pangea_add_channel
 pangea_add_channels
 pangea_add_nickname
@@ -1423,6 +1430,7 @@ pangea_discovery_legend_home
 pangea_discovery_modem_presets
 pangea_display_name
 pangea_edit_profile
+pangea_elev_gain
 pangea_encrypted
 pangea_encrypted_only
 pangea_environment_metrics_log
@@ -1511,6 +1519,7 @@ pangea_hops_away
 pangea_host_metrics_log
 pangea_identity
 pangea_import_configuration
+pangea_import_route
 pangea_include
 pangea_increase
 pangea_inputs
@@ -1633,6 +1642,9 @@ pangea_radio_restarting_wait
 pangea_radio_serial
 pangea_radio_status_not_connected
 pangea_reaching
+pangea_recorded_route_name
+pangea_recording_paused
+pangea_recording_route
 pangea_regenerate_key_desc
 pangea_region_choose
 pangea_region_footer
@@ -1648,6 +1660,22 @@ pangea_ringtone_placeholder
 pangea_role
 pangea_role_value
 pangea_root_topic
+pangea_route_bad_file
+pangea_route_bad_file_message
+pangea_route_export
+pangea_route_finish
+pangea_route_list
+pangea_route_location_needed
+pangea_route_log
+pangea_route_pause
+pangea_route_record_details
+pangea_route_recorder
+pangea_route_recording_details
+pangea_route_resume
+pangea_route_show_on_map
+pangea_route_start
+pangea_route_unknown_time
+pangea_routes
 pangea_save_contact
 pangea_save_to_radio_failed
 pangea_saving_to_radio
@@ -1709,6 +1737,11 @@ pangea_tak_role_notice
 pangea_tak_server_status
 pangea_tertiary_admin_key
 pangea_this_is_your_radio
+pangea_time_afternoon
+pangea_time_evening
+pangea_time_midday
+pangea_time_morning
+pangea_time_nighttime
 pangea_timing_overrides
 pangea_tools
 pangea_trace_route

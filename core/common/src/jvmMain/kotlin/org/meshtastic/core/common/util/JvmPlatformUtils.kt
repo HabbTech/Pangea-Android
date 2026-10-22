@@ -29,6 +29,8 @@ actual object BuildUtils {
     actual val sdkInt: Int = 0
 }
 
+// One function per format the expect declares, plus the locale helper.
+@Suppress("TooManyFunctions")
 actual object DateFormatter {
     private val zoneId: ZoneId = ZoneId.systemDefault()
     private val shortTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
@@ -79,6 +81,11 @@ actual object DateFormatter {
 
     actual fun formatDateTimeShort(timestampMillis: Long): String =
         shortDateTimeFormatter.localized().format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
+
+    actual fun formatDateTimeNumeric(timestampMillis: Long): String =
+        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+            .localized()
+            .format(java.time.Instant.ofEpochMilli(timestampMillis).atZone(zoneId))
 
     actual fun formatMonthYear(timestampMillis: Long): String = DateTimeFormatter.ofPattern("LLLL yyyy")
         .localized()
