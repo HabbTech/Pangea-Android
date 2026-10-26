@@ -1572,6 +1572,7 @@
     <string name="pangea_local_stats_log">Local Stats Log</string>
     <string name="pangea_logging">Logging</string>
     <string name="pangea_maker_hardware">Maker Hardware</string>
+    <string name="pangea_map_2d">2D</string>
     <string name="pangea_map_3d">3D</string>
     <string name="pangea_map_empty_body">Radios appear here once someone shares where they are. Yours shows when your phone or radio has a location.</string>
     <string name="pangea_map_empty_title">No Locations Yet</string>

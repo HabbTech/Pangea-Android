@@ -19,6 +19,7 @@ package org.meshtastic.app.map.route
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
@@ -26,7 +27,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -49,11 +53,13 @@ import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.Polyline
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.meshtastic.core.model.pangea.Route
 import org.meshtastic.core.model.pangea.RoutePoint
 import org.meshtastic.core.repository.RouteRecorder
 import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.util.RouteRecorderMapControls
 import org.meshtastic.core.ui.util.rememberLocationPermissionState
 
 /** The route editor's map on Google Maps: the route, its start and finish, framed once the map has loaded. */
@@ -83,10 +89,13 @@ fun RouteMap(points: List<RoutePoint>, color: Int, modifier: Modifier = Modifier
 }
 
 /**
- * The Route Recorder's map on Google Maps: the phone's blue dot, followed (in from the world view to street level on
- * the first fix), and the recording as a dashed line.
+ * The Route Recorder's map on Google Maps: the phone's blue dot, followed (in from the world view to iOS's framing on
+ * the first fix), and the recording as a dashed line. iOS turns the map to the phone's compass heading; Google Maps
+ * offers no heading here, so the map turns to the direction of travel while the phone is moving. iOS's 3D toggle and
+ * compass sit down the right; the compass turns the map north up and stops it turning.
  */
 @Composable
+@Suppress("LongMethod")
 fun RouteRecorderMap(points: List<RoutePoint>, color: Int, modifier: Modifier = Modifier) {
     val line = remember(points) { points.map { LatLng(it.latitude, it.longitude) } }
     val camera = rememberCameraPositionState {
@@ -96,23 +105,51 @@ fun RouteRecorderMap(points: List<RoutePoint>, color: Int, modifier: Modifier = 
     }
     val permission = rememberLocationPermissionState()
     val recorder: RouteRecorder = koinInject()
+    var followHeading by remember { mutableStateOf(true) }
+    val currentFollowHeading by rememberUpdatedState(followHeading)
+    val scope = rememberCoroutineScope()
     LaunchedEffect(permission.isGranted) {
         if (!permission.isGranted) return@LaunchedEffect
         recorder.fixes().collect { fix ->
-            val here = LatLng(fix.latitude, fix.longitude)
-            val zoom = maxOf(camera.position.zoom, FOLLOW_ZOOM)
-            camera.animate(CameraUpdateFactory.newLatLngZoom(here, zoom))
+            val now = camera.position
+            val next = CameraPosition.Builder(now).target(LatLng(fix.latitude, fix.longitude))
+            if (now.zoom < FOLLOW_ZOOM - 1) next.zoom(FOLLOW_ZOOM)
+            val course = fix.bearing
+            if (currentFollowHeading && course != null && (fix.speed ?: 0f) > MOVING_SPEED) next.bearing(course)
+            camera.animate(CameraUpdateFactory.newCameraPosition(next.build()))
         }
     }
-    GoogleMap(
-        modifier = modifier,
-        cameraPositionState = camera,
-        mapColorScheme = if (Ios.colors.isDark) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
-        properties = MapProperties(isMyLocationEnabled = permission.isGranted),
-        uiSettings =
-        MapUiSettings(zoomControlsEnabled = false, mapToolbarEnabled = false, myLocationButtonEnabled = false),
-    ) {
-        RouteOverlay(line = line, color = color.opaque(), dashed = true, endpoints = false)
+    Box(modifier) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = camera,
+            mapColorScheme = if (Ios.colors.isDark) ComposeMapColorScheme.DARK else ComposeMapColorScheme.LIGHT,
+            properties = MapProperties(isMyLocationEnabled = permission.isGranted),
+            uiSettings =
+            MapUiSettings(
+                zoomControlsEnabled = false,
+                mapToolbarEnabled = false,
+                myLocationButtonEnabled = false,
+                compassEnabled = false,
+            ),
+        ) {
+            RouteOverlay(line = line, color = color.opaque(), dashed = true, endpoints = false)
+        }
+        val pitched = camera.position.tilt > 1f
+        RouteRecorderMapControls(
+            pitched = pitched,
+            bearing = camera.position.bearing,
+            onTogglePitch = {
+                val tilted = CameraPosition.Builder(camera.position).tilt(if (pitched) 0f else PITCH_3D).build()
+                scope.launch { camera.animate(CameraUpdateFactory.newCameraPosition(tilted)) }
+            },
+            onNorthUp = {
+                followHeading = false
+                val northUp = CameraPosition.Builder(camera.position).bearing(0f).build()
+                scope.launch { camera.animate(CameraUpdateFactory.newCameraPosition(northUp)) }
+            },
+            modifier = Modifier.align(Alignment.TopEnd),
+        )
     }
 }
 
@@ -175,7 +212,15 @@ private fun Int.opaque(): Color = Color(OPAQUE or (this and RGB_MASK))
 
 private const val OPAQUE = -0x1000000
 private const val RGB_MASK = 0xFFFFFF
-private const val FOLLOW_ZOOM = 16f
+
+/** iOS's user-location camera, about 1.5 km across a phone. */
+private const val FOLLOW_ZOOM = 14.7f
+
+/** How far 3D tilts the map, as the mesh map's 3D button does. */
+private const val PITCH_3D = 60f
+
+/** Above walking-pace jitter (m/s): the course is only a direction once the phone is moving. */
+private const val MOVING_SPEED = 0.5f
 private const val WORLD_ZOOM = 2f
 private val FIT_PADDING = 48.dp
 private val LINE_WIDTH = 3.dp

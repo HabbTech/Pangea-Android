@@ -1536,6 +1536,7 @@ pangea_leave_group_confirm
 pangea_local_stats_log
 pangea_logging
 pangea_maker_hardware
+pangea_map_2d
 pangea_map_3d
 pangea_map_empty_body
 pangea_map_empty_title

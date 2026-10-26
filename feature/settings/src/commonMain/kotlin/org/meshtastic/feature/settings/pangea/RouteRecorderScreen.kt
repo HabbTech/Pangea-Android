@@ -52,6 +52,7 @@ import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.core.ui.ios.IosTopBar
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.ios.iosPressable
+import org.meshtastic.core.ui.theme.SemanticColors
 import org.meshtastic.core.ui.util.KeepScreenOn
 import org.meshtastic.core.ui.util.LocalRouteRecorderMapProvider
 import org.meshtastic.core.ui.util.PermissionStatus
@@ -149,7 +150,7 @@ private fun RecordButton(recording: Boolean, onClick: () -> Unit, modifier: Modi
         Icon(
             if (recording) IosIcons.RecordCircleFill else IosIcons.RecordCircle,
             contentDescription = null,
-            tint = c.systemRed,
+            tint = RecorderRed,
             modifier = Modifier.size(86.dp),
         )
     }
@@ -157,3 +158,6 @@ private fun RecordButton(recording: Boolean, onClick: () -> Unit, modifier: Modi
 
 /** iOS's starting colour for the line, before a recording picks its own. */
 private const val IDLE_LINE_COLOR = 0x007AFF
+
+/** The red the iPhone app draws the recorder in: Pangea's Error 500, softer than systemRed. */
+internal val RecorderRed = SemanticColors.Error

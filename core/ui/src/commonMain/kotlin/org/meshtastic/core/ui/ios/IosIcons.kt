@@ -2922,30 +2922,24 @@ object IosIcons {
         }
     }
 
-    /** `road.lanes.curved.right`: Routes. */
+    /**
+     * `road.lanes.curved.right`: Routes. A road ahead bending right: the left edge leaning in, the dashed centre line
+     * and the right edge bowed like a parenthesis, measured from iOS's Settings row.
+     */
     val RoadLanes: ImageVector by lazy {
         icon("ios.roadLanes") {
-            stroked(width = 1.6f) {
-                // The road's two edges, rising and bending to the right.
-                moveTo(5f, 21f)
-                lineTo(5f, 13.5f)
-                curveTo(5f, 8.3f, 9.2f, 4.5f, 14.5f, 4.5f)
-                lineTo(20f, 4.5f)
-                moveTo(14f, 21f)
-                lineTo(14f, 16.8f)
-                curveTo(14f, 14.6f, 15.6f, 13.2f, 17.8f, 13.2f)
-                lineTo(20f, 13.2f)
-                // The dashed centre line between them.
-                moveTo(9.5f, 21f)
-                lineTo(9.5f, 19f)
-                moveTo(9.5f, 17f)
-                lineTo(9.55f, 14.6f)
-                moveTo(10.1f, 12.4f)
-                lineTo(11.6f, 10.3f)
-                moveTo(13.6f, 9.2f)
-                lineTo(15.8f, 8.9f)
-                moveTo(17.8f, 8.9f)
-                lineTo(20f, 8.9f)
+            stroked(width = 1.7f) {
+                moveTo(1.8f, 18.3f)
+                curveTo(2.9f, 13.2f, 5.6f, 8.4f, 9.8f, 5.7f)
+                // The centre line's three dashes, shorter towards the horizon.
+                moveTo(11.5f, 18.3f)
+                lineTo(12.1f, 14.3f)
+                moveTo(12.4f, 11.9f)
+                lineTo(13.2f, 9.7f)
+                moveTo(14.3f, 7.6f)
+                lineTo(15.6f, 5.7f)
+                moveTo(21.6f, 5.7f)
+                curveTo(20.6f, 9.3f, 20.9f, 15.1f, 22.7f, 18.3f)
             }
         }
     }
@@ -2953,8 +2947,9 @@ object IosIcons {
     /** `record.circle`: Route Recorder, and its record button while idle. */
     val RecordCircle: ImageVector by lazy {
         icon("ios.recordCircle") {
-            stroked(width = 1.8f) { circle(12f, 12f, 9.1f) }
-            filled { circle(12f, 12f, 3.9f) }
+            // iOS's ring is 8% of its width and its dot 38%.
+            stroked(width = 1.6f) { circle(12f, 12f, 9.2f) }
+            filled { circle(12f, 12f, 3.85f) }
         }
     }
 

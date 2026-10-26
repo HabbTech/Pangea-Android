@@ -16,6 +16,7 @@
  */
 package org.meshtastic.core.model.pangea
 
+import okio.BufferedSource
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
@@ -81,6 +82,12 @@ object RouteCsv {
         return points.takeIf { it.isNotEmpty() }
     }
 
+    /**
+     * The text of a picked file, or null when it is bigger than [MAX_FILE_BYTES]. The picker offers any file (Android
+     * labels CSVs inconsistently), so a video picked by mistake is turned away here rather than read into memory.
+     */
+    fun readText(source: BufferedSource): String? = if (source.request(MAX_FILE_BYTES + 1)) null else source.readUtf8()
+
     /** A route's name from its file's: iOS drops the four-character `.csv`; any other extension goes too. */
     fun routeName(fileName: String): String {
         val name = fileName.substringAfterLast('/')
@@ -108,6 +115,9 @@ object RouteCsv {
         val sign = if (scaled < 0) "-" else ""
         return "$sign$whole.${fraction.ifEmpty { "0" }}"
     }
+
+    /** Far more than any route needs: 10 MB of CSV is about 250,000 points. */
+    const val MAX_FILE_BYTES = 10L * 1024 * 1024
 
     /** U+FEFF, which spreadsheet apps put at the start of a UTF-8 file. */
     private val BYTE_ORDER_MARK = 0xFEFF.toChar().toString()

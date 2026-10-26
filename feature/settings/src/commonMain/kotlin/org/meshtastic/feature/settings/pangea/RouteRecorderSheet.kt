@@ -162,7 +162,7 @@ internal fun RecorderSheet(
 
 @Composable
 private fun RecordingStatus(recording: RouteRecording) {
-    val red = Ios.colors.systemRed
+    val red = RecorderRed
     Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         if (recording.paused) {
             Icon(IosIcons.PlayPause, contentDescription = null, tint = red, modifier = Modifier.size(22.dp))

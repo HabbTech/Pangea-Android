@@ -64,8 +64,8 @@ import org.meshtastic.core.resources.remotely_administrating
 import org.meshtastic.core.ui.component.BasicListItem
 import org.meshtastic.core.ui.component.ListItem
 import org.meshtastic.core.ui.component.MainAppBar
-import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.theme.SemanticColors
 import org.meshtastic.feature.settings.component.ExpressiveSection
 import org.meshtastic.feature.settings.component.expertModeCaptionColor
 import org.meshtastic.feature.settings.navigation.ConfigRoute
@@ -244,7 +244,7 @@ fun SettingsScreen(
                     ListItem(
                         text = stringResource(Res.string.pangea_route_recorder),
                         leadingIcon = IosIcons.RecordCircle,
-                        leadingIconTint = Ios.colors.systemRed,
+                        leadingIconTint = SemanticColors.Error,
                     ) {
                         onNavigate(SettingsRoute.RouteRecorder)
                     }

@@ -101,6 +101,7 @@ import org.meshtastic.core.ui.ios.IosRow
 import org.meshtastic.core.ui.ios.IosSection
 import org.meshtastic.core.ui.pangea.MyProfileViewModel
 import org.meshtastic.core.ui.pangea.ProfileEditorSheet
+import org.meshtastic.core.ui.theme.SemanticColors
 import org.meshtastic.core.ui.util.LocalOpenPairRadio
 import org.meshtastic.core.ui.util.icon
 import org.meshtastic.core.ui.util.labelRes
@@ -221,7 +222,8 @@ fun IosSettingsScreen(
                     IosRow(
                         title = stringResource(Res.string.pangea_route_recorder),
                         icon = IosIcons.RecordCircle,
-                        iconTint = c.systemRed,
+                        // The iPhone app's red here is Pangea's Error 500, not systemRed.
+                        iconTint = SemanticColors.Error,
                         accessory = IosAccessory.Chevron,
                         onClick = { onNavigate(SettingsRoute.RouteRecorder) },
                     )

@@ -17,6 +17,8 @@
 package org.meshtastic.core.data.pangea
 
 import co.touchlab.kermit.Logger
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -25,8 +27,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
 import org.meshtastic.core.common.di.ApplicationCoroutineScope
@@ -43,8 +43,12 @@ import kotlin.random.nextInt
 
 /**
  * The app's route recorder. It listens to the phone's location only while recording (and while a screen collects
- * [fixes]), adds each fix to the recording, and saves the route every few seconds, so a recording cut short by the app
- * being closed keeps what it had. Saves go one at a time, newest wins, so an older save can't land after the last.
+ * [fixes]), adds each fix to the recording, and saves the route once a minute and on pause and finish, so a recording
+ * cut short by the app being closed keeps what it had without rewriting a long route's file every few seconds.
+ *
+ * Fixes arrive on a background thread while Start, Pause and Finish come from the screen, so each change to the
+ * recording and the save it queues happen together under [lock]: a fix heard as Finish is pressed can't queue its older
+ * copy of the route after the finished one. Saves go one at a time, newest wins.
  */
 @Single(binds = [RouteRecorder::class])
 class RouteRecorderImpl(
@@ -55,6 +59,7 @@ class RouteRecorderImpl(
     private val _recording = MutableStateFlow<RouteRecording?>(null)
     override val recording: StateFlow<RouteRecording?> = _recording.asStateFlow()
 
+    private val lock = SynchronizedObject()
     private val saves = Channel<Route>(Channel.CONFLATED)
     private var listening: Job? = null
     private var lastSavedMillis = 0L
@@ -69,48 +74,64 @@ class RouteRecorderImpl(
         .catch { Logger.w(it) { "🗺️ [Routes] No location updates" } }
 
     override fun start(name: String, color: Int) {
-        if (_recording.value != null) return
-        val route =
-            Route(
-                id = Random.nextInt(Route.ID_RANGE),
-                name = name,
-                createdMillis = nowMillis,
-                color = color and Route.COLOR_MASK,
-            )
-        _recording.value = RouteRecording(route)
-        save(route)
-        listening = applicationScope.launch { fixes().collect(::heard) }
+        synchronized(lock) {
+            if (_recording.value != null) return
+            val route =
+                Route(
+                    id = Random.nextInt(Route.ID_RANGE),
+                    name = name,
+                    createdMillis = nowMillis,
+                    color = color and Route.COLOR_MASK,
+                )
+            _recording.value = RouteRecording(route)
+            save(route)
+            listening = applicationScope.launch { fixes().collect(::heard) }
+        }
     }
 
     override fun pause() {
-        _recording.updateAndGet { it?.copy(paused = true) }?.let { save(it.route) }
+        synchronized(lock) {
+            val paused = _recording.value?.copy(paused = true) ?: return
+            _recording.value = paused
+            save(paused.route)
+        }
     }
 
     override fun resume() {
-        _recording.update { current -> current?.takeIf { it.paused }?.copy(paused = false, resumed = true) ?: current }
+        synchronized(lock) {
+            val current = _recording.value?.takeIf { it.paused } ?: return
+            _recording.value = current.copy(paused = false, resumed = true)
+        }
     }
 
     override fun finish() {
-        val done = _recording.value ?: return
-        listening?.cancel()
-        listening = null
-        _recording.value = null
-        save(
-            done.route.copy(
-                enabled = true,
-                endMillis = nowMillis,
-                distanceMeters = done.distanceMeters,
-                elevationGainMeters = done.elevationGainMeters,
-            ),
-        )
+        synchronized(lock) {
+            val done = _recording.value ?: return
+            listening?.cancel()
+            listening = null
+            _recording.value = null
+            save(
+                done.route.copy(
+                    enabled = true,
+                    endMillis = nowMillis,
+                    distanceMeters = done.distanceMeters,
+                    elevationGainMeters = done.elevationGainMeters,
+                ),
+            )
+        }
     }
 
     private fun heard(fix: GpsFix) {
-        val before = _recording.value?.route?.points?.size
-        val after = _recording.updateAndGet { it?.adding(fix) } ?: return
-        if (after.route.points.size != before && nowMillis - lastSavedMillis >= SAVE_INTERVAL_MS) save(after.route)
+        synchronized(lock) {
+            val before = _recording.value ?: return
+            val after = before.adding(fix)
+            _recording.value = after
+            val recorded = after.route.points.size != before.route.points.size
+            if (recorded && nowMillis - lastSavedMillis >= SAVE_INTERVAL_MS) save(after.route)
+        }
     }
 
+    /** Queues [route] to be written; only ever called holding [lock], so the queue's order is the recording's. */
     private fun save(route: Route) {
         lastSavedMillis = nowMillis
         saves.trySend(route)
@@ -118,6 +139,8 @@ class RouteRecorderImpl(
 
     private companion object {
         const val FIX_INTERVAL_MS = 1_000L
-        const val SAVE_INTERVAL_MS = 10_000L
+
+        /** A minute: at a fix a second, a long walk's file would otherwise be rewritten hundreds of times an hour. */
+        const val SAVE_INTERVAL_MS = 60_000L
     }
 }

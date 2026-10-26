@@ -28,14 +28,14 @@ import org.meshtastic.core.common.util.CommonUri
 import org.meshtastic.core.di.CoroutineDispatchers
 import org.meshtastic.core.repository.FileService
 import java.io.File
+import java.net.URI
 
 @Single
 class JvmFileService(private val dispatchers: CoroutineDispatchers) : FileService {
     override suspend fun write(uri: CommonUri, block: suspend (BufferedSink) -> Unit): Boolean =
         withContext(dispatchers.io) {
             try {
-                // Treat URI string as a local file path
-                val file = File(uri.toString())
+                val file = uri.toLocalFile()
                 file.parentFile?.mkdirs()
                 file.sink().buffer().use { sink -> block(sink) }
                 true
@@ -48,7 +48,7 @@ class JvmFileService(private val dispatchers: CoroutineDispatchers) : FileServic
     override suspend fun read(uri: CommonUri, block: suspend (BufferedSource) -> Unit): Boolean =
         withContext(dispatchers.io) {
             try {
-                val file = File(uri.toString())
+                val file = uri.toLocalFile()
                 file.source().buffer().use { source -> block(source) }
                 true
             } catch (e: Exception) {
@@ -57,3 +57,10 @@ class JvmFileService(private val dispatchers: CoroutineDispatchers) : FileServic
             }
         }
 }
+
+/**
+ * The file a URI names. The desktop's open and save dialogs hand over `file:` URIs (`file:/C:/Users/…`, with spaces
+ * escaped), which are not paths; anything else is taken as a path, as callers that pass one expect.
+ */
+internal fun CommonUri.toLocalFile(): File =
+    if (scheme.equals("file", ignoreCase = true)) File(URI(toString())) else File(toString())

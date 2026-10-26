@@ -119,12 +119,13 @@ fun IosButton(
     fullWidth: Boolean = true,
 ) {
     val c = Ios.colors
+    // A tinted (`.bordered`) fill is 18% of the tint, 25% in Dark Mode, as measured on iOS's Import Route.
     val container =
         when {
             style == IosButtonStyle.Plain -> Color.Transparent
             !enabled || style == IosButtonStyle.Gray || style == IosButtonStyle.Destructive -> c.fieldFill
             style == IosButtonStyle.Filled -> c.tint
-            else -> c.tint.copy(alpha = if (c.isDark) 0.24f else 0.15f)
+            else -> c.tint.copy(alpha = if (c.isDark) 0.25f else 0.18f)
         }
     val content =
         when {

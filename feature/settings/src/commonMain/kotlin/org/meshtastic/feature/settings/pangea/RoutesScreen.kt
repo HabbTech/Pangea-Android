@@ -136,6 +136,7 @@ private fun RouteList(
         onBack = onBack,
         grouped = false,
         modifier = modifier,
+        showRadioChip = false,
     ) {
         item(key = "import") {
             Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {

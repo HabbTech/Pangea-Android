@@ -138,6 +138,7 @@ internal fun RouteEditor(
             title = name,
             showTitle = true,
             background = c.groupedBackground,
+            showRadioChip = false,
             leading = {
                 IosGlassIconButton(
                     IosIcons.ChevronLeft,

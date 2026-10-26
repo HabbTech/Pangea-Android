@@ -148,6 +148,8 @@ fun IosPushedScreen(
     titleContent: (@Composable () -> Unit)? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
     backLabel: String = stringResource(Res.string.navigate_back),
+    // False for the pages iOS draws without the radio chip in Expert Mode (the Route List).
+    showRadioChip: Boolean = true,
     content: LazyListScope.() -> Unit,
 ) {
     val c = Ios.colors
@@ -191,6 +193,7 @@ fun IosPushedScreen(
             titleContent = titleContent,
             leading = { IosGlassIconButton(IosIcons.ChevronLeft, contentDescription = backLabel, onClick = onBack) },
             trailing = trailing,
+            showRadioChip = showRadioChip,
         )
     }
 }

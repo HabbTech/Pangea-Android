@@ -59,7 +59,7 @@ class RoutesViewModel(
     fun import(uri: CommonUri, fallbackName: String) {
         viewModelScope.launch {
             var text: String? = null
-            fileService.read(uri) { text = it.readUtf8() }
+            fileService.read(uri) { text = RouteCsv.readText(it) }
             val points = text?.let(RouteCsv::read)
             if (points == null) {
                 _badFile.value = true

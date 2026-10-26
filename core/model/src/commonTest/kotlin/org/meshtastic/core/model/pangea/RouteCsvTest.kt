@@ -16,6 +16,7 @@
  */
 package org.meshtastic.core.model.pangea
 
+import okio.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -77,6 +78,14 @@ class RouteCsvTest {
         val text = "${0xFEFF.toChar()}Latitude,Longitude\n95,200\nbad,1\n1\n\"10.5\",\"20.25\"\nNaN,1"
 
         assertEquals(listOf(RoutePoint(90.0, 180.0), RoutePoint(10.5, 20.25)), RouteCsv.read(text))
+    }
+
+    @Test
+    fun aFileTooBigForARouteIsNotRead() {
+        val small = "Latitude,Longitude\n1,2"
+        assertEquals(small, RouteCsv.readText(Buffer().writeUtf8(small)))
+        val huge = Buffer().write(ByteArray((RouteCsv.MAX_FILE_BYTES + 1).toInt()))
+        assertNull(RouteCsv.readText(huge))
     }
 
     @Test
