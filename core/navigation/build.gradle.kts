@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +16,24 @@
  */
 
 plugins {
-    alias(libs.plugins.meshtastic.android.library)
+    alias(libs.plugins.meshtastic.kmp.library)
+    alias(libs.plugins.meshtastic.kmp.library.compose)
     alias(libs.plugins.meshtastic.kotlinx.serialization)
-    alias(libs.plugins.kover)
 }
 
-android { namespace = "org.meshtastic.core.navigation" }
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(projects.core.common)
+            implementation(projects.core.resources)
+            implementation(libs.kotlinx.serialization.core)
+            implementation(libs.jetbrains.navigation3.ui)
+            // navigation3-ui drags in navigation3-runtime 1.2.0-beta01; the app resolves the
+            // catalog's rc01, so declare it directly to compile against what it runs against.
+            implementation(libs.androidx.navigation3.runtime)
+            implementation(libs.kermit)
+        }
 
-dependencies {}
+        commonTest.dependencies { implementation(projects.core.testing) }
+    }
+}

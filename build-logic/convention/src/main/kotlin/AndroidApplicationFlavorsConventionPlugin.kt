@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,24 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 import com.android.build.api.dsl.ApplicationExtension
-import com.geeksville.mesh.buildlogic.MeshtasticFlavor
-import com.geeksville.mesh.buildlogic.configureFlavors
-import com.geeksville.mesh.buildlogic.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
-import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.exclude
+import org.meshtastic.buildlogic.configureFlavors
 
+/**
+ * Flavor configuration for Android applications.
+ *
+ * Optimization note: This is nearly identical to AndroidLibraryFlavorsConventionPlugin. The underlying
+ * configureFlavors() function already handles both ApplicationExtension and LibraryExtension. Could be consolidated
+ * into a single plugin accepting CommonExtension, but kept separate for now to maintain explicit intent in
+ * build.gradle.kts declarations.
+ */
 class AndroidApplicationFlavorsConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
-        with(target) {
-            extensions.configure<ApplicationExtension> {
-                configureFlavors(this)
-            }
-        }
+        with(target) { extensions.configure<ApplicationExtension> { configureFlavors(this) } }
     }
 }

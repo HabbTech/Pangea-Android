@@ -1,0 +1,179 @@
+/*
+ * Copyright (c) 2026 Meshtastic LLC
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+package org.meshtastic.feature.settings.radio.component
+
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.jetbrains.compose.resources.stringResource
+import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.options
+import org.meshtastic.core.resources.override_console_serial_port
+import org.meshtastic.core.resources.pangea_gpio
+import org.meshtastic.core.resources.pangea_more_options
+import org.meshtastic.core.resources.schema_serial_baud
+import org.meshtastic.core.resources.schema_serial_baud_description
+import org.meshtastic.core.resources.schema_serial_echo
+import org.meshtastic.core.resources.schema_serial_echo_description
+import org.meshtastic.core.resources.schema_serial_enabled
+import org.meshtastic.core.resources.schema_serial_enabled_description
+import org.meshtastic.core.resources.schema_serial_mode
+import org.meshtastic.core.resources.schema_serial_mode_description
+import org.meshtastic.core.resources.schema_serial_rxd
+import org.meshtastic.core.resources.schema_serial_rxd_description
+import org.meshtastic.core.resources.schema_serial_timeout
+import org.meshtastic.core.resources.schema_serial_timeout_description
+import org.meshtastic.core.resources.schema_serial_txd
+import org.meshtastic.core.resources.schema_serial_txd_description
+import org.meshtastic.core.resources.serial
+import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.EditTextPreference
+import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
+import org.meshtastic.core.ui.component.SwitchPreference
+import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.feature.settings.radio.RadioConfigViewModel
+import org.meshtastic.feature.settings.radio.RebootBehavior
+import org.meshtastic.proto.ModuleConfig
+
+@Composable
+fun SerialConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
+    val state by viewModel.radioConfigState.collectAsStateWithLifecycle()
+    val serialConfig = state.moduleConfig.serial ?: ModuleConfig.SerialConfig.Builder().build()
+    val formState = rememberConfigState(initialValue = serialConfig)
+    val focusManager = LocalFocusManager.current
+
+    RadioConfigScreenList(
+        rebootBehavior = RebootBehavior.ALWAYS,
+        title = stringResource(Res.string.serial),
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
+        onBack = onBack,
+        configState = formState,
+        enabled = state.connected,
+        responseState = state.responseState,
+        onDismissPacketResponse = viewModel::clearPacketResponse,
+        onSave = {
+            val config = ModuleConfig.Builder().also { wb -> wb.serial = it }.build()
+            viewModel.setModuleConfig(config)
+        },
+    ) {
+        item {
+            TitledCard(title = stringResource(Res.string.options)) {
+                PreferenceIcon(IosIcons.Terminal) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_serial_enabled),
+                        summary = stringResource(Res.string.schema_serial_enabled_description),
+                        checked = formState.value.enabled,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.enabled = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                PreferenceIcon(IosIcons.Repeat) {
+                    SwitchPreference(
+                        title = stringResource(Res.string.schema_serial_echo),
+                        summary = stringResource(Res.string.schema_serial_echo_description),
+                        checked = formState.value.echo,
+                        enabled = state.connected,
+                        onCheckedChange = {
+                            formState.value = formState.value.newBuilder().also { wb -> wb.echo = it }.build()
+                        },
+                        containerColor = CardDefaults.cardColors().containerColor,
+                    )
+                }
+                PreferenceDivider()
+                DropDownPreference(
+                    title = stringResource(Res.string.schema_serial_baud),
+                    summary = stringResource(Res.string.schema_serial_baud_description),
+                    enabled = state.connected,
+                    selectedItem = formState.value.baud,
+                    onItemSelected = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.baud = it }.build()
+                    },
+                )
+                PreferenceDivider()
+                EditTextPreference(
+                    title = stringResource(Res.string.schema_serial_timeout),
+                    summary = stringResource(Res.string.schema_serial_timeout_description),
+                    value = formState.value.timeout,
+                    enabled = state.connected,
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.timeout = it }.build()
+                    },
+                )
+                PreferenceDivider()
+                DropDownPreference(
+                    title = stringResource(Res.string.schema_serial_mode),
+                    summary = stringResource(Res.string.schema_serial_mode_description),
+                    enabled = state.connected,
+                    selectedItem = formState.value.mode,
+                    onItemSelected = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.mode = it }.build()
+                    },
+                )
+            }
+        }
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_gpio)) {
+                EditTextPreference(
+                    title = stringResource(Res.string.schema_serial_rxd),
+                    summary = stringResource(Res.string.schema_serial_rxd_description),
+                    value = formState.value.rxd,
+                    enabled = state.connected,
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.rxd = it }.build()
+                    },
+                )
+                PreferenceDivider()
+                EditTextPreference(
+                    title = stringResource(Res.string.schema_serial_txd),
+                    summary = stringResource(Res.string.schema_serial_txd_description),
+                    value = formState.value.txd,
+                    enabled = state.connected,
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    onValueChanged = {
+                        formState.value = formState.value.newBuilder().also { wb -> wb.txd = it }.build()
+                    },
+                )
+            }
+        }
+        // Android offers these too; the iPhone app leaves them out.
+        item {
+            TitledCard(title = stringResource(Res.string.pangea_more_options)) {
+                SwitchPreference(
+                    title = stringResource(Res.string.override_console_serial_port),
+                    checked = formState.value.override_console_serial_port,
+                    enabled = state.connected,
+                    onCheckedChange = {
+                        formState.value =
+                            formState.value.newBuilder().also { wb -> wb.override_console_serial_port = it }.build()
+                    },
+                    containerColor = CardDefaults.cardColors().containerColor,
+                )
+            }
+        }
+    }
+}

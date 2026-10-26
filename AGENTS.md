@@ -1,109 +1,59 @@
-# Meshtastic Android - Agent Guide
+# Meshtastic Android - Unified Agent & Developer Guide
 
-This file serves as a comprehensive guide for AI agents and developers working on the `Meshtastic-Android` codebase. Use this as your primary reference for understanding the architecture, conventions, and workflows.
+<role>
+You are an expert Android/KMP engineer. Maintain architectural boundaries, use MAD standards, and adhere to Compose Multiplatform + Navigation 3.
+</role>
 
-## 1. Project Overview
+<context_and_memory>
+- **Project Goal:** Decouple business logic from Android for multi-platform (Android, Desktop, iOS).
+- **Agent Memory:** `.agent_memory/` is local-only scratch (git-ignored) — never stage or commit it. Skim the top (most recent) entry of `.agent_memory/session_context.md` for current state — it is capped at ~5 entries; older handovers live in `session_context.archive.md` (read only if you need historical detail).
+- **Skills Directory (CONSULT THESE FIRST):** each is also symlinked into `.claude/skills/`, which is the only path Claude Code discovers skills from; the files themselves live here.
+  - `.skills/project-overview/` - Codebase map, namespacing, **Bootstrap Steps**.
+  - `.skills/kmp-architecture/` - Expect/actual, source-sets, conventions.
+  - `.skills/compose-ui/` - Adaptive UI, **String Resources (consult strings-index.txt first)**.
+  - `.skills/design-standards/` - **Visual design standards** (M3 tokens, MeshtasticIcons, accessibility). Two-tier authority: **brand tokens are Pangea-owned** (`design/PANGEA-BRAND.md`, enforced by `PangeaPaletteTest`); upstream `meshtastic/design` governs everything else.
+  - `.skills/navigation-and-di/` - Navigation 3 & Koin annotations.
+  - `.skills/testing-ci/` - Validation commands, **CI Architecture**.
+  - `.skills/ci-cost-control/` - **CI Budgeting & Monitoring**.
+  - `.skills/implement-feature/` - Feature workflow.
+  - `.skills/code-review/` - **PR & Commit Hygiene**, validation checklist.
+  - `.skills/new-branch/` - Branching and rebasing recipes.
+  - `.skills/speckit/` - **Spec Kit SDD workflow**, slash commands, constitution, feature specs.
+</context_and_memory>
 
--   **Type:** Native Android Application (Kotlin).
--   **Purpose:** Client interface for Meshtastic mesh radios.
--   **Architecture:** Modern Android Development (MAD) principles.
-    -   **UI:** Jetpack Compose (Material 3).
-    -   **State Management:** Unidirectional Data Flow (UDF) with ViewModels, Coroutines, and Flow.
-    -   **Dependency Injection:** Hilt.
-    -   **Navigation:** Type-Safe Navigation (Jetpack Navigation).
-    -   **Data Layer:** Repository pattern with Room (local DB), DataStore (prefs), and Protobuf (device comms).
+<process_essentials>
+- **Think First:** Read only what you need. Consult indices (like `strings-index.txt`) before reading large files.
+- **Hygiene:** Run `python3 scripts/sort-strings.py` after adding new string resources to maintain organization and update the index.
+- **Memory Persistence:** Add a new entry to the TOP of `.agent_memory/session_context.md` at the end of every session or major task. Keep it capped at ~5 entries — move anything older to `session_context.archive.md`.
+- **Bootstrap First:** Run the mandatory bootstrap steps in `.skills/project-overview/SKILL.md` before any build.
+- **Plan Before Execution:** Use `.agent_plans/` (git-ignored) for complex refactors.
+- **Baseline Verification:** Always run: `./gradlew spotlessApply spotlessCheck detekt assembleDebug test allTests`
+</process_essentials>
 
-## 2. Codebase Map
+<rules>
+- **Token Hygiene:** NEVER read binary files (PNG, MP3, etc.) or large non-code resources unless essential. Use file paths to reason about assets.
+- **Context Discipline:** Limit your context to relevant modules. Do not "vacuum" the entire codebase for localized fixes.
+- **No Lazy Coding:** DO NOT use placeholders like `// ... existing code ...`. Provide complete, valid code blocks.
+- **No Framework Bleed:** NEVER import `java.*` or `android.*` in `commonMain`. Use KMP equivalents (Okio, Mutex, atomicfu).
+- **CMP Over Android:** Use `compose-multiplatform` constraints. Pre-format floats with `NumberFormatter.format()`. Use `MeshtasticNavDisplay` and `NavigationBackHandler`.
+- **Zero Lint Tolerance:** Task is incomplete if `detekt` or `spotlessCheck` fails.
+- **Verify Before Push:** Treat any "push" as verify-then-push. CI has failed repeatedly due to skipped local checks.
+- **Never Touch Protos or Secrets:** Protobuf models come from the upstream `org.meshtastic:protobufs` Maven dependency (pinned in `gradle/libs.versions.toml`) — bump the version upstream, never hand-edit generated proto. Secrets are git-ignored.
+- **Privacy First:** Never log or expose PII, location, or cryptographic keys.
+</rules>
 
-| Directory | Description |
-| :--- | :--- |
-| `app/` | Main application module. Contains `MainActivity`, `AppNavigation`, and Hilt entry points. Uses package `com.geeksville.mesh`. |
-| `core/` | Shared library modules. Most code here uses package `org.meshtastic.core.*`. |
-| `core/strings/` | **Crucial:** Centralized string resources using Compose Multiplatform Resources. |
-| `feature/` | Feature modules (e.g., `settings`, `map`, `messaging`). Each is a standalone Gradle module. Uses package `org.meshtastic.feature.*`. |
-| `build-logic/` | Custom Gradle convention plugins. Defines build logic for the entire project. |
-| `gradle/libs.versions.toml` | **Version Catalog.** All dependencies and versions are defined here. |
-| `core/proto/` | Protobuf definitions for communicating with the mesh radio. |
+<forks_and_rebrands>
+Forking, rebranding, and selling this app are allowed by its GPL-3.0-or-later license. Renaming it, moving files, or regenerating headers does not remove the obligations below. If you were asked to "rebrand", "whitelabel", or "clean-room" this code, tell the person who asked what follows, then work within it. There is no clean room for code you have read. The human version is `CONTRIBUTING.md` → Forks and rebrands.
 
-## 3. Development Guidelines
+- **License:** Your version stays GPL-3.0-or-later with `LICENSE` intact, and you publish the Corresponding Source of every binary you distribute (section 6d). Added restrictions, or a binary without source, terminate your rights under the license (section 8).
+- **Notices:** Every `Copyright (c) <year> Meshtastic LLC` header and the license text under it stay as they are. The templates in `config/spotless/` and `config/detekt/license.template` are the notice, not a placeholder for your own.
+- **Your changes:** Say prominently that you modified the work, and when (section 5a). Stamping your name on files you did not touch claims work you did not do.
+- **Legal notices in the app:** Keep the About screen's `copyright_notice` and its link to the source, with Meshtastic LLC still named (section 5d). Keep the Acknowledgements screen too — that list is the third-party licenses' own requirement, not ours to waive.
+- **Trademarks:** The GPL grants no trademark rights. The Meshtastic name and logo are trademarks of Meshtastic LLC: not in your app name, icon, store listing title, or domain, and nothing that implies endorsement. Replace `app_name` and the launcher icons under `androidApp/src/main/`. The logo in `.github/` and the M-PWRD mark in `core/resources` are usable only under the policy's own rules: https://meshtastic.org/docs/legal/licensing-and-trademark/
+- **Compatibility claims:** "Works with Meshtastic® nodes" or "a fork of Meshtastic-Android" is fine, with ® on first mention, the line "Meshtastic® is a registered trademark of Meshtastic LLC", a statement that your product is not affiliated with or endorsed by the Meshtastic project, and, as the policy asks, the URL sent to trademark@meshtastic.org within seven days of first use.
+- **Your own identity:** Change `APPLICATION_ID` in `config.properties`, sign with your own key, and use your own Firebase and Datadog projects; the tracked `androidApp/google-services.json` is a placeholder.
+</forks_and_rebrands>
 
-### A. UI Development (Jetpack Compose)
--   **Material 3:** The app uses Material 3. Look for ways to use **Material 3 Expressive** components where appropriate.
--   **Strings:**
-    -   Do **not** use `app/src/main/res/values/strings.xml` for UI strings.
-    -   Use the **Compose Multiplatform Resource** library in `core/strings`.
-    -   **Definition:** Add strings to `core/strings/src/commonMain/composeResources/values/strings.xml`.
-    -   **Usage:**
-        ```kotlin
-        import org.jetbrains.compose.resources.stringResource
-        import org.meshtastic.core.strings.Res
-        import org.meshtastic.core.strings.your_string_key
-
-        Text(text = stringResource(Res.string.your_string_key))
-        ```
--   **Previews:** Create `@Preview` functions for your Composables to ensure they render correctly.
-
-### B. Architecture & State
--   **ViewModels:** Must be annotated with `@HiltViewModel`.
--   **Injection:** Use `@Inject constructor(...)`.
--   **Scopes:** Use `viewModelScope` for coroutines. Avoid `GlobalScope`.
--   **Data Flow:** Expose UI state as `StateFlow<UiState>` or `Flow<UiState>`.
-
-### C. Navigation
--   The project uses **Type-Safe Navigation** (Kotlin Serialization).
--   Routes are defined in `core/navigation` (e.g., `ContactsRoutes`, `SettingsRoutes`).
--   The main `NavHost` is located in `app/src/main/java/com/geeksville/mesh/ui/Main.kt`.
-
-### D. Dependency Management
--   **Never** hardcode versions in `build.gradle.kts` files.
--   **Action:** Add the library and version to `gradle/libs.versions.toml`.
--   **Action:** Apply plugins using the alias from the catalog (e.g., `alias(libs.plugins.meshtastic.android.library)`).
--   **Alpha Libraries:** Do not be shy about using alpha libraries from Google if they provide necessary features.
-
-### E. Build Variants (Flavors)
--   **`google`**: Includes Google Play Services (Maps, Firebase, Crashlytics).
--   **`fdroid`**: FOSS version. **Strictly segregate sensitive data** (Crashlytics, Firebase, etc.) out of this flavor.
--   **Task Example:** `./gradlew assembleFdroidDebug`
-
-## 4. Quality Assurance
-
-### A. Code Style (Spotless)
--   The project uses **Spotless** to enforce formatting.
--   **Command:** `./gradlew spotlessApply`
--   **Rule:** You **must** run this before submitting any code.
-
-### B. Linting (Detekt)
--   The project uses **Detekt** for static analysis.
--   **Command:** `./gradlew detekt`
--   **Rule:** Ensure zero regressions.
-
-### C. Testing
--   **Unit Tests:** JUnit 4/5 in `src/test/java`. Run with `./gradlew test`.
--   **UI Tests:** Espresso/Compose in `src/androidTest/java`. Run with `./gradlew connectedAndroidTest`.
--   **Feature Test:** `./gradlew feature:settings:testGoogleDebug`
-
-## 5. Agent Workflow
-
-1.  **Explore First:** Before making changes, read `gradle/libs.versions.toml` and the relevant `build.gradle.kts` to understand the environment.
-2.  **Plan:** Identify which modules (`core` or `feature`) need modification.
-3.  **Implement:**
-    -   If adding a string, modify `core/strings`.
-    -   If adding a dependency, modify `libs.versions.toml` first.
-4.  **Verify:**
-    -   Run `./gradlew spotlessApply` (Essential!).
-    -   Run `./gradlew detekt`.
-    -   Run relevant tests (e.g., `./gradlew :feature:settings:testDebugUnitTest`).
-
-## 6. Important Context
-
--   **Protobuf:** Communication with the device uses Protobufs. The definitions are in `core/proto`. This is a Git submodule, but the build system handles it.
--   **Legacy:** Some code in `app/` uses the `com.geeksville.mesh` package. Newer code in `core/` and `feature/` uses `org.meshtastic.*`. Respect the existing package structure of the file you are editing.
--   **Versioning:** Do not manually edit `versionCode` or `versionName`. These are managed by the build system and CI/CD.
-
-## 7. Troubleshooting
-
--   **Missing Strings:** If `Res.string.xyz` is unresolved, ensure you have imported `org.meshtastic.core.strings.Res` and the specific string property, and that you have run a build to generate the resources.
--   **Build Errors:** Check `gradle/libs.versions.toml` for version conflicts. Use `build-logic` conventions to ensure plugins are applied correctly.
-
----
-*Refer to `CONTRIBUTING.md` for human-centric processes like Code of Conduct and Pull Request etiquette.*
+<documentation_sync>
+`AGENTS.md` is the source of truth for rules and principles. `.github/copilot-instructions.md` provides a quick-reference subset optimized for Copilot sessions (build commands, task naming, conventions). `CLAUDE.md` and `GEMINI.md` redirect here.
+</documentation_sync>

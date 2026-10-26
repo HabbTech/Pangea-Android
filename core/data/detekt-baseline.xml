@@ -1,12 +1,10 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>MagicNumber:LocationRepository.kt$LocationRepository$1000L</ID>
-    <ID>MagicNumber:LocationRepository.kt$LocationRepository$30</ID>
-    <ID>MagicNumber:LocationRepository.kt$LocationRepository$31</ID>
-    <ID>MagicNumber:PacketRepository.kt$PacketRepository$500</ID>
-    <ID>TooGenericExceptionCaught:LocationRepository.kt$LocationRepository$e: Exception</ID>
-    <ID>TooManyFunctions:PacketRepository.kt$PacketRepository</ID>
+    <ID>MagicNumber:XModemManagerImpl.kt:XModemManagerImpl$0x8000</ID>
+    <ID>MagicNumber:XModemManagerImpl.kt:XModemManagerImpl$0xFF</ID>
+    <ID>MagicNumber:XModemManagerImpl.kt:XModemManagerImpl$0xFFFF</ID>
+    <ID>MagicNumber:XModemManagerImpl.kt:XModemManagerImpl$8</ID>
   </CurrentIssues>
 </SmellBaseline>

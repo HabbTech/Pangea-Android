@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,40 +16,73 @@
  */
 
 plugins {
-    alias(libs.plugins.meshtastic.android.library)
-    alias(libs.plugins.meshtastic.android.library.compose)
-    alias(libs.plugins.meshtastic.hilt)
-    alias(libs.plugins.kover)
+    alias(libs.plugins.meshtastic.kmp.library)
+    alias(libs.plugins.meshtastic.kmp.library.compose)
+    alias(libs.plugins.meshtastic.kotlinx.serialization)
+    alias(libs.plugins.meshtastic.kmp.jvm.android)
+    alias(libs.plugins.meshtastic.koin)
 }
 
-android { namespace = "org.meshtastic.core.ui" }
+kotlin {
+    // Required for CMP files/ resources (emoji-data.json) to be packaged as Android assets.
+    // Without this, Res.readBytes() throws MissingResourceException at runtime.
+    android { androidResources.enable = true }
 
-dependencies {
-    implementation(projects.core.data)
-    implementation(projects.core.database)
-    implementation(projects.core.model)
-    implementation(projects.core.prefs)
-    implementation(projects.core.proto)
-    implementation(projects.core.service)
-    implementation(projects.core.strings)
+    sourceSets {
+        commonMain.dependencies {
+            implementation(projects.core.common)
+            implementation(projects.core.data)
+            implementation(projects.core.database)
+            implementation(projects.core.datastore)
+            implementation(projects.core.model)
+            implementation(projects.core.navigation)
+            implementation(projects.core.prefs)
+            implementation(libs.meshtastic.protobufs)
+            implementation(projects.core.repository)
+            implementation(projects.core.resources)
+            implementation(projects.core.service)
 
-    implementation(libs.accompanist.permissions)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.compose.material.iconsExtended)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.text)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.emoji2.emojipicker)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
-    implementation(libs.guava)
-    implementation(libs.zxing.core)
-    implementation(libs.zxing.android.embedded)
-    implementation(libs.timber)
+            implementation(libs.compose.multiplatform.animation)
+            implementation(libs.compose.multiplatform.material3)
+            implementation(libs.compose.multiplatform.ui)
+            implementation(libs.compose.multiplatform.foundation)
+            api(libs.compose.multiplatform.ui.tooling.preview)
 
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
+            implementation(libs.coil)
+            implementation(libs.jetbrains.markdown)
+            implementation(libs.kermit)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.koin.compose.viewmodel)
+            implementation(libs.qrcode.kotlin)
+            implementation(libs.jetbrains.compose.material3.adaptive)
+            implementation(libs.jetbrains.compose.material3.adaptive.layout)
+            implementation(libs.jetbrains.compose.material3.adaptive.navigation)
+            implementation(libs.jetbrains.compose.material3.adaptive.navigation.suite)
+            api(libs.jetbrains.navigation3.ui)
+            // Pinned past navigation3-ui's transitive 1.1.1 — the JetBrains mirror never
+            // published 1.1.6's SaveableStateHolder fix. Consumers import
+            // androidx.navigation3.runtime.* (NavKey, NavBackStack) directly from commonMain.
+            api(libs.androidx.navigation3.runtime)
+            // navigation3-ui's own POM marks this runtime-scope, so it never reaches any
+            // compile classpath transitively — declare it directly. Consumers (e.g.
+            // feature:docs) import androidx.navigationevent.compose.* directly.
+            api(libs.jetbrains.navigationevent.compose)
+            implementation(libs.jetbrains.compose.material3.adaptive.navigation3)
+            implementation(libs.jetbrains.lifecycle.viewmodel.navigation3)
+            implementation(libs.jetbrains.lifecycle.viewmodel.compose)
+            implementation(libs.jetbrains.lifecycle.runtime.compose)
+        }
 
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.test.runner)
+        getByName("jvmAndroidMain") { dependencies { implementation(libs.compose.multiplatform.ui.tooling) } }
 
-    testImplementation(libs.junit)
+        androidMain.dependencies { implementation(libs.androidx.activity.compose) }
+
+        commonTest.dependencies {
+            implementation(projects.core.testing)
+            implementation(libs.junit)
+            implementation(libs.compose.multiplatform.ui.test)
+        }
+
+        jvmTest.dependencies { implementation(compose.desktop.currentOs) }
+    }
 }

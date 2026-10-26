@@ -1,182 +1,44 @@
-# Copilot Instructions for Meshtastic-Android
+# Meshtastic Android — Copilot Instructions
 
-## Repository Summary
+> **`AGENTS.md` is the source of truth** for rules, architecture, and conventions. This file is a compact Copilot quick-reference plus Copilot-only behavior rules — it deliberately does not restate AGENTS.md. For build/test detail see `.skills/testing-ci/`; for the codebase map and bootstrap see `.skills/project-overview/`.
 
-Meshtastic-Android is a native Android client application for the Meshtastic mesh networking project. It enables users to communicate via off-grid, decentralized mesh networks using LoRa radios. The app is written in Kotlin and follows modern Android development practices.
+## Build, Test & Lint (essentials)
 
-**Key Repository Details:**
-- **Language:** Kotlin (primary), with some Java and AIDL files
-- **Build System:** Gradle with Kotlin DSL
-- **Size:** ~3MB source code across 3 modules 
-- **Target Platform:** Android API 26+ (Android 8.0+), targeting API 36
-- **Architecture:** Modern Android with Jetpack Compose, Hilt DI, Room database
-- **Product Flavors:** `fdroid` (F-Droid) and `google` (Google Play Store)
-- **Build Types:** `debug` and `release`
-
-## Essential Build & Test Commands
-
-**ALWAYS run these commands in the exact order specified to avoid build failures:**
-
-### Prerequisites Setup
-1. **JDK Requirement:** JDK 21 is required (will fail with other versions)
-2. **Secrets Configuration:** Copy `secrets.defaults.properties` to `local.properties` and update:
-   ```properties
-   MAPS_API_KEY=your_google_maps_api_key_here
-   datadogApplicationId=your_datadog_app_id
-   datadogClientToken=your_datadog_client_token
-   ```
-3. **Clean Environment:** Always start with `./gradlew clean` for fresh builds
-
-### Build Commands (Validated Working Order)
+Requires JDK 25 and `ANDROID_HOME`. No secrets step: the secrets plugin reads
+`secrets.properties` and falls back to the tracked `secrets.defaults.properties`, so the
+`google` flavor builds without either. Add `secrets.properties` only for real Maps tiles.
 ```bash
-# 1. ALWAYS clean first for reliable builds
-./gradlew clean
-
-# 2. Check code formatting (run before making changes)
-./gradlew spotlessCheck
-
-# 3. Apply automatic code formatting fixes
-./gradlew spotlessApply
-
-# 4. Run static code analysis/linting
-./gradlew detekt
-
-# 5. Build debug APKs for both flavors (takes 3-5 minutes)
-./gradlew assembleDebug
-
-# 6. Build specific flavor variants
-./gradlew assembleFdroidDebug    # F-Droid debug build
-./gradlew assembleGoogleDebug    # Google debug build
-./gradlew assembleFdroidRelease  # F-Droid release build
-./gradlew assembleGoogleRelease  # Google release build
-
-# 7. Run local unit tests (takes 2-3 minutes)
-./gradlew test
-
-# 8. Run specific flavor unit tests
-./gradlew testFdroidDebug
-./gradlew testGoogleDebug
-
-# 9. Run instrumented tests (requires Android device/emulator, takes 5-10 minutes)
-./gradlew connectedAndroidTest
-
-# 10. Run lint checks for both flavors
-./gradlew lintFdroidDebug lintGoogleDebug
+./gradlew spotlessApply spotlessCheck detekt assembleDebug test allTests   # full local verification (run before push)
+./gradlew :core:data:allTests                                # single KMP module
+./gradlew :androidApp:testFdroidDebugUnitTest                # single Android-only module
+./gradlew kmpSmokeCompile                                    # cross-platform compile check, no tests
 ```
+> Both `test` AND `allTests` are needed — `allTests` covers KMP modules, `test` covers pure-Android modules.
 
-### Time Requirements
-- Clean build: 3-5 minutes
-- Unit tests: 2-3 minutes  
-- Instrumented tests: 5-10 minutes
-- Detekt analysis: 1-2 minutes
-- Spotless formatting: 30 seconds
+**KMP vs Android-only task naming** (wrong name silently skips tests or fails resolution): KMP modules (`core:*`, `feature:*`) use `:module:allTests` and `:module:compileKotlinJvm`; Android-only modules (`androidApp`, `desktopApp`, `core:barcode`) use `:module:testFdroidDebugUnitTest` (plain `:desktopApp:test` for the JVM-only desktop module). `:module:detekt` is the lifecycle task for both — never `detektMain`/`detektDebug`. Full matrix and pitfalls: `.skills/testing-ci/`.
 
-### Environment Setup
-**Required Tools:**
-- Android SDK API 36 (compile target)
-- JDK 21 (NOT JDK 17 or 11 - build will fail)
-- Gradle 9.0+ (downloaded automatically by wrapper)
+Architecture, flavors, conventions, branch naming, protos, coding rules: **see `AGENTS.md`**. Contextual `.github/instructions/` files enforce conventions scoped to specific source sets.
 
-**Optional but Recommended:**
-- Install pre-push Git hook: `./gradlew spotlessInstallGitPrePushHook --no-configuration-cache`
+## Copilot-Only Behavior Rules
 
-## Project Architecture & Layout
+These are specific to the Copilot CLI environment and are not covered in AGENTS.md.
 
-### Module Structure
-```
-├── app/                          # Main Android application
-│   ├── src/main/                 # Main source code
-│   ├── src/test/                 # Unit tests
-│   ├── src/androidTest/          # Instrumented tests
-│   ├── src/fdroid/              # F-Droid specific code
-│   └── src/google/              # Google Play specific code
-├── network/                      # HTTP API networking library
-├── mesh_service_example/         # AIDL service usage example
-├── buildSrc/                     # Build configuration (Configs.kt)
-└── config/                       # Linting and formatting configs
-    ├── detekt/                   # Detekt static analysis rules
-    └── spotless/                 # Code formatting configuration
-```
+- **Do it right the first time.** When refactoring, implement the correct solution fully — don't defer improvements as "out of scope". Research the proper API before implementing.
+- **Preserve commit history.** Always make new commits. Never `--amend`, `rebase -i`, squash, or `--force-with-lease` unless the user explicitly requests it.
+- **Workflow-scope push limit.** The Copilot CLI OAuth token cannot push to `.github/workflows/`. If a push fails with a scope/permission error on workflow files, tell the user to push manually (`gh auth refresh -s workflow && git push`) — do not retry or work around it.
+- **No destructive git in parallel agents.** Agents sharing a worktree must never run `git reset --hard`, `git clean`, or `git checkout -- .`. Commit work before any index/working-tree operation.
+- **Audit before applying.** When porting or migrating external code, evaluate each change for relevance and correctness in our context — don't blindly copy.
 
-### Key Configuration Files
-- `buildSrc/src/main/kotlin/Configs.kt` - Version constants and build config
-- `app/build.gradle.kts` - Main app build configuration
-- `config/detekt/detekt.yml` - Static analysis rules
-- `config/spotless/.editorconfig` - Code formatting rules
-- `gradle.properties` - Gradle build settings
-- `secrets.defaults.properties` - Template for secrets (copy to `local.properties`)
+## Context & Cost Efficiency
 
-### Architecture Components
-- **UI Framework:** Jetpack Compose with Material 3
-- **State Management:** Unidirectional Data Flow with ViewModels
-- **Dependency Injection:** Hilt
-- **Navigation:** Jetpack Navigation Compose
-- **Local Data:** Room database + DataStore preferences
-- **Remote Data:** Custom Bluetooth/WiFi protocol + HTTP API (network module)
-- **Background Work:** WorkManager
-- **Communication:** AIDL service interface (`IMeshService.aidl`)
+- **Compact before research phases.** Open-ended research/exploration generates high-volume tool output — compact first.
+- **Split sessions at phase boundaries.** Don't keep one session alive across multiple discrete deliverables (PR opened, spec finalized, merged). A compact summary in a fresh session is cheaper than carrying accumulated history.
+- **Don't re-inject skill context.** If a skill's context is already in the session, reference it rather than re-injecting the full payload (a brief summary suffices after compaction).
+- **PR check-ins get their own session.** Merge/CI-status polling needs only PR metadata — run it in a short-lived session, not the dev session.
+- **Compact by ~turn 12.** Later turns pay for the full accumulated history; don't let exploratory sessions run 15+ turns uncompacted.
 
-## Continuous Integration
-
-### GitHub Workflows (.github/workflows/)
-- **pull-request.yml** - Runs on every PR: build, detekt, tests
-- **reusable-android-build.yml** - Shared build logic: spotless, detekt, lint, assemble, test
-- **reusable-android-test.yml** - Instrumented tests on Android emulators (API 26, 35)
-
-### CI Commands (Must Pass)
-```bash
-# Exact commands run in CI that must pass:
-./gradlew :app:spotlessCheck :app:detekt :app:lintFdroidDebug :app:lintGoogleDebug :app:assembleDebug :app:testFdroidDebug :app:testGoogleDebug --configuration-cache --scan
-./gradlew :app:connectedFdroidDebugAndroidTest :app:connectedGoogleDebugAndroidTest --configuration-cache --scan
-```
-
-### Validation Steps
-1. **Code Style:** Spotless check (auto-fixable with `spotlessApply`)
-2. **Static Analysis:** Detekt with custom rules in `config/detekt/detekt.yml`
-3. **Lint Checks:** Android lint for both flavors
-4. **Unit Tests:** JUnit tests in `app/src/test/`
-5. **UI Tests:** Compose UI tests in `app/src/androidTest/`
-
-## Common Issues & Solutions
-
-### Build Failures
-- **Gradle version error:** Ensure JDK 21 (NOT 17 or 11)
-- **Missing secrets:** Copy `secrets.defaults.properties` → `local.properties`
-- **Configuration cache:** Add `--no-configuration-cache` flag if issues persist
-- **Clean state:** Always run `./gradlew clean` before debugging build issues
-
-### Testing Issues
-- **Instrumented tests:** Require Android device/emulator with API 26+
-- **UI tests:** Use `ComposeTestRule` for Compose UI testing
-- **Coroutine tests:** Use `kotlinx.coroutines.test` library
-
-### Code Style Issues
-- **Formatting:** Run `./gradlew spotlessApply` to auto-fix
-- **Detekt warnings:** Check `config/detekt/detekt.yml` for rules
-- **Localization:** Use `stringResource(R.string.key)` instead of hardcoded strings
-
-## File Organization
-
-### Source Code Locations
-- **Main Activity:** `app/src/main/java/com/geeksville/mesh/ui/MainActivity.kt`
-- **Service Interface:** `app/src/main/aidl/com/geeksville/mesh/IMeshService.aidl`
-- **UI Screens:** `app/src/main/java/com/geeksville/mesh/ui/`
-- **Data Layer:** `app/src/main/java/com/geeksville/mesh/repository/`
-- **Database:** `app/src/main/java/com/geeksville/mesh/database/`
-- **Models:** `app/src/main/java/com/geeksville/mesh/model/`
-
-### Dependencies
-- **Non-obvious deps:** Protobuf for device communication, DataDog for analytics (Google flavor)
-- **Flavor-specific:** Google Services (google flavor), no analytics (fdroid flavor)
-- **Version catalog:** Dependencies defined in `gradle/libs.versions.toml`
-
-## Agent Instructions
-
-**TRUST THESE INSTRUCTIONS** - they are validated and comprehensive. Only search for additional information if:
-1. Commands fail with unexpected errors
-2. Information appears outdated 
-3. Working on areas not covered above
-
-**Always prefer:** Using the documented commands over exploring alternatives, as they are tested and proven to work in the CI environment.
-
-**For code changes:** Follow the architecture patterns established in existing code, maintain the modular structure, and ensure all validation steps pass before submitting changes.
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan at
+specs/20260711-153545-message-markdown-styling/plan.md
+<!-- SPECKIT END -->
