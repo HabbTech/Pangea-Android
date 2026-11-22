@@ -1,0 +1,640 @@
+/*
+ * Copyright (c) 2026 Meshtastic LLC
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+@file:Suppress("LongMethod", "ModifierMissing", "ParameterNaming")
+
+package org.meshtastic.feature.settings.radio.component
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
+import org.meshtastic.core.common.BuildConfigProvider
+import org.meshtastic.core.model.Capabilities
+import org.meshtastic.core.model.Channel
+import org.meshtastic.core.model.getColorFrom
+import org.meshtastic.core.repository.NodeRepository
+import org.meshtastic.core.repository.RadioConfigRepository
+import org.meshtastic.core.repository.TakPrefs
+import org.meshtastic.core.resources.Res
+import org.meshtastic.core.resources.export_tak_data_package
+import org.meshtastic.core.resources.pangea_configuration
+import org.meshtastic.core.resources.pangea_identity
+import org.meshtastic.core.resources.pangea_tak_identity_footer
+import org.meshtastic.core.resources.pangea_tak_role_notice
+import org.meshtastic.core.resources.pangea_tak_server_status
+import org.meshtastic.core.resources.schema_tak_role
+import org.meshtastic.core.resources.schema_tak_role_description
+import org.meshtastic.core.resources.schema_tak_team
+import org.meshtastic.core.resources.schema_tak_team_description
+import org.meshtastic.core.resources.tak
+import org.meshtastic.core.resources.tak_server
+import org.meshtastic.core.resources.tak_server_channel
+import org.meshtastic.core.resources.tak_server_channel_desc
+import org.meshtastic.core.resources.tak_server_channel_option
+import org.meshtastic.core.resources.tak_server_enabled
+import org.meshtastic.core.resources.tak_server_enabled_desc
+import org.meshtastic.core.resources.tak_server_export_data_package_desc
+import org.meshtastic.core.resources.tak_server_loading
+import org.meshtastic.core.resources.tak_server_mesh_to_cot
+import org.meshtastic.core.resources.tak_server_mesh_to_cot_desc
+import org.meshtastic.core.resources.tak_server_status
+import org.meshtastic.core.resources.tak_server_status_connected
+import org.meshtastic.core.resources.tak_server_status_failed
+import org.meshtastic.core.resources.tak_server_status_not_running
+import org.meshtastic.core.resources.tak_server_status_off
+import org.meshtastic.core.resources.tak_server_status_starting
+import org.meshtastic.core.resources.tak_server_status_unavailable
+import org.meshtastic.core.resources.tak_server_status_waiting
+import org.meshtastic.core.resources.tak_server_test_card_title
+import org.meshtastic.core.resources.tak_server_test_idle
+import org.meshtastic.core.resources.tak_server_test_protocol_v1_label
+import org.meshtastic.core.resources.tak_server_test_protocol_v2_label
+import org.meshtastic.core.resources.tak_server_test_result_bytes
+import org.meshtastic.core.resources.tak_server_test_result_expected_drop
+import org.meshtastic.core.resources.tak_server_test_result_unknown_error
+import org.meshtastic.core.resources.tak_server_test_results_v2
+import org.meshtastic.core.resources.tak_server_test_run
+import org.meshtastic.core.resources.tak_server_test_running
+import org.meshtastic.core.resources.tak_server_v1_fallback_notice
+import org.meshtastic.core.takserver.TAKDataPackageGenerator
+import org.meshtastic.core.takserver.TAKMeshIntegration
+import org.meshtastic.core.takserver.TAKServerManager
+import org.meshtastic.core.takserver.TakMeshTestRunner
+import org.meshtastic.core.takserver.TakProtocol
+import org.meshtastic.core.takserver.TakTestResult
+import org.meshtastic.core.ui.component.DropDownPreference
+import org.meshtastic.core.ui.component.PreferenceActionRow
+import org.meshtastic.core.ui.component.PreferenceDivider
+import org.meshtastic.core.ui.component.PreferenceIcon
+import org.meshtastic.core.ui.component.SwitchPreference
+import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.icon.MeshtasticIcons
+import org.meshtastic.core.ui.icon.PlayArrow
+import org.meshtastic.core.ui.icon.Warning
+import org.meshtastic.core.ui.ios.Ios
+import org.meshtastic.core.ui.ios.IosActivityIndicator
+import org.meshtastic.core.ui.ios.IosButton
+import org.meshtastic.core.ui.ios.IosCardShape
+import org.meshtastic.core.ui.ios.IosGlassIconButton
+import org.meshtastic.core.ui.ios.IosIcons
+import org.meshtastic.core.ui.ios.IosPushedColumnScreen
+import org.meshtastic.feature.settings.radio.RadioConfigViewModel
+import org.meshtastic.feature.settings.radio.RebootBehavior
+import org.meshtastic.feature.settings.radio.ResponseState
+import org.meshtastic.feature.settings.tak.TakPermissionHandler
+import org.meshtastic.feature.settings.tak.rememberDataPackageExporter
+import org.meshtastic.proto.ChannelSet
+import org.meshtastic.proto.MemberRole
+import org.meshtastic.proto.ModuleConfig
+import org.meshtastic.proto.Team
+
+// ── TAK Config Screen (Module Settings) ─────────────────────────────────────
+// Shows only the firmware module config: team and role dropdowns.
+
+@Composable
+fun TAKConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
+    val state by viewModel.radioConfigState.collectAsStateWithLifecycle()
+    val takConfig = state.moduleConfig.tak ?: ModuleConfig.TAKConfig.Builder().build()
+    val formState = rememberConfigState(initialValue = takConfig)
+
+    val effectiveResponseState =
+        when (state.responseState) {
+            is ResponseState.Loading -> ResponseState.Empty
+            else -> state.responseState
+        }
+
+    RadioConfigScreenList(
+        rebootBehavior = RebootBehavior.ALWAYS,
+        title = stringResource(Res.string.tak),
+        configFor = state.userConfig.long_name.ifEmpty { state.destNodeName },
+        onBack = onBack,
+        configState = formState,
+        enabled = state.connected,
+        responseState = effectiveResponseState,
+        onDismissPacketResponse = viewModel::clearPacketResponse,
+        onSave = {
+            val config = ModuleConfig.Builder().also { wb -> wb.tak = it }.build()
+            viewModel.setModuleConfig(config)
+        },
+    ) {
+        item {
+            TakConfigCard(
+                team = formState.value.team,
+                role = formState.value.role,
+                enabled = state.connected,
+                onTeamSelected = { formState.value = formState.value.newBuilder().also { wb -> wb.team = it }.build() },
+                onRoleSelected = { formState.value = formState.value.newBuilder().also { wb -> wb.role = it }.build() },
+            )
+        }
+    }
+}
+
+/** Stateless TAK team/role config card — previewable without DI. */
+@Composable
+internal fun TakConfigCard(
+    team: Team,
+    role: MemberRole,
+    enabled: Boolean,
+    onTeamSelected: (Team) -> Unit,
+    onRoleSelected: (MemberRole) -> Unit,
+) {
+    Column {
+        TakRoleNotice()
+        TitledCard(
+            title = stringResource(Res.string.pangea_identity),
+            footer = stringResource(Res.string.pangea_tak_identity_footer),
+        ) {
+            DropDownPreference(
+                title = stringResource(Res.string.schema_tak_team),
+                summary = stringResource(Res.string.schema_tak_team_description),
+                enabled = enabled,
+                selectedItem = team,
+                itemColor = { Color(getColorFrom(it)) },
+                onItemSelected = onTeamSelected,
+            )
+            PreferenceDivider()
+            DropDownPreference(
+                title = stringResource(Res.string.schema_tak_role),
+                summary = stringResource(Res.string.schema_tak_role_description),
+                enabled = enabled,
+                selectedItem = role,
+                onItemSelected = onRoleSelected,
+            )
+        }
+    }
+}
+
+/** iOS's note above TAK's settings: they only take effect on a radio in a TAK role. */
+@Composable
+private fun TakRoleNotice() {
+    Row(
+        modifier =
+        Modifier.fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp)
+            .clip(IosCardShape)
+            .background(Ios.colors.groupedRow)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            IosIcons.Warning,
+            contentDescription = null,
+            tint = Ios.colors.systemOrange,
+            modifier = Modifier.size(22.dp),
+        )
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = stringResource(Res.string.pangea_tak_role_notice),
+            style = Ios.type.body,
+            color = Ios.colors.systemOrange,
+        )
+    }
+}
+
+// ── TAK Server Screen (Settings → Advanced) ─────────────────────────────────
+// App-local TAK server controls: enable/disable, export data package, debug test harness.
+
+/**
+ * Extracted from [TakServerScreen]'s [TakPermissionHandler] callback so tests can drive the exact function production
+ * calls, rather than duplicating its conditional.
+ */
+internal fun handleTakPermissionResult(granted: Boolean, isTakServerEnabled: Boolean, takPrefs: TakPrefs) {
+    if (!granted && isTakServerEnabled) {
+        takPrefs.setTakServerEnabled(false)
+    }
+}
+
+@Composable
+fun TakServerScreen(onBack: () -> Unit) {
+    val takPrefs: TakPrefs = koinInject()
+    val takServerManager: TAKServerManager = koinInject()
+    val nodeRepository: NodeRepository = koinInject()
+    val radioConfigRepository: RadioConfigRepository = koinInject()
+    val isTakServerEnabled by takPrefs.isTakServerEnabled.collectAsStateWithLifecycle()
+    val isMeshToCotEnabled by takPrefs.isMeshToCotEnabled.collectAsStateWithLifecycle()
+    val takServerChannel by takPrefs.takServerChannel.collectAsStateWithLifecycle()
+    val channelSet by
+        radioConfigRepository.channelSetFlow.collectAsStateWithLifecycle(initialValue = ChannelSet.Builder().build())
+    // Options come from the radio's configured channels; the persisted index is appended as a bare
+    // number when it isn't among them (no radio connected yet, or the channel list shrank) so the
+    // dropdown never renders an empty selection.
+    val channelOptions =
+        channelSet.settings
+            .mapIndexed { index, settings ->
+                val channelName = Channel(settings, channelSet.lora_config ?: Channel.default.loraConfig).name
+                index to stringResource(Res.string.tak_server_channel_option, index, channelName)
+            }
+            .let { options ->
+                if (options.none { it.first == takServerChannel }) {
+                    options + (takServerChannel to takServerChannel.toString())
+                } else {
+                    options
+                }
+            }
+    val isTakServerRunning by takServerManager.isRunning.collectAsStateWithLifecycle()
+    val isTakServerStarting by takServerManager.isStarting.collectAsStateWithLifecycle()
+    val takClientCount by takServerManager.connectionCount.collectAsStateWithLifecycle()
+    val hasTakServerStartError by takServerManager.hasStartError.collectAsStateWithLifecycle()
+    val myNodeInfo by nodeRepository.myNodeInfo.collectAsStateWithLifecycle()
+    // The Mesh-to-CoT bridge falls back to a legacy protocol (PLI + basic chat only, no
+    // markers/POIs) when the connected node's firmware predates the v2 TAK port — see
+    // TAKMeshIntegration.useTakV2() for the same check on the actual bridging path.
+    // Defaults to true (assume supported) when firmware is unknown -- no node connected yet,
+    // or myNodeInfo hasn't arrived -- rather than treating "unknown" the same as "confirmed
+    // unsupported": Capabilities(null).supportsTakV2 is false, which would otherwise show the
+    // fallback warning even when there's no connected node to be falling back for.
+    val supportsTakV2 = myNodeInfo?.firmwareVersion?.let { Capabilities(it).supportsTakV2 } ?: true
+    val takServerStatus =
+        TakServerStatus.resolve(
+            isSupported = takServerManager.isSupported,
+            isEnabled = isTakServerEnabled,
+            isRunning = isTakServerRunning,
+            isStarting = isTakServerStarting,
+            clientCount = takClientCount,
+            hasStartError = hasTakServerStartError,
+        )
+    val exportLauncher = rememberDataPackageExporter { TAKDataPackageGenerator.generateDataPackage() }
+
+    TakPermissionHandler(
+        isTakServerEnabled = isTakServerEnabled,
+        onPermissionResult = { granted -> handleTakPermissionResult(granted, isTakServerEnabled, takPrefs) },
+    )
+
+    IosPushedColumnScreen(
+        title = stringResource(Res.string.tak_server),
+        onBack = onBack,
+        largeTitle = true,
+        trailing = {
+            if (isTakServerEnabled) {
+                IosGlassIconButton(
+                    IosIcons.ShareUp,
+                    contentDescription = stringResource(Res.string.export_tak_data_package),
+                    onClick = { exportLauncher("Meshtastic_TAK_Server.zip") },
+                )
+            }
+        },
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+            TakServerSection(
+                isTakServerEnabled = isTakServerEnabled,
+                onEnabledChange = { takPrefs.setTakServerEnabled(it) },
+                isMeshToCotEnabled = isMeshToCotEnabled,
+                onMeshToCotChange = { takPrefs.setMeshToCotEnabled(it) },
+                takServerChannel = takServerChannel,
+                channelOptions = channelOptions,
+                onChannelSelected = { takPrefs.setTakServerChannel(it) },
+                status = takServerStatus,
+                clientCount = takClientCount,
+                onExport = { exportLauncher("Meshtastic_TAK_Server.zip") },
+                supportsTakV2 = supportsTakV2,
+            )
+            TakMeshTestCard()
+        }
+    }
+}
+
+/** Stateless TAK server enable/disable section — previewable without DI. */
+@Composable
+internal fun TakServerSection(
+    isTakServerEnabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    isMeshToCotEnabled: Boolean,
+    onMeshToCotChange: (Boolean) -> Unit,
+    takServerChannel: Int,
+    channelOptions: List<Pair<Int, String>>,
+    onChannelSelected: (Int) -> Unit,
+    status: TakServerStatus,
+    clientCount: Int,
+    onExport: () -> Unit,
+    supportsTakV2: Boolean,
+) {
+    TitledCard(title = stringResource(Res.string.pangea_tak_server_status)) {
+        TakServerStatusRow(status = status, clientCount = clientCount)
+    }
+    TitledCard(title = stringResource(Res.string.pangea_configuration)) {
+        PreferenceIcon(IosIcons.RadiowavesLeftRight) {
+            SwitchPreference(
+                title = stringResource(Res.string.tak_server_enabled),
+                summary = stringResource(Res.string.tak_server_enabled_desc),
+                checked = isTakServerEnabled,
+                enabled = true,
+                onCheckedChange = onEnabledChange,
+            )
+        }
+        if (isTakServerEnabled) {
+            PreferenceDivider()
+            SwitchPreference(
+                title = stringResource(Res.string.tak_server_mesh_to_cot),
+                summary = stringResource(Res.string.tak_server_mesh_to_cot_desc),
+                checked = isMeshToCotEnabled,
+                enabled = true,
+                onCheckedChange = onMeshToCotChange,
+            )
+            if (isMeshToCotEnabled && !supportsTakV2) {
+                PreferenceDivider()
+                TakV1FallbackNotice()
+            }
+            PreferenceDivider()
+            PreferenceIcon(IosIcons.BubblesTwo) {
+                DropDownPreference(
+                    title = stringResource(Res.string.tak_server_channel),
+                    summary = stringResource(Res.string.tak_server_channel_desc),
+                    enabled = true,
+                    items = channelOptions,
+                    selectedItem = takServerChannel,
+                    onItemSelected = onChannelSelected,
+                )
+            }
+            PreferenceDivider()
+            PreferenceActionRow(
+                title = stringResource(Res.string.export_tak_data_package),
+                actionIcon = IosIcons.ShareUp,
+                actionDescription = stringResource(Res.string.export_tak_data_package),
+                enabled = true,
+                onAction = onExport,
+                summary = stringResource(Res.string.tak_server_export_data_package_desc),
+            )
+        }
+    }
+}
+
+/** Warns that the connected node's firmware falls back to the legacy TAK bridge (PLI + chat only, no markers/POIs). */
+@Composable
+private fun TakV1FallbackNotice() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            imageVector = IosIcons.WarningFill,
+            contentDescription = null,
+            tint = Ios.colors.systemOrange,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = stringResource(Res.string.tak_server_v1_fallback_notice),
+            style = Ios.type.footnote,
+            color = Ios.colors.systemOrange,
+        )
+    }
+}
+
+internal enum class TakServerStatus {
+    Unavailable,
+    Off,
+    Starting,
+    WaitingForClient,
+    Connected,
+    Failed,
+    NotRunning,
+    ;
+
+    companion object {
+        fun resolve(
+            isSupported: Boolean,
+            isEnabled: Boolean,
+            isRunning: Boolean,
+            isStarting: Boolean,
+            clientCount: Int,
+            hasStartError: Boolean,
+        ): TakServerStatus = when {
+            !isSupported -> Unavailable
+            !isEnabled -> Off
+            hasStartError -> Failed
+            isStarting -> Starting
+            isRunning && clientCount > 0 -> Connected
+            isRunning -> WaitingForClient
+            else -> NotRunning
+        }
+    }
+}
+
+@Composable
+private fun TakServerStatusRow(status: TakServerStatus, clientCount: Int) {
+    val (description, color) =
+        when (status) {
+            TakServerStatus.Unavailable ->
+                stringResource(Res.string.tak_server_status_unavailable) to Ios.colors.secondaryLabel
+
+            TakServerStatus.Off -> stringResource(Res.string.tak_server_status_off) to Ios.colors.secondaryLabel
+
+            TakServerStatus.Starting ->
+                stringResource(Res.string.tak_server_status_starting) to Ios.colors.secondaryLabel
+
+            TakServerStatus.WaitingForClient -> stringResource(Res.string.tak_server_status_waiting) to Ios.colors.tint
+
+            TakServerStatus.Connected ->
+                pluralStringResource(Res.plurals.tak_server_status_connected, clientCount, clientCount) to
+                    Ios.colors.tint
+
+            TakServerStatus.Failed -> stringResource(Res.string.tak_server_status_failed) to Ios.colors.systemRed
+
+            TakServerStatus.NotRunning ->
+                stringResource(Res.string.tak_server_status_not_running) to Ios.colors.secondaryLabel
+        }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(modifier = Modifier.size(10.dp).background(color, CircleShape))
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = stringResource(Res.string.tak_server_status),
+            style = Ios.type.body,
+            color = Ios.colors.label,
+            modifier = Modifier.weight(1f),
+        )
+        Text(text = description, style = Ios.type.body, color = Ios.colors.secondaryLabel)
+    }
+}
+
+// ── Debug-only TAK Mesh Test Card ────────────────────────────────────────────
+
+@Composable
+private fun TakMeshTestCard() {
+    val buildConfig: BuildConfigProvider = koinInject()
+    if (!buildConfig.isDebug) return
+
+    val takMeshIntegration: TAKMeshIntegration = koinInject()
+    val testRunner = remember { TakMeshTestRunner(takMeshIntegration) }
+    val results by testRunner.results.collectAsStateWithLifecycle()
+    val isRunning by testRunner.isRunning.collectAsStateWithLifecycle()
+    val currentFixture by testRunner.currentFixture.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+
+    TakMeshTestCardContent(
+        results = results,
+        isRunning = isRunning,
+        currentFixture = currentFixture,
+        fixtureCount = TakMeshTestRunner.FIXTURE_NAMES.size,
+        onRunTests = { scope.launch { testRunner.runAll() } },
+    )
+}
+
+/** Stateless TAK test results card — previewable without DI. */
+@Composable
+internal fun TakMeshTestCardContent(
+    results: List<TakTestResult>,
+    isRunning: Boolean,
+    currentFixture: String?,
+    fixtureCount: Int,
+    onRunTests: () -> Unit,
+) {
+    val loadingLabel = stringResource(Res.string.tak_server_loading)
+    val v2Results = results.filter { it.protocol == TakProtocol.V2 }
+    val v1Results = results.filter { it.protocol == TakProtocol.V1 }
+
+    TitledCard(title = stringResource(Res.string.tak_server_test_card_title)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text =
+                    if (isRunning) {
+                        stringResource(Res.string.tak_server_test_running, currentFixture ?: loadingLabel)
+                    } else {
+                        stringResource(Res.string.tak_server_test_idle, fixtureCount)
+                    },
+                    style = Ios.type.body,
+                )
+            }
+            if (isRunning) {
+                IosActivityIndicator(modifier = Modifier, color = Ios.colors.systemGray)
+            } else {
+                IosButton(
+                    text = stringResource(Res.string.tak_server_test_run),
+                    onClick = onRunTests,
+                    icon = MeshtasticIcons.PlayArrow,
+                )
+            }
+        }
+
+        if (v2Results.isNotEmpty()) {
+            TakProtocolResultsSection(
+                titleRes = Res.string.tak_server_test_protocol_v2_label,
+                results = v2Results,
+                fixtureCount = fixtureCount,
+            )
+        }
+        if (v1Results.isNotEmpty()) {
+            TakProtocolResultsSection(
+                titleRes = Res.string.tak_server_test_protocol_v1_label,
+                results = v1Results,
+                fixtureCount = fixtureCount,
+            )
+        }
+    }
+}
+
+/**
+ * One protocol's fixture run within the TAK self-test card: a summary line (passed / expected-limitation drops /
+ * unexpected failures) followed by the per-fixture rows. Expected v1 schema drops are surfaced distinctly from real
+ * failures so a low v1 pass rate reads as intentional legacy-schema behavior, not a self-test regression.
+ */
+@Composable
+private fun TakProtocolResultsSection(titleRes: StringResource, results: List<TakTestResult>, fixtureCount: Int) {
+    val passed = results.count { it.passed }
+    val expectedDrops = results.count { !it.passed && it.expectedDrop }
+    val unexpectedFailed = results.count { !it.passed && !it.expectedDrop }
+
+    Column {
+        PreferenceDivider()
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            Text(text = stringResource(titleRes), style = Ios.type.subheadline)
+            Text(
+                text =
+                stringResource(
+                    Res.string.tak_server_test_results_v2,
+                    passed,
+                    expectedDrops,
+                    unexpectedFailed,
+                    results.size,
+                    fixtureCount,
+                ),
+                style = Ios.type.footnote,
+                color =
+                if (unexpectedFailed > 0) {
+                    Ios.colors.systemRed
+                } else {
+                    Ios.colors.secondaryLabel
+                },
+            )
+        }
+
+        for (result in results) {
+            PreferenceDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = result.fixtureName.removeSuffix(".xml"),
+                    style = Ios.type.footnote,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text =
+                    when {
+                        result.passed ->
+                            stringResource(Res.string.tak_server_test_result_bytes, result.compressedBytes)
+
+                        result.expectedDrop -> stringResource(Res.string.tak_server_test_result_expected_drop)
+
+                        else -> result.error ?: stringResource(Res.string.tak_server_test_result_unknown_error)
+                    },
+                    style = Ios.type.footnote,
+                    color =
+                    when {
+                        result.passed -> Ios.colors.tint
+                        result.expectedDrop -> Ios.colors.secondaryLabel
+                        else -> Ios.colors.systemRed
+                    },
+                )
+            }
+        }
+    }
+}

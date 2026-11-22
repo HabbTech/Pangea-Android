@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,26 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-import androidx.room.gradle.RoomExtension
-import com.geeksville.mesh.buildlogic.libs
+import androidx.room3.gradle.RoomExtension
 import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.meshtastic.buildlogic.library
+import org.meshtastic.buildlogic.libs
 
 class AndroidRoomConventionPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
         with(target) {
-            apply(plugin = "androidx.room")
+            apply(plugin = "androidx.room3")
             apply(plugin = "com.google.devtools.ksp")
 
-            extensions.configure<KspExtension> {
-                arg("room.generateKotlin", "true")
-            }
+            extensions.configure<KspExtension> { arg("room.generateKotlin", "true") }
 
             extensions.configure<RoomExtension> {
                 // The schemas directory contains a schema file for each version of the Room database.
@@ -42,10 +41,27 @@ class AndroidRoomConventionPlugin : Plugin<Project> {
                 schemaDirectory("$projectDir/schemas")
             }
 
-            dependencies {
-                "implementation"(libs.findLibrary("androidx.room.runtime").get())
-                "ksp"(libs.findLibrary("androidx.room.compiler").get())
-                "androidTestImplementation"(libs.findLibrary("androidx-room-testing").get())
+            val roomRuntime = libs.library("androidx.room.runtime")
+            val roomCompiler = libs.library("androidx.room.compiler")
+            val roomTesting = libs.library("androidx-room-testing")
+
+            pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
+                extensions.configure<KotlinMultiplatformExtension> {
+                    sourceSets.getByName("commonMain").dependencies { implementation(roomRuntime) }
+                }
+                dependencies { add("kspAndroid", roomCompiler) }
+                dependencies { add("kspJvm", roomCompiler) }
+            }
+
+            pluginManager.withPlugin("com.android.library") {
+                val hasAndroidTest = projectDir.resolve("src/androidTest").exists()
+                dependencies {
+                    "implementation"(roomRuntime)
+                    "ksp"(roomCompiler)
+                    if (hasAndroidTest) {
+                        "androidTestImplementation"(roomTesting)
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,31 +16,59 @@
  */
 
 plugins {
-    alias(libs.plugins.kover)
-    alias(libs.plugins.meshtastic.android.library)
+    alias(libs.plugins.meshtastic.kmp.library)
     alias(libs.plugins.meshtastic.kotlinx.serialization)
-    alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.meshtastic.kmp.jvm.android)
 }
 
-android {
-    buildFeatures {
-        buildConfig = true
-        aidl = true
+kotlin {
+    android {
+        withHostTest { isIncludeAndroidResources = true }
+        withDeviceTest { instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }
     }
-    namespace = "org.meshtastic.core.model"
-}
 
-dependencies {
-    implementation(projects.core.proto)
-    implementation(projects.core.strings)
+    sourceSets {
+        commonMain.dependencies {
+            api(libs.meshtastic.protobufs)
+            api(projects.core.common)
+            api(projects.core.resources)
 
-    implementation(libs.androidx.annotation)
-    implementation(libs.timber)
-    implementation(libs.zxing.android.embedded) { isTransitive = false }
-    implementation(libs.zxing.core)
+            api(libs.kotlinx.coroutines.core)
+            api(libs.kotlinx.serialization.json)
+            api(libs.kotlinx.datetime)
+            implementation(libs.kermit)
+            api(libs.okio)
+            api(libs.compose.multiplatform.resources)
 
-    testImplementation(libs.androidx.core.ktx)
-    testImplementation(libs.junit)
+            // TAKPacket-SDK is multiplatform since 0.7.0: proto types come from the
+            // protobufs SDK above, zstd compression from its transitive pure-Kotlin
+            // kzstd codec, and CoT XML from xmlutil — all KMP, all targets. api()-
+            // exported so :core:takserver reaches the org.meshtastic.tak.* pipeline
+            // from commonMain on every platform (no JVM-only scoping or iOS stubs).
+            //
+            // takpacket-sdk still declares a transitive protobufs (protobufs-jvm:2.7.25); exclude it so
+            // the app's single protobufs version (api above) is authoritative. Otherwise the older
+            // transitive pin out-ranks our snapshot on the host-test classpath and breaks proto ABI
+            // (NoSuchMethodError on post-2.7.25 messages). Drop once takpacket stops exporting protobufs.
+            // .toString() is load-bearing: catalog deps are immutable ("Minimal dependencies are
+            // immutable"), so the exclude{} below only works on the string-notation copy.
+            api(libs.takpacket.sdk.kmp.get().toString()) {
+                exclude(group = "org.meshtastic", module = "protobufs")
+                exclude(group = "org.meshtastic", module = "protobufs-jvm")
+                exclude(group = "org.meshtastic", module = "protobufs-android")
+            }
+        }
+        androidMain.dependencies {
+            api(libs.androidx.annotation)
+            api(libs.androidx.core.ktx)
+        }
+        getByName("androidDeviceTest") {
+            dependencies {
+                implementation(libs.androidx.test.ext.junit)
+                implementation(libs.androidx.test.runner)
+            }
+        }
 
-    androidTestImplementation(libs.androidx.test.ext.junit)
+        commonTest.dependencies { implementation(projects.core.testing) }
+    }
 }

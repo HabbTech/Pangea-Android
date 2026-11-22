@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,10 +16,24 @@
  */
 
 plugins {
-    alias(libs.plugins.meshtastic.android.library)
-    alias(libs.plugins.kover)
+    alias(libs.plugins.meshtastic.kmp.library)
+    alias(libs.plugins.meshtastic.kmp.jvm.android)
+    alias(libs.plugins.meshtastic.koin)
 }
 
-android { namespace = "org.meshtastic.core.common" }
+kotlin {
+    android { withHostTest { isIncludeAndroidResources = true } }
 
-dependencies { implementation(libs.androidx.core.ktx) }
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.kotlinx.atomicfu)
+            implementation(libs.kotlinx.coroutines.core)
+            api(libs.kotlinx.datetime)
+            api(libs.okio)
+            api(libs.uri.kmp)
+            // api: `shouldReportAsException` exposes Kermit's Severity in its signature.
+            api(libs.kermit)
+        }
+        androidMain.dependencies { api(libs.androidx.core.ktx) }
+    }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,39 +16,49 @@
  */
 
 plugins {
-    alias(libs.plugins.kover)
-    alias(libs.plugins.meshtastic.android.library)
-    alias(libs.plugins.meshtastic.android.library.compose)
-    alias(libs.plugins.meshtastic.hilt)
+    alias(libs.plugins.meshtastic.kmp.feature)
+    alias(libs.plugins.meshtastic.kotlinx.serialization)
+    alias(libs.plugins.meshtastic.kmp.jvm.android)
 }
 
-android { namespace = "org.meshtastic.feature.settings" }
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation(projects.core.common)
+            implementation(projects.core.data)
+            implementation(projects.core.database)
+            implementation(projects.core.datastore)
+            implementation(projects.core.domain)
+            implementation(projects.core.model)
+            implementation(projects.core.navigation)
+            implementation(projects.core.network)
+            implementation(libs.meshtastic.protobufs)
+            implementation(projects.core.repository)
+            implementation(projects.core.service)
+            implementation(projects.core.resources)
+            implementation(projects.core.ui)
+            implementation(projects.core.di)
+            implementation(projects.core.takserver)
 
-dependencies {
-    implementation(projects.core.common)
-    implementation(projects.core.data)
-    implementation(projects.core.database)
-    implementation(projects.core.datastore)
-    implementation(projects.core.model)
-    implementation(projects.core.navigation)
-    implementation(projects.core.prefs)
-    implementation(projects.core.proto)
-    implementation(projects.core.service)
-    implementation(projects.core.strings)
-    implementation(projects.core.ui)
+            implementation(libs.kotlinx.atomicfu)
+            implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.aboutlibraries.compose.m3)
+            implementation(libs.coil)
+        }
 
-    implementation(libs.accompanist.permissions)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.compose.material.iconsExtended)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.text)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.kotlinx.collections.immutable)
-    implementation(libs.timber)
-    implementation(libs.zxing.android.embedded)
+        androidMain.dependencies {
+            implementation(projects.core.barcode)
+            implementation(projects.core.nfc)
+            implementation(libs.androidx.appcompat)
+        }
 
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.test.ext.junit)
+        commonTest.dependencies {
+            implementation(projects.core.datastore)
+            implementation(projects.core.testing)
+            implementation(libs.compose.multiplatform.ui.test)
+            implementation(libs.okio.fakefilesystem)
+        }
+
+        jvmTest.dependencies { implementation(compose.desktop.currentOs) }
+    }
 }

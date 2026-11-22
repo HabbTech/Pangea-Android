@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Debug builds keep the pre-P2 yellow so they stay distinguishable from release (Fossil #F05511). -->
+    <color name="ic_launcher_background">#FFC802</color>
+</resources>

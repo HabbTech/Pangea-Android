@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2026 Meshtastic LLC
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+package org.meshtastic.feature.intro
+
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
+
+@Serializable data object Welcome : NavKey
+
+@Serializable data object Bluetooth : NavKey
+
+@Serializable data object Location : NavKey
+
+@Serializable data object Notifications : NavKey
+
+@Serializable data object CriticalAlerts : NavKey
+
+/** Informational screen describing Expert Mode; final step of the intro flow. */
+@Serializable data object ExpertMode : NavKey
+
+/** Pangea: Pair Your Radio, after Expert Mode (Pangea-Apple PairRadioView). */
+@Serializable data object PairRadio : NavKey
+
+/** Pangea: "What should people call you?", once a radio is paired (Pangea-Apple SetupProfileView). */
+@Serializable data object SetupProfile : NavKey
+
+/** Pangea: "You're All Set", the last page, as on the iPhone app. */
+@Serializable data object AllSet : NavKey

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,22 +16,21 @@
  */
 
 plugins {
-    alias(libs.plugins.kover)
-    alias(libs.plugins.meshtastic.android.library)
-    alias(libs.plugins.meshtastic.android.library.compose)
+    alias(libs.plugins.meshtastic.kmp.feature)
     alias(libs.plugins.meshtastic.kotlinx.serialization)
 }
 
-android { namespace = "org.meshtastic.feature.intro" }
+kotlin {
+    android { withHostTest { isIncludeAndroidResources = true } }
 
-dependencies {
-    implementation(projects.core.strings)
-    googleImplementation(projects.core.ui)
-
-    implementation(libs.accompanist.permissions)
-    implementation(libs.androidx.compose.material.iconsExtended)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.text)
-    implementation(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.navigation3.ui)
+    sourceSets {
+        commonMain.dependencies {
+            implementation(projects.core.common)
+            implementation(projects.core.model)
+            implementation(projects.core.repository)
+            implementation(projects.core.ui)
+            implementation(projects.core.resources)
+        }
+        androidMain.dependencies { implementation(projects.core.service) }
+    }
 }

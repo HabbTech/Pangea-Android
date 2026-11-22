@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,32 +16,59 @@
  */
 
 plugins {
-    alias(libs.plugins.meshtastic.android.library)
-    alias(libs.plugins.meshtastic.hilt)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.dokka)
-    alias(libs.plugins.kover)
-    alias(libs.plugins.protobuf)
-    alias(libs.plugins.ktorfit)
+    alias(libs.plugins.meshtastic.kmp.library)
+    alias(libs.plugins.meshtastic.kotlinx.serialization)
+    alias(libs.plugins.meshtastic.kmp.jvm.android)
+    alias(libs.plugins.meshtastic.koin)
 }
 
-android {
-    buildFeatures { buildConfig = true }
-    namespace = "org.meshtastic.core.network"
-}
+kotlin {
+    android { withHostTest { isIncludeAndroidResources = true } }
 
-dependencies {
-    implementation(projects.core.model)
+    sourceSets {
+        commonMain.dependencies {
+            api(projects.core.repository)
+            implementation(projects.core.common)
+            implementation(projects.core.di)
+            implementation(projects.core.model)
+            implementation(libs.meshtastic.protobufs)
+            implementation(projects.core.ble)
 
-    implementation(libs.coil.network.core)
-    implementation(libs.coil.network.okhttp)
-    implementation(libs.coil.svg)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.serialization.kotlinx.json)
-    implementation(libs.ktorfit)
-    implementation(libs.okhttp3.logging.interceptor)
+            implementation(libs.okio)
+            // mqtt-client 0.4.0 splits into BOM + core + transport modules. `api` (not `implementation`)
+            // because :core:data and :desktopApp consume org.meshtastic.mqtt.* types transitively through
+            // this module. Both transports are registered: transport-tcp (tcp://-/ssl://, default) +
+            // transport-ws (user-entered ws://-/wss://), composed with `+` at the client config sites.
+            // No platform() on the KMP commonMain handler; reach the BOM through project.dependencies.
+            api(project.dependencies.platform(libs.meshtastic.mqtt.client.bom))
+            api(libs.meshtastic.mqtt.client.core)
+            api(libs.meshtastic.mqtt.client.transport.tcp)
+            api(libs.meshtastic.mqtt.client.transport.ws)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.atomicfu)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.network) // raw TCP sockets for TcpTransport (KMP-common)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.kermit)
+            implementation(libs.jetbrains.lifecycle.runtime)
+        }
 
-    googleImplementation(libs.dd.sdk.android.okhttp)
+        getByName("jvmMain") {
+            dependencies {
+                implementation(libs.ktor.client.java)
+                implementation(libs.jserialcomm)
+                implementation(libs.jmdns)
+            }
+        }
+
+        androidMain.dependencies { implementation(libs.usb.serial.android) }
+
+        commonTest.dependencies {
+            implementation(projects.core.testing)
+            implementation(libs.kable.core) // Kable exception types for BLE failure-injection tests
+            implementation(libs.ktor.client.mock)
+        }
+    }
 }

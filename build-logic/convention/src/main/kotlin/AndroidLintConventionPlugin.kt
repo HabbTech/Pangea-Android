@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,14 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import com.android.build.api.dsl.LibraryExtension
 import com.android.build.api.dsl.Lint
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.findByType
 
 class AndroidLintConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -33,6 +34,13 @@ class AndroidLintConventionPlugin : Plugin<Project> {
                 pluginManager.hasPlugin("com.android.library") ->
                     configure<LibraryExtension> { lint { configure(project) } }
 
+                pluginManager.hasPlugin("com.android.kotlin.multiplatform.library") -> {
+                    extensions.findByType<KotlinMultiplatformAndroidLibraryTarget>()?.apply {
+                        @Suppress("UnstableApiUsage")
+                        lint { configure(project) }
+                    }
+                }
+
                 else -> {
                     apply(plugin = "com.android.lint")
                     configure<Lint> { configure(project) }
@@ -42,7 +50,7 @@ class AndroidLintConventionPlugin : Plugin<Project> {
     }
 }
 
-private fun Lint.configure(project: Project) {
+private fun Lint.configure(@Suppress("UnusedParameter") project: Project) {
     xmlReport = true
     sarifReport = true
     checkDependencies = true

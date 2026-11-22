@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,51 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-plugins { alias(libs.plugins.meshtastic.android.library) }
-
-android {
-    buildFeatures { aidl = true }
-    namespace = "org.meshtastic.core.service"
+plugins {
+    alias(libs.plugins.meshtastic.kmp.library)
+    alias(libs.plugins.meshtastic.koin)
 }
 
-dependencies {
-    implementation(projects.core.database)
-    implementation(projects.core.model)
-    implementation(projects.core.proto)
-    implementation(libs.javax.inject)
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.timber)
+kotlin {
+    android { withHostTest { isIncludeAndroidResources = true } }
+
+    sourceSets {
+        commonMain.dependencies {
+            api(projects.core.repository)
+            implementation(projects.core.common)
+            implementation(projects.core.data)
+            implementation(projects.core.database)
+            implementation(projects.core.di)
+            implementation(projects.core.model)
+            implementation(projects.core.navigation)
+            implementation(projects.core.network)
+            implementation(projects.core.ble)
+            implementation(projects.core.prefs)
+            implementation(projects.core.resources)
+            implementation(libs.meshtastic.protobufs)
+            implementation(projects.core.takserver)
+
+            implementation(libs.jetbrains.lifecycle.runtime)
+            implementation(libs.kotlinx.atomicfu)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kermit)
+        }
+
+        androidMain.dependencies {
+            implementation(libs.androidx.core.ktx)
+            implementation(libs.androidx.work.runtime.ktx)
+            implementation(libs.androidx.security.crypto)
+            implementation(libs.koin.android)
+            implementation(libs.koin.androidx.workmanager)
+        }
+
+        getByName("androidHostTest") {
+            dependencies {
+                implementation(libs.androidx.datastore.preferences)
+                implementation(libs.androidx.work.testing)
+            }
+        }
+
+        commonTest.dependencies { implementation(projects.core.testing) }
+    }
 }

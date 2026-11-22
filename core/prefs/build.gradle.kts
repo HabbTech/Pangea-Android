@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Meshtastic LLC
+ * Copyright (c) 2026 Meshtastic LLC
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +16,23 @@
  */
 
 plugins {
-    alias(libs.plugins.meshtastic.android.library)
-    alias(libs.plugins.meshtastic.hilt)
-    alias(libs.plugins.kover)
+    alias(libs.plugins.meshtastic.kmp.library)
+    alias(libs.plugins.meshtastic.koin)
 }
 
-android { namespace = "org.meshtastic.core.prefs" }
+kotlin {
+    android { withHostTest {} }
 
-dependencies { googleImplementation(libs.maps.compose) }
+    sourceSets {
+        commonMain.dependencies {
+            implementation(projects.core.repository)
+            implementation(projects.core.common)
+            implementation(projects.core.di)
+
+            implementation(libs.androidx.datastore.preferences)
+            implementation(libs.kotlinx.atomicfu)
+            implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.kotlinx.coroutines.core)
+        }
+    }
+}
