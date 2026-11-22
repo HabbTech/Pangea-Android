@@ -199,12 +199,13 @@ class MapLibreMapViewProvider(
             )
 
             if (plain) {
-                PlainLocationButton(location)
+                // iOS's standard map keeps MapKit's own pair, locate over 3D, just above the tab bar.
+                MapSideButtons(location, mapState, PLAIN_LOCATE_ABOVE_BAR, PLAIN_TILT_ABOVE_BAR)
             } else {
                 // Under the floating tab bar (Expert Mode) the map is iOS's: no zoom buttons (pinch, or double-tap),
-                // and the locate and 3D buttons stacked at the right.
+                // and the locate and 3D buttons stacked at the right, above the row of map controls.
                 if (underTabBar) {
-                    ExpertSideButtons(location, mapState)
+                    MapSideButtons(location, mapState, LOCATE_ABOVE_BAR, TILT_ABOVE_BAR)
                 } else {
                     MapZoom(mapState = mapState, basemap = basemaps.current)
                 }
@@ -249,11 +250,16 @@ class MapLibreMapViewProvider(
 }
 
 /**
- * Expert Mode's right-hand controls, as on iOS: "locate me" over **3D**, which tilts the map to look across it and
- * back.
+ * The map's right-hand controls, as on iOS: "locate me" over **3D**, which tilts the map to look across it and back.
+ * [locateAboveBar] and [tiltAboveBar] are how far each button's foot sits above the tab bar.
  */
 @Composable
-private fun BoxScope.ExpertSideButtons(location: LocationControls, mapState: MapState) {
+private fun BoxScope.MapSideButtons(
+    location: LocationControls,
+    mapState: MapState,
+    locateAboveBar: Dp,
+    tiltAboveBar: Dp,
+) {
     val scope = rememberCoroutineScope()
     val bottom = LocalIosBottomInset.current
     val tilted = mapState.cameraPosition.tilt > 1.0
@@ -261,7 +267,7 @@ private fun BoxScope.ExpertSideButtons(location: LocationControls, mapState: Map
         icon = if (location.following) IosIcons.LocationFill else IosIcons.Location,
         contentDescription = stringResource(Res.string.toggle_my_position),
         onClick = location.onToggleFollow,
-        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottom + LOCATE_ABOVE_BAR),
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottom + locateAboveBar),
     )
     IosGlassMapTextButton(
         text = stringResource(Res.string.pangea_map_3d),
@@ -275,26 +281,19 @@ private fun BoxScope.ExpertSideButtons(location: LocationControls, mapState: Map
                 )
             }
         },
-        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottom + TILT_ABOVE_BAR),
+        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = bottom + tiltAboveBar),
     )
 }
 
-/** Where iOS stacks its locate and 3D buttons above the tab bar, and how far 3D tilts the map. */
+/**
+ * Where iOS stacks its locate and 3D buttons above the tab bar (Expert Mode has a row of map controls under them, the
+ * plain map has none), and how far 3D tilts the map.
+ */
 private val LOCATE_ABOVE_BAR = 126.dp
 private val TILT_ABOVE_BAR = 71.dp
+private val PLAIN_LOCATE_ABOVE_BAR = 64.dp
+private val PLAIN_TILT_ABOVE_BAR = 9.dp
 private const val TILT_3D = 60.0
-
-/** The plain map's one control, as on iOS: a glass "locate me" button at the bottom right, above the tab bar. */
-@Composable
-private fun BoxScope.PlainLocationButton(location: LocationControls) {
-    IosGlassMapButton(
-        icon = if (location.following) IosIcons.LocationFill else IosIcons.Location,
-        contentDescription = null,
-        onClick = location.onToggleFollow,
-        modifier =
-        Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = LocalIosBottomInset.current + 64.dp),
-    )
-}
 
 /** The mesh map's state, wired to everything this screen feeds into it. */
 @Composable

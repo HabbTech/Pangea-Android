@@ -313,8 +313,7 @@ fun IosTopBar(
 
 /**
  * A bar's row as iOS lays it out: [leading] at the start, [trailing] at the end, and [title] centred on the bar when
- * that keeps it clear of both, otherwise moved just far enough off centre to clear the wider side, and shortened to the
- * room left if it is longer than that.
+ * that keeps it clear of both, otherwise starting just after [leading] and shortened to the room left.
  */
 @Composable
 fun IosBarLayout(
@@ -338,18 +337,18 @@ fun IosBarLayout(
         val gap = TITLE_GAP.roundToPx()
         // The trailing buttons get what the leading ones leave, so a crowded bar never covers the back button.
         val trail = measurables[2].measure(loose.copy(maxWidth = (width - lead.width - gap).coerceAtLeast(0)))
-        // A bare bar still keeps a short title clear of its edges.
+        // A side with no buttons still keeps the title clear of the bar's edge.
         val minInset = MIN_TITLE_INSET.roundToPx()
-        val start = maxOf(lead.width + gap, minInset)
-        val end = width - maxOf(trail.width + gap, minInset)
+        val start = if (lead.width > 0) lead.width + gap else minInset
+        val end = width - (if (trail.width > 0) trail.width + gap else minInset)
         val free = (end - start).coerceAtLeast(0)
         val titlePlaceable = measurables[1].measure(Constraints(maxWidth = free, maxHeight = height))
         layout(width, height) {
             lead.placeRelative(0, (height - lead.height) / 2)
             trail.placeRelative(width - trail.width, (height - trail.height) / 2)
             val centred = (width - titlePlaceable.width) / 2
-            val x = centred.coerceIn(start, maxOf(start, end - titlePlaceable.width))
-            titlePlaceable.placeRelative(x, (height - titlePlaceable.height) / 2)
+            val fitsCentred = centred >= start && centred + titlePlaceable.width <= end
+            titlePlaceable.placeRelative(if (fitsCentred) centred else start, (height - titlePlaceable.height) / 2)
         }
     }
 }
