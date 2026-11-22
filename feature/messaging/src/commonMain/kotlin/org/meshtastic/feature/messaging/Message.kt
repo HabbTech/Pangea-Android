@@ -25,12 +25,14 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -45,6 +47,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -1010,7 +1013,9 @@ internal fun MessageInput(
         OutlinedTextField(
             modifier =
             Modifier.fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = COMPOSER_BOTTOM_GAP)
+                // iOS's field is 44 pt for one line (a 36 pt line box padded 4 above and below), not Material's 56.
+                .heightIn(min = COMPOSER_MIN_HEIGHT)
                 .onFocusChanged { isFocused = it.isFocused }
                 .semantics { contentDescription = typeMessageLabel }
                 // Tunnel phase, not bubble: a multi-line field consumes Enter to insert its newline, so an
@@ -1033,6 +1038,7 @@ internal fun MessageInput(
             enabled = isEnabled,
             // iOS's message field: 20 pt corners and a hairline border, not a capsule.
             shape = RoundedCornerShape(20.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 11.dp),
             textStyle = Ios.type.body,
             colors =
             OutlinedTextFieldDefaults.colors(
@@ -1049,10 +1055,12 @@ internal fun MessageInput(
             // ImeAction.Default, and without it an IME may swap Enter for the action, leaving no way to type a newline.
             keyboardOptions =
             KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Default),
-            supportingText = {
-                // The counter is only useful as the limit approaches. Showing 0/200 before a character is typed is
-                // chrome that every chat client has learned to hide.
-                if (isEnabled && currentByteLength >= maxByteSize - COUNTER_VISIBLE_WITHIN_BYTES) {
+            // The counter is only useful as the limit approaches. Showing 0/200 before a character is typed is chrome
+            // that every chat client has learned to hide; leaving the slot out until then also keeps the field as
+            // close to the tab bar as iOS's.
+            supportingText =
+            if (isEnabled && currentByteLength >= maxByteSize - COUNTER_VISIBLE_WITHIN_BYTES) {
+                {
                     Text(
                         text = "$currentByteLength/$maxByteSize",
                         style = Ios.type.footnote,
@@ -1066,6 +1074,8 @@ internal fun MessageInput(
                         textAlign = TextAlign.End,
                     )
                 }
+            } else {
+                null
             },
             // Direct byte limiting via inputTransformation in TextFieldState is complex.
             // The current approach (show error, disable send) is generally preferred for UX.
@@ -1077,13 +1087,20 @@ internal fun MessageInput(
             if (currentText.isNotEmpty() || mentionActive) {
                 {
                     val sendEnabled = isEnabled && (canSend || mentionActive)
-                    IconButton(onClick = onSendAction, enabled = sendEnabled) {
-                        Icon(
-                            imageVector = IosIcons.Send,
-                            contentDescription = stringResource(Res.string.send),
-                            modifier = Modifier.size(30.dp),
-                            tint = if (sendEnabled) Ios.colors.tint else Ios.colors.systemGray4,
-                        )
+                    // Material pads an icon button out to 48 dp, which would grow the 44 dp field while typing.
+                    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+                        IconButton(
+                            onClick = onSendAction,
+                            enabled = sendEnabled,
+                            modifier = Modifier.size(COMPOSER_MIN_HEIGHT),
+                        ) {
+                            Icon(
+                                imageVector = IosIcons.Send,
+                                contentDescription = stringResource(Res.string.send),
+                                modifier = Modifier.size(30.dp),
+                                tint = if (sendEnabled) Ios.colors.tint else Ios.colors.systemGray4,
+                            )
+                        }
                     }
                 }
             } else {
@@ -1096,6 +1113,10 @@ internal fun MessageInput(
         }
     }
 }
+
+/** The message field's height for one line, and the gap under it, as on the iPhone app. */
+private val COMPOSER_MIN_HEIGHT = 44.dp
+private val COMPOSER_BOTTOM_GAP = 15.dp
 
 @Composable
 private fun MentionSuggestions(suggestions: List<MentionCandidate>, onPick: (MentionCandidate) -> Unit) {

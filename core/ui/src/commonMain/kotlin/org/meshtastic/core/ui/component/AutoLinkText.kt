@@ -19,10 +19,13 @@ package org.meshtastic.core.ui.component
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -38,6 +41,7 @@ import androidx.compose.ui.text.withStyle
 import org.meshtastic.core.model.MENTION_TOKEN_REGEX
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.theme.HyperlinkBlue
+import kotlin.math.ceil
 
 private val DefaultTextLinkStyles =
     TextLinkStyles(style = SpanStyle(color = HyperlinkBlue, textDecoration = TextDecoration.Underline))
@@ -76,6 +80,9 @@ fun AutoLinkText(
     textAlign: TextAlign? = null,
     mentionName: ((String) -> String?)? = null,
     onMentionClick: ((String) -> Unit)? = null,
+    // Wrapped text normally takes all the width it was offered; this narrows it to its longest line, so a chat
+    // bubble hugs its words as SwiftUI's does.
+    hugLines: Boolean = false,
 ) {
     // Keep the click handler out of the annotated-string cache key so a fresh lambda per recomposition
     // doesn't force a rebuild; only text/name changes should.
@@ -84,8 +91,37 @@ fun AutoLinkText(
         remember(text, linkStyles, mentionName) {
             buildAnnotatedStringWithLinks(text, linkStyles, mentionName) { id -> currentOnMentionClick?.invoke(id) }
         }
-    Text(text = annotatedString, modifier = modifier, style = style.copy(color = color), textAlign = textAlign)
+    if (!hugLines) {
+        Text(text = annotatedString, modifier = modifier, style = style.copy(color = color), textAlign = textAlign)
+        return
+    }
+    // Written by the text's layout and read by the modifier's, so a change re-lays out without recomposing.
+    var longestLine by remember(annotatedString) { mutableIntStateOf(NOT_MEASURED) }
+    Text(
+        text = annotatedString,
+        modifier =
+        modifier.layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints)
+            val width = longestLine.takeIf { it in 0 until placeable.width } ?: placeable.width
+            layout(width, placeable.height) { placeable.place(0, 0) }
+        },
+        style = style.copy(color = color),
+        textAlign = textAlign,
+        onTextLayout = { result ->
+            // Only when every line starts at the left edge (not right-to-left or centred text), where trimming the
+            // right side cuts nothing off.
+            val lines = 0 until result.lineCount
+            longestLine =
+                if (lines.all { result.getLineLeft(it) <= 0f }) {
+                    ceil(lines.maxOfOrNull { result.getLineRight(it) } ?: 0f).toInt()
+                } else {
+                    NOT_MEASURED
+                }
+        },
+    )
 }
+
+private const val NOT_MEASURED = -1
 
 private const val MARKDOWN_DELIMITERS = "*~`["
 

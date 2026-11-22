@@ -26,11 +26,11 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -281,7 +282,7 @@ fun MessageItem(
     val ios = Ios.colors
     val plainWording = LocalPangeaPlainWording.current
     val containerColor = if (message.fromLocal) ios.tint else ios.incomingBubble
-    val contentColor = if (message.fromLocal) ios.onTint else ios.label
+    val contentColor = if (message.fromLocal) ios.onTint else ios.incomingBubbleText
     val metadataStyle = Ios.type.caption1
     val metadataColor = if (message.fromLocal) ios.onTint.copy(alpha = 0.8f) else ios.secondaryLabel
     val messageShape = RoundedCornerShape(BUBBLE_CORNER)
@@ -296,7 +297,7 @@ fun MessageItem(
     val messageA11yText = stringResource(Res.string.a11y_message_from, senderName, bodyText)
     if (showUserName && !message.fromLocal) {
         Row(
-            modifier = Modifier.padding(start = BUBBLE_TEXT_START, end = 16.dp, bottom = 3.dp),
+            modifier = Modifier.padding(start = BUBBLE_TEXT_START, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
@@ -307,11 +308,11 @@ fun MessageItem(
                 modifier = Modifier.weight(1f, fill = false),
                 overflow = TextOverflow.Ellipsis,
                 maxLines = 1,
-                style = Ios.type.footnote,
-                color = ios.secondaryLabel,
+                style = Ios.type.caption1,
+                color = ios.systemGray,
             )
             if (!plainWording && showFullMessageTimestamp) {
-                Text(text = timestamp, style = Ios.type.footnote, color = ios.secondaryLabel)
+                Text(text = timestamp, style = Ios.type.caption1, color = ios.systemGray)
             }
         }
     } else if (showUserName && !plainWording && showFullMessageTimestamp) {
@@ -385,10 +386,11 @@ fun MessageItem(
                     alpha = if (dimmed) DIMMED_ALPHA else 1f
                 }
                 .padding(
-                    start = if (message.fromLocal) BUBBLE_FAR_SIDE else 16.dp,
+                    start = if (message.fromLocal) BUBBLE_FAR_SIDE else AVATAR_START,
                     end = if (message.fromLocal) 16.dp else BUBBLE_FAR_SIDE_INCOMING,
                 ),
-            verticalAlignment = Alignment.CenterVertically,
+            // The avatar rides at the foot of its bubble, as iOS's bottom-aligned row puts it.
+            verticalAlignment = Alignment.Bottom,
         ) {
             if (!message.fromLocal) {
                 // The avatar sits beside the last bubble of a run, as on iOS; earlier bubbles keep its space.
@@ -401,7 +403,7 @@ fun MessageItem(
                         longName = node.user.long_name,
                         nodeColor = Color(node.colors.second),
                         size = AVATAR_SIZE,
-                        modifier = Modifier.clickable { onClickChip(node) },
+                        modifier = Modifier.offset(y = AVATAR_DROP).clickable { onClickChip(node) },
                     )
                 }
                 Spacer(Modifier.width(AVATAR_GAP))
@@ -464,7 +466,7 @@ fun MessageItem(
                 shape = messageShape,
                 border = cardBorder,
             ) {
-                Column(modifier = Modifier.width(IntrinsicSize.Max)) {
+                BubbleColumn {
                     OriginalMessageSnippet(
                         modifier = Modifier.fillMaxWidth(),
                         message = message,
@@ -472,7 +474,9 @@ fun MessageItem(
                         onNavigateToOriginalMessage = onNavigateToOriginalMessage,
                     )
 
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = BUBBLE_PADDING_H, vertical = BUBBLE_PADDING_V),
+                    ) {
                         if (searchQuery.isNotEmpty()) {
                             HighlightedText(
                                 text = message.text,
@@ -493,6 +497,7 @@ fun MessageItem(
                                 color = contentColor,
                                 mentionName = mentionDisplayName,
                                 onMentionClick = { id -> resolveMention(id)?.let(onClickChip) },
+                                hugLines = true,
                             )
                         }
 
@@ -596,17 +601,51 @@ fun MessageItem(
     )
 }
 
-/** iOS bubble geometry, measured on the Pangea iPhone app. */
-private val BUBBLE_CORNER = 20.dp
-private val AVATAR_SIZE = 46.dp
-private val AVATAR_GAP = 8.dp
+/**
+ * iOS bubble geometry, from the Pangea iPhone app's own rows (ChannelMessageRow, MessageText): a 50 pt avatar with 5 pt
+ * around it inside the row's 16 pt margin, a bubble with 15 pt corners padded 8 by 10, and 50 pt kept free on the far
+ * side.
+ */
+private val BUBBLE_CORNER = 15.dp
+private val BUBBLE_PADDING_H = 8.dp
+private val BUBBLE_PADDING_V = 10.dp
+private val AVATAR_SIZE = 50.dp
+private val AVATAR_START = 21.dp
+private val AVATAR_GAP = 5.dp
+
+/** The avatar's foot sits this far below its bubble's (iOS: 16 pt under the bubble, 5 + 7 pt under the avatar). */
+private val AVATAR_DROP = 4.dp
 
 /** Where incoming bubbles (and the sender's name above them) start: margin + avatar + gap. */
-private val BUBBLE_TEXT_START = 16.dp + AVATAR_SIZE + AVATAR_GAP
+private val BUBBLE_TEXT_START = AVATAR_START + AVATAR_SIZE + AVATAR_GAP
 
 /** Space kept free on the far side of a bubble, so a long message never spans the screen. */
-private val BUBBLE_FAR_SIDE = 56.dp
-private val BUBBLE_FAR_SIDE_INCOMING = 40.dp
+private val BUBBLE_FAR_SIDE = 66.dp
+private val BUBBLE_FAR_SIDE_INCOMING = 50.dp
+
+/**
+ * A bubble's contents, one under the other and as wide as the widest: the body decides the width (it hugs its words),
+ * and anything above it (the quoted message) is stretched to match rather than forcing the bubble to full width.
+ */
+@Composable
+private fun BubbleColumn(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Layout(content = content, modifier = modifier) { measurables, constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        // The body is the last child; measure it first, then give the others at least its width.
+        val body = measurables.last().measure(loose)
+        val others = measurables.dropLast(1).map { it.measure(loose.copy(minWidth = body.width)) }
+        val width = maxOf(body.width, others.maxOfOrNull { it.width } ?: 0)
+        val height = body.height + others.sumOf { it.height }
+        layout(width, height) {
+            var y = 0
+            others.forEach {
+                it.placeRelative(0, y)
+                y += it.height
+            }
+            body.placeRelative(0, y)
+        }
+    }
+}
 
 /** Filtered messages, and unselected ones while selecting, fade back. */
 private const val DIMMED_ALPHA = 0.5f
