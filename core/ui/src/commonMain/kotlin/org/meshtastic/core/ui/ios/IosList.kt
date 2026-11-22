@@ -63,6 +63,12 @@ val IosCardShape = RoundedCornerShape(26.dp)
 /** Side margin of an inset-grouped card, and the padding inside it. */
 val IosInset = 16.dp
 
+/** iOS's gap between two inset groups when the second has no header. */
+val HeaderlessGap = 35.dp
+
+/** The gap above a page's first group when it has no header: closer to the title than groups are to each other. */
+val FirstGroupGap = 16.dp
+
 /** Where a row's text starts when it has a leading icon (the separator starts here too). */
 private val IconTextStart = 56.dp
 
@@ -94,6 +100,8 @@ fun IosSection(
     footer: String? = null,
     // Replaces the grey [header] with a header of the screen's own (Local Mesh Discovery's tinted ones).
     headerContent: (@Composable () -> Unit)? = null,
+    // The gap above a section with no header: iOS's 35 pt between groups. Pass less for the first group on a page.
+    headerlessGap: Dp = HeaderlessGap,
     content: @Composable () -> Unit,
 ) {
     val separator = Ios.colors.separator
@@ -110,7 +118,7 @@ fun IosSection(
                 modifier = Modifier.padding(start = IosInset, end = IosInset, top = 18.dp, bottom = 8.dp),
             )
         } else {
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(headerlessGap))
         }
         Layout(
             content = content,
@@ -175,7 +183,8 @@ sealed interface IosAccessory {
 /**
  * A row in an [IosSection]: optional SF-style [icon] in the tint (or any [leading] content), [title], optional
  * [subtitle] under it, optional grey [value] on the right, and an [accessory]. [titleColor] lets action rows ("Pair a
- * Radio", "Clear App Data") use the tint or red. The section draws the separator above it.
+ * Radio", "Clear App Data") use the tint or red; [valueColor] is for the pages iOS writes their values in black on (a
+ * node's details). The section draws the separator above it.
  */
 @Composable
 fun IosRow(
@@ -189,6 +198,7 @@ fun IosRow(
     titleStyle: TextStyle = Ios.type.body,
     value: String? = null,
     titleColor: Color = Ios.colors.label,
+    valueColor: Color = Ios.colors.secondaryLabel,
     accessory: IosAccessory = IosAccessory.None,
     showSeparator: Boolean = true,
     leadingWidth: Dp? = null,
@@ -235,7 +245,7 @@ fun IosRow(
                 Text(subtitle, style = Ios.type.subheadline, color = subtitleColor)
             }
         }
-        if (value != null) RowValue(value, valueLines, wraps)
+        if (value != null) RowValue(value, valueLines, wraps, valueColor)
         when (accessory) {
             IosAccessory.None -> Unit
 
@@ -265,11 +275,11 @@ fun IosRow(
 
 /** An [IosRow]'s grey value: one line at the row's end, or, when [wraps], up to [lines] lines end-aligned. */
 @Composable
-private fun RowScope.RowValue(value: String, lines: Int, wraps: Boolean) {
+private fun RowScope.RowValue(value: String, lines: Int, wraps: Boolean, color: Color) {
     Text(
         value,
         style = Ios.type.body,
-        color = Ios.colors.secondaryLabel,
+        color = color,
         maxLines = lines,
         overflow = TextOverflow.Ellipsis,
         textAlign = if (wraps) TextAlign.End else TextAlign.Unspecified,

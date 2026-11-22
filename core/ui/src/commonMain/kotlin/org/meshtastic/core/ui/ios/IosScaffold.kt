@@ -312,8 +312,9 @@ fun IosTopBar(
 }
 
 /**
- * A bar's row as iOS lays it out: [leading] at the start, [trailing] at the end, and [title] centred between them when
- * it fits, otherwise starting just after [leading] and shortened to the room left.
+ * A bar's row as iOS lays it out: [leading] at the start, [trailing] at the end, and [title] centred on the bar when
+ * that keeps it clear of both, otherwise moved just far enough off centre to clear the wider side, and shortened to the
+ * room left if it is longer than that.
  */
 @Composable
 fun IosBarLayout(
@@ -337,19 +338,17 @@ fun IosBarLayout(
         val gap = TITLE_GAP.roundToPx()
         // The trailing buttons get what the leading ones leave, so a crowded bar never covers the back button.
         val trail = measurables[2].measure(loose.copy(maxWidth = (width - lead.width - gap).coerceAtLeast(0)))
-        val side = maxOf(lead.width, trail.width, MIN_TITLE_INSET.roundToPx() - gap)
-        val centered = (width - 2 * (side + gap)).coerceAtLeast(0)
-        val free = (width - lead.width - trail.width - 2 * gap).coerceAtLeast(0)
+        // A bare bar still keeps a short title clear of its edges.
+        val minInset = MIN_TITLE_INSET.roundToPx()
+        val start = maxOf(lead.width + gap, minInset)
+        val end = width - maxOf(trail.width + gap, minInset)
+        val free = (end - start).coerceAtLeast(0)
         val titlePlaceable = measurables[1].measure(Constraints(maxWidth = free, maxHeight = height))
         layout(width, height) {
             lead.placeRelative(0, (height - lead.height) / 2)
             trail.placeRelative(width - trail.width, (height - trail.height) / 2)
-            val x =
-                if (titlePlaceable.width <= centered) {
-                    (width - titlePlaceable.width) / 2
-                } else {
-                    lead.width + gap
-                }
+            val centred = (width - titlePlaceable.width) / 2
+            val x = centred.coerceIn(start, maxOf(start, end - titlePlaceable.width))
             titlePlaceable.placeRelative(x, (height - titlePlaceable.height) / 2)
         }
     }
@@ -375,8 +374,9 @@ fun IosSheetHeader(
     actionEnabled: Boolean = true,
     onAction: () -> Unit = {},
     horizontalPadding: Dp = IosInset,
+    height: Dp = SheetHeaderHeight,
 ) {
-    Box(modifier.fillMaxWidth().height(74.dp).padding(horizontal = horizontalPadding)) {
+    Box(modifier.fillMaxWidth().height(height).padding(horizontal = horizontalPadding)) {
         if (cancelLabel != null) {
             IosGlassTextButton(cancelLabel, onClick = onCancel, modifier = Modifier.align(Alignment.CenterStart))
         }
@@ -392,6 +392,12 @@ fun IosSheetHeader(
         }
     }
 }
+
+/** A sheet's header row: its title is centred 37 pt under the sheet's top edge. */
+val SheetHeaderHeight = 74.dp
+
+/** The header row of a sheet with a grabber above it, which takes 10 pt of that room. */
+val GrabberSheetHeaderHeight = 56.dp
 
 /** The large title's gap under the button row, measured against the iPhone app. */
 internal val LargeTitleTop = 8.dp

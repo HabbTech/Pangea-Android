@@ -91,7 +91,8 @@ fun IosRadioChip(state: IosRadioChipState, modifier: Modifier = Modifier, onClic
             .clip(CircleShape)
             .background(c.chrome)
             .then(if (onClick != null) Modifier.iosPressable(onClick = onClick) else Modifier)
-            .padding(start = 14.dp, end = if (state.connected) 16.dp else 12.dp)
+            // iOS's toolbar capsule hugs the chip: about 5 pt of glass each side, so a centred title has room.
+            .padding(start = 6.dp, end = if (state.connected) 6.dp else 9.dp)
             .semantics { contentDescription = state.shortName },
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -107,7 +108,7 @@ fun IosRadioChip(state: IosRadioChipState, modifier: Modifier = Modifier, onClic
             ) {
                 Icon(IosIcons.Link, contentDescription = null, tint = c.systemGreen, modifier = Modifier.size(14.dp))
             }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(11.dp))
             Text(state.shortName, style = Ios.type.callout, color = c.secondaryLabel, maxLines = 1)
         } else {
             Icon(

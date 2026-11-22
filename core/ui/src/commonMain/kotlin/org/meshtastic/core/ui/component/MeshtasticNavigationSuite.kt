@@ -16,6 +16,7 @@
  */
 package org.meshtastic.core.ui.component
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +65,7 @@ import org.meshtastic.core.ui.ios.IosRadioChipState
 import org.meshtastic.core.ui.ios.IosStatusPill
 import org.meshtastic.core.ui.ios.IosTab
 import org.meshtastic.core.ui.ios.IosTabBar
+import org.meshtastic.core.ui.ios.LocalIosBackdrop
 import org.meshtastic.core.ui.ios.LocalIosBottomInset
 import org.meshtastic.core.ui.ios.LocalIosRadioChip
 import org.meshtastic.core.ui.ios.LocalIosUnderTabBar
@@ -165,10 +168,14 @@ fun MeshtasticNavigationSuite(
     val density = LocalDensity.current
     var chromeHeight by remember { mutableStateOf(0.dp) }
     val underTabBar = remember { mutableIntStateOf(0) }
-    Box(modifier.fillMaxSize()) {
+    // Older screens end above the tab bar; what shows behind the bar there is the screen's own background.
+    val pageBackground = MaterialTheme.colorScheme.background
+    val backdrop = remember { mutableStateOf(pageBackground) }
+    Box(modifier.fillMaxSize().background(backdrop.value)) {
         CompositionLocalProvider(
             LocalIosBottomInset provides chromeHeight,
             LocalIosUnderTabBar provides underTabBar,
+            LocalIosBackdrop provides backdrop,
             LocalOpenPairRadio provides openPairRadio,
             LocalIosRadioChip provides radioChip,
         ) {
@@ -237,15 +244,16 @@ private fun RadioStatusPill(pill: RadioPill, onPair: () -> Unit) {
  */
 @Composable
 private fun TabIcon(destination: TopLevelDestination, tint: Color) {
-    val icon =
+    // Each symbol at the size its glyph has on the iPhone app's tab bar (they fill their boxes differently).
+    val (icon, size) =
         when (destination) {
-            TopLevelDestination.Map -> IosIcons.Map
-            TopLevelDestination.Messages -> IosIcons.Bubble
-            TopLevelDestination.Settings -> IosIcons.Gear
-            TopLevelDestination.Connect -> IosIcons.Link
-            TopLevelDestination.Nodes -> IosIcons.Radio
+            TopLevelDestination.Map -> IosIcons.Map to 33.dp
+            TopLevelDestination.Messages -> IosIcons.Bubble to 31.dp
+            TopLevelDestination.Settings -> IosIcons.Gear to 27.dp
+            TopLevelDestination.Connect -> IosIcons.Link to 31.dp
+            TopLevelDestination.Nodes -> IosIcons.Radio to 30.dp
         }
-    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(26.dp))
+    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(size))
 }
 
 private fun handleNavigation(

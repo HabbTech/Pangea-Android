@@ -16,7 +16,6 @@
  */
 package org.meshtastic.feature.node.list
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -51,7 +50,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -352,22 +350,23 @@ fun NodeListScreen(
     ) { contentPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(contentPadding).focusable()) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                // Android's own warning about nodes on other LoRa settings: part of the list, so it scrolls away.
+                item(key = "unheard-banner") {
+                    UnheardNodesBanner(
+                        unheardNodes = unheardNodes,
+                        onRemoveAll = { unheardNodes.forEach(viewModel::removeNode) },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    )
+                }
+                // The search field stays under the bar while the list scrolls, as iOS's does; it used to fade out
+                // during a scroll, which let the rows show through it.
                 stickyHeader {
-                    val animatedAlpha by
-                        animateFloatAsState(targetValue = if (!isScrollInProgress) 1.0f else 0f, label = "alpha")
                     Column(
                         modifier =
                         Modifier.fillMaxWidth()
-                            .graphicsLayer(alpha = animatedAlpha)
                             .background(Ios.colors.background)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                     ) {
-                        UnheardNodesBanner(
-                            unheardNodes = unheardNodes,
-                            onRemoveAll = { unheardNodes.forEach(viewModel::removeNode) },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                        )
                         NodeFilterSearchBar(
                             filterText = state.filter.filterText,
                             onTextChange = { viewModel.nodeFilterText = it },

@@ -16,10 +16,13 @@
  */
 package org.meshtastic.core.ui.component
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.placeCursorAtEnd
@@ -50,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
@@ -121,13 +125,14 @@ fun MeshtasticSearchBar(
         snapshotFlow { textFieldState.text.toString() }.collect { latestOnQueryChange(it) }
     }
 
-    val inputField: @Composable (String) -> Unit = { tag ->
+    val inputField: @Composable (String, Boolean) -> Unit = { tag, collapsed ->
         SearchInputField(
             textFieldState = textFieldState,
             searchBarState = searchBarState,
             placeholder = placeholder,
             clearDescription = clearDescription,
             testTag = tag,
+            collapsed = collapsed,
             trailingActions = trailingActions,
         )
     }
@@ -139,7 +144,7 @@ fun MeshtasticSearchBar(
     // Pangea: iOS's search field, a translucent grey capsule (design/PANGEA-BRAND.md v2).
     SearchBar(
         state = searchBarState,
-        inputField = { inputField(inputFieldTag) },
+        inputField = { inputField(inputFieldTag, true) },
         modifier = barModifier,
         colors = SearchBarDefaults.colors(containerColor = Ios.colors.searchFill),
     )
@@ -151,13 +156,13 @@ fun MeshtasticSearchBar(
     if (splitsHorizontally) {
         ExpandedDockedSearchBar(
             state = searchBarState,
-            inputField = { inputField(expandedTag) },
+            inputField = { inputField(expandedTag, false) },
             content = expandedContent,
         )
     } else {
         ExpandedFullScreenSearchBar(
             state = searchBarState,
-            inputField = { inputField(expandedTag) },
+            inputField = { inputField(expandedTag, false) },
             content = expandedContent,
         )
     }
@@ -175,12 +180,50 @@ private fun SearchInputField(
     placeholder: String,
     clearDescription: String,
     testTag: String,
+    // The field resting on its screen, at iOS's 44 pt; false for the one in the expanded overlay.
+    collapsed: Boolean,
     trailingActions: @Composable RowScope.() -> Unit,
+) {
+    // Material's field is built for 56 dp and clips its text if squeezed, so on the screen it keeps that height
+    // inside a 44 dp box (iOS's search field) that the bar's surface takes its size from; the 6 dp it overhangs at
+    // the top and bottom is only padding.
+    val field: @Composable (Modifier) -> Unit = { fieldModifier ->
+        SearchField(
+            textFieldState = textFieldState,
+            searchBarState = searchBarState,
+            placeholder = placeholder,
+            clearDescription = clearDescription,
+            trailingActions = trailingActions,
+            modifier = fieldModifier.testTag(testTag).semantics { contentDescription = placeholder },
+        )
+    }
+    if (collapsed) {
+        Box(Modifier.height(IOS_SEARCH_FIELD_HEIGHT), contentAlignment = Alignment.Center) {
+            field(Modifier.requiredHeight(MATERIAL_SEARCH_FIELD_HEIGHT))
+        }
+    } else {
+        field(Modifier)
+    }
+}
+
+/** iOS's search field is 44 pt tall; Material's is 56. */
+private val IOS_SEARCH_FIELD_HEIGHT = 44.dp
+private val MATERIAL_SEARCH_FIELD_HEIGHT = 56.dp
+
+/** Material's own input field, with the back arrow when expanded and the clear button once there is text. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchField(
+    textFieldState: TextFieldState,
+    searchBarState: SearchBarState,
+    placeholder: String,
+    clearDescription: String,
+    trailingActions: @Composable RowScope.() -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
     val isExpanded = searchBarState.currentValue == SearchBarValue.Expanded
     val backDescription = stringResource(Res.string.navigate_back)
-
     SearchBarDefaults.InputField(
         textFieldState = textFieldState,
         searchBarState = searchBarState,
@@ -205,6 +248,6 @@ private fun SearchInputField(
                 trailingActions()
             }
         },
-        modifier = Modifier.testTag(testTag).semantics { contentDescription = placeholder },
+        modifier = modifier,
     )
 }

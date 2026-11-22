@@ -21,19 +21,16 @@ package org.meshtastic.core.ui.ios
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -42,11 +39,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -59,52 +58,84 @@ val IosTabBarHeight = 62.dp
 /**
  * The iOS 26 floating tab bar: a glass capsule of tabs, the selected one on a grey pill and drawn in the tint. Tapping
  * the selected tab again calls [onSelect] too, so screens can pop to the top as on iOS.
+ *
+ * The geometry is the iPhone app's, measured on its screenshots: the bar is 360 pt wide with five tabs and 274 pt with
+ * three, each tab's pill is as wide as its label needs (never under 73 pt, or 93 pt with three tabs), and the tabs'
+ * centres are spread evenly from the first pill to the last, so neighbouring tabs overlap a little as they do there.
  */
 @Composable
 fun IosTabBar(tabs: List<IosTab>, selected: Any?, onSelect: (IosTab) -> Unit, modifier: Modifier = Modifier) {
     val c = Ios.colors
-    Row(
-        modifier
-            .height(IosTabBarHeight)
-            .shadow(18.dp, CircleShape, ambientColor = c.chromeShadow, spotColor = c.chromeShadow)
-            .clip(CircleShape)
-            .background(c.chrome)
-            .padding(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        tabs.forEach { tab ->
-            val isSelected = tab.key == selected
-            val tint by animateColorAsState(if (isSelected) c.tint else c.label, label = "iosTabTint")
-            Box(
-                Modifier.width(if (tabs.size > 3) 72.dp else 90.dp)
-                    .fillMaxHeight()
-                    .clip(CircleShape)
-                    .background(if (isSelected) c.chromeSelected else Color.Transparent)
-                    .iosPressable(role = Role.Tab) { onSelect(tab) }
-                    .semantics {
-                        this.selected = isSelected
-                        contentDescription = tab.label
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box {
-                        Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) { tab.icon(tint) }
-                        if (tab.badge > 0) {
-                            IosBadge(tab.badge, Modifier.align(Alignment.TopEnd).offset(x = 12.dp, y = (-6).dp))
+    val minPill = if (tabs.size > 3) MIN_PILL_NARROW else MIN_PILL_WIDE
+    Layout(
+        content = {
+            tabs.forEach { tab ->
+                val isSelected = tab.key == selected
+                val tint by animateColorAsState(if (isSelected) c.tint else c.label, label = "iosTabTint")
+                Box(
+                    Modifier.clip(CircleShape)
+                        .background(if (isSelected) c.chromeSelected else Color.Transparent)
+                        .iosPressable(role = Role.Tab) { onSelect(tab) }
+                        .semantics {
+                            this.selected = isSelected
+                            contentDescription = tab.label
                         }
+                        .padding(horizontal = PILL_LABEL_INSET),
+                ) {
+                    // The symbol's centre sits 20 pt under the bar's top edge and the label's 44 pt under it.
+                    Box(Modifier.align(Alignment.TopCenter).offset(y = (-1).dp)) {
+                        Box(Modifier.size(TAB_ICON_BOX), contentAlignment = Alignment.Center) { tab.icon(tint) }
+                        if (tab.badge > 0) IosBadge(tab.badge, Modifier.align(Alignment.TopEnd).offset(x = 11.dp))
                     }
                     Text(
                         tab.label,
                         style = Ios.type.caption2.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
                         color = tint,
                         maxLines = 1,
+                        modifier = Modifier.align(Alignment.TopCenter).offset(y = 33.5.dp),
                     )
                 }
             }
+        },
+        modifier =
+        modifier
+            .height(IosTabBarHeight)
+            .shadow(18.dp, CircleShape, ambientColor = c.chromeShadow, spotColor = c.chromeShadow)
+            .clip(CircleShape)
+            .background(c.chrome),
+    ) { measurables, constraints ->
+        val pad = BAR_PADDING.roundToPx()
+        val height = constraints.maxHeight
+        val cell =
+            Constraints(minWidth = minPill.roundToPx(), minHeight = height - 2 * pad, maxHeight = height - 2 * pad)
+        val placeables = measurables.map { it.measure(cell) }
+        val natural = 2 * pad + placeables.size * minPill.roundToPx() - PILL_OVERLAP.roundToPx()
+        val width = natural.coerceIn(constraints.minWidth, constraints.maxWidth)
+        layout(width, height) {
+            if (placeables.isEmpty()) return@layout
+            val first = pad + placeables.first().width / 2f
+            val last = width - pad - placeables.last().width / 2f
+            val step = if (placeables.size > 1) (last - first) / (placeables.size - 1) else 0f
+            placeables.forEachIndexed { i, p -> p.placeRelative((first + step * i - p.width / 2f).toInt(), pad) }
         }
     }
 }
+
+/** The gap between the bar's edge and the pills. */
+private val BAR_PADDING = 4.dp
+
+/** A pill is never narrower than this: with four or five tabs, and with three or fewer. */
+private val MIN_PILL_NARROW = 73.dp
+private val MIN_PILL_WIDE = 93.dp
+
+/** Room each side of a tab's label inside its pill ("Messages" makes an 82 pt pill). */
+private val PILL_LABEL_INSET = 15.dp
+
+/** How much narrower the bar is than its pills side by side: they overlap by this in total. */
+private val PILL_OVERLAP = 13.dp
+
+/** The box a tab's symbol is centred in; the symbols themselves differ in size (see the shell's `TabIcon`). */
+private val TAB_ICON_BOX = 34.dp
 
 /**
  * How many on-screen destinations draw under the floating tab bar themselves (iOS-style screens built from
@@ -113,6 +144,13 @@ fun IosTabBar(tabs: List<IosTab>, selected: Any?, onSelect: (IosTab) -> Unit, mo
  */
 @Suppress("CompositionLocalAllowlist")
 val LocalIosUnderTabBar = staticCompositionLocalOf<MutableIntState> { mutableIntStateOf(0) }
+
+/**
+ * The background of the screen on show, for the shell to paint where a screen stops short of the screen's edge (behind
+ * the floating tab bar, under the older screens that end above it). A screen's bar sets it; null outside the shell.
+ */
+@Suppress("CompositionLocalAllowlist")
+val LocalIosBackdrop = staticCompositionLocalOf<MutableState<Color>?> { null }
 
 /** Call from a screen that pads its own content by [LocalIosBottomInset] and can scroll under the tab bar. */
 @Composable

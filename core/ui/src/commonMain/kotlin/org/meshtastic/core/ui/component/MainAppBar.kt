@@ -32,9 +32,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
@@ -69,7 +72,10 @@ import org.meshtastic.core.ui.ios.IosMenu
 import org.meshtastic.core.ui.ios.IosMenuDivider
 import org.meshtastic.core.ui.ios.IosMenuItem
 import org.meshtastic.core.ui.ios.IosRadioChip
+import org.meshtastic.core.ui.ios.LocalIosBackdrop
+import org.meshtastic.core.ui.ios.LocalIosLargeTitleState
 import org.meshtastic.core.ui.ios.LocalIosRadioChip
+import org.meshtastic.core.ui.ios.iosLargeTitleCollapse
 import org.meshtastic.core.ui.theme.LocalEventTheme
 import org.meshtastic.core.ui.util.LocalEventBranding
 import org.meshtastic.core.ui.util.LocalPowerModeMenu
@@ -87,6 +93,9 @@ private val EVENT_BRAND_RULE_HEIGHT = 3.dp
  * The top of a screen, drawn like the Pangea iPhone app (design/PANGEA-BRAND.md v2): a glass back button on pushed
  * screens or the round logo button (Power Mode menu) on a tab, the screen's actions grouped in a glass capsule at the
  * right (with our radio's chip), then the large title and an optional subtitle.
+ *
+ * As on iOS, the large title slides away under the top row once the screen scrolls and the title shows small in that
+ * row instead; it comes back when the list returns to its top ([LocalIosLargeTitleState], one per destination).
  */
 @Composable
 fun MainAppBar(
@@ -98,8 +107,11 @@ fun MainAppBar(
     canNavigateUp: Boolean,
     onNavigateUp: () -> Unit,
     onClickChip: (Node) -> Unit,
-    // The screen's own background: white over iOS's plain lists, grey (the default) over grouped ones.
-    background: Color = Ios.colors.background,
+    // The screen's own background: the grouped grey a Scaffold draws by default; pass white over iOS's plain lists.
+    background: Color = MaterialTheme.colorScheme.background,
+    // What the screen draws under the bar, when the bar is tinted differently from it (node detail's white bar over a
+    // grouped page). The shell paints this behind the floating tab bar.
+    pageBackground: Color = background,
     // iOS's inline title (navigationBarTitleDisplayMode(.inline)): the title small and centred in the top row.
     inlineTitle: Boolean = false,
     // Expert Mode's radio chip, on pushed screens and the tab roots that ask for it ([showNodeChip]); false where iOS
@@ -113,6 +125,13 @@ fun MainAppBar(
     val eventTheme = LocalEventTheme.current
     val accent = eventTheme?.accent
     val c = Ios.colors
+    val collapse = LocalIosLargeTitleState.current.takeIf { !inlineTitle }
+    // The shell paints this behind the floating tab bar, where this screen's own background stops.
+    val backdrop = LocalIosBackdrop.current
+    DisposableEffect(backdrop, pageBackground) {
+        backdrop?.value = pageBackground
+        onDispose {}
+    }
     Column(
         modifier =
         modifier
@@ -134,13 +153,16 @@ fun MainAppBar(
                 }
             },
             title = {
-                if (inlineTitle) {
+                if (inlineTitle || collapse != null) {
                     Text(
                         text = title,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = Ios.type.headline,
                         color = c.label,
+                        // With a large title below, the small one fades in as the last of it leaves.
+                        modifier =
+                        Modifier.graphicsLayer { alpha = collapse?.let { inlineTitleAlpha(it.fraction) } ?: 1f },
                     )
                 }
             },
@@ -157,17 +179,23 @@ fun MainAppBar(
                 }
             },
         )
-        if (!inlineTitle) LargeTitle(title, subtitle)
+        if (!inlineTitle) LargeTitle(title, subtitle, Modifier.iosLargeTitleCollapse(collapse))
         Spacer(Modifier.height(8.dp))
         EventPaletteStrip(palette = eventTheme?.palette.orEmpty(), height = EVENT_BRAND_RULE_HEIGHT)
     }
 }
 
+/** The small title's opacity while [fraction] of the large title is hidden: it fades in over the last part. */
+private fun inlineTitleAlpha(fraction: Float): Float =
+    ((fraction - INLINE_TITLE_FADE_START) / (1f - INLINE_TITLE_FADE_START)).coerceIn(0f, 1f)
+
+private const val INLINE_TITLE_FADE_START = 0.7f
+
 /** The large title under the top row, with an optional [subtitle]. */
 @Composable
-private fun LargeTitle(title: String, subtitle: String?) {
+private fun LargeTitle(title: String, subtitle: String?, modifier: Modifier = Modifier) {
     val c = Ios.colors
-    Column {
+    Column(modifier) {
         Text(
             text = title,
             maxLines = 1,

@@ -20,11 +20,13 @@ import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -180,37 +182,44 @@ fun SettingsScreen(
         topBar = {
             // Show back arrow when remotely administering (caller supplies onBack and we're not on the local node).
             val showBack = onBack != null && !state.isLocal
-            MainAppBar(
-                title = stringResource(Res.string.bottom_nav_settings),
-                // As on iOS, the local radio is named under Configure rather than under the title.
-                subtitle =
-                if (state.isLocal) {
-                    null
-                } else {
-                    val remoteName = destNode?.user?.long_name ?: ""
-                    stringResource(Res.string.remotely_administrating, remoteName)
-                },
-                ourNode = ourNode,
-                // iOS's Settings has no radio chip at its root.
-                showNodeChip = false,
-                canNavigateUp = showBack,
-                onNavigateUp = { onBack?.invoke() },
-                actions = {},
-                onClickChip = { node -> onClickNodeChip(node.num) },
-            )
+            Column(Modifier.background(MaterialTheme.colorScheme.background)) {
+                MainAppBar(
+                    title = stringResource(Res.string.bottom_nav_settings),
+                    // As on iOS, the local radio is named under Configure rather than under the title.
+                    subtitle =
+                    if (state.isLocal) {
+                        null
+                    } else {
+                        val remoteName = destNode?.user?.long_name ?: ""
+                        stringResource(Res.string.remotely_administrating, remoteName)
+                    },
+                    ourNode = ourNode,
+                    // iOS's Settings has no radio chip at its root.
+                    showNodeChip = false,
+                    canNavigateUp = showBack,
+                    onNavigateUp = { onBack?.invoke() },
+                    actions = {},
+                    onClickChip = { node -> onClickNodeChip(node.num) },
+                )
+                // The search field stays under the bar while the page scrolls, as iOS's does.
+                SettingsSearchBar(
+                    viewModel = koinViewModel<SettingsSearchViewModel>(),
+                    onNavigate = onNavigate,
+                    // This phone's own settings are hidden below while administering another node; search hides
+                    // them too.
+                    includeAppLocal = state.isLocal,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 3.dp, bottom = 8.dp),
+                )
+            }
         },
     ) { paddingValues ->
         Column(
-            modifier = Modifier.verticalScroll(rememberScrollState()).padding(paddingValues).padding(16.dp),
+            modifier =
+            Modifier.verticalScroll(rememberScrollState())
+                .padding(paddingValues)
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SettingsSearchBar(
-                viewModel = koinViewModel<SettingsSearchViewModel>(),
-                onNavigate = onNavigate,
-                // This phone's own settings are hidden below while administering another node; search hides them too.
-                includeAppLocal = state.isLocal,
-            )
-
             // Pangea Expert Mode opens as the iPhone app's does: About, Help, App Settings and Firmware Updates, then
             // the
             // connected radio under Configure. My Profile and My Radio are standard mode's (Connect does pairing here).

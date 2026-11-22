@@ -438,11 +438,11 @@ fun ConnectionsScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(paddingValues).padding(horizontal = 16.dp),
+                // iOS's first card starts about 10 pt under the large title's bar.
+                modifier =
+                Modifier.fillMaxSize().padding(paddingValues).padding(start = 16.dp, end = 16.dp, top = 3.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Spacer(modifier = Modifier.height(4.dp))
-
                 AdaptiveTwoPane(
                     first = {
                         val uiState =

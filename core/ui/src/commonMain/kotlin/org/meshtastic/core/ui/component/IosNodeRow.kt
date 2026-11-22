@@ -134,7 +134,10 @@ fun IosNodeRow(
                 onLongClick = onLongClick,
             ),
     ) {
-        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = ROW_PADDING),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(Modifier.width(AVATAR_COLUMN), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     Modifier.size(AVATAR).clip(CircleShape).background(Color(thatNode.colors.second)),
@@ -160,8 +163,9 @@ fun IosNodeRow(
                         }
                     }
             }
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(Modifier.width(13.dp))
+            // iOS sets each line in callout, 21 pt apart; a single line of text here is about 19 dp tall.
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Line(
                     icon = if (thatNode.hasPKC) MeshtasticIcons.Lock else MeshtasticIcons.LockOpen,
                     tint = if (thatNode.hasPKC) c.systemGreen else c.systemYellow,
@@ -184,16 +188,19 @@ fun IosNodeRow(
                         LineIcon(MeshtasticIcons.HopCount, c.label)
                         Text(
                             stringResource(Res.string.pangea_hops_away),
-                            style = Ios.type.body,
+                            style = Ios.type.callout,
                             color = c.secondaryLabel,
                         )
                         Spacer(Modifier.width(8.dp))
+                        // iOS's numbered square symbol, a size up from the line's text.
                         Text(
                             thatNode.hopsAway.toString(),
-                            style = Ios.type.body,
+                            style = Ios.type.callout,
                             color = c.label,
                             modifier =
-                            Modifier.border(1.5.dp, c.label, RoundedCornerShape(5.dp)).padding(horizontal = 7.dp),
+                            Modifier.padding(vertical = 2.dp)
+                                .border(1.5.dp, c.label, RoundedCornerShape(5.dp))
+                                .padding(horizontal = 7.dp),
                         )
                     }
                 }
@@ -215,14 +222,15 @@ fun IosNodeRow(
 private fun Line(icon: ImageVector, tint: Color, text: String, color: Color = Ios.colors.secondaryLabel) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         LineIcon(icon, tint)
-        Text(text, style = Ios.type.body, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, style = Ios.type.callout, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
 private fun LineIcon(icon: ImageVector, tint: Color) {
-    Box(Modifier.width(34.dp), contentAlignment = Alignment.CenterStart) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+    // iOS centres each symbol in a 30 pt column and starts the words 8 pt after it.
+    Box(Modifier.padding(end = 8.dp).width(30.dp), contentAlignment = Alignment.Center) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(19.dp))
     }
 }
 
@@ -259,8 +267,10 @@ private fun BatteryGlyph(level: Int) {
     }
 }
 
-private val AVATAR = 72.dp
-private val AVATAR_COLUMN = 80.dp
+/** iOS's row: a 70 pt circle, and 18 pt above and below the lines beside it. */
+private val AVATAR = 70.dp
+private val AVATAR_COLUMN = 70.dp
+private val ROW_PADDING = 18.dp
 private const val FULL_BATTERY = 100
 private const val LOW_BATTERY = 20
 private const val MILLIS = 1000L

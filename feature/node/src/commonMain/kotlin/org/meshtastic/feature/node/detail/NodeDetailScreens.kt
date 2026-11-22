@@ -19,6 +19,7 @@ package org.meshtastic.feature.node.detail
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -39,6 +40,7 @@ import org.meshtastic.core.model.Node
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.SharedContactDialog
+import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosBottomSheet
 import org.meshtastic.core.ui.util.ActiveWhileStarted
 import org.meshtastic.feature.node.compass.CompassUiState
@@ -103,9 +105,11 @@ private fun NodeDetailScaffold(
         modifier = modifier,
         topBar = {
             MainAppBar(
-                // As on iOS: the radio's name, inline.
+                // As on iOS: the radio's name, inline, on a white bar over the grouped page.
                 title = uiState.nodeName.asString(),
                 inlineTitle = true,
+                background = Ios.colors.background,
+                pageBackground = MaterialTheme.colorScheme.background,
                 ourNode = uiState.ourNode,
                 showNodeChip = false,
                 // iOS's node detail has no radio chip.

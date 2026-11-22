@@ -117,9 +117,11 @@ fun IosSheet(
                         actionLabel = actionLabel,
                         actionEnabled = actionEnabled,
                         onAction = onAction,
+                        // Under a grabber iOS's title sits 38 pt below the sheet's top edge, not 47.
+                        height = if (grabber) GrabberSheetHeaderHeight else SheetHeaderHeight,
                     )
                 }
-                Spacer(Modifier.height(12.dp))
+                if (!grabber) Spacer(Modifier.height(12.dp))
                 content()
             }
         }

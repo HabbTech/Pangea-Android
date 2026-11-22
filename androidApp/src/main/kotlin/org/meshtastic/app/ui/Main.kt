@@ -18,9 +18,13 @@
 
 package org.meshtastic.app.ui
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.recalculateWindowInsets
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -75,7 +79,9 @@ import org.meshtastic.feature.wifiprovision.navigation.wifiProvisionGraph
 @Composable
 fun MainScreen() {
     val viewModel: UIViewModel = koinViewModel()
-    val initialTab = remember { initialRoute(viewModel.currentDeviceAddressFlow.value) }
+    val initialTab = remember {
+        initialRoute(viewModel.currentDeviceAddressFlow.value, viewModel.expertModeEnabled.value)
+    }
     val multiBackstack = rememberMultiBackstack(initialTab)
     val backStack = multiBackstack.activeBackStack
     val scrollToTopEvents = viewModel.scrollToTopEventFlow
@@ -121,7 +127,9 @@ fun MainScreen() {
                         firmwareGraph(backStack)
                         wifiProvisionGraph(backStack)
                     },
-                    // iOS-style screens run under the status bar and tab bar and pad themselves (core/ui/ios).
+                    // iOS-style screens run under the status bar and tab bar and pad themselves (core/ui/ios). The
+                    // rest stop above the bar and the keyboard, but every top bar (MainAppBar, IosTopBar) pads the
+                    // status bar itself, so its background runs to the top of the screen as on iOS.
                     modifier =
                     Modifier.fillMaxSize()
                         .recalculateWindowInsets()
@@ -129,7 +137,11 @@ fun MainScreen() {
                             if (LocalIosUnderTabBar.current.intValue > 0) {
                                 Modifier
                             } else {
-                                Modifier.safeDrawingPadding()
+                                Modifier.windowInsetsPadding(
+                                    WindowInsets.safeDrawing.only(
+                                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                                    ),
+                                )
                             },
                         ),
                     analytics = koinInject<PlatformAnalytics>(),
@@ -158,8 +170,15 @@ private fun Lockdown(viewModel: UIViewModel) {
     }
 }
 
-private fun initialRoute(deviceAddress: String?): NavKey =
-    if (DeviceAddress.parse(deviceAddress) == null) TopLevelDestination.Connect.route else NodesRoute.Nodes
+/**
+ * Where the app opens. Standard mode opens on Chats, as the iPhone app does: its status pill covers pairing, and Nodes
+ * and Connect aren't among its tabs (opening on one showed it for a moment before the shell moved to Chats).
+ */
+private fun initialRoute(deviceAddress: String?, expertMode: Boolean): NavKey = when {
+    !expertMode -> TopLevelDestination.Messages.route
+    DeviceAddress.parse(deviceAddress) == null -> TopLevelDestination.Connect.route
+    else -> NodesRoute.Nodes
+}
 
 /** Builds the nav-bar Power Mode menu state: current selection, selection handler, and About navigation. */
 @Composable

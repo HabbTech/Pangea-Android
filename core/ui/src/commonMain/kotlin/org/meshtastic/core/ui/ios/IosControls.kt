@@ -312,7 +312,7 @@ fun IosSearchField(
         modifier =
         modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(44.dp)
             .then(
                 if (glass) {
                     Modifier.shadow(10.dp, CircleShape, ambientColor = c.chromeShadow, spotColor = c.chromeShadow)

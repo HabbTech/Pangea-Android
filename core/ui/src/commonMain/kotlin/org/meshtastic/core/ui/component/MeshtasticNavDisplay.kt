@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.DialogSceneStrategy
@@ -50,6 +51,7 @@ import co.touchlab.kermit.Logger
 import org.meshtastic.core.navigation.MultiBackstack
 import org.meshtastic.core.navigation.rumViewName
 import org.meshtastic.core.repository.PlatformAnalytics
+import org.meshtastic.core.ui.ios.IosLargeTitleScope
 
 /**
  * Shared [NavDisplay] wrapper that configures the standard Meshtastic entry decorators, scene strategies, and
@@ -117,8 +119,14 @@ fun MeshtasticNavDisplay(
     val saveableDecorator = rememberSaveableStateHolderNavEntryDecorator<NavKey>()
     val vmStoreDecorator = rememberViewModelStoreNavEntryDecorator<NavKey>()
 
+    // Innermost, so each destination keeps its own large-title state inside its saveable scope (iOS's collapsing
+    // titles: IosLargeTitleScope).
+    val largeTitleDecorator = remember { NavEntryDecorator<NavKey> { entry -> IosLargeTitleScope { entry.Content() } } }
+
     val activeDecorators =
-        remember(backStack, saveableDecorator, vmStoreDecorator) { listOf(saveableDecorator, vmStoreDecorator) }
+        remember(backStack, saveableDecorator, vmStoreDecorator, largeTitleDecorator) {
+            listOf(saveableDecorator, vmStoreDecorator, largeTitleDecorator)
+        }
 
     // Fades are alpha, not movement, so they follow the theme's effects spec rather than a spatial one.
     val fadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()

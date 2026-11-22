@@ -92,7 +92,8 @@ fun <T : Message<T, *>> RadioConfigScreenList(
 
             LazyColumn(
                 modifier = Modifier.padding(innerPadding).fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                // iOS's first card starts about 10 pt under the large title's bar.
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 3.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 // iOS heads each radio settings form with whose radio it is.
