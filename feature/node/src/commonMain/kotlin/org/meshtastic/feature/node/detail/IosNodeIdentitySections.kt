@@ -159,14 +159,21 @@ internal fun NodeIdentitySection(node: Node, isLocal: Boolean) {
             title = stringResource(Res.string.name),
             icon = IosIcons.PersonCropCircle,
             value = node.user.long_name.ifEmpty { "—" },
+            valueColor = c.label,
             showSeparator = indicator == NodeSecurityIndicator.KEY_MISMATCH,
         )
         IosRow(
             title = stringResource(Res.string.node_number),
             icon = IosIcons.Number,
             value = node.num.toUInt().toString(),
+            valueColor = c.label,
         )
-        IosRow(title = stringResource(Res.string.pangea_user_id), icon = IosIcons.Person, value = node.user.id)
+        IosRow(
+            title = stringResource(Res.string.pangea_user_id),
+            icon = IosIcons.Person,
+            value = node.user.id,
+            valueColor = c.label,
+        )
         TrustRow(indicator, isLocal)
         PublicKeyRow(node)
         node.metadata?.let { metadata ->
@@ -174,12 +181,14 @@ internal fun NodeIdentitySection(node: Node, isLocal: Boolean) {
                 title = stringResource(Res.string.pangea_firmware_version),
                 icon = IosIcons.Cpu,
                 value = metadata.firmware_version.ifEmpty { "—" },
+                valueColor = c.label,
             )
         }
         IosRow(
             title = stringResource(Res.string.pangea_role),
             icon = MeshtasticIcons.role(node.user.role),
             value = stringResource(node.user.role.label),
+            valueColor = c.label,
         )
         node.nodeStatus
             ?.takeIf { it.isNotBlank() }
@@ -188,6 +197,7 @@ internal fun NodeIdentitySection(node: Node, isLocal: Boolean) {
                     title = stringResource(Res.string.status_message),
                     icon = IosIcons.TextAlignLeft,
                     value = status,
+                    valueColor = c.label,
                     valueLines = STATUS_LINES,
                 )
             }
@@ -196,6 +206,7 @@ internal fun NodeIdentitySection(node: Node, isLocal: Boolean) {
                 title = stringResource(Res.string.pangea_messaging),
                 icon = IosIcons.PhoneSlash,
                 value = stringResource(Res.string.pangea_unmonitored),
+                valueColor = c.label,
             )
         }
         node.deviceMetrics.uptime_seconds
@@ -206,6 +217,7 @@ internal fun NodeIdentitySection(node: Node, isLocal: Boolean) {
                     icon = IosIcons.CheckCircleFill,
                     iconTint = c.systemGreen,
                     value = formatUptime(uptime),
+                    valueColor = c.label,
                 )
             }
         if (node.lastHeard > 0) {
@@ -213,6 +225,7 @@ internal fun NodeIdentitySection(node: Node, isLocal: Boolean) {
                 title = stringResource(Res.string.node_sort_last_heard),
                 icon = IosIcons.ClockArrowCirclepath,
                 value = formatAgo(node.lastHeard),
+                valueColor = c.label,
             )
         }
     }

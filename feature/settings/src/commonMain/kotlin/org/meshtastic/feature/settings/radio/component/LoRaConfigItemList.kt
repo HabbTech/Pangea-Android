@@ -77,6 +77,7 @@ import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SignedIntegerEditTextPreference
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.component.schemaLabel
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.util.fieldTitle
@@ -103,18 +104,20 @@ internal fun buildPresetItems(
     presetsGated: Boolean,
     selectedPreset: ModemPreset,
     capabilities: Capabilities,
+    // What to call each preset; the screen passes the iPhone app's names ("Long Range - Fast").
+    label: (ModemPreset) -> String = { it.name },
 ): List<DropDownItem<ModemPreset>> {
     val items =
         ChannelOption.entries
             .filter { option -> capabilities.supportsPreset(option) }
             .filter { option -> presetConstraint == null || option.modemPreset in presetConstraint.presets }
             .map { option ->
-                DropDownItem(value = option.modemPreset, label = option.modemPreset.name, enabled = !presetsGated)
+                DropDownItem(value = option.modemPreset, label = label(option.modemPreset), enabled = !presetsGated)
             }
     return if (items.any { it.value == selectedPreset }) {
         items
     } else {
-        items + DropDownItem(value = selectedPreset, label = selectedPreset.name, enabled = false)
+        items + DropDownItem(value = selectedPreset, label = label(selectedPreset), enabled = false)
     }
 }
 
@@ -239,9 +242,14 @@ fun LoRaConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     // unconstrained, so show every preset. Licensed-only regions disable their presets unless the
                     // device is flagged as a licensed operator (R8).
                     val selectedPreset = formState.value.modem_preset
+                    // The presets under the iPhone app's names ("Long Range - Fast"), resolved here because the list
+                    // itself is built outside composition.
+                    val presetLabels = ModemPreset.entries.associateWith { it.schemaLabel() }
                     val presetItems =
-                        remember(presetConstraint, presetsGated, selectedPreset, capabilities) {
-                            buildPresetItems(presetConstraint, presetsGated, selectedPreset, capabilities)
+                        remember(presetConstraint, presetsGated, selectedPreset, capabilities, presetLabels) {
+                            buildPresetItems(presetConstraint, presetsGated, selectedPreset, capabilities) {
+                                presetLabels[it] ?: it.name
+                            }
                         }
                     DropDownPreference(
                         title = stringResource(Res.string.schema_lora_modem_preset),

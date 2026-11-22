@@ -38,7 +38,8 @@ class DropDownPreferenceUiTest {
             )
         }
 
-        onNodeWithText("CODEC2_700").assertIsDisplayed()
+        // The schema gives this value no label, so it shows as its constant read as words.
+        onNodeWithText("Codec2 700").assertIsDisplayed()
     }
 
     @Test

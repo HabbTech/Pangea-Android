@@ -49,6 +49,7 @@ import org.meshtastic.feature.node.component.AdministrationSection
 import org.meshtastic.feature.node.component.AirQualityInfoCards
 import org.meshtastic.feature.node.component.DeviceLinksSection
 import org.meshtastic.feature.node.component.EnvironmentMetrics
+import org.meshtastic.feature.node.component.IosEnvironmentTiles
 import org.meshtastic.feature.node.component.NotesSection
 import org.meshtastic.feature.node.component.PositionInlineContent
 import org.meshtastic.feature.node.component.PowerMetrics
@@ -123,8 +124,10 @@ fun NodeDetailList(
         item { NodeIdentitySection(node = node, isLocal = isLocal) }
         if (node.hasEnvironmentMetrics) {
             item {
+                // iOS's weather tiles, then Android's cards for the readings iOS has no tile for.
                 ReadingsSection(stringResource(Res.string.environment)) {
-                    EnvironmentMetrics(node, metrics.displayUnits, metrics.isFahrenheit)
+                    IosEnvironmentTiles(node, metrics.displayUnits, metrics.isFahrenheit)
+                    EnvironmentMetrics(node, metrics.displayUnits, metrics.isFahrenheit, tiled = true)
                 }
             }
         }

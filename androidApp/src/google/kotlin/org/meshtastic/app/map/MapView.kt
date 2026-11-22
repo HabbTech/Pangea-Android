@@ -1001,6 +1001,8 @@ fun MapView(
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
             onToggleFilterMenu = { mapFilterMenuExpanded = true },
             filtersActive = mode !is GoogleMapMode.NodeTrack && mapFilterState.isNarrowing,
+            // iOS's legend, on the mesh map.
+            showLegend = mode !is GoogleMapMode.NodeTrack,
             filterDropdownContent = {
                 if (mode is GoogleMapMode.NodeTrack) {
                     NodeTrackFilterMenu(

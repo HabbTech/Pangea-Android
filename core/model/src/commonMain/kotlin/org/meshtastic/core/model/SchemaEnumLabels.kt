@@ -100,5 +100,16 @@ val schemaEnumValuePrefixes: Set<String> =
 
 private fun Enum<*>.schemaLabel(prefix: String): StringResource? = Res.allStringResources[prefix + name.lowercase()]
 
+/**
+ * This constant's name as words, for the values no string names: `RANDOM_PIN` reads "Random Pin", as the iPhone app
+ * writes its menu choices, where the bare constant would read as a code. Two-letter parts stay capitals (`US`, `EU`).
+ */
+fun Enum<*>.readableName(): String = name
+    .split('_')
+    .filter { it.isNotEmpty() }
+    .joinToString(" ") { part ->
+        if (part.length <= 2) part else part.lowercase().replaceFirstChar { it.uppercase() }
+    }
+
 private fun Enum<*>.schemaDescription(prefix: String): StringResource? =
     Res.allStringResources[prefix + name.lowercase() + "_description"]

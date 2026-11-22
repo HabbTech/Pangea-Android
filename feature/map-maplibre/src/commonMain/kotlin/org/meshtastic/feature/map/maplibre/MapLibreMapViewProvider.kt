@@ -522,6 +522,7 @@ private fun BoxScope.MapToolbar(
             )
         },
         onSitePlannerClick = onSitePlannerClick,
+        showLegend = bottomInset > 0.dp,
         isLocationTrackingEnabled = location.following,
         // Under the tab bar the locate button is one of the right-hand pair instead (ExpertSideButtons).
         onToggleLocationTracking = if (bottomInset > 0.dp) null else location.onToggleFollow,

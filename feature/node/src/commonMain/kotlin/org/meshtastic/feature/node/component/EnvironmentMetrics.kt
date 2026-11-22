@@ -16,7 +16,11 @@
  */
 package org.meshtastic.feature.node.component
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.meshtastic.core.common.util.MeasurementSystem
 import org.meshtastic.core.common.util.MetricFormatter
 import org.meshtastic.core.common.util.NumberFormatter
@@ -76,10 +80,18 @@ import org.meshtastic.feature.node.model.VectorMetricInfo
  * Readings that come from one physical sensor, or that are derived from each other, are grouped into a shared vertical
  * column (temperature with its dew point, voltage with current, soil temperature with soil moisture, visible with UV
  * light) — see issue #4507. Every other reading is its own single-card column.
+ *
+ * With [tiled], the readings the iPhone app shows as tiles ([IosEnvironmentTiles]) are left out, so only the ones it
+ * has no tile for follow them here.
  */
 @Suppress("CyclomaticComplexMethod", "LongMethod")
 @Composable
-internal fun EnvironmentMetrics(node: Node, displayUnits: MeasurementSystem, isFahrenheit: Boolean = false) {
+internal fun EnvironmentMetrics(
+    node: Node,
+    displayUnits: MeasurementSystem,
+    isFahrenheit: Boolean = false,
+    tiled: Boolean = false,
+) {
     val groups: List<MetricGroup> = buildList {
         with(node.environmentMetrics) {
             val temperatureCard =
@@ -104,27 +116,31 @@ internal fun EnvironmentMetrics(node: Node, displayUnits: MeasurementSystem, isF
                             icon = Res.drawable.ic_dew_point,
                         )
                     }
-            add(listOfNotNull(temperatureCard, dewPointCard))
-            relative_humidity?.let { rh ->
-                add(
-                    VectorMetricInfo(
-                        label = Res.string.humidity,
-                        value = "${NumberFormatter.format(rh, 0)}%",
-                        icon = MeshtasticIcons.Humidity,
+            if (!tiled) add(listOfNotNull(temperatureCard, dewPointCard))
+            relative_humidity
+                ?.takeUnless { tiled }
+                ?.let { rh ->
+                    add(
+                        VectorMetricInfo(
+                            label = Res.string.humidity,
+                            value = "${NumberFormatter.format(rh, 0)}%",
+                            icon = MeshtasticIcons.Humidity,
+                        )
+                            .asGroup(),
                     )
-                        .asGroup(),
-                )
-            }
-            barometric_pressure?.let { bp ->
-                add(
-                    VectorMetricInfo(
-                        label = Res.string.pressure,
-                        value = "${NumberFormatter.format(bp, 0)} hPa",
-                        icon = MeshtasticIcons.Pressure,
+                }
+            barometric_pressure
+                ?.takeUnless { tiled }
+                ?.let { bp ->
+                    add(
+                        VectorMetricInfo(
+                            label = Res.string.pressure,
+                            value = "${NumberFormatter.format(bp, 0)} hPa",
+                            icon = MeshtasticIcons.Pressure,
+                        )
+                            .asGroup(),
                     )
-                        .asGroup(),
-                )
-            }
+                }
             gas_resistance?.let { gr ->
                 add(
                     VectorMetricInfo(
@@ -160,16 +176,18 @@ internal fun EnvironmentMetrics(node: Node, displayUnits: MeasurementSystem, isF
                         .asGroup(),
                 )
             }
-            distance?.let { d ->
-                add(
-                    VectorMetricInfo(
-                        label = Res.string.distance,
-                        value = d.toSmallDistanceString(displayUnits),
-                        icon = MeshtasticIcons.Altitude,
+            distance
+                ?.takeUnless { tiled }
+                ?.let { d ->
+                    add(
+                        VectorMetricInfo(
+                            label = Res.string.distance,
+                            value = d.toSmallDistanceString(displayUnits),
+                            icon = MeshtasticIcons.Altitude,
+                        )
+                            .asGroup(),
                     )
-                        .asGroup(),
-                )
-            }
+                }
             // Visible and UV illuminance are the same light sensor reported two ways.
             add(
                 listOfNotNull(
@@ -189,34 +207,38 @@ internal fun EnvironmentMetrics(node: Node, displayUnits: MeasurementSystem, isF
                     },
                 ),
             )
-            wind_speed?.let { ws ->
-                @Suppress("MagicNumber")
-                val normalizedBearing = ((wind_direction ?: 0) + 180) % 360
-                add(
-                    VectorMetricInfo(
-                        label = Res.string.wind,
-                        value = MetricFormatter.windSpeed(ws, displayUnits == MeasurementSystem.IMPERIAL),
-                        icon = MeshtasticIcons.WindDirection,
-                        rotateIcon = normalizedBearing.toFloat(),
+            wind_speed
+                ?.takeUnless { tiled }
+                ?.let { ws ->
+                    @Suppress("MagicNumber")
+                    val normalizedBearing = ((wind_direction ?: 0) + 180) % 360
+                    add(
+                        VectorMetricInfo(
+                            label = Res.string.wind,
+                            value = MetricFormatter.windSpeed(ws, displayUnits == MeasurementSystem.IMPERIAL),
+                            icon = MeshtasticIcons.WindDirection,
+                            rotateIcon = normalizedBearing.toFloat(),
+                        )
+                            .asGroup(),
                     )
-                        .asGroup(),
-                )
-            }
-            weight?.let { w ->
-                add(
-                    VectorMetricInfo(
-                        label = Res.string.weight,
-                        value = MetricFormatter.weight(w, displayUnits == MeasurementSystem.IMPERIAL),
-                        icon = MeshtasticIcons.Weight,
+                }
+            weight
+                ?.takeUnless { tiled }
+                ?.let { w ->
+                    add(
+                        VectorMetricInfo(
+                            label = Res.string.weight,
+                            value = MetricFormatter.weight(w, displayUnits == MeasurementSystem.IMPERIAL),
+                            icon = MeshtasticIcons.Weight,
+                        )
+                            .asGroup(),
                     )
-                        .asGroup(),
-                )
-            }
+                }
             // Both soil readings come from the same probe.
             add(
                 listOfNotNull(
                     soil_temperature
-                        ?.takeUnless { it.isNaN() }
+                        ?.takeUnless { it.isNaN() || tiled }
                         ?.let {
                             VectorMetricInfo(
                                 label = Res.string.soil_temperature,
@@ -224,25 +246,29 @@ internal fun EnvironmentMetrics(node: Node, displayUnits: MeasurementSystem, isF
                                 icon = MeshtasticIcons.SoilTemperature,
                             )
                         },
-                    soil_moisture?.let {
-                        VectorMetricInfo(
-                            label = Res.string.soil_moisture,
-                            value = "$it%",
-                            icon = MeshtasticIcons.SoilMoisture,
-                        )
-                    },
+                    soil_moisture
+                        ?.takeUnless { tiled }
+                        ?.let {
+                            VectorMetricInfo(
+                                label = Res.string.soil_moisture,
+                                value = "$it%",
+                                icon = MeshtasticIcons.SoilMoisture,
+                            )
+                        },
                 ),
             )
-            radiation?.let { r ->
-                add(
-                    DrawableMetricInfo(
-                        label = Res.string.radiation,
-                        value = "${NumberFormatter.format(r, 1)} µR/h",
-                        icon = Res.drawable.ic_radioactive,
+            radiation
+                ?.takeUnless { tiled }
+                ?.let { r ->
+                    add(
+                        DrawableMetricInfo(
+                            label = Res.string.radiation,
+                            value = "${NumberFormatter.format(r, 1)} µR/h",
+                            icon = Res.drawable.ic_radioactive,
+                        )
+                            .asGroup(),
                     )
-                        .asGroup(),
-                )
-            }
+                }
             // Strike count and storm distance come from the same AS3935 detector, so they share a column.
             add(
                 listOfNotNull(
@@ -298,5 +324,8 @@ internal fun EnvironmentMetrics(node: Node, displayUnits: MeasurementSystem, isF
             }
         }
     }
+    if (groups.all { it.isEmpty() }) return
+    // Under the tiles, a little air before the cards.
+    if (tiled) Spacer(Modifier.height(10.dp))
     MetricCardFlow(groups = groups)
 }

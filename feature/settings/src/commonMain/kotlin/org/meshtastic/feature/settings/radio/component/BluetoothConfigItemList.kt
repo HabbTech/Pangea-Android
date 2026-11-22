@@ -43,6 +43,7 @@ import org.meshtastic.core.ui.component.PreferenceDivider
 import org.meshtastic.core.ui.component.PreferenceIcon
 import org.meshtastic.core.ui.component.SwitchPreference
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.core.ui.component.schemaLabel
 import org.meshtastic.core.ui.ios.IosIcons
 import org.meshtastic.feature.settings.radio.RadioConfigViewModel
 import org.meshtastic.feature.settings.radio.RebootBehavior
@@ -93,7 +94,7 @@ fun BluetoothConfigScreen(viewModel: RadioConfigViewModel, onBack: () -> Unit) {
                     items =
                     Config.BluetoothConfig.PairingMode.entries
                         .filter { it.name != "UNRECOGNIZED" }
-                        .map { it to it.name },
+                        .map { it to it.schemaLabel() },
                     selectedItem =
                     formState.value.mode.takeUnless { it.name == "UNRECOGNIZED" }
                         ?: Config.BluetoothConfig.PairingMode.RANDOM_PIN,

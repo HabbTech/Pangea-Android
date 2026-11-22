@@ -23,6 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -31,9 +35,11 @@ import org.jetbrains.compose.resources.stringResource
 import org.meshtastic.core.resources.Res
 import org.meshtastic.core.resources.map_filter
 import org.meshtastic.core.resources.orient_north
+import org.meshtastic.core.resources.pangea_map_legend
 import org.meshtastic.core.resources.refresh
 import org.meshtastic.core.resources.site_planner
 import org.meshtastic.core.resources.toggle_my_position
+import org.meshtastic.core.ui.icon.Info
 import org.meshtastic.core.ui.icon.MapCompass
 import org.meshtastic.core.ui.icon.MeshtasticIcons
 import org.meshtastic.core.ui.icon.Refresh
@@ -82,7 +88,11 @@ fun MapControlsOverlay(
     showRefresh: Boolean = false,
     isRefreshing: Boolean = false,
     onRefresh: () -> Unit = {},
+    /** The iPhone app's legend button, last in the row, on the mesh map. */
+    showLegend: Boolean = false,
 ) {
+    var legendOpen by remember { mutableStateOf(false) }
+    if (legendOpen) MapLegendSheet(onDismissRequest = { legendOpen = false })
     // Pangea: a row of iOS glass buttons rather than a Material toolbar, in the iPhone app's order: coverage, filters,
     // map style (then Android's layers). Its compass shows only once the map is turned, as iOS's does.
     Row(
@@ -135,6 +145,15 @@ fun MapControlsOverlay(
                     onClick = onRefresh,
                 )
             }
+        }
+
+        // iOS's legend: what each mark on the map means.
+        if (showLegend) {
+            MapButton(
+                icon = MeshtasticIcons.Info,
+                contentDescription = stringResource(Res.string.pangea_map_legend),
+                onClick = { legendOpen = true },
+            )
         }
 
         // Location tracking button (optional; Pangea's Expert map puts it at the right, as on iOS)

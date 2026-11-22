@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
+import org.meshtastic.core.model.readableName
 import org.meshtastic.core.model.schemaLabelRes
 import org.meshtastic.core.ui.ios.Ios
 import org.meshtastic.core.ui.ios.IosIcons
@@ -222,8 +223,8 @@ internal expect fun <T : Enum<T>> enumEntriesOf(selectedItem: T): List<T>
 
 internal expect fun Enum<*>.isDeprecatedEnumEntry(): Boolean
 
-/** The label the schema gives this value, falling back to the constant's name where the schema does not name it. */
-@Composable private fun Enum<*>.schemaLabel(): String = schemaLabelRes()?.let { stringResource(it) } ?: name
+/** The label the schema gives this value, falling back to the constant's name as words where it does not name it. */
+@Composable fun Enum<*>.schemaLabel(): String = schemaLabelRes()?.let { stringResource(it) } ?: readableName()
 
 @Preview(showBackground = true)
 @Composable
